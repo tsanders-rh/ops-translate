@@ -41,6 +41,7 @@ dev = [
     "ruff>=0.1.0",
     "mypy>=1.7.0",
     "types-pyyaml>=6.0.0",
+    "types-jsonschema>=4.20.0",
 ]
 
 [project.scripts]
@@ -63,6 +64,8 @@ target-version = ["py310", "py311", "py312"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
 ignore = []
 

@@ -1,8 +1,9 @@
 """
 Anthropic Claude LLM provider implementation.
 """
+
 import os
-from typing import Optional
+
 from ops_translate.llm.base import LLMProvider
 
 
@@ -20,6 +21,7 @@ class AnthropicProvider(LLMProvider):
         if api_key:
             try:
                 from anthropic import Anthropic
+
                 self.client = Anthropic(api_key=api_key)
             except ImportError:
                 raise ImportError(
@@ -29,7 +31,7 @@ class AnthropicProvider(LLMProvider):
     def generate(
         self,
         prompt: str,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         max_tokens: int = 4096,
         temperature: float = 0.0,
     ) -> str:

@@ -1,10 +1,6 @@
 """
 Unit tests for workspace functionality.
 """
-import pytest
-from pathlib import Path
-
-from ops_translate.workspace import Workspace
 
 
 def test_workspace_initialization(temp_workspace):
@@ -32,10 +28,10 @@ def test_workspace_load_config(temp_workspace):
     config = workspace.load_config()
 
     assert config is not None
-    assert 'llm' in config
-    assert 'profiles' in config
-    assert 'lab' in config['profiles']
-    assert 'prod' in config['profiles']
+    assert "llm" in config
+    assert "profiles" in config
+    assert "lab" in config["profiles"]
+    assert "prod" in config["profiles"]
 
 
 def test_workspace_config_structure(temp_workspace):
@@ -44,13 +40,13 @@ def test_workspace_config_structure(temp_workspace):
     config = workspace.load_config()
 
     # Verify LLM config
-    assert 'provider' in config['llm']
-    assert 'model' in config['llm']
-    assert 'api_key_env' in config['llm']
+    assert "provider" in config["llm"]
+    assert "model" in config["llm"]
+    assert "api_key_env" in config["llm"]
 
     # Verify profiles
-    for profile_name in ['lab', 'prod']:
-        profile = config['profiles'][profile_name]
-        assert 'default_namespace' in profile
-        assert 'default_network' in profile
-        assert 'default_storage_class' in profile
+    for profile_name in ["lab", "prod"]:
+        profile = config["profiles"][profile_name]
+        assert "default_namespace" in profile
+        assert "default_network" in profile
+        assert "default_storage_class" in profile

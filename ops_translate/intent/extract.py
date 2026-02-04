@@ -1,6 +1,7 @@
 """
 Intent extraction from source files using LLM.
 """
+
 from pathlib import Path
 from ops_translate.workspace import Workspace
 from ops_translate.llm import get_provider
@@ -29,7 +30,8 @@ def extract_all(workspace: Workspace):
     if not llm.is_available():
         console.print("[yellow]Warning: LLM not available. Using mock provider.[/yellow]")
         from ops_translate.llm.mock import MockProvider
-        llm = MockProvider(config.get('llm', {}))
+
+        llm = MockProvider(config.get("llm", {}))
 
     assumptions = []
 
@@ -46,9 +48,12 @@ def extract_all(workspace: Workspace):
 
             # Validate extracted intent
             from ops_translate.intent.validate import validate_intent
+
             is_valid, errors = validate_intent(output_file)
             if not is_valid:
-                console.print(f"[yellow]  Warning: Intent validation failed for {output_file.name}:[/yellow]")
+                console.print(
+                    f"[yellow]  Warning: Intent validation failed for {output_file.name}:[/yellow]"
+                )
                 for error in errors:
                     console.print(f"[yellow]    {error}[/yellow]")
             else:
@@ -71,9 +76,12 @@ def extract_all(workspace: Workspace):
 
             # Validate extracted intent
             from ops_translate.intent.validate import validate_intent
+
             is_valid, errors = validate_intent(output_file)
             if not is_valid:
-                console.print(f"[yellow]  Warning: Intent validation failed for {output_file.name}:[/yellow]")
+                console.print(
+                    f"[yellow]  Warning: Intent validation failed for {output_file.name}:[/yellow]"
+                )
                 for error in errors:
                     console.print(f"[yellow]    {error}[/yellow]")
             else:
@@ -178,8 +186,8 @@ def clean_llm_response(response: str) -> str:
     Removes markdown code fences, extra whitespace, etc.
     """
     # Remove markdown code fences
-    response = re.sub(r'```ya?ml\n', '', response)
-    response = re.sub(r'```\n?', '', response)
+    response = re.sub(r"```ya?ml\n", "", response)
+    response = re.sub(r"```\n?", "", response)
 
     # Strip leading/trailing whitespace
     response = response.strip()
@@ -196,19 +204,19 @@ def extract_assumptions_from_yaml(yaml_content: str) -> list:
     assumptions = []
 
     # Look for assumptions section in YAML
-    lines = yaml_content.split('\n')
+    lines = yaml_content.split("\n")
     in_assumptions = False
 
     for line in lines:
-        if line.strip() == 'assumptions:':
+        if line.strip() == "assumptions:":
             in_assumptions = True
             continue
 
         if in_assumptions:
-            if line and not line.startswith(' ') and not line.startswith('-'):
+            if line and not line.startswith(" ") and not line.startswith("-"):
                 # End of assumptions section
                 break
-            if line.strip().startswith('- '):
+            if line.strip().startswith("- "):
                 assumptions.append(line.strip()[2:])
 
     return assumptions if assumptions else ["Intent extracted via LLM"]

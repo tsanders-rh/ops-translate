@@ -1,18 +1,19 @@
 """
 CLI entry point for ops-translate.
 """
+
+import json
+import os
+import shutil
+from datetime import datetime
+from pathlib import Path
+
 import typer
 from rich.console import Console
-from pathlib import Path
-import sys
-import os
-from datetime import datetime
-import json
-import shutil
 
-from ops_translate.workspace import Workspace
-from ops_translate.util.files import read_text, write_text, ensure_dir
+from ops_translate.util.files import ensure_dir, write_text
 from ops_translate.util.hashing import sha256_file
+from ops_translate.workspace import Workspace
 
 app = typer.Typer(
     name="ops-translate",
@@ -39,10 +40,10 @@ def init(workspace_dir: str = typer.Argument(..., help="Workspace directory to i
     workspace.initialize()
 
     console.print(f"[green]✓ Created directory structure in {workspace_dir}[/green]")
-    console.print(f"[green]✓ Wrote configuration to ops-translate.yaml[/green]")
-    console.print(f"\n[dim]Next steps:[/dim]")
+    console.print("[green]✓ Wrote configuration to ops-translate.yaml[/green]")
+    console.print("\n[dim]Next steps:[/dim]")
     console.print(f"  cd {workspace_dir}")
-    console.print(f"  ops-translate import --source powercli --file <path>")
+    console.print("  ops-translate import --source powercli --file <path>")
 
 
 @app.command(name="import")
@@ -52,7 +53,7 @@ def import_cmd(
 ):
     """Import a PowerCLI script or vRealize workflow."""
     if source not in ["powercli", "vrealize"]:
-        console.print(f"[red]Error: --source must be 'powercli' or 'vrealize'[/red]")
+        console.print("[red]Error: --source must be 'powercli' or 'vrealize'[/red]")
         raise typer.Exit(1)
 
     source_path = Path(file)
@@ -63,7 +64,7 @@ def import_cmd(
     # Ensure we're in a workspace
     workspace = Workspace(Path.cwd())
     if not workspace.config_file.exists():
-        console.print(f"[red]Error: Not in a workspace. Run 'ops-translate init <dir>' first.[/red]")
+        console.print("[red]Error: Not in a workspace. Run 'ops-translate init <dir>' first.[/red]")
         raise typer.Exit(1)
 
     # Copy file to input directory
@@ -91,7 +92,9 @@ def import_cmd(
 
     console.print(f"[green]✓ Imported to {dest_path.relative_to(workspace.root)}[/green]")
     console.print(f"[green]✓ SHA256: {file_hash}[/green]")
-    console.print(f"[green]✓ Metadata saved to {run_dir.relative_to(workspace.root)}/import.json[/green]")
+    console.print(
+        f"[green]✓ Metadata saved to {run_dir.relative_to(workspace.root)}/import.json[/green]"
+    )
 
 
 @app.command()
@@ -99,7 +102,7 @@ def summarize():
     """Summarize imported files (no AI required)."""
     workspace = Workspace(Path.cwd())
     if not workspace.config_file.exists():
-        console.print(f"[red]Error: Not in a workspace.[/red]")
+        console.print("[red]Error: Not in a workspace.[/red]")
         raise typer.Exit(1)
 
     console.print("[bold blue]Analyzing imported files...[/bold blue]")
@@ -137,7 +140,7 @@ def summarize():
     summary_file = workspace.root / "intent/summary.md"
     write_text(summary_file, "".join(summary_lines))
 
-    console.print(f"[green]✓ Summary written to intent/summary.md[/green]")
+    console.print("[green]✓ Summary written to intent/summary.md[/green]")
 
 
 @intent_app.command()
@@ -145,7 +148,7 @@ def extract():
     """Extract normalized intent from imported sources."""
     workspace = Workspace(Path.cwd())
     if not workspace.config_file.exists():
-        console.print(f"[red]Error: Not in a workspace.[/red]")
+        console.print("[red]Error: Not in a workspace.[/red]")
         raise typer.Exit(1)
 
     console.print("[bold blue]Extracting intent from source files...[/bold blue]")
@@ -154,18 +157,16 @@ def extract():
 
     extract_all(workspace)
 
-    console.print(f"[green]✓ Intent extracted to intent/*.intent.yaml[/green]")
-    console.print(f"[green]✓ Assumptions written to intent/assumptions.md[/green]")
+    console.print("[green]✓ Intent extracted to intent/*.intent.yaml[/green]")
+    console.print("[green]✓ Assumptions written to intent/assumptions.md[/green]")
 
 
 @intent_app.command()
-def merge(
-    force: bool = typer.Option(False, "--force", help="Merge even if conflicts exist")
-):
+def merge(force: bool = typer.Option(False, "--force", help="Merge even if conflicts exist")):
     """Merge per-source intents into single intent.yaml."""
     workspace = Workspace(Path.cwd())
     if not workspace.config_file.exists():
-        console.print(f"[red]Error: Not in a workspace.[/red]")
+        console.print("[red]Error: Not in a workspace.[/red]")
         raise typer.Exit(1)
 
     console.print("[bold blue]Merging intent files...[/bold blue]")
@@ -175,23 +176,21 @@ def merge(
     conflicts = merge_intents(workspace)
 
     if conflicts and not force:
-        console.print(f"[yellow]⚠ Conflicts detected - see intent/conflicts.md[/yellow]")
-        console.print(f"[yellow]  Run with --force to merge anyway[/yellow]")
+        console.print("[yellow]⚠ Conflicts detected - see intent/conflicts.md[/yellow]")
+        console.print("[yellow]  Run with --force to merge anyway[/yellow]")
         raise typer.Exit(1)
     elif conflicts:
-        console.print(f"[yellow]⚠ Conflicts detected but merged (--force)[/yellow]")
+        console.print("[yellow]⚠ Conflicts detected but merged (--force)[/yellow]")
 
-    console.print(f"[green]✓ Merged intent written to intent/intent.yaml[/green]")
+    console.print("[green]✓ Merged intent written to intent/intent.yaml[/green]")
 
 
 @intent_app.command()
-def edit(
-    file: str = typer.Option(None, "--file", help="Specific intent file to edit")
-):
+def edit(file: str = typer.Option(None, "--file", help="Specific intent file to edit")):
     """Open intent file in $EDITOR."""
     workspace = Workspace(Path.cwd())
     if not workspace.config_file.exists():
-        console.print(f"[red]Error: Not in a workspace.[/red]")
+        console.print("[red]Error: Not in a workspace.[/red]")
         raise typer.Exit(1)
 
     if file:
@@ -205,7 +204,7 @@ def edit(
 
     editor = os.environ.get("EDITOR")
     if not editor:
-        console.print(f"[yellow]$EDITOR not set. Please edit manually:[/yellow]")
+        console.print("[yellow]$EDITOR not set. Please edit manually:[/yellow]")
         console.print(f"  {intent_file}")
         raise typer.Exit(0)
 
@@ -214,17 +213,15 @@ def edit(
 
 
 @map_app.command()
-def preview(
-    target: str = typer.Option(..., "--target", help="Target platform (openshift)")
-):
+def preview(target: str = typer.Option(..., "--target", help="Target platform (openshift)")):
     """Generate mapping preview showing source → target equivalents."""
     workspace = Workspace(Path.cwd())
     if not workspace.config_file.exists():
-        console.print(f"[red]Error: Not in a workspace.[/red]")
+        console.print("[red]Error: Not in a workspace.[/red]")
         raise typer.Exit(1)
 
     if target != "openshift":
-        console.print(f"[red]Error: Only 'openshift' target is supported in v1[/red]")
+        console.print("[red]Error: Only 'openshift' target is supported in v1[/red]")
         raise typer.Exit(1)
 
     console.print(f"[bold blue]Generating mapping preview for {target}...[/bold blue]")
@@ -267,7 +264,7 @@ def preview(
     preview_file = workspace.root / "mapping/preview.md"
     write_text(preview_file, preview_content)
 
-    console.print(f"[green]✓ Mapping preview written to mapping/preview.md[/green]")
+    console.print("[green]✓ Mapping preview written to mapping/preview.md[/green]")
 
 
 @app.command()
@@ -278,7 +275,7 @@ def generate(
     """Generate Ansible and KubeVirt artifacts."""
     workspace = Workspace(Path.cwd())
     if not workspace.config_file.exists():
-        console.print(f"[red]Error: Not in a workspace.[/red]")
+        console.print("[red]Error: Not in a workspace.[/red]")
         raise typer.Exit(1)
 
     config = workspace.load_config()
@@ -294,10 +291,10 @@ def generate(
     # Generate all artifacts
     generate_all(workspace, profile, use_ai=not no_ai)
 
-    console.print(f"[green]✓ KubeVirt manifest: output/kubevirt/vm.yaml[/green]")
-    console.print(f"[green]✓ Ansible playbook: output/ansible/site.yml[/green]")
-    console.print(f"[green]✓ Ansible role: output/ansible/roles/provision_vm/[/green]")
-    console.print(f"[green]✓ README: output/README.md[/green]")
+    console.print("[green]✓ KubeVirt manifest: output/kubevirt/vm.yaml[/green]")
+    console.print("[green]✓ Ansible playbook: output/ansible/site.yml[/green]")
+    console.print("[green]✓ Ansible role: output/ansible/roles/provision_vm/[/green]")
+    console.print("[green]✓ README: output/README.md[/green]")
 
 
 @app.command()
@@ -305,12 +302,12 @@ def dry_run():
     """Validate intent and generated artifacts."""
     workspace = Workspace(Path.cwd())
     if not workspace.config_file.exists():
-        console.print(f"[red]Error: Not in a workspace.[/red]")
+        console.print("[red]Error: Not in a workspace.[/red]")
         raise typer.Exit(1)
 
     console.print("[bold blue]Running validation checks...[/bold blue]")
 
-    from ops_translate.intent.validate import validate_intent, validate_artifacts
+    from ops_translate.intent.validate import validate_artifacts, validate_intent
 
     # Validate intent schema
     intent_file = workspace.root / "intent/intent.yaml"
@@ -332,9 +329,9 @@ def dry_run():
         console.print(f"    {msg}")
 
     if valid:
-        console.print(f"\n[green]✓ All validations passed[/green]")
+        console.print("\n[green]✓ All validations passed[/green]")
     else:
-        console.print(f"\n[red]✗ Validation failed[/red]")
+        console.print("\n[red]✗ Validation failed[/red]")
         raise typer.Exit(1)
 
 

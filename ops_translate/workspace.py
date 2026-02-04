@@ -1,8 +1,10 @@
 """
 Workspace management for ops-translate.
 """
+
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
+
 import yaml
 
 
@@ -53,10 +55,13 @@ class Workspace:
         with open(self.config_file, "w") as f:
             yaml.dump(self.DEFAULT_CONFIG, f, default_flow_style=False, sort_keys=False)
 
-    def load_config(self) -> Dict[str, Any]:
+    def load_config(self) -> dict[str, Any]:
         """Load workspace configuration."""
         if not self.config_file.exists():
             raise FileNotFoundError(f"Config file not found: {self.config_file}")
 
         with open(self.config_file) as f:
-            return yaml.safe_load(f)
+            config = yaml.safe_load(f)
+            if not isinstance(config, dict):
+                raise ValueError(f"Invalid config file: expected dict, got {type(config)}")
+            return config

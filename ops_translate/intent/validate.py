@@ -1,6 +1,7 @@
 """
 Intent and artifact validation.
 """
+
 from pathlib import Path
 import yaml
 import json
@@ -66,33 +67,35 @@ def format_validation_error(error: ValidationError) -> list:
     errors.append(main_error)
 
     # Add context about what was expected
-    if error.validator == 'required':
+    if error.validator == "required":
         missing_props = error.message.split("'")[1::2]  # Extract property names
         errors.append(f"  Required properties missing: {', '.join(missing_props)}")
 
-    elif error.validator == 'type':
+    elif error.validator == "type":
         errors.append(f"  Expected type: {error.validator_value}")
         errors.append(f"  Got: {type(error.instance).__name__}")
 
-    elif error.validator == 'enum':
+    elif error.validator == "enum":
         errors.append(f"  Allowed values: {error.validator_value}")
         errors.append(f"  Got: {error.instance}")
 
-    elif error.validator == 'pattern':
+    elif error.validator == "pattern":
         errors.append(f"  Expected pattern: {error.validator_value}")
         errors.append(f"  Got: {error.instance}")
 
-    elif error.validator == 'minimum' or error.validator == 'maximum':
+    elif error.validator == "minimum" or error.validator == "maximum":
         errors.append(f"  Constraint: {error.validator} = {error.validator_value}")
         errors.append(f"  Got: {error.instance}")
 
     # Add suggestion for common errors
-    if 'schema_version' in str(error.path):
+    if "schema_version" in str(error.path):
         errors.append("  Hint: schema_version must be the integer 1")
-    elif 'workflow_name' in str(error.path):
+    elif "workflow_name" in str(error.path):
         errors.append("  Hint: workflow_name must be snake_case (lowercase with underscores)")
-    elif 'workload_type' in str(error.path):
-        errors.append("  Hint: workload_type must be one of: virtual_machine, container, baremetal, other")
+    elif "workload_type" in str(error.path):
+        errors.append(
+            "  Hint: workload_type must be one of: virtual_machine, container, baremetal, other"
+        )
 
     return errors
 

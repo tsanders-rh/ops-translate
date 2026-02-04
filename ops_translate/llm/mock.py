@@ -1,7 +1,7 @@
 """
 Mock LLM provider for testing (no API calls).
 """
-from typing import Optional
+
 from ops_translate.llm.base import LLMProvider
 
 
@@ -17,7 +17,7 @@ class MockProvider(LLMProvider):
     def generate(
         self,
         prompt: str,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         max_tokens: int = 4096,
         temperature: float = 0.0,
     ) -> str:
