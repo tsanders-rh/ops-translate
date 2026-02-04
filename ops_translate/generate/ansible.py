@@ -80,7 +80,7 @@ def generate_tasks(profile_config: dict, use_ai: bool) -> str:
             },
             "register": "vm_info",
             "until": (
-                "vm_info.resources | length > 0 and " "vm_info.resources[0].status.ready is defined"
+                "vm_info.resources | length > 0 and vm_info.resources[0].status.ready is defined"
             ),
             "retries": 30,
             "delay": 10,

@@ -64,9 +64,9 @@ def generate_with_ai(workspace: Workspace, profile: str):
 
     # Format profile config as YAML
     profile_yaml = f"""profile_name: {profile}
-default_namespace: {profile_config['default_namespace']}
-default_network: {profile_config['default_network']}
-default_storage_class: {profile_config['default_storage_class']}"""
+default_namespace: {profile_config["default_namespace"]}
+default_network: {profile_config["default_network"]}
+default_storage_class: {profile_config["default_storage_class"]}"""
 
     # Fill in prompt
     prompt = prompt_template.replace("{intent_yaml}", intent_yaml)
@@ -77,7 +77,9 @@ default_storage_class: {profile_config['default_storage_class']}"""
     # Call LLM
     try:
         response = llm.generate(
-            prompt, max_tokens=8192, temperature=0.0  # Larger for multiple files
+            prompt,
+            max_tokens=8192,
+            temperature=0.0,  # Larger for multiple files
         )
 
         # Parse multi-file response
