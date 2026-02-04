@@ -1,236 +1,68 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<workflow xmlns="http://vmware.com/vco/workflow" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<workflow xmlns="http://vmware.com/vco/workflow" 
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://vmware.com/vco/workflow http://vmware.com/vco/workflow/Workflow-v4.xsd"
-          root-name="item0" object-name="Workflow:name=generic" id="bd8f8e4a-8e6f-4d5c-9c4a-7b8a5e3f2d1c"
-          version="1.0.0" api-version="6.0.0" allowed-operations="vef">
-
+          root-name="item1" object-name="workflow:name=generic" 
+          id="f0e8a9b1-2c3d-4e5f-6a7b-8c9d0e1f2a3b" 
+          version="1.0.0">
+  
   <display-name><![CDATA[Provision VM with Governance]]></display-name>
-  <description><![CDATA[Provisions a virtual machine with environment-based configuration and approval workflow]]></description>
-
+  <description><![CDATA[Provisions a virtual machine with environment-based configuration, approval workflow, and metadata tagging]]></description>
+  
   <position x="100.0" y="50.0"/>
-
+  
+  <!-- Input Parameters -->
   <input>
     <param name="vmName" type="string">
-      <description><![CDATA[Name of the virtual machine]]></description>
+      <description><![CDATA[Name of the virtual machine to create]]></description>
     </param>
     <param name="environment" type="string">
       <description><![CDATA[Target environment (dev or prod)]]></description>
     </param>
     <param name="cpuCount" type="number">
-      <description><![CDATA[Number of CPU cores]]></description>
+      <description><![CDATA[Number of CPU cores (1-32)]]></description>
     </param>
     <param name="memoryGB" type="number">
-      <description><![CDATA[Memory in GB]]></description>
+      <description><![CDATA[Memory allocation in GB (1-256)]]></description>
     </param>
     <param name="ownerEmail" type="string">
       <description><![CDATA[Email address of the VM owner]]></description>
     </param>
     <param name="costCenter" type="string">
-      <description><![CDATA[Cost center for chargeback (optional)]]></description>
+      <description><![CDATA[Optional cost center code for chargeback]]></description>
     </param>
   </input>
-
+  
+  <!-- Output Parameters -->
   <output>
     <param name="vmId" type="string">
-      <description><![CDATA[ID of the created VM]]></description>
+      <description><![CDATA[ID of the created virtual machine]]></description>
     </param>
     <param name="provisioningStatus" type="string">
       <description><![CDATA[Status of the provisioning operation]]></description>
     </param>
   </output>
-
-  <attrib name="networkName" type="string" read-only="false">
+  
+  <!-- Workflow Attributes -->
+  <attrib name="networkProfile" type="string">
     <value encoded="n"><![CDATA[]]></value>
-    <description><![CDATA[Selected network based on environment]]></description>
   </attrib>
-
-  <attrib name="storageName" type="string" read-only="false">
+  <attrib name="storageProfile" type="string">
     <value encoded="n"><![CDATA[]]></value>
-    <description><![CDATA[Selected storage based on environment]]></description>
   </attrib>
-
-  <attrib name="approvalRequired" type="boolean" read-only="false">
+  <attrib name="requiresApproval" type="boolean">
     <value encoded="n"><![CDATA[false]]></value>
-    <description><![CDATA[Whether approval is required]]></description>
   </attrib>
-
-  <workflow-item name="item0" type="end" end-mode="0">
-    <position x="700.0" y="200.0"/>
-  </workflow-item>
-
-  <workflow-item name="item1" out-name="item2" type="task">
-    <display-name><![CDATA[Validate Inputs]]></display-name>
-    <script encoded="false"><![CDATA[
-// Validate VM name
-if (!vmName || vmName.length == 0) {
-    throw "VM name is required";
-}
-
-// Validate environment
-if (environment != "dev" && environment != "prod") {
-    throw "Environment must be 'dev' or 'prod'";
-}
-
-// Validate CPU count
-if (cpuCount < 1 || cpuCount > 32) {
-    throw "CPU count must be between 1 and 32";
-}
-
-// Validate memory
-if (memoryGB < 1 || memoryGB > 256) {
-    throw "Memory must be between 1 and 256 GB";
-}
-
-// Validate owner email format
-if (!ownerEmail || ownerEmail.indexOf("@") == -1) {
-    throw "Valid owner email is required";
-}
-
-System.log("Input validation successful");
-    ]]></script>
-    <in-binding>
-      <bind name="vmName" type="string" export-name="vmName"/>
-      <bind name="environment" type="string" export-name="environment"/>
-      <bind name="cpuCount" type="number" export-name="cpuCount"/>
-      <bind name="memoryGB" type="number" export-name="memoryGB"/>
-      <bind name="ownerEmail" type="string" export-name="ownerEmail"/>
-    </in-binding>
-    <position x="200.0" y="100.0"/>
-  </workflow-item>
-
-  <workflow-item name="item2" out-name="item3" type="task">
-    <display-name><![CDATA[Determine Profiles]]></display-name>
-    <script encoded="false"><![CDATA[
-// Set network based on environment
-if (environment == "prod") {
-    networkName = "prod-network";
-    storageName = "storage-gold";
-} else {
-    networkName = "dev-network";
-    storageName = "storage-standard";
-}
-
-System.log("Selected network: " + networkName);
-System.log("Selected storage: " + storageName);
-    ]]></script>
-    <in-binding>
-      <bind name="environment" type="string" export-name="environment"/>
-    </in-binding>
-    <out-binding>
-      <bind name="networkName" type="string" export-name="networkName"/>
-      <bind name="storageName" type="string" export-name="storageName"/>
-    </out-binding>
-    <position x="300.0" y="100.0"/>
-  </workflow-item>
-
-  <workflow-item name="item3" out-name="item4" type="decision" alt-out-name="item5">
-    <display-name><![CDATA[Check Approval Required]]></display-name>
-    <script encoded="false"><![CDATA[
-// Approval required for production deployments
-return environment == "prod";
-    ]]></script>
-    <in-binding>
-      <bind name="environment" type="string" export-name="environment"/>
-    </in-binding>
-    <position x="400.0" y="100.0"/>
-  </workflow-item>
-
-  <workflow-item name="item4" out-name="item5" type="task">
-    <display-name><![CDATA[Request Approval]]></display-name>
-    <script encoded="false"><![CDATA[
-System.log("APPROVAL REQUIRED");
-System.log("VM Name: " + vmName);
-System.log("Environment: " + environment);
-System.log("CPU: " + cpuCount);
-System.log("Memory: " + memoryGB + " GB");
-System.log("Owner: " + ownerEmail);
-
-// In a real workflow, this would trigger an approval task
-// For this example, we just log the requirement
-approvalRequired = true;
-System.warn("Production deployment requires manual approval before proceeding");
-    ]]></script>
-    <in-binding>
-      <bind name="vmName" type="string" export-name="vmName"/>
-      <bind name="environment" type="string" export-name="environment"/>
-      <bind name="cpuCount" type="number" export-name="cpuCount"/>
-      <bind name="memoryGB" type="number" export-name="memoryGB"/>
-      <bind name="ownerEmail" type="string" export-name="ownerEmail"/>
-    </in-binding>
-    <out-binding>
-      <bind name="approvalRequired" type="boolean" export-name="approvalRequired"/>
-    </out-binding>
-    <position x="500.0" y="80.0"/>
-  </workflow-item>
-
-  <workflow-item name="item5" out-name="item6" type="task">
-    <display-name><![CDATA[Provision VM]]></display-name>
-    <script encoded="false"><![CDATA[
-System.log("Provisioning VM with configuration:");
-System.log("  Name: " + vmName);
-System.log("  CPU: " + cpuCount);
-System.log("  Memory: " + memoryGB + " GB");
-System.log("  Network: " + networkName);
-System.log("  Storage: " + storageName);
-
-// Simulate VM creation
-// In a real workflow, this would call vCenter API
-vmId = "vm-" + System.nextUUID();
-provisioningStatus = "SUCCESS";
-
-System.log("VM provisioned successfully with ID: " + vmId);
-    ]]></script>
-    <in-binding>
-      <bind name="vmName" type="string" export-name="vmName"/>
-      <bind name="cpuCount" type="number" export-name="cpuCount"/>
-      <bind name="memoryGB" type="number" export-name="memoryGB"/>
-      <bind name="networkName" type="string" export-name="networkName"/>
-      <bind name="storageName" type="string" export-name="storageName"/>
-    </in-binding>
-    <out-binding>
-      <bind name="vmId" type="string" export-name="vmId"/>
-      <bind name="provisioningStatus" type="string" export-name="provisioningStatus"/>
-    </out-binding>
-    <position x="600.0" y="150.0"/>
-  </workflow-item>
-
-  <workflow-item name="item6" out-name="item0" type="task">
-    <display-name><![CDATA[Apply Metadata Tags]]></display-name>
-    <script encoded="false"><![CDATA[
-// Apply tags for governance and tracking
-var tags = {
-    "env": environment,
-    "owner": ownerEmail,
-    "managed-by": "vrealize-orchestrator",
-    "provisioned-date": new Date().toISOString().split('T')[0]
-};
-
-if (costCenter && costCenter.length > 0) {
-    tags["costCenter"] = costCenter;
-}
-
-System.log("Applying metadata tags:");
-for (var key in tags) {
-    System.log("  " + key + " = " + tags[key]);
-    // In real workflow: apply tag to VM
-}
-
-System.log("Day 2 operations supported: start, stop, reconfigure");
-    ]]></script>
-    <in-binding>
-      <bind name="vmId" type="string" export-name="vmId"/>
-      <bind name="environment" type="string" export-name="environment"/>
-      <bind name="ownerEmail" type="string" export-name="ownerEmail"/>
-      <bind name="costCenter" type="string" export-name="costCenter"/>
-    </in-binding>
-    <position x="650.0" y="200.0"/>
-  </workflow-item>
-
+  <attrib name="approvalStatus" type="string">
+    <value encoded="n"><![CDATA[]]></value>
+  </attrib>
+  
+  <!-- Workflow Presentation (Input Form) -->
   <presentation>
     <p-step>
       <title><![CDATA[VM Configuration]]></title>
       <p-param name="vmName">
-        <desc><![CDATA[Virtual Machine Name]]></desc>
+        <desc><![CDATA[VM Name]]></desc>
         <p-qual kind="static" name="mandatory" type="boolean"><![CDATA[true]]></p-qual>
       </p-param>
       <p-param name="environment">
@@ -250,17 +82,175 @@ System.log("Day 2 operations supported: start, stop, reconfigure");
         <p-qual kind="static" name="minNumberValue" type="Number"><![CDATA[1.0]]></p-qual>
         <p-qual kind="static" name="maxNumberValue" type="Number"><![CDATA[256.0]]></p-qual>
       </p-param>
-    </p-step>
-    <p-step>
-      <title><![CDATA[Ownership and Tracking]]></title>
       <p-param name="ownerEmail">
-        <desc><![CDATA[Owner Email Address]]></desc>
+        <desc><![CDATA[Owner Email]]></desc>
         <p-qual kind="static" name="mandatory" type="boolean"><![CDATA[true]]></p-qual>
       </p-param>
       <p-param name="costCenter">
-        <desc><![CDATA[Cost Center (Optional)]]></desc>
+        <desc><![CDATA[Cost Center (optional)]]></desc>
         <p-qual kind="static" name="mandatory" type="boolean"><![CDATA[false]]></p-qual>
       </p-param>
     </p-step>
   </presentation>
+  
+  <!-- Workflow Logic -->
+  <workflow-item name="item0" type="end" end-mode="0">
+    <position x="784.5" y="45.40909090909091"/>
+  </workflow-item>
+  
+  <workflow-item name="item1" out-name="item2" type="task">
+    <display-name><![CDATA[Determine Environment Profile]]></display-name>
+    <script encoded="false"><![CDATA[
+      // Determine network and storage profiles based on environment
+      System.log("Determining profiles for environment: " + environment);
+      
+      if (environment === "prod") {
+          networkProfile = "prod-network";
+          storageProfile = "storage-gold";
+          requiresApproval = true;
+          System.log("Production environment - approval required");
+      } else {
+          networkProfile = "dev-network";
+          storageProfile = "storage-standard";
+          requiresApproval = false;
+          System.log("Development environment - no approval required");
+      }
+      
+      System.log("Network Profile: " + networkProfile);
+      System.log("Storage Profile: " + storageProfile);
+    ]]></script>
+    <in-binding>
+      <bind name="environment" type="string" export-name="environment"/>
+    </in-binding>
+    <out-binding>
+      <bind name="networkProfile" type="string" export-name="networkProfile"/>
+      <bind name="storageProfile" type="string" export-name="storageProfile"/>
+      <bind name="requiresApproval" type="boolean" export-name="requiresApproval"/>
+    </out-binding>
+    <position x="204.5" y="55.40909090909091"/>
+  </workflow-item>
+  
+  <workflow-item name="item2" out-name="item3" alt-out-name="item4" type="decision">
+    <display-name><![CDATA[Approval Required?]]></display-name>
+    <script encoded="false"><![CDATA[
+      return requiresApproval;
+    ]]></script>
+    <in-binding>
+      <bind name="requiresApproval" type="boolean" export-name="requiresApproval"/>
+    </in-binding>
+    <position x="344.5" y="45.40909090909091"/>
+  </workflow-item>
+  
+  <workflow-item name="item3" out-name="item5" type="task" interaction="l">
+    <display-name><![CDATA[Request Approval]]></display-name>
+    <script encoded="false"><![CDATA[
+      System.log("=== APPROVAL REQUEST ===");
+      System.log("VM Name: " + vmName);
+      System.log("Environment: " + environment);
+      System.log("Resources: " + cpuCount + " vCPU, " + memoryGB + "GB RAM");
+      System.log("Owner: " + ownerEmail);
+      System.log("========================");
+      
+      // In real workflow, this would integrate with approval system
+      // For demo, we simulate approval
+      approvalStatus = "APPROVED";
+      System.log("Approval granted for production VM: " + vmName);
+    ]]></script>
+    <in-binding>
+      <bind name="vmName" type="string" export-name="vmName"/>
+      <bind name="environment" type="string" export-name="environment"/>
+      <bind name="cpuCount" type="number" export-name="cpuCount"/>
+      <bind name="memoryGB" type="number" export-name="memoryGB"/>
+      <bind name="ownerEmail" type="string" export-name="ownerEmail"/>
+    </in-binding>
+    <out-binding>
+      <bind name="approvalStatus" type="string" export-name="approvalStatus"/>
+    </out-binding>
+    <position x="344.5" y="109.40909090909091"/>
+  </workflow-item>
+  
+  <workflow-item name="item4" out-name="item5" type="task">
+    <display-name><![CDATA[Skip Approval]]></display-name>
+    <script encoded="false"><![CDATA[
+      System.log("Development environment - no approval required");
+      approvalStatus = "NOT_REQUIRED";
+    ]]></script>
+    <out-binding>
+      <bind name="approvalStatus" type="string" export-name="approvalStatus"/>
+    </out-binding>
+    <position x="484.5" y="45.40909090909091"/>
+  </workflow-item>
+  
+  <workflow-item name="item5" out-name="item6" type="task">
+    <display-name><![CDATA[Provision Virtual Machine]]></display-name>
+    <script encoded="false"><![CDATA[
+      System.log("=== Provisioning VM ===");
+      System.log("VM Name: " + vmName);
+      System.log("Environment: " + environment);
+      System.log("CPU: " + cpuCount);
+      System.log("Memory: " + memoryGB + " GB");
+      System.log("Network: " + networkProfile);
+      System.log("Storage: " + storageProfile);
+      System.log("Owner: " + ownerEmail);
+      
+      // Simulate VM creation
+      // In real workflow, this would call vCenter API
+      vmId = "vm-" + Math.floor(Math.random() * 10000);
+      
+      System.log("VM created with ID: " + vmId);
+      provisioningStatus = "SUCCESS";
+    ]]></script>
+    <in-binding>
+      <bind name="vmName" type="string" export-name="vmName"/>
+      <bind name="environment" type="string" export-name="environment"/>
+      <bind name="cpuCount" type="number" export-name="cpuCount"/>
+      <bind name="memoryGB" type="number" export-name="memoryGB"/>
+      <bind name="networkProfile" type="string" export-name="networkProfile"/>
+      <bind name="storageProfile" type="string" export-name="storageProfile"/>
+      <bind name="ownerEmail" type="string" export-name="ownerEmail"/>
+    </in-binding>
+    <out-binding>
+      <bind name="vmId" type="string" export-name="vmId"/>
+      <bind name="provisioningStatus" type="string" export-name="provisioningStatus"/>
+    </out-binding>
+    <position x="564.5" y="55.40909090909091"/>
+  </workflow-item>
+  
+  <workflow-item name="item6" out-name="item0" type="task">
+    <display-name><![CDATA[Apply Metadata Tags]]></display-name>
+    <script encoded="false"><![CDATA[
+      System.log("Applying metadata tags to VM: " + vmId);
+      
+      // Tag the VM with metadata for governance
+      var tags = {
+          "env": environment,
+          "owner": ownerEmail,
+          "managed-by": "ops-translate",
+          "provisioned-date": new Date().toISOString().split('T')[0]
+      };
+      
+      if (costCenter && costCenter !== "") {
+          tags["costCenter"] = costCenter;
+      }
+      
+      // Apply tags (simulated)
+      for (var key in tags) {
+          System.log("  Tag: " + key + " = " + tags[key]);
+          // Real workflow would call: Server.tagVM(vmId, key, tags[key]);
+      }
+      
+      System.log("=== Provisioning Complete ===");
+      System.log("VM ID: " + vmId);
+      System.log("Status: " + provisioningStatus);
+      System.log("============================");
+    ]]></script>
+    <in-binding>
+      <bind name="vmId" type="string" export-name="vmId"/>
+      <bind name="environment" type="string" export-name="environment"/>
+      <bind name="ownerEmail" type="string" export-name="ownerEmail"/>
+      <bind name="costCenter" type="string" export-name="costCenter"/>
+    </in-binding>
+    <position x="684.5" y="55.40909090909091"/>
+  </workflow-item>
+  
 </workflow>

@@ -55,11 +55,18 @@ dmypy.json
 # Workspace directories (user data)
 demo/
 workspace/
-*/input/
-*/intent/
-*/mapping/
-*/output/
-*/runs/
+# Only ignore workspace dirs, not source code dirs
+/*/input/
+/*/intent/
+/*/mapping/
+/*/output/
+/*/runs/
+# Don't ignore source code directories
+!ops_translate/intent/
+!ops_translate/input/
+!ops_translate/mapping/
+!ops_translate/output/
+!ops_translate/generate/
 
 # Environment files
 .env
