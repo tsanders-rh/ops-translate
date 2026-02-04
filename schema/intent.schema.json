@@ -1,0 +1,283 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/tsanders-rh/ops-translate/schema/intent.schema.json",
+  "title": "Operational Intent Schema",
+  "description": "Normalized operational intent model for VMware to OpenShift Virtualization translation",
+  "type": "object",
+  "required": ["schema_version", "intent"],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version number"
+    },
+    "sources": {
+      "type": "array",
+      "description": "Source files that contributed to this intent",
+      "items": {
+        "type": "object",
+        "required": ["type", "file"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["powercli", "vrealize"],
+            "description": "Type of source automation"
+          },
+          "file": {
+            "type": "string",
+            "description": "Path to source file"
+          },
+          "sha256": {
+            "type": "string",
+            "description": "SHA256 hash of source file"
+          }
+        }
+      }
+    },
+    "intent": {
+      "type": "object",
+      "required": ["workflow_name", "workload_type"],
+      "properties": {
+        "workflow_name": {
+          "type": "string",
+          "description": "Name of the operational workflow"
+        },
+        "workload_type": {
+          "type": "string",
+          "enum": ["virtual_machine", "container", "mixed"],
+          "description": "Type of workload being provisioned"
+        },
+        "inputs": {
+          "type": "object",
+          "description": "Input parameters for the workflow",
+          "patternProperties": {
+            "^[a-zA-Z_][a-zA-Z0-9_]*$": {
+              "type": "object",
+              "required": ["type", "required"],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": ["string", "integer", "boolean", "enum", "array"],
+                  "description": "Data type of the parameter"
+                },
+                "required": {
+                  "type": "boolean",
+                  "description": "Whether this parameter is required"
+                },
+                "default": {
+                  "description": "Default value if not provided"
+                },
+                "min": {
+                  "type": "integer",
+                  "description": "Minimum value for integer types"
+                },
+                "max": {
+                  "type": "integer",
+                  "description": "Maximum value for integer types"
+                },
+                "values": {
+                  "type": "array",
+                  "description": "Allowed values for enum type",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Human-readable description"
+                }
+              }
+            }
+          }
+        },
+        "governance": {
+          "type": "object",
+          "description": "Governance and approval requirements",
+          "properties": {
+            "approval": {
+              "type": "object",
+              "properties": {
+                "required_when": {
+                  "type": "object",
+                  "description": "Conditions when approval is required",
+                  "patternProperties": {
+                    "^[a-zA-Z_][a-zA-Z0-9_]*$": {
+                      "oneOf": [
+                        {"type": "string"},
+                        {"type": "boolean"},
+                        {"type": "integer"}
+                      ]
+                    }
+                  }
+                },
+                "approvers": {
+                  "type": "array",
+                  "description": "List of approver groups or individuals",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "quotas": {
+              "type": "object",
+              "description": "Resource quotas and limits",
+              "properties": {
+                "max_cpu": {
+                  "type": "integer"
+                },
+                "max_memory_gb": {
+                  "type": "integer"
+                },
+                "max_storage_gb": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        },
+        "profiles": {
+          "type": "object",
+          "description": "Environment-specific profiles",
+          "patternProperties": {
+            "^[a-zA-Z_][a-zA-Z0-9_]*$": {
+              "type": "object",
+              "properties": {
+                "when": {
+                  "type": "object",
+                  "description": "Condition for this profile"
+                },
+                "value": {
+                  "description": "Value when condition is met"
+                }
+              }
+            }
+          },
+          "additionalProperties": {
+            "description": "Fallback values (e.g., network_else, storage_else)"
+          }
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Metadata and tagging",
+          "properties": {
+            "tags": {
+              "type": "array",
+              "description": "Tags to apply to resources",
+              "items": {
+                "type": "object",
+                "required": ["key"],
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "description": "Tag key name"
+                  },
+                  "value": {
+                    "type": "string",
+                    "description": "Static tag value"
+                  },
+                  "value_from": {
+                    "type": "string",
+                    "description": "Input parameter to source value from"
+                  },
+                  "optional": {
+                    "type": "boolean",
+                    "description": "Whether this tag is optional"
+                  }
+                }
+              }
+            },
+            "labels": {
+              "type": "object",
+              "description": "Static labels to apply",
+              "patternProperties": {
+                "^[a-zA-Z_][a-zA-Z0-9_.-]*$": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "day2_operations": {
+          "type": "object",
+          "description": "Supported day 2 operations",
+          "properties": {
+            "supported": {
+              "type": "array",
+              "description": "List of supported operations",
+              "items": {
+                "type": "string",
+                "enum": ["start", "stop", "restart", "reconfigure", "snapshot", "clone", "migrate", "resize"]
+              }
+            }
+          }
+        },
+        "compute": {
+          "type": "object",
+          "description": "Compute resource specifications",
+          "properties": {
+            "cpu_cores": {
+              "type": "integer"
+            },
+            "memory_gb": {
+              "type": "integer"
+            },
+            "disk_gb": {
+              "type": "integer"
+            }
+          }
+        },
+        "network": {
+          "type": "object",
+          "description": "Network configuration",
+          "properties": {
+            "interfaces": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "network": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": ["bridge", "masquerade", "sriov"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "storage": {
+          "type": "object",
+          "description": "Storage configuration",
+          "properties": {
+            "volumes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "size_gb": {
+                    "type": "integer"
+                  },
+                  "storage_class": {
+                    "type": "string"
+                  },
+                  "mount_path": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

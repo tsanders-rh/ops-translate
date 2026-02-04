@@ -1,0 +1,129 @@
+# PowerCLI Intent Extraction Prompt
+
+You are an expert in VMware PowerCLI automation and infrastructure-as-code migration. Your task is to analyze a PowerCLI script and extract the operational intent into a normalized YAML format.
+
+## Input
+You will be provided with a PowerCLI script that provisions or manages VMware virtual machines.
+
+## Task
+Extract the operational intent from the PowerCLI script and produce a YAML document that conforms to the Operational Intent Schema (v1).
+
+## Rules
+1. **Output YAML only** - No explanations, no markdown code fences, just valid YAML
+2. **Conform to schema** - Follow the intent.schema.json structure exactly
+3. **Extract parameters** - Identify all script parameters from the `param()` block
+4. **Detect branching** - Look for environment-specific logic (dev/prod, staging, etc.)
+5. **Identify governance** - Look for approval requirements, validation rules, quotas
+6. **Map resources** - Extract network, storage, compute specifications
+7. **Find metadata** - Identify tags, labels, custom attributes
+8. **Day 2 operations** - Infer what operations the script supports beyond provisioning
+9. **Document assumptions** - Add an `assumptions` section if you infer anything not explicitly stated
+
+## What to Look For
+
+### Parameters
+- `param()` block definitions
+- `[ValidateSet()]` attributes indicate enum types
+- `[int]`, `[string]`, `[bool]` indicate types
+- `[Parameter(Mandatory=$true)]` indicates required parameters
+
+### Environment Branching
+- `if ($Environment -eq "prod")` patterns
+- `ValidateSet("dev", "prod")` on parameters
+- Switch statements on environment values
+
+### Network/Storage Profiles
+- Variables like `$NetworkName`, `$DatastoreName`
+- Conditional selection based on environment
+- Hash tables or objects mapping environments to resources
+
+### Tags and Metadata
+- `New-TagAssignment` commands
+- Hash tables with tag key/value pairs
+- Custom attributes: `Set-Annotation`
+
+### Governance
+- Approval check patterns (less common in PowerCLI, but note if present)
+- Resource validation (CPU/memory limits)
+- Cost center or owner tracking
+
+## Example Input
+```powershell
+param(
+    [Parameter(Mandatory=$true)]
+    [string]$VMName,
+
+    [ValidateSet("dev","prod")]
+    [string]$Environment = "dev",
+
+    [int]$CPUCount = 2,
+    [int]$MemoryGB = 4
+)
+
+$Network = if ($Environment -eq "prod") { "prod-net" } else { "dev-net" }
+New-VM -Name $VMName -NumCpu $CPUCount -MemoryGB $MemoryGB -NetworkName $Network
+New-TagAssignment -Entity $VMName -Tag "env:$Environment"
+```
+
+## Example Output
+```yaml
+schema_version: 1
+sources:
+  - type: powercli
+    file: input/powercli/provision-vm.ps1
+
+intent:
+  workflow_name: provision_vm
+  workload_type: virtual_machine
+
+  inputs:
+    vm_name:
+      type: string
+      required: true
+      description: Name of the VM to provision
+    environment:
+      type: enum
+      values: [dev, prod]
+      required: true
+      default: dev
+      description: Target environment
+    cpu_count:
+      type: integer
+      required: false
+      default: 2
+      min: 1
+      max: 32
+      description: Number of CPU cores
+    memory_gb:
+      type: integer
+      required: false
+      default: 4
+      min: 1
+      max: 256
+      description: Memory in GB
+
+  profiles:
+    network:
+      when: { environment: prod }
+      value: prod-net
+    network_else: dev-net
+
+  metadata:
+    tags:
+      - key: env
+        value_from: environment
+
+  day2_operations:
+    supported: [start, stop]
+
+assumptions:
+  - Inferred day2_operations from New-VM command (start/stop are standard)
+  - No explicit approval workflow detected
+  - CPU and memory limits set based on common VMware constraints
+```
+
+## Now Process This Script
+
+{script_content}
+
+Remember: Output valid YAML only. No markdown, no explanations.

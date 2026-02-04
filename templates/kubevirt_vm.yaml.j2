@@ -1,0 +1,61 @@
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: {{ '{{ vm_name }}' }}
+  namespace: {{ profile.default_namespace }}
+  labels:
+    app: {{ '{{ vm_name }}' }}
+{%- if intent.metadata and intent.metadata.labels %}
+{%- for key, value in intent.metadata.labels.items() %}
+    {{ key }}: "{{ value }}"
+{%- endfor %}
+{%- endif %}
+  annotations:
+    description: "VM provisioned via ops-translate"
+spec:
+  running: false
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: {{ '{{ vm_name }}' }}
+{%- if intent.metadata and intent.metadata.tags %}
+{%- for tag in intent.metadata.tags %}
+        {{ tag.key }}: {{ '"{{ ' }}{{ tag.value_from }}{{ ' }}"' if tag.value_from else '"' + tag.value + '"' }}
+{%- endfor %}
+{%- endif %}
+    spec:
+      domain:
+        cpu:
+          cores: {{ '{{ cpu | default(' }}{{ intent.compute.cpu_cores if intent.compute and intent.compute.cpu_cores else 2 }}{{ ') }}' }}
+        resources:
+          requests:
+            memory: {{ '{{ memory_gb | default(' }}{{ intent.compute.memory_gb if intent.compute and intent.compute.memory_gb else 4 }}{{ ') }}' }}Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          persistentVolumeClaim:
+            claimName: {{ '{{ vm_name }}' }}-root
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ '{{ vm_name }}' }}-root
+  namespace: {{ profile.default_namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ '{{ disk_gb | default(' }}{{ intent.compute.disk_gb if intent.compute and intent.compute.disk_gb else 50 }}{{ ') }}' }}Gi
+  storageClassName: {{ profile.default_storage_class }}

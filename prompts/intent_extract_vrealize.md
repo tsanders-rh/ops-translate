@@ -1,0 +1,139 @@
+# vRealize Orchestrator Intent Extraction Prompt
+
+You are an expert in VMware vRealize Orchestrator (vRO) workflows and infrastructure automation. Your task is to analyze a vRO workflow export (XML format) and extract the operational intent into a normalized YAML format.
+
+## Input
+You will be provided with a vRealize Orchestrator workflow export in XML format.
+
+## Task
+Extract the operational intent from the vRO workflow and produce a YAML document that conforms to the Operational Intent Schema (v1).
+
+## Rules
+1. **Output YAML only** - No explanations, no markdown code fences, just valid YAML
+2. **Conform to schema** - Follow the intent.schema.json structure exactly
+3. **Extract inputs/outputs** - Parse `<inputs>` and `<outputs>` elements
+4. **Detect decision points** - Look for `<decision>` elements with branching logic
+5. **Identify governance** - Look for approval tasks, user interaction elements
+6. **Map resources** - Extract resource allocation patterns from scriptable tasks
+7. **Find metadata** - Identify custom properties, tags, attributes
+8. **Day 2 operations** - Infer supported operations from workflow purpose
+9. **Document assumptions** - Add an `assumptions` section for inferred information
+
+## What to Look For
+
+### Inputs and Outputs
+- `<in-binding>` elements define inputs
+- `<type>` indicates data type (string, number, boolean, etc.)
+- Look for descriptions in `<description>` tags
+
+### Decision Points
+- `<decision>` elements with conditional expressions
+- Common pattern: environment-based branching
+- Look for expressions like `input.environment == "prod"`
+
+### Approval Workflows
+- `<item>` elements with `type="task"` often indicate approval steps
+- Look for user interaction elements
+- Check for workflow names containing "approval" or "review"
+
+### Resource Allocation
+- Scriptable task elements often contain JavaScript/Python
+- Look for variables like `cpuCount`, `memoryMB`, `networkName`
+- Check for custom property assignments
+
+### Tags and Metadata
+- Custom properties often stored as key-value pairs
+- Look for `customProperties` or similar patterns
+- Check for tagging logic in scriptable tasks
+
+### Environment Profiles
+- Decision elements that branch on environment
+- Different resource pools, networks, or storage per environment
+- Look for dev/prod/staging distinctions
+
+## Example Input (simplified)
+```xml
+<workflow>
+  <display-name>Provision VM with Governance</display-name>
+  <input>
+    <param name="vmName" type="string"/>
+    <param name="environment" type="string"/>
+    <param name="cpuCount" type="number"/>
+    <param name="memoryGB" type="number"/>
+  </input>
+  <workflow-item name="approvalCheck" type="decision">
+    <expression>environment == "prod"</expression>
+  </workflow-item>
+  <workflow-item name="setNetwork" type="scriptable-task">
+    <script>
+      network = (environment == "prod") ? "prod-network" : "dev-network";
+    </script>
+  </workflow-item>
+</workflow>
+```
+
+## Example Output
+```yaml
+schema_version: 1
+sources:
+  - type: vrealize
+    file: input/vrealize/provision.workflow.xml
+
+intent:
+  workflow_name: provision_vm_with_governance
+  workload_type: virtual_machine
+
+  inputs:
+    vm_name:
+      type: string
+      required: true
+      description: Name of the VM
+    environment:
+      type: enum
+      values: [dev, prod]
+      required: true
+      description: Target environment
+    cpu_count:
+      type: integer
+      required: true
+      min: 1
+      max: 32
+      description: Number of CPUs
+    memory_gb:
+      type: integer
+      required: true
+      min: 1
+      max: 256
+      description: Memory in GB
+
+  governance:
+    approval:
+      required_when:
+        environment: prod
+
+  profiles:
+    network:
+      when: { environment: prod }
+      value: prod-network
+    network_else: dev-network
+
+  day2_operations:
+    supported: [start, stop, reconfigure]
+
+assumptions:
+  - Approval workflow inferred from decision element checking environment
+  - Day 2 operations assumed based on standard vRO VM lifecycle patterns
+  - Network profile extracted from scriptable task logic
+```
+
+## Important Notes
+- vRO workflows often have complex nested logic - focus on extracting the core intent
+- Scriptable tasks may contain JavaScript or other languages - extract the operational meaning, not implementation
+- If the workflow contains sub-workflows, note them but focus on the top-level intent
+- Some information may be in comments or description fields - use these to clarify intent
+
+## Now Process This Workflow
+
+{workflow_content}
+
+Remember: Output valid YAML only. No markdown, no explanations.
