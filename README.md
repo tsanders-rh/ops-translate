@@ -75,14 +75,69 @@ output/
 
 ## Configuration
 
-Create `ops-translate.yaml` in your workspace:
+The `ops-translate init` command automatically creates `ops-translate.yaml` with default settings. You can customize it for your environment.
+
+### LLM Provider Setup
+
+ops-translate supports three LLM providers for intent extraction:
+
+#### Option 1: Anthropic Claude (Recommended)
+
+1. **Get an API key** from [https://console.anthropic.com](https://console.anthropic.com)
+2. **Set the environment variable**:
+   ```bash
+   export OPS_TRANSLATE_LLM_API_KEY=sk-ant-your-key-here
+   ```
+3. **Configure in `ops-translate.yaml`**:
+   ```yaml
+   llm:
+     provider: anthropic
+     model: claude-sonnet-4-5        # Recommended for cost/quality balance
+     # model: claude-opus-4           # Use for complex workflows
+     api_key_env: OPS_TRANSLATE_LLM_API_KEY
+   ```
+
+**Supported models**: `claude-sonnet-4-5`, `claude-opus-4`, `claude-sonnet-3-5`
+
+#### Option 2: OpenAI
+
+1. **Get an API key** from [https://platform.openai.com](https://platform.openai.com)
+2. **Set the environment variable**:
+   ```bash
+   export OPS_TRANSLATE_LLM_API_KEY=sk-your-openai-key-here
+   ```
+3. **Configure in `ops-translate.yaml`**:
+   ```yaml
+   llm:
+     provider: openai
+     model: gpt-4-turbo-preview
+     api_key_env: OPS_TRANSLATE_LLM_API_KEY
+   ```
+
+**Supported models**: `gpt-4-turbo-preview`, `gpt-4`, `gpt-3.5-turbo`
+
+#### Option 3: Mock Provider (Testing)
+
+Use the mock provider to test without API calls or costs:
 
 ```yaml
 llm:
-  provider: anthropic              # or openai, mock
-  model: claude-sonnet-4-5
-  api_key_env: OPS_TRANSLATE_LLM_API_KEY
+  provider: mock
+  model: mock-model
+```
 
+The mock provider returns pre-defined intent YAML based on file type. Perfect for:
+- Testing the CLI workflow
+- CI/CD pipelines
+- Demos without API dependencies
+
+**Note**: If no API key is found, ops-translate automatically falls back to the mock provider with a warning.
+
+### Environment Profiles
+
+Configure target OpenShift environments:
+
+```yaml
 profiles:
   lab:
     default_namespace: virt-lab
@@ -93,6 +148,12 @@ profiles:
     default_namespace: virt-prod
     default_network: prod-network
     default_storage_class: ceph-rbd
+```
+
+Use profiles with the `generate` command:
+```bash
+ops-translate generate --profile lab   # Uses lab settings
+ops-translate generate --profile prod  # Uses prod settings
 ```
 
 ## Non-Goals (v1)

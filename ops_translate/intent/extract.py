@@ -3,19 +3,33 @@ Intent extraction from source files using LLM.
 """
 from pathlib import Path
 from ops_translate.workspace import Workspace
+from ops_translate.llm import get_provider
+from rich.console import Console
+import re
+
+console = Console()
+
+# Get project root to find prompts
+PROJECT_ROOT = Path(__file__).parent.parent.parent
 
 
 def extract_all(workspace: Workspace):
     """
-    Extract intent from all imported source files.
+    Extract intent from all imported source files using LLM.
 
     Outputs:
     - intent/powercli.intent.yaml (if PowerCLI files present)
     - intent/vrealize.intent.yaml (if vRealize files present)
     - intent/assumptions.md
     """
-    # TODO: Implement LLM-based intent extraction
-    # For now, create placeholder files
+    # Load config and initialize LLM provider
+    config = workspace.load_config()
+    llm = get_provider(config)
+
+    if not llm.is_available():
+        console.print("[yellow]Warning: LLM not available. Using mock provider.[/yellow]")
+        from ops_translate.llm.mock import MockProvider
+        llm = MockProvider(config.get('llm', {}))
 
     assumptions = []
 
@@ -23,30 +37,165 @@ def extract_all(workspace: Workspace):
     powercli_dir = workspace.root / "input/powercli"
     if powercli_dir.exists():
         ps_files = list(powercli_dir.glob("*.ps1"))
-        if ps_files:
-            intent_content = create_placeholder_intent("powercli", ps_files[0].name)
-            output_file = workspace.root / "intent/powercli.intent.yaml"
-            output_file.write_text(intent_content)
-            assumptions.append(f"- PowerCLI: Created placeholder intent from {ps_files[0].name}")
+        for ps_file in ps_files:
+            console.print(f"  Extracting intent from: {ps_file.name}")
+            intent_yaml, file_assumptions = extract_powercli_intent(llm, ps_file)
+
+            output_file = workspace.root / "intent" / f"{ps_file.stem}.intent.yaml"
+            output_file.write_text(intent_yaml)
+
+            assumptions.append(f"## {ps_file.name}\n")
+            assumptions.extend([f"- {a}" for a in file_assumptions])
+            assumptions.append("")
 
     # Process vRealize files
     vrealize_dir = workspace.root / "input/vrealize"
     if vrealize_dir.exists():
         xml_files = list(vrealize_dir.glob("*.xml"))
-        if xml_files:
-            intent_content = create_placeholder_intent("vrealize", xml_files[0].name)
-            output_file = workspace.root / "intent/vrealize.intent.yaml"
-            output_file.write_text(intent_content)
-            assumptions.append(f"- vRealize: Created placeholder intent from {xml_files[0].name}")
+        for xml_file in xml_files:
+            console.print(f"  Extracting intent from: {xml_file.name}")
+            intent_yaml, file_assumptions = extract_vrealize_intent(llm, xml_file)
+
+            output_file = workspace.root / "intent" / f"{xml_file.stem}.intent.yaml"
+            output_file.write_text(intent_yaml)
+
+            assumptions.append(f"## {xml_file.name}\n")
+            assumptions.extend([f"- {a}" for a in file_assumptions])
+            assumptions.append("")
 
     # Write assumptions
     assumptions_file = workspace.root / "intent/assumptions.md"
-    assumptions_content = "# Assumptions\n\n" + "\n".join(assumptions)
+    assumptions_content = "# Assumptions and Inferences\n\n" + "\n".join(assumptions)
     assumptions_file.write_text(assumptions_content)
 
 
+def extract_powercli_intent(llm, ps_file: Path) -> tuple[str, list]:
+    """
+    Extract intent from PowerCLI script using LLM.
+
+    Args:
+        llm: LLM provider instance
+        ps_file: Path to PowerCLI script
+
+    Returns:
+        tuple: (intent_yaml, assumptions_list)
+    """
+    # Load prompt template
+    prompt_file = PROJECT_ROOT / "prompts/intent_extract_powercli.md"
+    prompt_template = prompt_file.read_text()
+
+    # Load PowerCLI script content
+    script_content = ps_file.read_text()
+
+    # Fill in prompt template
+    prompt = prompt_template.replace("{script_content}", script_content)
+
+    # Call LLM
+    try:
+        response = llm.generate(prompt, max_tokens=4096, temperature=0.0)
+
+        # Clean up response (remove markdown fences if present)
+        yaml_content = clean_llm_response(response)
+
+        # Extract assumptions from YAML if present
+        assumptions = extract_assumptions_from_yaml(yaml_content)
+
+        return yaml_content, assumptions
+
+    except Exception as e:
+        console.print(f"[red]Error calling LLM: {e}[/red]")
+        # Fallback to placeholder
+        return create_placeholder_intent("powercli", ps_file.name), [
+            "LLM extraction failed, using placeholder"
+        ]
+
+
+def extract_vrealize_intent(llm, xml_file: Path) -> tuple[str, list]:
+    """
+    Extract intent from vRealize workflow using LLM.
+
+    Args:
+        llm: LLM provider instance
+        xml_file: Path to vRealize workflow XML
+
+    Returns:
+        tuple: (intent_yaml, assumptions_list)
+    """
+    # Load prompt template
+    prompt_file = PROJECT_ROOT / "prompts/intent_extract_vrealize.md"
+    prompt_template = prompt_file.read_text()
+
+    # Load workflow XML content
+    workflow_content = xml_file.read_text()
+
+    # Fill in prompt template
+    prompt = prompt_template.replace("{workflow_content}", workflow_content)
+
+    # Call LLM
+    try:
+        response = llm.generate(prompt, max_tokens=4096, temperature=0.0)
+
+        # Clean up response
+        yaml_content = clean_llm_response(response)
+
+        # Extract assumptions
+        assumptions = extract_assumptions_from_yaml(yaml_content)
+
+        return yaml_content, assumptions
+
+    except Exception as e:
+        console.print(f"[red]Error calling LLM: {e}[/red]")
+        # Fallback to placeholder
+        return create_placeholder_intent("vrealize", xml_file.name), [
+            "LLM extraction failed, using placeholder"
+        ]
+
+
+def clean_llm_response(response: str) -> str:
+    """
+    Clean up LLM response to extract pure YAML.
+
+    Removes markdown code fences, extra whitespace, etc.
+    """
+    # Remove markdown code fences
+    response = re.sub(r'```ya?ml\n', '', response)
+    response = re.sub(r'```\n?', '', response)
+
+    # Strip leading/trailing whitespace
+    response = response.strip()
+
+    return response
+
+
+def extract_assumptions_from_yaml(yaml_content: str) -> list:
+    """
+    Extract assumptions section from YAML content if present.
+
+    Returns list of assumption strings.
+    """
+    assumptions = []
+
+    # Look for assumptions section in YAML
+    lines = yaml_content.split('\n')
+    in_assumptions = False
+
+    for line in lines:
+        if line.strip() == 'assumptions:':
+            in_assumptions = True
+            continue
+
+        if in_assumptions:
+            if line and not line.startswith(' ') and not line.startswith('-'):
+                # End of assumptions section
+                break
+            if line.strip().startswith('- '):
+                assumptions.append(line.strip()[2:])
+
+    return assumptions if assumptions else ["Intent extracted via LLM"]
+
+
 def create_placeholder_intent(source_type: str, filename: str) -> str:
-    """Create a placeholder intent YAML."""
+    """Create a placeholder intent YAML (fallback)."""
     return f"""schema_version: 1
 sources:
   - type: {source_type}
@@ -64,36 +213,9 @@ intent:
       type: enum
       values: [dev, prod]
       required: true
-    cpu:
-      type: integer
-      required: true
-      min: 1
-      max: 32
-    memory_gb:
-      type: integer
-      required: true
-      min: 1
-      max: 256
 
   governance:
     approval:
       required_when:
         environment: prod
-
-  profiles:
-    network:
-      when: {{ environment: prod }}
-      value: net-prod
-    network_else: net-dev
-    storage:
-      when: {{ environment: prod }}
-      value: storage-gold
-    storage_else: storage-standard
-
-  metadata:
-    tags:
-      - key: env
-        value_from: environment
-      - key: managed_by
-        value: ops-translate
 """
