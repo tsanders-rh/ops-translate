@@ -44,6 +44,16 @@ def extract_all(workspace: Workspace):
             output_file = workspace.root / "intent" / f"{ps_file.stem}.intent.yaml"
             output_file.write_text(intent_yaml)
 
+            # Validate extracted intent
+            from ops_translate.intent.validate import validate_intent
+            is_valid, errors = validate_intent(output_file)
+            if not is_valid:
+                console.print(f"[yellow]  Warning: Intent validation failed for {output_file.name}:[/yellow]")
+                for error in errors:
+                    console.print(f"[yellow]    {error}[/yellow]")
+            else:
+                console.print(f"[dim]  ✓ Schema validation passed[/dim]")
+
             assumptions.append(f"## {ps_file.name}\n")
             assumptions.extend([f"- {a}" for a in file_assumptions])
             assumptions.append("")
@@ -58,6 +68,16 @@ def extract_all(workspace: Workspace):
 
             output_file = workspace.root / "intent" / f"{xml_file.stem}.intent.yaml"
             output_file.write_text(intent_yaml)
+
+            # Validate extracted intent
+            from ops_translate.intent.validate import validate_intent
+            is_valid, errors = validate_intent(output_file)
+            if not is_valid:
+                console.print(f"[yellow]  Warning: Intent validation failed for {output_file.name}:[/yellow]")
+                for error in errors:
+                    console.print(f"[yellow]    {error}[/yellow]")
+            else:
+                console.print(f"[dim]  ✓ Schema validation passed[/dim]")
 
             assumptions.append(f"## {xml_file.name}\n")
             assumptions.extend([f"- {a}" for a in file_assumptions])

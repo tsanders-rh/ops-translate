@@ -40,6 +40,20 @@ def merge_intents(workspace: Workspace) -> bool:
     with open(output_file, 'w') as f:
         yaml.dump(merged_intent, f, default_flow_style=False, sort_keys=False)
 
+    # Validate merged intent against schema
+    from ops_translate.intent.validate import validate_intent
+    from rich.console import Console
+    console = Console()
+
+    is_valid, errors = validate_intent(output_file)
+    if not is_valid:
+        console.print(f"[yellow]Warning: Merged intent validation failed:[/yellow]")
+        for error in errors:
+            console.print(f"[yellow]  {error}[/yellow]")
+        console.print(f"[yellow]Merged intent written but may have schema issues.[/yellow]")
+    else:
+        console.print(f"[dim]✓ Merged intent schema validation passed[/dim]")
+
     # Check for conflicts (simplified for now)
     conflicts = detect_conflicts(intent_files)
 
