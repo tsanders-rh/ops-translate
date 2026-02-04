@@ -64,9 +64,7 @@ def import_cmd(
     # Ensure we're in a workspace
     workspace = Workspace(Path.cwd())
     if not workspace.config_file.exists():
-        console.print(
-            "[red]Error: Not in a workspace. Run 'ops-translate init <dir>' first.[/red]"
-        )
+        console.print("[red]Error: Not in a workspace. Run 'ops-translate init <dir>' first.[/red]")
         raise typer.Exit(1)
 
     # Copy file to input directory

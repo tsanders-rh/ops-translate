@@ -2,7 +2,6 @@
 Mock LLM provider for testing (no API calls).
 """
 
-
 from ops_translate.llm.base import LLMProvider
 
 

@@ -3,8 +3,6 @@ Unit tests for workspace functionality.
 """
 
 
-
-
 def test_workspace_initialization(temp_workspace):
     """Test workspace is initialized with correct structure"""
     workspace = temp_workspace
