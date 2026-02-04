@@ -289,13 +289,10 @@ def generate(
     mode = "template-based" if no_ai else "AI-assisted"
     console.print(f"[bold blue]Generating artifacts ({mode}):[/bold blue] profile={profile}")
 
-    from ops_translate.generate import ansible, kubevirt
+    from ops_translate.generate import generate_all
 
-    # Generate KubeVirt VM manifest
-    kubevirt.generate(workspace, profile, use_ai=not no_ai)
-
-    # Generate Ansible playbook and role
-    ansible.generate(workspace, profile, use_ai=not no_ai)
+    # Generate all artifacts
+    generate_all(workspace, profile, use_ai=not no_ai)
 
     console.print(f"[green]✓ KubeVirt manifest: output/kubevirt/vm.yaml[/green]")
     console.print(f"[green]✓ Ansible playbook: output/ansible/site.yml[/green]")
