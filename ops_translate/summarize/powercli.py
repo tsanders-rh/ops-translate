@@ -5,6 +5,7 @@ Parses PowerCLI scripts to detect parameters, environment branching, tags, etc.
 
 import re
 from pathlib import Path
+from typing import Any
 
 
 def summarize(ps_file: Path) -> str:
@@ -43,7 +44,7 @@ def summarize(ps_file: Path) -> str:
 
 def extract_parameters(content: str) -> list:
     """Extract param() block parameters."""
-    params = []
+    params: list[dict[str, Any]] = []
 
     # Simple pattern matching for param blocks
     param_block_match = re.search(r"param\s*\((.*?)\)", content, re.DOTALL | re.IGNORECASE)

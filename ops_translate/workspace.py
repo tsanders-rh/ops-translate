@@ -61,4 +61,7 @@ class Workspace:
             raise FileNotFoundError(f"Config file not found: {self.config_file}")
 
         with open(self.config_file) as f:
-            return yaml.safe_load(f)
+            config = yaml.safe_load(f)
+            if not isinstance(config, dict):
+                raise ValueError(f"Invalid config file: expected dict, got {type(config)}")
+            return config

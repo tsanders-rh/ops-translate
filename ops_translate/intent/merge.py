@@ -4,8 +4,11 @@ Merges per-source intent files into a single intent.yaml.
 """
 
 from pathlib import Path
-from ops_translate.workspace import Workspace
+from typing import Any
+
 import yaml
+
+from ops_translate.workspace import Workspace
 
 
 def merge_intents(workspace: Workspace) -> bool:
@@ -66,7 +69,7 @@ def merge_intents(workspace: Workspace) -> bool:
     return bool(conflicts)
 
 
-def smart_merge(intents: list) -> dict:
+def smart_merge(intents: list[dict[str, Any]]) -> dict[str, Any]:
     """
     Intelligently merge multiple intent data structures.
 
@@ -85,7 +88,7 @@ def smart_merge(intents: list) -> dict:
     Returns:
         dict: Merged intent data
     """
-    merged = {"schema_version": 1, "intent": {}}
+    merged: dict[str, Any] = {"schema_version": 1, "intent": {}}
 
     # Merge workflow_name - use first non-null
     workflow_names = [
@@ -150,7 +153,7 @@ def smart_merge(intents: list) -> dict:
     return merged
 
 
-def _merge_inputs(intents: list) -> dict:
+def _merge_inputs(intents: list[dict[str, Any]]) -> dict[str, Any]:
     """Merge input parameters across intents."""
     all_inputs = {}
 
@@ -197,9 +200,9 @@ def _merge_inputs(intents: list) -> dict:
     return all_inputs
 
 
-def _merge_governance(intents: list) -> dict:
+def _merge_governance(intents: list[dict[str, Any]]) -> dict[str, Any]:
     """Merge governance policies - use most restrictive."""
-    governance = {}
+    governance: dict[str, Any] = {}
 
     # Merge approval policies
     all_approvals = [
@@ -209,7 +212,7 @@ def _merge_governance(intents: list) -> dict:
     ]
 
     if all_approvals:
-        approval = {}
+        approval: dict[str, Any] = {}
 
         # Combine all required_when conditions (approval required if ANY condition matches)
         required_when_conditions = {}
@@ -251,9 +254,9 @@ def _merge_governance(intents: list) -> dict:
     return governance
 
 
-def _merge_compute(intents: list) -> dict:
+def _merge_compute(intents: list[dict[str, Any]]) -> dict[str, Any]:
     """Merge compute resources - use maximum values."""
-    compute = {}
+    compute: dict[str, Any] = {}
 
     all_compute = [
         i["data"].get("intent", {}).get("compute", {})
@@ -270,9 +273,9 @@ def _merge_compute(intents: list) -> dict:
     return compute
 
 
-def _merge_profiles(intents: list) -> dict:
+def _merge_profiles(intents: list[dict[str, Any]]) -> dict[str, Any]:
     """Merge environment profiles - combine all."""
-    profiles = {}
+    profiles: dict[str, Any] = {}
 
     for intent in intents:
         intent_profiles = intent["data"].get("intent", {}).get("profiles", {})
@@ -284,9 +287,9 @@ def _merge_profiles(intents: list) -> dict:
     return profiles
 
 
-def _merge_metadata(intents: list) -> dict:
+def _merge_metadata(intents: list[dict[str, Any]]) -> dict[str, Any]:
     """Merge metadata - union of tags and labels."""
-    metadata = {}
+    metadata: dict[str, Any] = {}
 
     # Merge tags - combine unique tags
     all_tags = []
@@ -315,9 +318,9 @@ def _merge_metadata(intents: list) -> dict:
     return metadata
 
 
-def _merge_network(intents: list) -> dict:
+def _merge_network(intents: list[dict[str, Any]]) -> dict[str, Any]:
     """Merge network configuration - combine interfaces."""
-    network = {}
+    network: dict[str, Any] = {}
 
     all_interfaces = []
     seen_names = set()
@@ -336,9 +339,9 @@ def _merge_network(intents: list) -> dict:
     return network
 
 
-def _merge_storage(intents: list) -> dict:
+def _merge_storage(intents: list[dict[str, Any]]) -> dict[str, Any]:
     """Merge storage configuration - combine volumes."""
-    storage = {}
+    storage: dict[str, Any] = {}
 
     all_volumes = []
     seen_names = set()
@@ -357,9 +360,9 @@ def _merge_storage(intents: list) -> dict:
     return storage
 
 
-def _merge_day2_operations(intents: list) -> dict:
+def _merge_day2_operations(intents: list[dict[str, Any]]) -> dict[str, Any]:
     """Merge day2 operations - union of supported operations."""
-    day2_ops = {}
+    day2_ops: dict[str, Any] = {}
 
     all_ops = set()
     for intent in intents:
@@ -372,14 +375,14 @@ def _merge_day2_operations(intents: list) -> dict:
     return day2_ops
 
 
-def detect_conflicts(intent_files: list) -> list:
+def detect_conflicts(intent_files: list[Path]) -> list[str]:
     """
     Detect conflicts between intent files.
 
     Returns:
         list: List of conflict descriptions.
     """
-    conflicts = []
+    conflicts: list[str] = []
 
     if len(intent_files) < 2:
         return conflicts
@@ -391,7 +394,7 @@ def detect_conflicts(intent_files: list) -> list:
         intents.append({"file": intent_file.name, "data": intent_data})
 
     # Check workflow_name conflicts
-    workflow_names = {}
+    workflow_names: dict[str, list[str]] = {}
     for intent in intents:
         wf_name = intent["data"].get("intent", {}).get("workflow_name")
         if wf_name:
@@ -410,7 +413,7 @@ def detect_conflicts(intent_files: list) -> list:
         )
 
     # Check workload_type conflicts
-    workload_types = {}
+    workload_types: dict[str, list[str]] = {}
     for intent in intents:
         wl_type = intent["data"].get("intent", {}).get("workload_type")
         if wl_type:
@@ -451,13 +454,13 @@ def detect_conflicts(intent_files: list) -> list:
     return conflicts
 
 
-def _detect_input_conflicts(intents: list) -> list:
+def _detect_input_conflicts(intents: list[dict[str, Any]]) -> list[str]:
     """Detect conflicts in input parameters."""
     conflicts = []
     has_header = False
 
     # Collect all input parameters across intents
-    all_inputs = {}
+    all_inputs: dict[str, list[dict[str, Any]]] = {}
     for intent in intents:
         inputs = intent["data"].get("intent", {}).get("inputs", {})
         for param_name, param_spec in inputs.items():
@@ -514,7 +517,7 @@ def _detect_input_conflicts(intents: list) -> list:
     return conflicts
 
 
-def _detect_governance_conflicts(intents: list) -> list:
+def _detect_governance_conflicts(intents: list[dict[str, Any]]) -> list[str]:
     """Detect conflicts in governance policies."""
     conflicts = []
     has_header = False
@@ -530,7 +533,7 @@ def _detect_governance_conflicts(intents: list) -> list:
         # Check required_when conflicts
         required_when_specs = [spec for spec in approval_specs if "required_when" in spec["spec"]]
         if len(required_when_specs) > 1:
-            conditions = {}
+            conditions: dict[str, list[str]] = {}
             for spec in required_when_specs:
                 condition_str = str(spec["spec"]["required_when"])
                 if condition_str not in conditions:
@@ -550,7 +553,7 @@ def _detect_governance_conflicts(intents: list) -> list:
         # Check approvers conflicts
         approver_specs = [spec for spec in approval_specs if "approvers" in spec["spec"]]
         if len(approver_specs) > 1:
-            approver_lists = {}
+            approver_lists: dict[str, list[str]] = {}
             for spec in approver_specs:
                 approver_list = tuple(sorted(spec["spec"]["approvers"]))
                 approver_key = str(approver_list)
@@ -578,7 +581,7 @@ def _detect_governance_conflicts(intents: list) -> list:
     if len(quota_specs) > 1:
         # Check each quota field
         for quota_field in ["max_cpu", "max_memory_gb", "max_storage_gb"]:
-            values = {}
+            values: dict[Any, list[str]] = {}
             for spec in quota_specs:
                 if quota_field in spec["spec"]:
                     val = spec["spec"][quota_field]
@@ -604,7 +607,7 @@ def _detect_governance_conflicts(intents: list) -> list:
     return conflicts
 
 
-def _detect_compute_conflicts(intents: list) -> list:
+def _detect_compute_conflicts(intents: list[dict[str, Any]]) -> list[str]:
     """Detect conflicts in compute resource specifications."""
     conflicts = []
     has_header = False
@@ -617,7 +620,7 @@ def _detect_compute_conflicts(intents: list) -> list:
 
     if len(compute_specs) > 1:
         for field in ["cpu_cores", "memory_gb", "disk_gb"]:
-            values = {}
+            values: dict[Any, list[str]] = {}
             for spec in compute_specs:
                 if field in spec["spec"]:
                     val = spec["spec"][field]
@@ -643,13 +646,13 @@ def _detect_compute_conflicts(intents: list) -> list:
     return conflicts
 
 
-def _detect_profile_conflicts(intents: list) -> list:
+def _detect_profile_conflicts(intents: list[dict[str, Any]]) -> list[str]:
     """Detect conflicts in environment profiles."""
     conflicts = []
     has_header = False
 
     # Collect all profiles
-    all_profiles = {}
+    all_profiles: dict[str, list[dict[str, Any]]] = {}
     for intent in intents:
         profiles = intent["data"].get("intent", {}).get("profiles", {})
         for profile_name, profile_value in profiles.items():
