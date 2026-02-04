@@ -1,10 +1,11 @@
 """
 Ansible playbook and role generation.
 """
-from pathlib import Path
-from ops_translate.workspace import Workspace
-from ops_translate.util.files import write_text, ensure_dir
+
 import yaml
+
+from ops_translate.util.files import ensure_dir, write_text
+from ops_translate.workspace import Workspace
 
 
 def generate(workspace: Workspace, profile: str, use_ai: bool = False):
@@ -21,7 +22,7 @@ def generate(workspace: Workspace, profile: str, use_ai: bool = False):
     ensure_dir(output_dir)
 
     config = workspace.load_config()
-    profile_config = config['profiles'][profile]
+    profile_config = config["profiles"][profile]
 
     # Generate site.yml playbook
     playbook_content = generate_playbook(profile)
@@ -47,12 +48,10 @@ def generate_playbook(profile: str) -> str:
     """Generate Ansible playbook."""
     playbook = [
         {
-            'name': 'Provision KubeVirt VM',
-            'hosts': 'localhost',
-            'gather_facts': False,
-            'roles': [
-                'provision_vm'
-            ]
+            "name": "Provision KubeVirt VM",
+            "hosts": "localhost",
+            "gather_facts": False,
+            "roles": ["provision_vm"],
         }
     ]
 
@@ -61,30 +60,32 @@ def generate_playbook(profile: str) -> str:
 
 def generate_tasks(profile_config: dict, use_ai: bool) -> str:
     """Generate Ansible tasks."""
-    namespace = profile_config['default_namespace']
-    storage_class = profile_config['default_storage_class']
+    namespace = profile_config["default_namespace"]
 
     tasks = [
         {
-            'name': 'Create KubeVirt VirtualMachine',
-            'kubernetes.core.k8s': {
-                'state': 'present',
-                'definition': "{{ lookup('file', 'kubevirt/vm.yaml') | from_yaml }}"
-            }
+            "name": "Create KubeVirt VirtualMachine",
+            "kubernetes.core.k8s": {
+                "state": "present",
+                "definition": "{{ lookup('file', 'kubevirt/vm.yaml') | from_yaml }}",
+            },
         },
         {
-            'name': 'Wait for VM to be ready',
-            'kubernetes.core.k8s_info': {
-                'api_version': 'kubevirt.io/v1',
-                'kind': 'VirtualMachine',
-                'name': "{{ vm_name }}",
-                'namespace': namespace
+            "name": "Wait for VM to be ready",
+            "kubernetes.core.k8s_info": {
+                "api_version": "kubevirt.io/v1",
+                "kind": "VirtualMachine",
+                "name": "{{ vm_name }}",
+                "namespace": namespace,
             },
-            'register': 'vm_info',
-            'until': "vm_info.resources | length > 0 and vm_info.resources[0].status.ready is defined",
-            'retries': 30,
-            'delay': 10
-        }
+            "register": "vm_info",
+            "until": (
+                "vm_info.resources | length > 0 and "
+                "vm_info.resources[0].status.ready is defined"
+            ),
+            "retries": 30,
+            "delay": 10,
+        },
     ]
 
     return yaml.dump(tasks, default_flow_style=False, sort_keys=False)
@@ -93,11 +94,11 @@ def generate_tasks(profile_config: dict, use_ai: bool) -> str:
 def generate_defaults(profile_config: dict) -> str:
     """Generate Ansible role defaults."""
     defaults = {
-        'vm_name': 'example-vm',
-        'namespace': profile_config['default_namespace'],
-        'cpu_cores': 2,
-        'memory': '4Gi',
-        'storage_class': profile_config['default_storage_class'],
+        "vm_name": "example-vm",
+        "namespace": profile_config["default_namespace"],
+        "cpu_cores": 2,
+        "memory": "4Gi",
+        "storage_class": profile_config["default_storage_class"],
     }
 
     return yaml.dump(defaults, default_flow_style=False, sort_keys=False)

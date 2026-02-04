@@ -1,13 +1,15 @@
 """
 Unified artifact generation using LLM or templates.
 """
-from pathlib import Path
-from ops_translate.workspace import Workspace
-from ops_translate.llm import get_provider
-from ops_translate.util.files import write_text, ensure_dir
-from rich.console import Console
-import yaml
+
 import re
+from pathlib import Path
+
+from rich.console import Console
+
+from ops_translate.llm import get_provider
+from ops_translate.util.files import ensure_dir, write_text
+from ops_translate.workspace import Workspace
 
 console = Console()
 
@@ -54,7 +56,7 @@ def generate_with_ai(workspace: Workspace, profile: str):
     intent_yaml = intent_file.read_text()
 
     # Load profile config
-    profile_config = config['profiles'][profile]
+    profile_config = config["profiles"][profile]
 
     # Load prompt template
     prompt_file = PROJECT_ROOT / "prompts/generate_artifacts.md"
@@ -70,14 +72,12 @@ default_storage_class: {profile_config['default_storage_class']}"""
     prompt = prompt_template.replace("{intent_yaml}", intent_yaml)
     prompt = prompt.replace("{profile_config}", profile_yaml)
 
-    console.print(f"[dim]Calling LLM to generate artifacts (this may take a moment)...[/dim]")
+    console.print("[dim]Calling LLM to generate artifacts (this may take a moment)...[/dim]")
 
     # Call LLM
     try:
         response = llm.generate(
-            prompt,
-            max_tokens=8192,  # Larger for multiple files
-            temperature=0.0
+            prompt, max_tokens=8192, temperature=0.0  # Larger for multiple files
         )
 
         # Parse multi-file response
@@ -91,7 +91,10 @@ default_storage_class: {profile_config['default_storage_class']}"""
             console.print(f"[dim]  Generated: {file_path}[/dim]")
 
         if not files:
-            console.print("[yellow]Warning: No files extracted from LLM response. Falling back to templates.[/yellow]")
+            console.print(
+                "[yellow]Warning: No files extracted from LLM response. "
+                "Falling back to templates.[/yellow]"
+            )
             generate_with_templates(workspace, profile)
 
     except Exception as e:
@@ -121,7 +124,7 @@ def parse_multifile_response(response: str) -> dict:
     files = {}
 
     # Split by FILE: markers
-    file_pattern = r'FILE:\s*([^\n]+)\n---\n(.*?)\n---'
+    file_pattern = r"FILE:\s*([^\n]+)\n---\n(.*?)\n---"
     matches = re.findall(file_pattern, response, re.DOTALL)
 
     for file_path, content in matches:
@@ -137,9 +140,6 @@ def generate_with_templates(workspace: Workspace, profile: str):
     Generate artifacts using static templates (fallback).
     """
     from ops_translate.generate import ansible, kubevirt
-
-    config = workspace.load_config()
-    profile_config = config['profiles'][profile]
 
     # Generate using template functions
     kubevirt.generate(workspace, profile, use_ai=False)

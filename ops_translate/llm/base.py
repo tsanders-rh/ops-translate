@@ -1,8 +1,8 @@
 """
 Abstract base class for LLM providers.
 """
+
 from abc import ABC, abstractmethod
-from typing import Optional
 
 
 class LLMProvider(ABC):
@@ -16,14 +16,14 @@ class LLMProvider(ABC):
             config: LLM configuration dict with 'model', 'api_key_env', etc.
         """
         self.config = config
-        self.model = config.get('model')
-        self.api_key_env = config.get('api_key_env', 'OPS_TRANSLATE_LLM_API_KEY')
+        self.model = config.get("model")
+        self.api_key_env = config.get("api_key_env", "OPS_TRANSLATE_LLM_API_KEY")
 
     @abstractmethod
     def generate(
         self,
         prompt: str,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         max_tokens: int = 4096,
         temperature: float = 0.0,
     ) -> str:

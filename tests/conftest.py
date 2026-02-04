@@ -1,9 +1,10 @@
 """
 Pytest configuration and shared fixtures.
 """
+
 import tempfile
-import shutil
 from pathlib import Path
+
 import pytest
 
 from ops_translate.workspace import Workspace
@@ -41,9 +42,4 @@ def vrealize_fixture(fixtures_dir):
 @pytest.fixture
 def mock_llm_config():
     """Return configuration for mock LLM provider."""
-    return {
-        "llm": {
-            "provider": "mock",
-            "model": "mock-model"
-        }
-    }
+    return {"llm": {"provider": "mock", "model": "mock-model"}}

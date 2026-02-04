@@ -1,15 +1,15 @@
 """
 Integration tests for end-to-end workflows.
 """
-import shutil
-import yaml
-from pathlib import Path
 
-from ops_translate.workspace import Workspace
+import shutil
+
+import yaml
+
+from ops_translate.generate import generate_all
 from ops_translate.intent.extract import extract_all
 from ops_translate.intent.merge import merge_intents
-from ops_translate.intent.validate import validate_intent, validate_artifacts
-from ops_translate.generate import generate_all
+from ops_translate.intent.validate import validate_artifacts, validate_intent
 
 
 def test_full_workflow_powercli(temp_workspace, powercli_fixture):
@@ -36,23 +36,23 @@ def test_full_workflow_powercli(temp_workspace, powercli_fixture):
         assert intent_file.exists()
 
     # Merge intents (should work even with one file)
-    conflicts = merge_intents(workspace)
+    _ = merge_intents(workspace)
 
     # Verify merged intent exists
     merged_intent = workspace.root / "intent" / "intent.yaml"
     assert merged_intent.exists(), "Merged intent not created"
 
     # Load and verify merged intent structure
-    with open(merged_intent, 'r') as f:
+    with open(merged_intent) as f:
         intent_data = yaml.safe_load(f)
 
     assert intent_data is not None
-    assert 'schema_version' in intent_data
-    assert 'intent' in intent_data
-    assert 'sources' in intent_data
+    assert "schema_version" in intent_data
+    assert "intent" in intent_data
+    assert "sources" in intent_data
 
     # Generate artifacts (using template mode)
-    generate_all(workspace, profile='lab', use_ai=False)
+    generate_all(workspace, profile="lab", use_ai=False)
 
     # Verify artifacts were generated
     kubevirt_manifest = workspace.root / "output" / "kubevirt" / "vm.yaml"
@@ -93,7 +93,7 @@ def test_full_workflow_vrealize(temp_workspace, vrealize_fixture):
     assert merged_intent.exists(), "Merged intent not created"
 
     # Generate artifacts
-    generate_all(workspace, profile='prod', use_ai=False)
+    generate_all(workspace, profile="prod", use_ai=False)
 
     # Verify artifacts
     assert (workspace.root / "output" / "kubevirt" / "vm.yaml").exists()
@@ -119,22 +119,22 @@ def test_multi_source_merge(temp_workspace, powercli_fixture, vrealize_fixture):
     assert len(intent_files) >= 2, f"Expected 2+ intent files, got {len(intent_files)}"
 
     # Merge intents
-    conflicts = merge_intents(workspace)
+    _ = merge_intents(workspace)
 
     # Verify merged intent
     merged_intent = workspace.root / "intent" / "intent.yaml"
     assert merged_intent.exists()
 
     # Load merged intent
-    with open(merged_intent, 'r') as f:
+    with open(merged_intent) as f:
         intent_data = yaml.safe_load(f)
 
     # Verify sources from both files are included
-    assert len(intent_data['sources']) >= 2, "Sources not merged correctly"
+    assert len(intent_data["sources"]) >= 2, "Sources not merged correctly"
 
     # Verify smart merge combined inputs
-    if 'inputs' in intent_data.get('intent', {}):
-        inputs = intent_data['intent']['inputs']
+    if "inputs" in intent_data.get("intent", {}):
+        inputs = intent_data["intent"]["inputs"]
         # Should have inputs from both sources
         assert isinstance(inputs, dict)
 
@@ -149,11 +149,11 @@ def test_generated_ansible_is_valid_yaml(temp_workspace, powercli_fixture):
 
     extract_all(workspace)
     merge_intents(workspace)
-    generate_all(workspace, profile='lab', use_ai=False)
+    generate_all(workspace, profile="lab", use_ai=False)
 
     # Load and parse Ansible playbook
     playbook_path = workspace.root / "output" / "ansible" / "site.yml"
-    with open(playbook_path, 'r') as f:
+    with open(playbook_path) as f:
         playbook_data = yaml.safe_load(f)
 
     # Verify basic playbook structure
@@ -162,8 +162,8 @@ def test_generated_ansible_is_valid_yaml(temp_workspace, powercli_fixture):
 
     # Verify first play structure
     play = playbook_data[0]
-    assert 'hosts' in play, "Play should have hosts"
-    assert 'tasks' in play or 'roles' in play, "Play should have tasks or roles"
+    assert "hosts" in play, "Play should have hosts"
+    assert "tasks" in play or "roles" in play, "Play should have tasks or roles"
 
 
 def test_generated_kubevirt_is_valid_yaml(temp_workspace, powercli_fixture):
@@ -176,22 +176,22 @@ def test_generated_kubevirt_is_valid_yaml(temp_workspace, powercli_fixture):
 
     extract_all(workspace)
     merge_intents(workspace)
-    generate_all(workspace, profile='lab', use_ai=False)
+    generate_all(workspace, profile="lab", use_ai=False)
 
     # Load and parse KubeVirt manifest
     manifest_path = workspace.root / "output" / "kubevirt" / "vm.yaml"
-    with open(manifest_path, 'r') as f:
+    with open(manifest_path) as f:
         manifest_data = yaml.safe_load(f)
 
     # Verify Kubernetes resource structure
-    assert 'apiVersion' in manifest_data, "Manifest should have apiVersion"
-    assert 'kind' in manifest_data, "Manifest should have kind"
-    assert 'metadata' in manifest_data, "Manifest should have metadata"
-    assert 'spec' in manifest_data, "Manifest should have spec"
+    assert "apiVersion" in manifest_data, "Manifest should have apiVersion"
+    assert "kind" in manifest_data, "Manifest should have kind"
+    assert "metadata" in manifest_data, "Manifest should have metadata"
+    assert "spec" in manifest_data, "Manifest should have spec"
 
     # Verify it's a KubeVirt VirtualMachine
-    assert 'kubevirt.io' in manifest_data['apiVersion']
-    assert manifest_data['kind'] == 'VirtualMachine'
+    assert "kubevirt.io" in manifest_data["apiVersion"]
+    assert manifest_data["kind"] == "VirtualMachine"
 
 
 def test_assumptions_file_created(temp_workspace, powercli_fixture):
@@ -267,7 +267,7 @@ def test_generate_with_different_profiles(temp_workspace, powercli_fixture):
     merge_intents(workspace)
 
     # Generate with lab profile
-    generate_all(workspace, profile='lab', use_ai=False)
+    generate_all(workspace, profile="lab", use_ai=False)
     lab_playbook = (workspace.root / "output" / "ansible" / "site.yml").read_text()
 
     # Clean output directory
@@ -275,7 +275,7 @@ def test_generate_with_different_profiles(temp_workspace, powercli_fixture):
     (workspace.root / "output").mkdir()
 
     # Generate with prod profile
-    generate_all(workspace, profile='prod', use_ai=False)
+    generate_all(workspace, profile="prod", use_ai=False)
     prod_playbook = (workspace.root / "output" / "ansible" / "site.yml").read_text()
 
     # Playbooks should reference different namespaces/networks based on profile

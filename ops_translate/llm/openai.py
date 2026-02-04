@@ -1,8 +1,9 @@
 """
 OpenAI LLM provider implementation.
 """
+
 import os
-from typing import Optional
+
 from ops_translate.llm.base import LLMProvider
 
 
@@ -20,16 +21,15 @@ class OpenAIProvider(LLMProvider):
         if api_key:
             try:
                 from openai import OpenAI
+
                 self.client = OpenAI(api_key=api_key)
             except ImportError:
-                raise ImportError(
-                    "openai package not installed. Install with: pip install openai"
-                )
+                raise ImportError("openai package not installed. Install with: pip install openai")
 
     def generate(
         self,
         prompt: str,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         max_tokens: int = 4096,
         temperature: float = 0.0,
     ) -> str:

@@ -1,5 +1,11 @@
 # ops-translate
 
+[![CI](https://github.com/tsanders-rh/ops-translate/actions/workflows/ci.yml/badge.svg)](https://github.com/tsanders-rh/ops-translate/actions/workflows/ci.yml)
+[![Lint](https://github.com/tsanders-rh/ops-translate/actions/workflows/lint.yml/badge.svg)](https://github.com/tsanders-rh/ops-translate/actions/workflows/lint.yml)
+[![codecov](https://codecov.io/gh/tsanders-rh/ops-translate/branch/main/graph/badge.svg)](https://codecov.io/gh/tsanders-rh/ops-translate)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
 > **AI-assisted migration from VMware automation to OpenShift Virtualization**
 
 Stop manually rewriting your PowerCLI scripts and vRealize workflows. Let AI extract operational intent and generate production-ready Ansible + KubeVirt artifacts — safely, transparently, and locally.
@@ -190,6 +196,64 @@ pip install -e .
 - [examples/](examples/) - Sample PowerCLI and vRealize inputs
 - [schema/](schema/) - Operational intent schema definition
 
+## Development
+
+### Setup
+
+```bash
+# Clone repository
+git clone https://github.com/tsanders-rh/ops-translate
+cd ops-translate
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install with dev dependencies
+pip install -e ".[dev]"
+```
+
+### Running Tests
+
+```bash
+# Run all tests with coverage
+pytest tests/ -v --cov=ops_translate
+
+# Run specific test file
+pytest tests/test_integration.py -v
+
+# Run with coverage report
+pytest tests/ --cov=ops_translate --cov-report=html
+open htmlcov/index.html  # View coverage report
+```
+
+### Code Quality
+
+```bash
+# Format code with black
+black ops_translate/ tests/
+
+# Lint with ruff
+ruff check ops_translate/ tests/
+
+# Type check with mypy
+mypy ops_translate/
+
+# Run all checks (what CI runs)
+black --check ops_translate/ tests/
+ruff check ops_translate/ tests/
+pytest tests/ -v --cov=ops_translate
+```
+
+### CI/CD
+
+All PRs automatically run:
+- Tests on Python 3.10, 3.11, 3.12, 3.13
+- Code formatting checks (black)
+- Linting (ruff)
+- Type checking (mypy)
+- Coverage reporting
+
 ## Contributing
 
 This is an early-stage prototype. Contributions welcome:
@@ -198,6 +262,7 @@ This is an early-stage prototype. Contributions welcome:
 - Report issues and edge cases
 - Suggest improvements to the intent schema
 - Add support for additional VMware automation patterns
+- Add tests for new features
 
 ## License
 
