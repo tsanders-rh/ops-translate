@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow
+  xmlns="http://vmware.com/vco/workflow"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="nsx-provisioning-workflow"
+  name="NSX-Heavy VM Provisioning"
+  version="1.0">
+
+  <display-name>NSX-Heavy VM Provisioning</display-name>
+  <description>
+    Provision a VM with complex NSX networking including segments, firewall rules, and load balancing.
+  </description>
+
+  <!-- Input Parameters -->
+  <input>
+    <param name="vmName" type="string">
+      <description>Name of the VM to provision</description>
+    </param>
+    <param name="environment" type="string">
+      <description>Target environment (dev/prod)</description>
+    </param>
+    <param name="segmentName" type="string">
+      <description>NSX segment name</description>
+    </param>
+  </input>
+
+  <!-- Workflow Logic -->
+  <workflow-item name="createNSXSegment" type="task">
+    <script>
+      <![CDATA[
+        // Create NSX-T segment for VM network
+        var segment = nsxClient.createSegment({
+          displayName: segmentName,
+          vlanIds: ["100"],
+          transportZone: "overlay-tz",
+          subnets: [{
+            gatewayAddress: "192.168.1.1/24"
+          }]
+        });
+
+        System.log("Created segment: " + segment.id);
+      ]]>
+    </script>
+  </workflow-item>
+
+  <workflow-item name="createFirewallRules" type="task">
+    <script>
+      <![CDATA[
+        // Create distributed firewall rules
+        var rule = nsxClient.createFirewallRule({
+          displayName: "Allow-Web-Traffic",
+          action: "ALLOW",
+          services: ["HTTP", "HTTPS"],
+          sources: ["any"],
+          destinations: [vmName]
+        });
+
+        System.log("Created firewall rule: " + rule.id);
+      ]]>
+    </script>
+  </workflow-item>
+
+  <workflow-item name="createSecurityGroup" type="task">
+    <script>
+      <![CDATA[
+        // Create NSX security group
+        var secGroup = nsxClient.createSecurityGroup({
+          displayName: vmName + "-sg",
+          members: [{
+            targetType: "VirtualMachine",
+            targetId: vmName
+          }]
+        });
+
+        System.log("Created security group: " + secGroup.id);
+      ]]>
+    </script>
+  </workflow-item>
+
+  <workflow-item name="configureLoadBalancer" type="task">
+    <script>
+      <![CDATA[
+        // Configure NSX load balancer
+        var lbPool = nsxClient.createLoadBalancerPool({
+          displayName: vmName + "-pool",
+          algorithm: "ROUND_ROBIN",
+          members: [{
+            ipAddress: "192.168.1.10",
+            port: 80
+          }]
+        });
+
+        var virtualServer = nsxClient.createLoadBalancerVirtualServer({
+          displayName: vmName + "-vip",
+          ipAddress: "10.0.0.100",
+          port: 443,
+          pool: lbPool.id
+        });
+
+        System.log("Configured load balancer: " + virtualServer.id);
+      ]]>
+    </script>
+  </workflow-item>
+
+  <workflow-item name="provisionVM" type="task">
+    <script>
+      <![CDATA[
+        // Provision VM with network attachment
+        var vm = new VirtualMachine();
+        vm.name = vmName;
+        vm.network = segment.id;
+        vm.create();
+
+        System.log("Provisioned VM: " + vm.name);
+      ]]>
+    </script>
+  </workflow-item>
+
+  <!-- Workflow Sequence -->
+  <presentation>
+    <step id="createNSXSegment" />
+    <step id="createFirewallRules" />
+    <step id="createSecurityGroup" />
+    <step id="configureLoadBalancer" />
+    <step id="provisionVM" />
+  </presentation>
+
+</workflow>
