@@ -5,13 +5,13 @@ import re
 # Patterns for sensitive data that should be redacted
 SENSITIVE_PATTERNS = [
     # API keys, tokens, secrets
-    (r'(api[_-]?key|token|auth|secret|password)[=:"\s]+\S+', 'REDACTED'),
+    (r'(api[_-]?key|token|auth|secret|password)[=:"\s]+\S+', "REDACTED"),
     # Bearer tokens
-    (r'Bearer\s+\S+', 'Bearer REDACTED'),
+    (r"Bearer\s+\S+", "Bearer REDACTED"),
     # OpenAI API keys
-    (r'sk-[a-zA-Z0-9]{20,}', 'sk-REDACTED'),
+    (r"sk-[a-zA-Z0-9]{20,}", "sk-REDACTED"),
     # Anthropic API keys
-    (r'sk-ant-[a-zA-Z0-9\-]+', 'sk-ant-REDACTED'),
+    (r"sk-ant-[a-zA-Z0-9\-]+", "sk-ant-REDACTED"),
 ]
 
 

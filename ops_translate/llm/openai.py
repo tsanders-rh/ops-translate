@@ -74,9 +74,7 @@ class OpenAIProvider(LLMProvider):
         """
         try:
             if self.client is None:
-                raise RuntimeError(
-                    "OpenAI client not initialized. Call is_available() first."
-                )
+                raise RuntimeError("OpenAI client not initialized. Call is_available() first.")
             messages = []
 
             if system_prompt:

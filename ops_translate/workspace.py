@@ -73,9 +73,7 @@ class Workspace:
             raise ValueError(f"Config file is empty: {self.config_file}")
 
         if not isinstance(config, dict):
-            raise ValueError(
-                f"Invalid config file: expected dict, got {type(config).__name__}"
-            )
+            raise ValueError(f"Invalid config file: expected dict, got {type(config).__name__}")
 
         # Validate against schema
         self._validate_config_schema(config)

@@ -76,9 +76,7 @@ class AnthropicProvider(LLMProvider):
         """
         try:
             if self.client is None:
-                raise RuntimeError(
-                    "Anthropic client not initialized. Call is_available() first."
-                )
+                raise RuntimeError("Anthropic client not initialized. Call is_available() first.")
             messages = [{"role": "user", "content": prompt}]
 
             kwargs = {

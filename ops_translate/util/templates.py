@@ -65,8 +65,8 @@ class TemplateLoader:
             )
 
             # Add custom filters
-            self._env.filters["to_yaml_value"] = (
-                lambda x: str(x).lower() if isinstance(x, bool) else str(x)
+            self._env.filters["to_yaml_value"] = lambda x: (
+                str(x).lower() if isinstance(x, bool) else str(x)
             )
 
         return self._env
