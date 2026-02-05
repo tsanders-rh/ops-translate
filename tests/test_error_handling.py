@@ -3,7 +3,7 @@ Tests for error handling, exceptions, and retry logic.
 """
 
 import time
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 

@@ -3,8 +3,9 @@ Retry logic with exponential backoff for resilient operations.
 """
 
 import time
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, Type, TypeVar
+from typing import TypeVar
 
 from ops_translate.exceptions import RetryableError
 
@@ -16,7 +17,7 @@ def retry_with_backoff(
     initial_delay: float = 1.0,
     backoff_factor: float = 2.0,
     max_delay: float = 60.0,
-    retryable_exceptions: tuple[Type[Exception], ...] = (Exception,),
+    retryable_exceptions: tuple[type[Exception], ...] = (Exception,),
     on_retry: Callable[[Exception, int, int], None] = None,
 ):
     """
@@ -155,7 +156,7 @@ def is_retryable_error(error: Exception) -> bool:
 def retry_with_logging(
     max_attempts: int = 3,
     log_callback: Callable[[str], None] = None,
-    retryable_exceptions: tuple[Type[Exception], ...] = (Exception,),
+    retryable_exceptions: tuple[type[Exception], ...] = (Exception,),
 ):
     """
     Retry decorator with logging support.
@@ -236,7 +237,8 @@ class RetryStrategy:
         Get retry parameters for a named strategy.
 
         Args:
-            strategy_name: Name of the strategy (AGGRESSIVE, MODERATE, CONSERVATIVE, LLM_API, RATE_LIMIT)
+            strategy_name: Name of the strategy
+                (AGGRESSIVE, MODERATE, CONSERVATIVE, LLM_API, RATE_LIMIT)
 
         Returns:
             Dictionary of retry parameters
