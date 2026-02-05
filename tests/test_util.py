@@ -2,7 +2,6 @@
 Tests for utility modules.
 """
 
-from pathlib import Path
 
 from ops_translate.util.files import ensure_dir, write_text
 from ops_translate.util.hashing import sha256_file, sha256_string

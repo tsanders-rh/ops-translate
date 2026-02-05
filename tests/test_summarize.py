@@ -2,9 +2,7 @@
 Tests for summarize modules (PowerCLI and vRealize).
 """
 
-from pathlib import Path
 
-import pytest
 
 from ops_translate.summarize import powercli, vrealize
 
