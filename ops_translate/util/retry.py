@@ -5,7 +5,7 @@ Retry logic with exponential backoff for resilient operations.
 import time
 from collections.abc import Callable
 from functools import wraps
-from typing import TypeVar
+from typing import Optional, TypeVar
 
 from ops_translate.exceptions import RetryableError
 
@@ -18,7 +18,7 @@ def retry_with_backoff(
     backoff_factor: float = 2.0,
     max_delay: float = 60.0,
     retryable_exceptions: tuple[type[Exception], ...] = (Exception,),
-    on_retry: Callable[[Exception, int, int], None] = None,
+    on_retry: Optional[Callable[[Exception, int, int], None]] = None,
 ):
     """
     Decorator to retry a function with exponential backoff.
@@ -59,7 +59,7 @@ def retry_with_backoff(
                         break
 
                     # Call retry callback if provided
-                    if on_retry:
+                    if on_retry is not None:
                         on_retry(e, attempt, max_attempts)
 
                     # Wait before retrying
@@ -69,6 +69,7 @@ def retry_with_backoff(
                     delay *= backoff_factor
 
             # All retries exhausted
+            assert last_exception is not None  # Always set in the except block
             raise RetryableError(last_exception, max_attempts, max_attempts)
 
         return wrapper
@@ -155,7 +156,7 @@ def is_retryable_error(error: Exception) -> bool:
 
 def retry_with_logging(
     max_attempts: int = 3,
-    log_callback: Callable[[str], None] = None,
+    log_callback: Optional[Callable[[str], None]] = None,
     retryable_exceptions: tuple[type[Exception], ...] = (Exception,),
 ):
     """
@@ -180,7 +181,7 @@ def retry_with_logging(
     """
 
     def on_retry_callback(error: Exception, attempt: int, max_attempts: int):
-        if log_callback:
+        if log_callback is not None:
             log_callback(f"Attempt {attempt}/{max_attempts} failed: {str(error)}. Retrying...")
 
     return retry_with_backoff(

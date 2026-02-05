@@ -59,7 +59,7 @@ class AnthropicProvider(LLMProvider):
         # Use retry logic for API calls
         return self._generate_with_retry(prompt, system_prompt, max_tokens, temperature)
 
-    @retry_with_backoff(**RetryStrategy.LLM_API)
+    @retry_with_backoff(**RetryStrategy.LLM_API)  # type: ignore[arg-type]
     def _generate_with_retry(
         self,
         prompt: str,
@@ -74,6 +74,7 @@ class AnthropicProvider(LLMProvider):
             LLMAPIError: If API call fails after retries
         """
         try:
+            assert self.client is not None  # Checked in generate()
             messages = [{"role": "user", "content": prompt}]
 
             kwargs = {
@@ -89,7 +90,8 @@ class AnthropicProvider(LLMProvider):
             response = self.client.messages.create(**kwargs)
 
             # Extract text from response
-            return response.content[0].text
+            text = response.content[0].text
+            return str(text) if text else ""
 
         except Exception as e:
             # Determine if error is retryable

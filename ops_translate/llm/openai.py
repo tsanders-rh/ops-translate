@@ -57,7 +57,7 @@ class OpenAIProvider(LLMProvider):
         # Use retry logic for API calls
         return self._generate_with_retry(prompt, system_prompt, max_tokens, temperature)
 
-    @retry_with_backoff(**RetryStrategy.LLM_API)
+    @retry_with_backoff(**RetryStrategy.LLM_API)  # type: ignore[arg-type]
     def _generate_with_retry(
         self,
         prompt: str,
@@ -72,6 +72,7 @@ class OpenAIProvider(LLMProvider):
             LLMAPIError: If API call fails after retries
         """
         try:
+            assert self.client is not None  # Checked in generate()
             messages = []
 
             if system_prompt:
@@ -87,7 +88,8 @@ class OpenAIProvider(LLMProvider):
             )
 
             # Extract text from response
-            return response.choices[0].message.content
+            content = response.choices[0].message.content
+            return str(content) if content else ""
 
         except Exception as e:
             # Determine if error is retryable

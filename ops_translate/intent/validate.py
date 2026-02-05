@@ -96,14 +96,17 @@ def format_validation_error(error: ValidationError) -> list:
             )
 
     elif error.validator == "enum":
-        errors.append(f"  Allowed values: {', '.join(str(v) for v in error.validator_value)}")
+        # Type guard: validator_value should be iterable for enum errors
+        validator_value = error.validator_value
+        if hasattr(validator_value, "__iter__"):
+            errors.append(f"  Allowed values: {', '.join(str(v) for v in validator_value)}")
         errors.append(f"  Got: {error.instance}")
 
         # Suggest closest match if applicable
-        if isinstance(error.instance, str):
+        if isinstance(error.instance, str) and hasattr(validator_value, "__iter__"):
             close_matches = [
                 v
-                for v in error.validator_value
+                for v in validator_value
                 if isinstance(v, str) and v.startswith(error.instance[0])
             ]
             if close_matches:
