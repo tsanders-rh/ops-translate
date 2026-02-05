@@ -72,22 +72,58 @@ def merge_intents(workspace: Workspace) -> bool:
 
 def smart_merge(intents: list[dict[str, Any]]) -> dict[str, Any]:
     """
-    Intelligently merge multiple intent data structures.
+    Intelligently merge multiple intent data structures into a single unified intent.
 
-    Uses smart strategies:
-    - Workflow name: Use first, note if different
-    - Workload type: Use 'mixed' if different types
-    - Inputs: Merge and reconcile compatible parameters
-    - Governance: Use most restrictive policies, combine approvers
-    - Compute: Average or use max values
-    - Profiles: Combine all profiles
-    - Metadata: Union of tags and labels
+    Implements context-aware merging strategies for different sections of the intent
+    schema. The merge process attempts to reconcile differences and combine information
+    from multiple source files while maintaining schema validity and semantic correctness.
+
+    Merge Strategies by Section:
+        - Workflow name: Uses first non-null value. If names differ, the first is used
+          and discrepancies are noted in the assumptions section.
+        - Workload type: Uses 'mixed' if different types detected (e.g., vm + container).
+          Otherwise uses the common type.
+        - Inputs: Merges parameters by name, reconciling types and constraints. Compatible
+          parameters are unified with the most permissive constraints. Incompatible types
+          generate conflict warnings.
+        - Governance: Applies most restrictive policies (e.g., if any source requires
+          approval, the merged intent requires it). Combines all approvers.
+        - Compute: For numeric values (CPU, memory), uses average or maximum depending
+          on context. Preserves min/max constraints from all sources.
+        - Profiles: Combines all environment profiles (dev, prod, staging) with their
+          specific configurations. Later profiles override earlier ones for same keys.
+        - Metadata: Union of all tags and labels. Duplicate keys use last-seen value.
+        - Day 2 Operations: Union of all supported operations across sources.
 
     Args:
-        intents: List of dicts with 'file' and 'data' keys
+        intents: List of dictionaries, each containing:
+            - 'file': str - Source filename (for conflict reporting)
+            - 'data': dict - Parsed intent YAML data structure
 
     Returns:
-        dict: Merged intent data
+        dict: Merged intent data conforming to intent schema v1, containing:
+            - schema_version: 1
+            - intent: Merged intent section with all reconciled data
+            - May include conflict markers in assumptions if irreconcilable differences found
+
+    Raises:
+        ValueError: If intents list is empty or contains invalid structure.
+        KeyError: If required keys are missing from intent data.
+
+    Example:
+        >>> intents = [
+        ...     {'file': 'vm1.intent.yaml', 'data': {'intent': {'workflow_name': 'provision_vm', ...}}},
+        ...     {'file': 'vm2.intent.yaml', 'data': {'intent': {'workflow_name': 'provision_vm', ...}}}
+        ... ]
+        >>> merged = smart_merge(intents)
+        >>> merged['intent']['workflow_name']
+        'provision_vm'
+
+    Notes:
+        - The merge process is deterministic but order-dependent for some fields
+        - Conflicts are noted but don't prevent merge completion
+        - Schema validation should be run on the result to catch issues
+        - Use merge_intents() for full workspace merge with conflict reporting
     """
     merged: dict[str, Any] = {"schema_version": 1, "intent": {}}
 

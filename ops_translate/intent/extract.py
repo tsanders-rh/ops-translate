@@ -20,12 +20,55 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 
 def extract_all(workspace: Workspace):
     """
-    Extract intent from all imported source files using LLM.
+    Extract operational intent from all imported source files using LLM.
+
+    Processes all PowerCLI scripts (*.ps1) and vRealize workflows (*.xml)
+    in the workspace's input directories, extracts operational intent using
+    the configured LLM provider, and writes individual intent YAML files for
+    each source. Also consolidates assumptions from all sources into a single
+    markdown file.
+
+    The extraction process:
+    1. Loads workspace configuration and initializes LLM provider
+    2. Falls back to mock provider if LLM is unavailable
+    3. Processes each PowerCLI script in input/powercli/
+    4. Processes each vRealize workflow in input/vrealize/
+    5. Validates extracted intent against schema
+    6. Writes individual intent files and combined assumptions
+
+    Args:
+        workspace: Workspace instance with loaded configuration and directory structure.
+            Must have input/powercli/ and/or input/vrealize/ directories with source files.
 
     Outputs:
-    - intent/powercli.intent.yaml (if PowerCLI files present)
-    - intent/vrealize.intent.yaml (if vRealize files present)
-    - intent/assumptions.md
+        Creates the following files in the workspace:
+        - intent/{filename}.intent.yaml - One file per source file
+        - intent/assumptions.md - Combined assumptions from all extractions
+
+    Raises:
+        LLMProviderNotAvailableError: If LLM provider configuration is invalid.
+        FileNotFoundError: If workspace input directories don't exist.
+
+    Side Effects:
+        - Makes API calls to configured LLM provider (may incur costs)
+        - Writes multiple YAML and markdown files to workspace
+        - Displays progress messages to console
+        - Adds rate-limiting delays between API calls
+
+    Example:
+        >>> from pathlib import Path
+        >>> from ops_translate.workspace import Workspace
+        >>> ws = Workspace(Path("my-workspace"))
+        >>> extract_all(ws)  # Extracts intent from all input files
+        Extracting intent from: provision-vm.ps1
+          ✓ Schema validation passed
+        ✓ Intent extracted to intent/*.intent.yaml
+        ✓ Assumptions written to intent/assumptions.md
+
+    Notes:
+        - Rate limiting is applied between LLM calls (default: 1 second)
+        - If intent validation fails, warnings are displayed but processing continues
+        - Empty input directories are skipped silently
     """
     # Load config and initialize LLM provider
     config = workspace.load_config()
@@ -122,15 +165,17 @@ def extract_powercli_intent(llm, ps_file: Path) -> tuple[str, list]:
     Returns:
         tuple: (intent_yaml, assumptions_list)
     """
-    # Load prompt template
-    prompt_file = PROJECT_ROOT / "prompts/intent_extract_powercli.md"
-    prompt_template = prompt_file.read_text()
+    from jinja2 import Template
+
+    # Load prompt template using Jinja2
+    template_file = PROJECT_ROOT / "templates/prompts/extract_powercli.txt.j2"
+    template = Template(template_file.read_text())
 
     # Load PowerCLI script content
     script_content = ps_file.read_text()
 
-    # Fill in prompt template
-    prompt = prompt_template.replace("{script_content}", script_content)
+    # Render prompt template with Jinja2
+    prompt = template.render(script_content=script_content)
 
     # Call LLM
     try:
@@ -163,15 +208,17 @@ def extract_vrealize_intent(llm, xml_file: Path) -> tuple[str, list]:
     Returns:
         tuple: (intent_yaml, assumptions_list)
     """
-    # Load prompt template
-    prompt_file = PROJECT_ROOT / "prompts/intent_extract_vrealize.md"
-    prompt_template = prompt_file.read_text()
+    from jinja2 import Template
+
+    # Load prompt template using Jinja2
+    template_file = PROJECT_ROOT / "templates/prompts/extract_vrealize.txt.j2"
+    template = Template(template_file.read_text())
 
     # Load workflow XML content
     workflow_content = xml_file.read_text()
 
-    # Fill in prompt template
-    prompt = prompt_template.replace("{workflow_content}", workflow_content)
+    # Render prompt template with Jinja2
+    prompt = template.render(workflow_content=workflow_content)
 
     # Call LLM
     try:

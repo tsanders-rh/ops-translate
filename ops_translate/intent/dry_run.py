@@ -364,10 +364,69 @@ def print_dry_run_results(result: DryRunResult):
 
 def run_enhanced_dry_run(workspace, config: dict) -> tuple[bool, DryRunResult]:
     """
-    Run enhanced dry-run validation with detailed checks.
+    Run comprehensive pre-flight validation on intent and configuration.
+
+    Performs multi-layered validation checks before artifact generation, including:
+    - Schema validation (structure and types)
+    - Resource consistency checks
+    - Profile reference validation
+    - Execution plan generation
+    - Configuration completeness
+
+    Issues are categorized by severity:
+    - BLOCKING: Must be fixed before proceeding (schema errors, missing files)
+    - REVIEW: Should be reviewed but not blocking (warnings, recommendations)
+    - SAFE: Informational only
+
+    The validation process:
+    1. Verifies intent.yaml exists and is valid YAML
+    2. Validates intent structure against schema
+    3. Checks for required fields and complete definitions
+    4. Validates profile references against configured profiles
+    5. Checks resource consistency (if artifacts already generated)
+    6. Generates execution plan showing what will happen
+    7. Compiles statistics (inputs, profiles, artifacts)
+
+    Args:
+        workspace: Workspace instance with intent and configuration files.
+        config: Loaded workspace configuration dict containing:
+            - profiles: Dict of profile names to profile configs
+            - llm: LLM provider configuration
+            - Other workspace settings
 
     Returns:
-        tuple: (is_safe_to_proceed, DryRunResult)
+        tuple: A 2-tuple containing:
+            - bool: True if safe to proceed (no BLOCKING issues), False otherwise
+            - DryRunResult: Object containing:
+              - issues: List of ValidationIssue objects with severity, category, message
+              - steps: List of planned execution steps
+              - stats: Dict of statistics (inputs, profiles, artifacts counts)
+
+    Raises:
+        Does not raise exceptions. All errors are captured in the DryRunResult.
+
+    Example:
+        >>> from ops_translate.workspace import Workspace
+        >>> from pathlib import Path
+        >>> ws = Workspace(Path("my-workspace"))
+        >>> config = ws.load_config()
+        >>> is_safe, result = run_enhanced_dry_run(ws, config)
+        >>> if not is_safe:
+        ...     for issue in result.issues:
+        ...         if issue.severity == "BLOCKING":
+        ...             print(f"ERROR: {issue.message}")
+        ERROR: Intent file not found
+
+    Side Effects:
+        - Reads intent.yaml and configuration files
+        - May read generated artifacts for consistency checks
+        - Does not modify any files
+
+    Notes:
+        - Returns immediately on critical errors (missing/invalid intent file)
+        - Continues validation even after finding non-blocking issues
+        - Use print_dry_run_results() to display results to user
+        - Safe to call multiple times (read-only operation)
     """
     result = DryRunResult()
 

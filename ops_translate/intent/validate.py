@@ -39,10 +39,53 @@ def _load_schema(schema_name: str) -> dict:
 
 def validate_intent(intent_file: Path) -> tuple[bool, list]:
     """
-    Validate intent YAML against schema using jsonschema.
+    Validate intent YAML file against the intent schema using jsonschema.
+
+    Loads the intent YAML file, parses it, and validates it against the intent.schema.json
+    schema file. Returns detailed, user-friendly error messages for any validation failures,
+    including contextual suggestions for common mistakes.
+
+    The validation process:
+    1. Loads and parses the intent YAML file
+    2. Loads the intent.schema.json schema (cached for performance)
+    3. Validates the intent data structure against the schema
+    4. Formats any validation errors into helpful messages with examples
+
+    Args:
+        intent_file: Path to the intent YAML file to validate. Must exist and be readable.
 
     Returns:
-        tuple: (is_valid, error_messages)
+        tuple: A 2-tuple containing:
+            - bool: True if validation passed, False if validation failed
+            - list[str]: List of error messages. Empty list if validation passed.
+              Each error message includes:
+              - Location of the error (path to the problematic field)
+              - Description of what's wrong
+              - Expected value or type
+              - Actual value found
+              - Suggestions for fixing the error (when applicable)
+
+    Raises:
+        FileNotFoundError: If intent_file or schema file doesn't exist (caught internally).
+        yaml.YAMLError: If YAML parsing fails (caught and returned as error message).
+
+    Example:
+        >>> from pathlib import Path
+        >>> is_valid, errors = validate_intent(Path("intent/vm.intent.yaml"))
+        >>> if not is_valid:
+        ...     for error in errors:
+        ...         print(error)
+        Validation error at 'intent.workflow_name': 'Provision-VM' does not match '^[a-z][a-z0-9_]*$'
+          Expected pattern: ^[a-z][a-z0-9_]*$
+          Got: Provision-VM
+          Hint: Use snake_case naming (lowercase with underscores)
+          Example: Provision-VM → provision_vm
+
+    Notes:
+        - Schema is cached after first load for better performance
+        - Provides context-aware error messages with field-specific suggestions
+        - Validates both structure (required fields, types) and constraints (patterns, ranges)
+        - Returns helpful hints for common errors (e.g., quote removal for integers)
     """
     try:
         # Load intent YAML
