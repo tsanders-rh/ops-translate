@@ -56,6 +56,7 @@ class TestImport:
 
         # Change to workspace directory
         import os
+
         original_dir = os.getcwd()
         try:
             os.chdir(workspace)
@@ -82,6 +83,7 @@ class TestImport:
         test_workflow.write_text("<?xml version='1.0'?><workflow></workflow>")
 
         import os
+
         original_dir = os.getcwd()
         try:
             os.chdir(workspace)
@@ -105,6 +107,7 @@ class TestImport:
         test_file.write_text("test")
 
         import os
+
         original_dir = os.getcwd()
         try:
             os.chdir(workspace)
@@ -125,6 +128,7 @@ class TestImport:
         runner.invoke(app, ["init", str(workspace)])
 
         import os
+
         original_dir = os.getcwd()
         try:
             os.chdir(workspace)
@@ -172,6 +176,7 @@ New-TagAssignment -Tag "env:$Env"
 """)
 
         import os
+
         original_dir = os.getcwd()
         try:
             os.chdir(workspace)
@@ -199,6 +204,7 @@ class TestIntentExtract:
         runner.invoke(app, ["init", str(workspace)])
 
         import os
+
         original_dir = os.getcwd()
         try:
             os.chdir(workspace)
@@ -224,6 +230,7 @@ class TestIntentMerge:
         runner.invoke(app, ["init", str(workspace)])
 
         import os
+
         original_dir = os.getcwd()
         try:
             os.chdir(workspace)
@@ -244,6 +251,7 @@ class TestIntentMerge:
         runner.invoke(app, ["init", str(workspace)])
 
         import os
+
         original_dir = os.getcwd()
         try:
             os.chdir(workspace)
@@ -264,6 +272,7 @@ class TestIntentMerge:
         runner.invoke(app, ["init", str(workspace)])
 
         import os
+
         original_dir = os.getcwd()
         try:
             os.chdir(workspace)
@@ -290,6 +299,7 @@ class TestIntentEdit:
         intent_file.write_text("test: content")
 
         import os
+
         original_dir = os.getcwd()
         try:
             os.chdir(workspace)
@@ -310,6 +320,7 @@ class TestIntentEdit:
         intent_file.write_text("test: content")
 
         import os
+
         original_dir = os.getcwd()
         try:
             os.chdir(workspace)
@@ -333,6 +344,7 @@ class TestMapPreview:
         runner.invoke(app, ["init", str(workspace)])
 
         import os
+
         original_dir = os.getcwd()
         try:
             os.chdir(workspace)
@@ -351,6 +363,7 @@ class TestMapPreview:
         runner.invoke(app, ["init", str(workspace)])
 
         import os
+
         original_dir = os.getcwd()
         try:
             os.chdir(workspace)
@@ -373,6 +386,7 @@ class TestGenerate:
         runner.invoke(app, ["init", str(workspace)])
 
         import os
+
         original_dir = os.getcwd()
         try:
             os.chdir(workspace)
@@ -394,6 +408,7 @@ class TestGenerate:
         runner.invoke(app, ["init", str(workspace)])
 
         import os
+
         original_dir = os.getcwd()
         try:
             os.chdir(workspace)
@@ -414,6 +429,7 @@ class TestGenerate:
         runner.invoke(app, ["init", str(workspace)])
 
         import os
+
         original_dir = os.getcwd()
         try:
             os.chdir(workspace)
@@ -444,6 +460,7 @@ class TestDryRun:
         intent_file.write_text("schema_version: 1\nintent: {}")
 
         import os
+
         original_dir = os.getcwd()
         try:
             os.chdir(workspace)
@@ -469,6 +486,7 @@ class TestDryRun:
         intent_file.write_text("invalid: yaml")
 
         import os
+
         original_dir = os.getcwd()
         try:
             os.chdir(workspace)
@@ -489,6 +507,7 @@ class TestDryRun:
         runner.invoke(app, ["init", str(workspace)])
 
         import os
+
         original_dir = os.getcwd()
         try:
             os.chdir(workspace)

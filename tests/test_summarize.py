@@ -146,7 +146,7 @@ $Storage = if ($env -eq "prod") { "gold" } else { "standard" }
             "Get-NetworkAdapter -VM $vm",
             "New-NetworkAdapter -VM $vm",
             "Get-Datastore -Name storage",
-            "New-HardDisk -VM $vm -CapacityGB 100"
+            "New-HardDisk -VM $vm -CapacityGB 100",
         ]
 
         for cmdlet in cmdlets:
@@ -209,6 +209,7 @@ class TestvRealizeSummarize:
     def test_detect_approval_basic(self):
         """Test detection of approval elements."""
         import xml.etree.ElementTree as ET
+
         content = """
 <workflow>
     <workflow-item name="approval-task">
@@ -222,6 +223,7 @@ class TestvRealizeSummarize:
     def test_detect_approval_not_found(self):
         """Test when no approval exists."""
         import xml.etree.ElementTree as ET
+
         content = '<workflow><workflow-item name="task">do something</workflow-item></workflow>'
         root = ET.fromstring(content)
         assert vrealize.detect_approval(root) is False
@@ -229,6 +231,7 @@ class TestvRealizeSummarize:
     def test_detect_environment_branching_basic(self):
         """Test detection of environment branching."""
         import xml.etree.ElementTree as ET
+
         content = """
 <workflow>
     <workflow-item type="decision">
@@ -243,6 +246,7 @@ class TestvRealizeSummarize:
     def test_detect_tagging_basic(self):
         """Test detection of tagging operations."""
         import xml.etree.ElementTree as ET
+
         content = """
 <workflow>
     <workflow-item>
@@ -256,6 +260,7 @@ class TestvRealizeSummarize:
     def test_detect_network_storage_basic(self):
         """Test detection of network/storage operations."""
         import xml.etree.ElementTree as ET
+
         content = """
 <workflow>
     <workflow-item>
