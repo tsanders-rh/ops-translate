@@ -64,7 +64,12 @@ app.add_typer(map_app, name="map")
 
 
 @app.command()
-def init(workspace_dir: str = typer.Argument(..., help="Workspace directory to initialize")):
+def init(
+    workspace_dir: str = typer.Argument(..., help="Workspace directory to initialize"),
+    with_templates: bool = typer.Option(
+        False, "--with-templates", help="Copy default templates for customization"
+    ),
+):
     """Initialize a new ops-translate workspace."""
     console.print(f"[bold blue]Initializing workspace:[/bold blue] {workspace_dir}")
 
@@ -73,8 +78,23 @@ def init(workspace_dir: str = typer.Argument(..., help="Workspace directory to i
 
     console.print(f"[green]✓ Created directory structure in {workspace_dir}[/green]")
     console.print("[green]✓ Wrote configuration to ops-translate.yaml[/green]")
+
+    # Copy templates if requested
+    if with_templates:
+        from ops_translate.util.templates import TemplateLoader
+
+        loader = TemplateLoader(workspace.root)
+        try:
+            loader.copy_default_templates_to_workspace()
+            console.print("[green]✓ Copied default templates to templates/[/green]")
+            console.print("[dim]  You can now customize templates for your organization[/dim]")
+        except Exception as e:
+            console.print(f"[yellow]⚠ Could not copy templates: {e}[/yellow]")
+
     console.print("\n[dim]Next steps:[/dim]")
     console.print(f"  cd {workspace_dir}")
+    if with_templates:
+        console.print("  # Customize templates in templates/ directory")
     console.print("  ops-translate import --source powercli --file <path>")
 
 
