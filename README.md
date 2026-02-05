@@ -23,6 +23,8 @@ All processing happens locally. No execution by default. Full transparency at ev
 
 ## Quick Start
 
+### Try with Example Scripts
+
 ```bash
 # Install
 pip install ops-translate
@@ -30,9 +32,31 @@ pip install ops-translate
 # Initialize workspace
 ops-translate init demo && cd demo
 
+# Try with a provided example
+ops-translate import --source powercli --file ../examples/powercli/environment-aware.ps1
+
+# Extract and view operational intent
+ops-translate summarize
+ops-translate intent extract
+
+# Generate OpenShift artifacts
+ops-translate generate --profile lab
+
+# Review generated files
+tree output/
+```
+
+See [examples/](examples/) for more sample PowerCLI scripts and vRealize workflows.
+
+### Using Your Own Scripts
+
+```bash
+# Initialize workspace
+ops-translate init my-project && cd my-project
+
 # Import your VMware automation
-ops-translate import --source powercli --file provision-vm.ps1
-ops-translate import --source vrealize --file workflow.xml
+ops-translate import --source powercli --file /path/to/your-script.ps1
+ops-translate import --source vrealize --file /path/to/workflow.xml
 
 # Extract and merge operational intent
 ops-translate summarize
@@ -193,8 +217,25 @@ pip install -e .
 ## Documentation
 
 - [SPEC.md](SPEC.md) - Complete specification and design
-- [examples/](examples/) - Sample PowerCLI and vRealize inputs
+- [examples/](examples/) - Sample PowerCLI and vRealize inputs with full walkthrough
 - [schema/](schema/) - Operational intent schema definition
+
+### Example Workflows
+
+The [examples/](examples/) directory contains ready-to-use samples:
+
+**PowerCLI Scripts:**
+- `simple-vm.ps1` - Basic VM provisioning
+- `environment-aware.ps1` - Environment branching (dev/prod)
+- `with-governance.ps1` - Governance policies and approvals
+- `multi-nic-storage.ps1` - Advanced networking and storage
+
+**vRealize Workflows:**
+- `simple-provision.workflow.xml` - Basic workflow
+- `environment-branching.workflow.xml` - Environment-based logic
+- `with-approval.workflow.xml` - Approval and governance
+
+See [examples/README.md](examples/README.md) for detailed usage instructions.
 
 ## Development
 

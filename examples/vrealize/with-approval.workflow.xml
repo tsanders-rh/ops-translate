@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow xmlns="http://vmware.com/vco/workflow"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://vmware.com/vco/workflow http://vmware.com/vco/workflow/Workflow-v4.xsd"
+          root-name="item1"
+          id="workflow-003"
+          version="1.0.0">
+  <display-name>VM Provisioning with Approval</display-name>
+  <description>VM provisioning workflow with governance and approval for production</description>
+
+  <position x="100.0" y="50.0"/>
+
+  <input>
+    <param name="vmName" type="string">
+      <description>Name of the VM to create</description>
+    </param>
+    <param name="environment" type="string">
+      <description>Target environment (dev or prod)</description>
+    </param>
+    <param name="cpuCount" type="number">
+      <description>Number of CPU cores (1-32)</description>
+    </param>
+    <param name="memoryGB" type="number">
+      <description>Memory in GB (1-256)</description>
+    </param>
+    <param name="ownerEmail" type="string">
+      <description>Email of the VM owner</description>
+    </param>
+    <param name="costCenter" type="string">
+      <description>Cost center code (optional)</description>
+    </param>
+  </input>
+
+  <output>
+    <param name="vmId" type="string">
+      <description>ID of the created VM</description>
+    </param>
+    <param name="approved" type="boolean">
+      <description>Whether the request was approved</description>
+    </param>
+  </output>
+
+  <attrib name="requiresApproval" type="boolean" read-only="false"/>
+  <attrib name="approvalDecision" type="boolean" read-only="false"/>
+
+  <workflow-item name="item0" type="end" end-mode="0">
+    <position x="784.5" y="45.40909090909091"/>
+  </workflow-item>
+
+  <workflow-item name="item1" out-name="item2" type="task">
+    <display-name>Check Governance</display-name>
+    <script encoded="false"><![CDATA[
+System.log("Checking governance requirements for: " + vmName);
+System.log("Environment: " + environment);
+
+// Production requires approval
+requiresApproval = (environment === "prod");
+
+// Validate quotas
+if (cpuCount > 16) {
+    throw "CPU quota exceeded. Maximum 16 cores allowed.";
+}
+
+if (memoryGB > 128) {
+    throw "Memory quota exceeded. Maximum 128 GB allowed.";
+}
+
+System.log("Governance check passed. Requires approval: " + requiresApproval);
+    ]]></script>
+    <in-binding>
+      <bind name="environment" type="string" export-name="environment"/>
+      <bind name="cpuCount" type="number" export-name="cpuCount"/>
+      <bind name="memoryGB" type="number" export-name="memoryGB"/>
+      <bind name="vmName" type="string" export-name="vmName"/>
+    </in-binding>
+    <out-binding>
+      <bind name="requiresApproval" type="boolean" export-name="requiresApproval"/>
+    </out-binding>
+    <position x="100.0" y="55.40909090909091"/>
+  </workflow-item>
+
+  <workflow-item name="item2" out-name="item3" type="decision">
+    <display-name>Requires Approval?</display-name>
+    <script encoded="false"><![CDATA[
+return requiresApproval;
+    ]]></script>
+    <in-binding>
+      <bind name="requiresApproval" type="boolean" export-name="requiresApproval"/>
+    </in-binding>
+    <position x="244.5" y="45.40909090909091"/>
+  </workflow-item>
+
+  <workflow-item name="item3" out-name="item5" type="task">
+    <display-name>Request Approval</display-name>
+    <script encoded="false"><![CDATA[
+System.log("Requesting approval for production VM");
+System.log("VM Name: " + vmName);
+System.log("Owner: " + ownerEmail);
+System.log("Resources: " + cpuCount + " CPU, " + memoryGB + " GB RAM");
+
+// In a real workflow, this would create an approval request
+// For demo purposes, auto-approve
+approvalDecision = true;
+System.log("Approval granted");
+    ]]></script>
+    <in-binding>
+      <bind name="vmName" type="string" export-name="vmName"/>
+      <bind name="ownerEmail" type="string" export-name="ownerEmail"/>
+      <bind name="cpuCount" type="number" export-name="cpuCount"/>
+      <bind name="memoryGB" type="number" export-name="memoryGB"/>
+    </in-binding>
+    <out-binding>
+      <bind name="approvalDecision" type="boolean" export-name="approvalDecision"/>
+    </out-binding>
+    <position x="384.5" y="9.0"/>
+  </workflow-item>
+
+  <workflow-item name="item4" out-name="item6" type="task">
+    <display-name>Auto-Approve Dev</display-name>
+    <script encoded="false"><![CDATA[
+System.log("Development environment - no approval required");
+approvalDecision = true;
+    ]]></script>
+    <out-binding>
+      <bind name="approvalDecision" type="boolean" export-name="approvalDecision"/>
+    </out-binding>
+    <position x="384.5" y="109.0"/>
+  </workflow-item>
+
+  <workflow-item name="item5" out-name="item6" type="end" end-mode="0">
+    <position x="524.5" y="9.0"/>
+  </workflow-item>
+
+  <workflow-item name="item6" out-name="item7" type="task">
+    <display-name>Provision VM</display-name>
+    <script encoded="false"><![CDATA[
+if (!approvalDecision) {
+    throw "Provisioning request was not approved";
+}
+
+System.log("Provisioning VM: " + vmName);
+System.log("Environment: " + environment);
+System.log("CPU: " + cpuCount + ", Memory: " + memoryGB + " GB");
+System.log("Owner: " + ownerEmail);
+
+// VM creation logic
+var vm = {
+    name: vmName,
+    cpu: cpuCount,
+    memory: memoryGB,
+    environment: environment,
+    owner: ownerEmail,
+    costCenter: costCenter || "N/A",
+    id: "vm-" + Math.floor(Math.random() * 10000)
+};
+
+vmId = vm.id;
+approved = approvalDecision;
+
+System.log("VM provisioned successfully with ID: " + vmId);
+    ]]></script>
+    <in-binding>
+      <bind name="approvalDecision" type="boolean" export-name="approvalDecision"/>
+      <bind name="vmName" type="string" export-name="vmName"/>
+      <bind name="environment" type="string" export-name="environment"/>
+      <bind name="cpuCount" type="number" export-name="cpuCount"/>
+      <bind name="memoryGB" type="number" export-name="memoryGB"/>
+      <bind name="ownerEmail" type="string" export-name="ownerEmail"/>
+      <bind name="costCenter" type="string" export-name="costCenter"/>
+    </in-binding>
+    <out-binding>
+      <bind name="vmId" type="string" export-name="vmId"/>
+      <bind name="approved" type="boolean" export-name="approved"/>
+    </out-binding>
+    <position x="634.5" y="55.40909090909091"/>
+  </workflow-item>
+
+  <workflow-item name="item7" out-name="item0" type="end" end-mode="0">
+    <position x="784.5" y="55.40909090909091"/>
+  </workflow-item>
+
+  <presentation>
+    <p-step>
+      <title>VM Configuration</title>
+      <p-param name="vmName">
+        <desc>VM Name</desc>
+        <p-qual kind="static" name="mandatory" type="boolean"><![CDATA[true]]></p-qual>
+      </p-param>
+      <p-param name="environment">
+        <desc>Environment (prod requires approval)</desc>
+        <p-qual kind="static" name="mandatory" type="boolean"><![CDATA[true]]></p-qual>
+        <p-qual kind="static" name="genericEnumeration" type="Array/string"><![CDATA[#{#string#dev#;#string#prod#}#]]></p-qual>
+      </p-param>
+      <p-param name="cpuCount">
+        <desc>CPU Cores (max 16)</desc>
+        <p-qual kind="static" name="mandatory" type="boolean"><![CDATA[true]]></p-qual>
+        <p-qual kind="static" name="numberFormat" type="String"><![CDATA[#]]></p-qual>
+        <p-qual kind="static" name="minNumberValue" type="Number"><![CDATA[1]]></p-qual>
+        <p-qual kind="static" name="maxNumberValue" type="Number"><![CDATA[32]]></p-qual>
+      </p-param>
+      <p-param name="memoryGB">
+        <desc>Memory GB (max 128)</desc>
+        <p-qual kind="static" name="mandatory" type="boolean"><![CDATA[true]]></p-qual>
+        <p-qual kind="static" name="numberFormat" type="String"><![CDATA[#]]></p-qual>
+        <p-qual kind="static" name="minNumberValue" type="Number"><![CDATA[1]]></p-qual>
+        <p-qual kind="static" name="maxNumberValue" type="Number"><![CDATA[256]]></p-qual>
+      </p-param>
+      <p-param name="ownerEmail">
+        <desc>Owner Email</desc>
+        <p-qual kind="static" name="mandatory" type="boolean"><![CDATA[true]]></p-qual>
+      </p-param>
+      <p-param name="costCenter">
+        <desc>Cost Center (optional)</desc>
+        <p-qual kind="static" name="mandatory" type="boolean"><![CDATA[false]]></p-qual>
+      </p-param>
+    </p-step>
+  </presentation>
+</workflow>

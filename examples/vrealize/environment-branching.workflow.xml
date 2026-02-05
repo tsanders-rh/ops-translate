@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow xmlns="http://vmware.com/vco/workflow"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://vmware.com/vco/workflow http://vmware.com/vco/workflow/Workflow-v4.xsd"
+          root-name="item1"
+          id="workflow-002"
+          version="1.0.0">
+  <display-name>Environment-Aware VM Provisioning</display-name>
+  <description>VM provisioning with environment-specific configuration</description>
+
+  <position x="100.0" y="50.0"/>
+
+  <input>
+    <param name="vmName" type="string">
+      <description>Name of the VM to create</description>
+    </param>
+    <param name="environment" type="string">
+      <description>Target environment (dev or prod)</description>
+    </param>
+    <param name="ownerEmail" type="string">
+      <description>Email of the VM owner</description>
+    </param>
+  </input>
+
+  <output>
+    <param name="vmId" type="string">
+      <description>ID of the created VM</description>
+    </param>
+  </output>
+
+  <attrib name="cpuCount" type="number" read-only="false"/>
+  <attrib name="memoryGB" type="number" read-only="false"/>
+  <attrib name="networkName" type="string" read-only="false"/>
+  <attrib name="storageName" type="string" read-only="false"/>
+
+  <workflow-item name="item0" type="end" end-mode="0">
+    <position x="544.5" y="45.40909090909091"/>
+  </workflow-item>
+
+  <workflow-item name="item1" out-name="item2" type="task">
+    <display-name>Determine Environment Config</display-name>
+    <script encoded="false"><![CDATA[
+System.log("Configuring for environment: " + environment);
+
+if (environment === "prod") {
+    cpuCount = 4;
+    memoryGB = 16;
+    networkName = "prod-network";
+    storageName = "storage-gold";
+    System.log("Production configuration selected");
+} else {
+    cpuCount = 2;
+    memoryGB = 8;
+    networkName = "dev-network";
+    storageName = "storage-standard";
+    System.log("Development configuration selected");
+}
+
+System.log("CPU: " + cpuCount + ", Memory: " + memoryGB + " GB");
+System.log("Network: " + networkName + ", Storage: " + storageName);
+    ]]></script>
+    <in-binding>
+      <bind name="environment" type="string" export-name="environment"/>
+    </in-binding>
+    <out-binding>
+      <bind name="cpuCount" type="number" export-name="cpuCount"/>
+      <bind name="memoryGB" type="number" export-name="memoryGB"/>
+      <bind name="networkName" type="string" export-name="networkName"/>
+      <bind name="storageName" type="string" export-name="storageName"/>
+    </out-binding>
+    <position x="100.0" y="55.40909090909091"/>
+  </workflow-item>
+
+  <workflow-item name="item2" out-name="item3" type="task">
+    <display-name>Create VM</display-name>
+    <script encoded="false"><![CDATA[
+System.log("Creating VM: " + vmName);
+System.log("Environment: " + environment);
+System.log("Resources: " + cpuCount + " CPU, " + memoryGB + " GB RAM");
+System.log("Network: " + networkName);
+System.log("Storage: " + storageName);
+
+// VM creation logic
+var vm = {
+    name: vmName,
+    cpu: cpuCount,
+    memory: memoryGB,
+    network: networkName,
+    storage: storageName,
+    id: "vm-" + Math.floor(Math.random() * 10000)
+};
+
+vmId = vm.id;
+System.log("VM created with ID: " + vmId);
+    ]]></script>
+    <in-binding>
+      <bind name="vmName" type="string" export-name="vmName"/>
+      <bind name="environment" type="string" export-name="environment"/>
+      <bind name="cpuCount" type="number" export-name="cpuCount"/>
+      <bind name="memoryGB" type="number" export-name="memoryGB"/>
+      <bind name="networkName" type="string" export-name="networkName"/>
+      <bind name="storageName" type="string" export-name="storageName"/>
+    </in-binding>
+    <out-binding>
+      <bind name="vmId" type="string" export-name="vmId"/>
+    </out-binding>
+    <position x="244.5" y="55.40909090909091"/>
+  </workflow-item>
+
+  <workflow-item name="item3" out-name="item0" type="task">
+    <display-name>Apply Tags</display-name>
+    <script encoded="false"><![CDATA[
+System.log("Applying tags to VM: " + vmId);
+
+var tags = {
+    "env": environment,
+    "owner": ownerEmail,
+    "managed-by": "ops-translate",
+    "created-date": new Date().toISOString().split('T')[0]
+};
+
+for (var key in tags) {
+    System.log("Tag: " + key + " = " + tags[key]);
+}
+    ]]></script>
+    <in-binding>
+      <bind name="vmId" type="string" export-name="vmId"/>
+      <bind name="environment" type="string" export-name="environment"/>
+      <bind name="ownerEmail" type="string" export-name="ownerEmail"/>
+    </in-binding>
+    <position x="394.5" y="55.40909090909091"/>
+  </workflow-item>
+
+  <presentation>
+    <p-step>
+      <title>VM Configuration</title>
+      <p-param name="vmName">
+        <desc>VM Name</desc>
+        <p-qual kind="static" name="mandatory" type="boolean"><![CDATA[true]]></p-qual>
+      </p-param>
+      <p-param name="environment">
+        <desc>Environment</desc>
+        <p-qual kind="static" name="mandatory" type="boolean"><![CDATA[true]]></p-qual>
+        <p-qual kind="static" name="genericEnumeration" type="Array/string"><![CDATA[#{#string#dev#;#string#prod#}#]]></p-qual>
+      </p-param>
+      <p-param name="ownerEmail">
+        <desc>Owner Email</desc>
+        <p-qual kind="static" name="mandatory" type="boolean"><![CDATA[true]]></p-qual>
+        <p-qual kind="static" name="regexp" type="String"><![CDATA[^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$]]></p-qual>
+      </p-param>
+    </p-step>
+  </presentation>
+</workflow>

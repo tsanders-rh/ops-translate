@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow xmlns="http://vmware.com/vco/workflow"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://vmware.com/vco/workflow http://vmware.com/vco/workflow/Workflow-v4.xsd"
+          root-name="item1"
+          object-name="Workflow:name=generic"
+          id="workflow-001"
+          version="1.0.0">
+  <display-name>Simple VM Provisioning</display-name>
+  <description>Basic VM provisioning workflow</description>
+
+  <position x="100.0" y="50.0"/>
+
+  <input>
+    <param name="vmName" type="string">
+      <description>Name of the VM to create</description>
+    </param>
+    <param name="cpuCount" type="number">
+      <description>Number of CPU cores</description>
+    </param>
+    <param name="memoryGB" type="number">
+      <description>Memory in GB</description>
+    </param>
+  </input>
+
+  <output>
+    <param name="vmId" type="string">
+      <description>ID of the created VM</description>
+    </param>
+  </output>
+
+  <attrib name="vcConnection" type="VC:VCenter" read-only="false">
+    <value encoded="n"><![CDATA[dunes://service.dunes.ch/CustomSDKObject?id=vcenter-001&dunesName=VC:VCenter]]></value>
+  </attrib>
+
+  <workflow-item name="item0" type="end" end-mode="0">
+    <position x="384.5" y="45.40909090909091"/>
+  </workflow-item>
+
+  <workflow-item name="item1" out-name="item2" type="task">
+    <display-name>Create VM</display-name>
+    <script encoded="false"><![CDATA[
+// Simple VM creation task
+System.log("Creating VM: " + vmName);
+System.log("CPU: " + cpuCount + ", Memory: " + memoryGB + " GB");
+
+// Simulated VM creation
+var vm = {
+    name: vmName,
+    cpu: cpuCount,
+    memory: memoryGB,
+    id: "vm-" + Math.floor(Math.random() * 10000)
+};
+
+vmId = vm.id;
+System.log("VM created with ID: " + vmId);
+    ]]></script>
+    <in-binding>
+      <bind name="vmName" type="string" export-name="vmName"/>
+      <bind name="cpuCount" type="number" export-name="cpuCount"/>
+      <bind name="memoryGB" type="number" export-name="memoryGB"/>
+    </in-binding>
+    <out-binding>
+      <bind name="vmId" type="string" export-name="vmId"/>
+    </out-binding>
+    <position x="100.0" y="55.40909090909091"/>
+  </workflow-item>
+
+  <workflow-item name="item2" out-name="item0" type="task">
+    <display-name>Start VM</display-name>
+    <script encoded="false"><![CDATA[
+System.log("Starting VM: " + vmId);
+// VM start logic here
+    ]]></script>
+    <in-binding>
+      <bind name="vmId" type="string" export-name="vmId"/>
+    </in-binding>
+    <position x="244.5" y="55.40909090909091"/>
+  </workflow-item>
+
+  <presentation>
+    <p-step>
+      <title>VM Configuration</title>
+      <p-param name="vmName">
+        <desc>VM Name</desc>
+        <p-qual kind="static" name="mandatory" type="boolean"><![CDATA[true]]></p-qual>
+      </p-param>
+      <p-param name="cpuCount">
+        <desc>CPU Cores</desc>
+        <p-qual kind="static" name="mandatory" type="boolean"><![CDATA[true]]></p-qual>
+        <p-qual kind="static" name="numberFormat" type="String"><![CDATA[#]]></p-qual>
+        <p-qual kind="static" name="minNumberValue" type="Number"><![CDATA[1]]></p-qual>
+        <p-qual kind="static" name="maxNumberValue" type="Number"><![CDATA[32]]></p-qual>
+      </p-param>
+      <p-param name="memoryGB">
+        <desc>Memory (GB)</desc>
+        <p-qual kind="static" name="mandatory" type="boolean"><![CDATA[true]]></p-qual>
+        <p-qual kind="static" name="numberFormat" type="String"><![CDATA[#]]></p-qual>
+        <p-qual kind="static" name="minNumberValue" type="Number"><![CDATA[1]]></p-qual>
+        <p-qual kind="static" name="maxNumberValue" type="Number"><![CDATA[256]]></p-qual>
+      </p-param>
+    </p-step>
+  </presentation>
+</workflow>
