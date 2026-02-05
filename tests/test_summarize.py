@@ -2,8 +2,6 @@
 Tests for summarize modules (PowerCLI and vRealize).
 """
 
-
-
 from ops_translate.summarize import powercli, vrealize
 
 
