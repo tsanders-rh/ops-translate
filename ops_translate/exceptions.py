@@ -2,13 +2,12 @@
 Custom exceptions for ops-translate with helpful error messages.
 """
 
-from typing import Optional
 
 
 class OpsTranslateError(Exception):
     """Base exception for ops-translate errors."""
 
-    def __init__(self, message: str, suggestion: Optional[str] = None):
+    def __init__(self, message: str, suggestion: str | None = None):
         self.message = message
         self.suggestion = suggestion
         super().__init__(self.message)
@@ -28,7 +27,7 @@ class WorkspaceError(OpsTranslateError):
 class WorkspaceNotFoundError(WorkspaceError):
     """Workspace not found or not initialized."""
 
-    def __init__(self, path: Optional[str] = None):
+    def __init__(self, path: str | None = None):
         message = "Not in an ops-translate workspace."
         if path:
             message = f"No ops-translate workspace found at: {path}"
@@ -93,7 +92,7 @@ class IntentError(OpsTranslateError):
 class IntentValidationError(IntentError):
     """Intent YAML validation failed."""
 
-    def __init__(self, errors: list[str], file_path: Optional[str] = None):
+    def __init__(self, errors: list[str], file_path: str | None = None):
         error_list = "\n  - ".join(errors)
         message = f"Intent validation failed with {len(errors)} error(s):\n  - {error_list}"
 
@@ -115,7 +114,7 @@ class IntentValidationError(IntentError):
 class IntentNotFoundError(IntentError):
     """Intent file not found."""
 
-    def __init__(self, intent_type: Optional[str] = None):
+    def __init__(self, intent_type: str | None = None):
         if intent_type:
             message = f"Intent file not found: intent/{intent_type}.intent.yaml"
         else:
@@ -158,7 +157,7 @@ class LLMError(OpsTranslateError):
 class LLMProviderNotAvailableError(LLMError):
     """LLM provider not available (missing API key, etc.)."""
 
-    def __init__(self, provider_name: str, api_key_env: Optional[str] = None):
+    def __init__(self, provider_name: str, api_key_env: str | None = None):
         message = f"LLM provider '{provider_name}' is not available."
 
         if api_key_env:
@@ -230,7 +229,7 @@ class GenerationError(OpsTranslateError):
 class ProfileNotFoundError(GenerationError):
     """Profile not found in configuration."""
 
-    def __init__(self, profile_name: str, available_profiles: Optional[list[str]] = None):
+    def __init__(self, profile_name: str, available_profiles: list[str] | None = None):
         message = f"Profile '{profile_name}' not found in configuration."
 
         if available_profiles:
