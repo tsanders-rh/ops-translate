@@ -88,8 +88,9 @@ def format_validation_error(error: ValidationError) -> list:
 
         # Add type conversion hints
         if error.validator_value == "integer" and isinstance(error.instance, str):
+            stripped_value = error.instance.strip().replace('"', "")
             errors.append(
-                f"  Hint: Remove quotes around the number: {error.instance} → {error.instance.strip().replace('\"', '')}"
+                f"  Hint: Remove quotes around the number: {error.instance} → {stripped_value}"
             )
         elif error.validator_value == "string" and not isinstance(error.instance, str):
             errors.append(
@@ -117,9 +118,8 @@ def format_validation_error(error: ValidationError) -> list:
         # Common pattern hints
         if "snake_case" in str(error.validator_value).lower() or "_" in str(error.validator_value):
             errors.append("  Hint: Use lowercase letters, numbers, and underscores only")
-            errors.append(
-                f"  Example: {error.instance} → {str(error.instance).lower().replace(' ', '_').replace('-', '_')}"
-            )
+            suggested_value = str(error.instance).lower().replace(" ", "_").replace("-", "_")
+            errors.append(f"  Example: {error.instance} → {suggested_value}")
 
     elif error.validator == "minimum" or error.validator == "maximum":
         errors.append(f"  Constraint: {error.validator} = {error.validator_value}")
