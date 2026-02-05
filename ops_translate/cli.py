@@ -331,39 +331,40 @@ def generate(
 
 @app.command()
 def dry_run():
-    """Validate intent and generated artifacts."""
+    """Validate intent and generated artifacts with detailed analysis."""
     workspace = Workspace(Path.cwd())
     if not workspace.config_file.exists():
         console.print("[red]Error: Not in a workspace.[/red]")
         raise typer.Exit(1)
 
-    console.print("[bold blue]Running validation checks...[/bold blue]")
+    console.print("[bold blue]Running enhanced dry-run validation...[/bold blue]")
 
-    from ops_translate.intent.validate import validate_artifacts, validate_intent
+    from ops_translate.intent.dry_run import print_dry_run_results, run_enhanced_dry_run
+    from ops_translate.intent.validate import validate_intent
 
-    # Validate intent schema
+    # Load config
+    config = workspace.load_config()
+
+    # Basic schema validation first
     intent_file = workspace.root / "intent/intent.yaml"
     if intent_file.exists():
-        console.print("  Validating intent schema...")
+        console.print("\n[dim]Validating intent schema...[/dim]")
         is_valid, errors = validate_intent(intent_file)
-        if is_valid:
-            console.print("    [green]✓ Intent schema valid[/green]")
-        else:
-            console.print("    [red]✗ Intent schema invalid:[/red]")
+        if not is_valid:
+            console.print("[red]✗ Intent schema validation failed:[/red]")
             for error in errors:
-                console.print(f"      - {error}")
+                console.print(f"  {error}")
+            raise typer.Exit(1)
+        console.print("[green]✓ Intent schema valid[/green]")
 
-    # Validate generated YAML
-    console.print("  Validating generated artifacts...")
-    valid, messages = validate_artifacts(workspace)
+    # Enhanced validation
+    is_safe, result = run_enhanced_dry_run(workspace, config)
 
-    for msg in messages:
-        console.print(f"    {msg}")
+    # Print detailed results
+    print_dry_run_results(result)
 
-    if valid:
-        console.print("\n[green]✓ All validations passed[/green]")
-    else:
-        console.print("\n[red]✗ Validation failed[/red]")
+    # Exit with appropriate code
+    if not is_safe:
         raise typer.Exit(1)
 
 

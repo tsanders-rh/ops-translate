@@ -447,19 +447,25 @@ class TestGenerate:
 class TestDryRun:
     """Tests for dry-run command."""
 
-    @patch("ops_translate.intent.validate.validate_intent")
-    @patch("ops_translate.intent.validate.validate_artifacts")
-    def test_dry_run_success(self, mock_artifacts, mock_intent, tmp_path):
-        """Test successful validation."""
-        mock_intent.return_value = (True, [])
-        mock_artifacts.return_value = (True, ["✓ All validations passed"])
-
+    def test_dry_run_success(self, tmp_path):
+        """Test successful validation with enhanced dry-run."""
         workspace = tmp_path / "workspace"
         runner.invoke(app, ["init", str(workspace)])
 
-        # Create intent file
+        # Create valid intent file
         intent_file = workspace / "intent" / "intent.yaml"
-        intent_file.write_text("schema_version: 1\nintent: {}")
+        intent_data = {
+            "schema_version": 1,
+            "intent": {
+                "workflow_name": "test_workflow",
+                "workload_type": "virtual_machine",
+                "inputs": {
+                    "vm_name": {"type": "string", "required": True}
+                },
+            },
+        }
+        import yaml
+        intent_file.write_text(yaml.dump(intent_data))
 
         import os
 
@@ -469,17 +475,17 @@ class TestDryRun:
 
             result = runner.invoke(app, ["dry-run"])
 
+            # Enhanced dry-run should show execution plan
+            assert "Execution Plan" in result.stdout or "Summary" in result.stdout
+            # Should be safe to proceed
             assert result.exit_code == 0
-            assert "All validations passed" in result.stdout
         finally:
             os.chdir(original_dir)
 
     @patch("ops_translate.intent.validate.validate_intent")
-    @patch("ops_translate.intent.validate.validate_artifacts")
-    def test_dry_run_invalid_intent(self, mock_artifacts, mock_intent, tmp_path):
-        """Test with invalid intent."""
+    def test_dry_run_invalid_intent(self, mock_intent, tmp_path):
+        """Test with invalid intent schema."""
         mock_intent.return_value = (False, ["Schema error 1", "Schema error 2"])
-        mock_artifacts.return_value = (True, [])
 
         workspace = tmp_path / "workspace"
         runner.invoke(app, ["init", str(workspace)])
@@ -495,16 +501,14 @@ class TestDryRun:
 
             result = runner.invoke(app, ["dry-run"])
 
-            # Should still run artifacts validation
-            assert "Intent schema invalid" in result.stdout
+            # Should fail on schema validation
+            assert result.exit_code == 1
+            assert "Schema error" in result.stdout
         finally:
             os.chdir(original_dir)
 
-    @patch("ops_translate.intent.validate.validate_artifacts")
-    def test_dry_run_no_intent_file(self, mock_artifacts, tmp_path):
+    def test_dry_run_no_intent_file(self, tmp_path):
         """Test without intent file."""
-        mock_artifacts.return_value = (True, [])
-
         workspace = tmp_path / "workspace"
         runner.invoke(app, ["init", str(workspace)])
 
@@ -516,7 +520,8 @@ class TestDryRun:
 
             result = runner.invoke(app, ["dry-run"])
 
-            # Should still run validation
-            assert result.exit_code == 0 or "validating" in result.stdout.lower()
+            # Should report missing intent file as blocking issue
+            assert result.exit_code == 1
+            assert "Intent file not found" in result.stdout or "BLOCKING" in result.stdout
         finally:
             os.chdir(original_dir)
