@@ -20,6 +20,165 @@ from typing import Any
 from ops_translate.exceptions import FileNotFoundError as OpsFileNotFoundError
 
 
+def calculate_signal_counts(
+    nsx_ops: dict[str, list], plugins: list, rest_calls: list
+) -> dict[str, int]:
+    """
+    Calculate count of detection signals for summary.
+
+    Args:
+        nsx_ops: NSX operations dict with categories as keys
+        plugins: List of custom plugin detections
+        rest_calls: List of REST API call detections
+
+    Returns:
+        Dictionary with signal counts:
+        - nsx_keywords: Total NSX operation detections across all categories
+        - rest_calls: Number of REST API calls detected
+        - plugin_refs: Number of custom plugin references
+
+    Example:
+        >>> nsx_ops = {"segments": [{"name": "seg1"}, {"name": "seg2"}], "firewall_rules": [{"name": "fw1"}]}
+        >>> plugins = [{"name": "plugin1"}]
+        >>> rest_calls = [{"endpoint": "/api/v1"}]
+        >>> calculate_signal_counts(nsx_ops, plugins, rest_calls)
+        {'nsx_keywords': 3, 'rest_calls': 1, 'plugin_refs': 1}
+    """
+    return {
+        "nsx_keywords": sum(len(ops) for ops in nsx_ops.values()),
+        "rest_calls": len(rest_calls),
+        "plugin_refs": len(plugins),
+    }
+
+
+def calculate_overall_confidence(nsx_ops: dict[str, list], plugins: list, rest_calls: list) -> str:
+    """
+    Calculate overall confidence rating based on average confidence scores.
+
+    Aggregates confidence scores from all detections and returns a categorical
+    rating: low, medium, or high.
+
+    Confidence thresholds:
+    - high: average >= 0.75
+    - medium: average >= 0.50
+    - low: average < 0.50
+
+    Args:
+        nsx_ops: NSX operations dict with confidence scores
+        plugins: Custom plugin detections (typically high confidence)
+        rest_calls: REST API call detections with confidence scores
+
+    Returns:
+        Confidence rating string: "low", "medium", or "high"
+
+    Example:
+        >>> nsx_ops = {"segments": [{"confidence": 0.9}, {"confidence": 0.85}]}
+        >>> plugins = [{"name": "plugin1"}]  # Implicit 0.95 confidence
+        >>> rest_calls = [{"confidence": 0.8}]
+        >>> calculate_overall_confidence(nsx_ops, plugins, rest_calls)
+        'high'
+    """
+    confidences = []
+
+    # Collect NSX operation confidences
+    for category, ops in nsx_ops.items():
+        for op in ops:
+            confidences.append(op.get("confidence", 0.5))
+
+    # Plugins are typically high confidence (explicit references)
+    for _ in plugins:
+        confidences.append(0.95)
+
+    # Collect REST call confidences
+    for call in rest_calls:
+        confidences.append(call.get("confidence", 0.5))
+
+    # Calculate average confidence
+    if not confidences:
+        return "low"
+
+    avg_confidence = sum(confidences) / len(confidences)
+
+    # Categorize
+    if avg_confidence >= 0.75:
+        return "high"
+    elif avg_confidence >= 0.50:
+        return "medium"
+    else:
+        return "low"
+
+
+def build_evidence_array(
+    nsx_ops: dict[str, list], plugins: list, rest_calls: list
+) -> list[dict[str, Any]]:
+    """
+    Build structured evidence array from all detections.
+
+    Consolidates evidence from NSX operations, plugins, and REST calls into
+    a unified array with node, snippet, and confidence information.
+
+    Args:
+        nsx_ops: NSX operations dict with evidence
+        plugins: Custom plugin detections
+        rest_calls: REST API call detections
+
+    Returns:
+        List of evidence dictionaries with keys:
+        - node: Location/node where detection occurred
+        - snippet: Code snippet or evidence text
+        - confidence: Detection confidence score (0.0-1.0)
+        - type: Type of detection (nsx, plugin, rest_call)
+
+    Example:
+        >>> nsx_ops = {"segments": [{"location": "task1", "evidence": "nsxClient.create...", "confidence": 0.9}]}
+        >>> build_evidence_array(nsx_ops, [], [])
+        [{'node': 'task1', 'snippet': 'nsxClient.create...', 'confidence': 0.9, 'type': 'nsx'}]
+    """
+    evidence = []
+
+    # Add NSX operation evidence
+    for category, ops in nsx_ops.items():
+        for op in ops:
+            evidence.append(
+                {
+                    "node": op.get("location", "unknown"),
+                    "snippet": op.get("evidence", ""),
+                    "confidence": op.get("confidence", 0.5),
+                    "type": "nsx",
+                    "category": category,
+                }
+            )
+
+    # Add plugin evidence
+    for plugin in plugins:
+        evidence.append(
+            {
+                "node": plugin.get("location", "unknown"),
+                "snippet": plugin.get("evidence", plugin.get("name", "")),
+                "confidence": 0.95,  # Plugin references are high confidence
+                "type": "plugin",
+                "category": "custom_plugin",
+            }
+        )
+
+    # Add REST call evidence
+    for call in rest_calls:
+        evidence.append(
+            {
+                "node": call.get("location", "unknown"),
+                "snippet": call.get("evidence", call.get("endpoint", "")),
+                "confidence": call.get("confidence", 0.5),
+                "type": "rest_call",
+                "category": call.get("call_type", "unknown"),
+            }
+        )
+
+    # Sort by confidence (highest first)
+    evidence.sort(key=lambda e: e["confidence"], reverse=True)
+
+    return evidence
+
+
 def analyze_vrealize_workflow(workflow_file: Path) -> dict[str, Any]:
     """
     Analyze a vRealize workflow for external dependencies.
@@ -29,11 +188,15 @@ def analyze_vrealize_workflow(workflow_file: Path) -> dict[str, Any]:
 
     Returns:
         Dictionary containing analysis results with keys:
-        - nsx_operations: NSX-T operations detected
-        - plugins: Custom plugins referenced
-        - rest_calls: External REST API calls
+        - source_file: Path to the analyzed workflow file
+        - signals: Signal counts dict with nsx_keywords, rest_calls, plugin_refs
+        - confidence: Overall confidence rating ("low", "medium", or "high")
+        - evidence: Array of evidence dicts with node, snippet, confidence, type
+        - nsx_operations: NSX-T operations detected (detailed dict by category)
+        - custom_plugins: Custom plugins referenced (detailed list)
+        - rest_api_calls: External REST API calls (detailed list)
         - complexity_score: Overall complexity rating (0-100)
-        - evidence: Supporting evidence for detections
+        - has_external_dependencies: Boolean flag for any external dependencies
 
     Raises:
         OpsFileNotFoundError: If workflow file doesn't exist
@@ -66,8 +229,16 @@ def analyze_vrealize_workflow(workflow_file: Path) -> dict[str, Any]:
     # Calculate complexity score
     complexity = calculate_complexity(nsx_ops, plugins, rest_calls)
 
+    # Build structured signal output
+    signals = calculate_signal_counts(nsx_ops, plugins, rest_calls)
+    confidence = calculate_overall_confidence(nsx_ops, plugins, rest_calls)
+    evidence = build_evidence_array(nsx_ops, plugins, rest_calls)
+
     return {
         "source_file": str(workflow_file),
+        "signals": signals,
+        "confidence": confidence,
+        "evidence": evidence,
         "nsx_operations": nsx_ops,
         "custom_plugins": plugins,
         "rest_api_calls": rest_calls,
