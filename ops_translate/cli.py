@@ -414,6 +414,90 @@ def generate(
 
 
 @app.command()
+@handle_errors
+def analyze():
+    """
+    Analyze imported vRealize workflows for external dependencies and translatability.
+
+    Detects NSX-T operations, custom plugins, and REST API calls, then classifies
+    them by translatability level (SUPPORTED/PARTIAL/BLOCKED/MANUAL).
+    Generates gap reports with migration guidance.
+
+    No LLM required - runs offline using pattern matching.
+    """
+    workspace = Workspace(Path.cwd())
+    if not workspace.config_file.exists():
+        console.print("[red]Error: Not in a workspace.[/red]")
+        raise typer.Exit(1)
+
+    console.print("[bold blue]Analyzing workflows for external dependencies...[/bold blue]\n")
+
+    from ops_translate.analyze.vrealize import (
+        analyze_vrealize_workflow,
+        write_analysis_report,
+    )
+    from ops_translate.intent.classify import classify_components
+    from ops_translate.intent.gaps import generate_gap_reports, print_gap_summary
+
+    # Find all vRealize workflows
+    vrealize_dir = workspace.root / "input/vrealize"
+    if not vrealize_dir.exists():
+        console.print("[yellow]No vRealize workflows found to analyze.[/yellow]")
+        console.print(
+            "[dim]Import vRealize workflows with: "
+            "ops-translate import --source vrealize --file <path>[/dim]"
+        )
+        raise typer.Exit(0)
+
+    xml_files = list(vrealize_dir.glob("*.xml"))
+    if not xml_files:
+        console.print("[yellow]No XML files found in input/vrealize/[/yellow]")
+        raise typer.Exit(0)
+
+    console.print(f"Found {len(xml_files)} workflow(s) to analyze\n")
+
+    all_components = []
+
+    # Analyze each workflow
+    for xml_file in xml_files:
+        console.print(f"[dim]Analyzing {xml_file.name}...[/dim]")
+
+        # Run analysis
+        analysis = analyze_vrealize_workflow(xml_file)
+
+        # Write analysis report
+        write_analysis_report(analysis, workspace.root / "intent")
+
+        # Classify components
+        components = classify_components(analysis)
+        all_components.extend(components)
+
+        # Show quick summary
+        if analysis["has_external_dependencies"]:
+            console.print(f"  [yellow]⚠ {xml_file.name}: Found external dependencies[/yellow]")
+        else:
+            console.print(f"  [green]✓ {xml_file.name}: No external dependencies[/green]")
+
+    console.print()
+
+    # Generate combined gap reports
+    if all_components:
+        generate_gap_reports(all_components, workspace.root / "intent")
+        console.print("[green]✓ Analysis reports written to intent/[/green]")
+        console.print("  [cyan]• analysis.vrealize.json[/cyan] - Detection details")
+        console.print("  [cyan]• analysis.vrealize.md[/cyan] - Human-readable analysis")
+        console.print("  [cyan]• gaps.json[/cyan] - Classification data")
+        console.print("  [cyan]• gaps.md[/cyan] - Migration guidance")
+
+        # Print summary to console
+        print_gap_summary(all_components)
+    else:
+        console.print(
+            "[green]✓ No external dependencies detected - workflows are fully translatable[/green]"
+        )
+
+
+@app.command()
 def dry_run():
     """Validate intent and generated artifacts with detailed analysis."""
     workspace = Workspace(Path.cwd())
