@@ -41,8 +41,7 @@ jobs:
         flags: unittests
         name: codecov-umbrella
         fail_ci_if_error: false
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        token: ${{ secrets.CODECOV_TOKEN }}  # Optional for public repos
 
     - name: Upload coverage artifact
       if: matrix.python-version == '3.13'
