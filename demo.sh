@@ -216,7 +216,6 @@ print_narration "NEW FEATURE: Comprehensive pre-flight validation"
 wait_short
 
 run_command "$OPS_CMD dry-run || true"
-echo -e "${YELLOW}Note: Schema validation found some issues, but we'll continue for demo purposes${NC}"
 echo ""
 press_enter
 
