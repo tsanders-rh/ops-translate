@@ -2,7 +2,6 @@
 Tests for template loading and rendering.
 """
 
-
 import pytest
 import yaml
 
