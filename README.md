@@ -216,7 +216,40 @@ pip install -e .
 
 ## Documentation
 
-- [SPEC.md](SPEC.md) - Complete specification and design
+### Getting Started
+
+- **[Tutorial](docs/TUTORIAL.md)** - Step-by-step walkthrough of a complete migration
+  - Hands-on tutorial with real examples
+  - Dev/prod VM provisioning scenario
+  - Advanced governance workflows
+  - **Start here if you're new to ops-translate!**
+
+- **[User Guide](docs/USER_GUIDE.md)** - Complete usage guide
+  - Installation and setup
+  - All CLI commands with examples
+  - Configuration reference
+  - Best practices and troubleshooting
+  - **Your comprehensive reference**
+
+### Technical Documentation
+
+- **[Architecture](docs/ARCHITECTURE.md)** - System design and internals
+  - Component architecture
+  - Data flow and state management
+  - Intent schema specification
+  - LLM integration patterns
+  - **For understanding how it works**
+
+- **[API Reference](docs/API_REFERENCE.md)** - Programmatic usage
+  - Python API documentation
+  - Extending ops-translate
+  - Custom providers and generators
+  - Type hints and examples
+  - **For developers and integrators**
+
+### Additional Resources
+
+- [SPEC.md](SPEC.md) - Original design specification
 - [examples/](examples/) - Sample PowerCLI and vRealize inputs with full walkthrough
 - [schema/](schema/) - Operational intent schema definition
 
