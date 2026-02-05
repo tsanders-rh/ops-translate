@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow
+  xmlns="http://vmware.com/vco/workflow"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="vm-approval-workflow"
+  name="VM Provisioning Approval Workflow"
+  version="1.0">
+
+  <display-name>VM Provisioning Approval</display-name>
+  <description>
+    Approval workflow for production VM provisioning requests.
+    Routes requests to ops-manager for approval before provisioning.
+  </description>
+
+  <!-- Input Parameters -->
+  <input>
+    <param name="vmName" type="string">
+      <description>Name of the VM to provision</description>
+    </param>
+    <param name="ownerEmail" type="string">
+      <description>Email of the VM owner/requester</description>
+    </param>
+    <param name="costCenter" type="string">
+      <description>Cost center for billing</description>
+    </param>
+    <param name="environment" type="string">
+      <description>Target environment (dev/prod)</description>
+    </param>
+    <param name="cpuCount" type="number">
+      <description>Number of CPUs requested</description>
+    </param>
+    <param name="memoryGB" type="number">
+      <description>Memory in GB</description>
+    </param>
+  </input>
+
+  <!-- Output Parameters -->
+  <output>
+    <param name="approved" type="boolean">
+      <description>Whether the request was approved</description>
+    </param>
+    <param name="approver" type="string">
+      <description>Email of the person who approved/rejected</description>
+    </param>
+  </output>
+
+  <!-- Workflow Logic -->
+  <workflow-item name="checkEnvironment" type="task">
+    <script>
+      <![CDATA[
+        // Check if approval is required based on environment
+        if (environment === "prod") {
+          System.log("Production environment detected - approval required");
+          requiresApproval = true;
+        } else {
+          System.log("Non-production environment - auto-approve");
+          requiresApproval = false;
+          approved = true;
+        }
+      ]]>
+    </script>
+  </workflow-item>
+
+  <workflow-item name="checkQuotas" type="task">
+    <script>
+      <![CDATA[
+        // Validate against organizational quotas
+        var maxCPUPerVM = 16;
+        var maxMemoryPerVM = 64;
+
+        if (cpuCount > maxCPUPerVM) {
+          throw "CPU request exceeds maximum allowed (" + maxCPUPerVM + ")";
+        }
+
+        if (memoryGB > maxMemoryPerVM) {
+          throw "Memory request exceeds maximum allowed (" + maxMemoryPerVM + " GB)";
+        }
+
+        System.log("Quota validation passed");
+      ]]>
+    </script>
+  </workflow-item>
+
+  <workflow-item name="requestApproval" type="interaction">
+    <display-name>Request Production Approval</display-name>
+    <approvers>
+      <user>ops-manager@example.com</user>
+      <user>infrastructure-lead@example.com</user>
+    </approvers>
+    <presentation>
+      <p>VM Provisioning Request for Production</p>
+      <p><b>VM Name:</b> ${vmName}</p>
+      <p><b>Requester:</b> ${ownerEmail}</p>
+      <p><b>Cost Center:</b> ${costCenter}</p>
+      <p><b>Resources:</b> ${cpuCount} CPU, ${memoryGB} GB RAM</p>
+      <p>Please approve or reject this provisioning request.</p>
+    </presentation>
+    <timeout>86400</timeout> <!-- 24 hours -->
+  </workflow-item>
+
+  <workflow-item name="provisionVM" type="task">
+    <script>
+      <![CDATA[
+        if (approved) {
+          System.log("Request approved by: " + approver);
+          System.log("Proceeding with VM provisioning: " + vmName);
+          // Actual provisioning would happen here
+        } else {
+          System.log("Request rejected by: " + approver);
+          throw "VM provisioning request was rejected";
+        }
+      ]]>
+    </script>
+  </workflow-item>
+
+  <workflow-item name="notifyOwner" type="email">
+    <to>${ownerEmail}</to>
+    <subject>VM Provisioning ${approved ? 'Approved' : 'Rejected'} - ${vmName}</subject>
+    <body>
+      <![CDATA[
+        Your VM provisioning request has been ${approved ? 'approved' : 'rejected'}.
+
+        VM Name: ${vmName}
+        Environment: ${environment}
+        Resources: ${cpuCount} CPU, ${memoryGB} GB RAM
+        ${approved ? 'Approver' : 'Rejected by'}: ${approver}
+
+        ${approved ? 'Your VM will be provisioned shortly.' : 'Please contact ops-manager@example.com for more information.'}
+      ]]>
+    </body>
+  </workflow-item>
+
+  <!-- Workflow Sequence -->
+  <presentation>
+    <step id="checkEnvironment" />
+    <step id="checkQuotas" />
+    <step id="requestApproval" condition="requiresApproval" />
+    <step id="provisionVM" />
+    <step id="notifyOwner" />
+  </presentation>
+
+</workflow>
