@@ -39,8 +39,13 @@ ops-translate import --source powercli --file ../examples/powercli/environment-a
 ops-translate summarize
 ops-translate intent extract
 
-# Generate OpenShift artifacts
-ops-translate generate --profile lab
+# Validate before generating
+ops-translate dry-run
+
+# Generate OpenShift artifacts (try different formats!)
+ops-translate generate --profile lab                    # YAML (default)
+ops-translate generate --profile lab --format kustomize # GitOps
+ops-translate generate --profile lab --format argocd    # ArgoCD
 
 # Review generated files
 tree output/
@@ -51,8 +56,8 @@ See [examples/](examples/) for more sample PowerCLI scripts and vRealize workflo
 ### Using Your Own Scripts
 
 ```bash
-# Initialize workspace
-ops-translate init my-project && cd my-project
+# Initialize workspace (optionally with custom templates)
+ops-translate init my-project --with-templates && cd my-project
 
 # Import your VMware automation
 ops-translate import --source powercli --file /path/to/your-script.ps1
@@ -63,11 +68,16 @@ ops-translate summarize
 ops-translate intent extract
 ops-translate intent merge
 
-# Generate OpenShift artifacts
-ops-translate generate --profile lab
+# Validate the extracted intent
+ops-translate dry-run
+
+# Generate OpenShift artifacts in your preferred format
+ops-translate generate --profile lab                    # YAML
+ops-translate generate --profile lab --format kustomize # GitOps with Kustomize
+ops-translate generate --profile prod --format argocd   # ArgoCD Applications
 ```
 
-**Result**: Ansible roles, KubeVirt VM manifests, and a clear migration path.
+**Result**: Ansible roles, KubeVirt VM manifests, and a clear migration path in your choice of format.
 
 ## Why ops-translate?
 
@@ -85,6 +95,170 @@ ops-translate generate --profile lab
 - Generate KubeVirt VirtualMachine manifests
 - Generate Ansible roles with proper structure and defaults
 - Support multiple LLM providers (OpenAI, Anthropic, or mock for testing)
+
+## Advanced Features
+
+### Multiple Output Formats
+
+ops-translate can generate artifacts in several formats to support different deployment strategies:
+
+#### YAML (Default)
+Standard Kubernetes manifests and Ansible playbooks:
+```bash
+ops-translate generate --profile lab --format yaml
+```
+
+Generates:
+- `output/kubevirt/vm.yaml` - KubeVirt VirtualMachine manifest
+- `output/ansible/site.yml` - Ansible playbook
+- `output/ansible/roles/provision_vm/` - Ansible role structure
+
+#### JSON Format
+For API integration and programmatic consumption:
+```bash
+ops-translate generate --profile lab --format json
+```
+
+Generates JSON equivalents of all YAML manifests in `output/json/`. Perfect for:
+- REST API payloads
+- CI/CD pipeline integration
+- Programmatic artifact manipulation
+
+#### Kustomize/GitOps
+Multi-environment GitOps structure with Kustomize:
+```bash
+ops-translate generate --profile lab --format kustomize
+# or
+ops-translate generate --profile lab --format gitops
+```
+
+Generates a full Kustomize directory structure:
+```
+output/
+├── base/
+│   ├── kustomization.yaml
+│   └── vm.yaml
+└── overlays/
+    ├── dev/
+    │   └── kustomization.yaml      # 2Gi memory, 1 CPU
+    ├── staging/
+    │   └── kustomization.yaml      # 4Gi memory, 2 CPUs
+    └── prod/
+        └── kustomization.yaml      # 8Gi memory, 4 CPUs
+```
+
+Each overlay automatically adjusts resources for its environment. Deploy with:
+```bash
+kubectl apply -k output/overlays/dev
+kubectl apply -k output/overlays/prod
+```
+
+#### ArgoCD Applications
+Full GitOps deployment with ArgoCD Application manifests:
+```bash
+ops-translate generate --profile lab --format argocd
+```
+
+Generates both Kustomize structure and ArgoCD resources:
+```
+output/
+├── base/                          # Kustomize base
+├── overlays/                      # Environment overlays
+└── argocd/
+    ├── project.yaml               # AppProject definition
+    ├── dev-application.yaml       # Dev app (automated sync)
+    ├── staging-application.yaml   # Staging app (partial automation)
+    └── prod-application.yaml      # Prod app (manual sync)
+```
+
+Features:
+- **dev**: Automated sync with prune and self-heal
+- **staging**: Automated sync with prune only
+- **prod**: Manual sync for safety
+
+Apply to your cluster:
+```bash
+kubectl apply -f output/argocd/project.yaml
+kubectl apply -f output/argocd/dev-application.yaml
+```
+
+### Template Customization
+
+Customize generated artifacts to match your organization's standards:
+
+```bash
+# Initialize workspace with editable templates
+ops-translate init my-project --with-templates
+```
+
+This copies all default templates to `templates/` in your workspace:
+```
+my-project/
+├── templates/
+│   ├── kubevirt/
+│   │   └── vm.yaml.j2           # Jinja2 template for VMs
+│   └── ansible/
+│       ├── playbook.yml.j2      # Playbook template
+│       └── role_tasks.yml.j2    # Role tasks template
+└── ops-translate.yaml
+```
+
+**Edit templates** to add:
+- Organization-specific labels and annotations
+- Custom resource requests/limits
+- Additional Ansible tasks or variables
+- Company-specific naming conventions
+
+When you run `generate`, ops-translate automatically uses your custom templates instead of defaults.
+
+**Benefits:**
+- Maintain consistency across migrations
+- Encode organizational best practices
+- No need to post-process generated artifacts
+
+### Enhanced Dry-Run Validation
+
+Validate your intent and generated artifacts before execution:
+
+```bash
+ops-translate dry-run
+```
+
+Performs comprehensive checks:
+- **Schema validation**: Intent YAML structure correctness
+- **Resource validation**: Generated manifests are valid Kubernetes/Ansible
+- **Consistency checks**: Metadata tags match intent specifications
+- **Completeness**: All required inputs are defined with proper types
+
+Output includes:
+```
+Dry-Run Validation Report
+========================
+
+✓ Schema validation passed
+✓ 2 KubeVirt manifests validated
+✓ 1 Ansible playbook validated
+
+⚠ Review Items:
+  - Input 'owner_email' has no default value
+  - Consider adding min/max constraints to 'cpu' input
+
+Execution Plan:
+1. Validate inputs: vm_name, environment, cpu, memory_gb
+2. Select profile based on environment
+3. Generate KubeVirt manifest with tags
+4. Generate Ansible playbook
+5. Execute Ansible role tasks
+6. Verify VM creation
+7. Tag resources with metadata
+
+Status: SAFE TO PROCEED (with 2 review items)
+```
+
+**Categories:**
+- 🔴 **BLOCKING**: Must fix before execution
+- 🟡 **REVIEW**: Should verify but not blocking
+- 🟢 **SAFE**: No issues found
 
 ## Example Output
 
