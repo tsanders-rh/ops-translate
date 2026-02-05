@@ -6,11 +6,19 @@ import json
 import os
 import shutil
 from datetime import datetime
+from functools import wraps
 from pathlib import Path
 
 import typer
 from rich.console import Console
 
+from ops_translate.exceptions import (
+    FileNotFoundError as OpsFileNotFoundError,
+    InvalidSourceTypeError,
+    OpsTranslateError,
+    WorkspaceNotFoundError,
+    format_error_for_cli,
+)
 from ops_translate.util.files import ensure_dir, write_text
 from ops_translate.util.hashing import sha256_file
 from ops_translate.workspace import Workspace
@@ -21,6 +29,27 @@ app = typer.Typer(
     add_completion=False,
 )
 console = Console()
+
+
+def handle_errors(func):
+    """Decorator to handle exceptions in CLI commands with nice formatting."""
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except OpsTranslateError as e:
+            # Our custom exceptions with helpful messages
+            console.print(format_error_for_cli(e))
+            raise typer.Exit(1)
+        except Exception as e:
+            # Unexpected errors
+            console.print(f"[red]Unexpected error:[/red] {str(e)}")
+            console.print("\n[yellow]This may be a bug. Please report it at:")
+            console.print("https://github.com/tsanders-rh/ops-translate/issues[/yellow]")
+            raise typer.Exit(1)
+
+    return wrapper
 
 # Create intent subcommand group
 intent_app = typer.Typer(help="Intent management commands (extract, merge, edit)")
@@ -47,25 +76,25 @@ def init(workspace_dir: str = typer.Argument(..., help="Workspace directory to i
 
 
 @app.command(name="import")
+@handle_errors
 def import_cmd(
     source: str = typer.Option(..., "--source", help="Source type (powercli|vrealize)"),
     file: str = typer.Option(..., "--file", help="Path to file to import"),
 ):
     """Import a PowerCLI script or vRealize workflow."""
+    # Validate source type
     if source not in ["powercli", "vrealize"]:
-        console.print("[red]Error: --source must be 'powercli' or 'vrealize'[/red]")
-        raise typer.Exit(1)
+        raise InvalidSourceTypeError(source)
 
+    # Check file exists
     source_path = Path(file)
     if not source_path.exists():
-        console.print(f"[red]Error: File not found: {file}[/red]")
-        raise typer.Exit(1)
+        raise OpsFileNotFoundError(str(source_path))
 
     # Ensure we're in a workspace
     workspace = Workspace(Path.cwd())
     if not workspace.config_file.exists():
-        console.print("[red]Error: Not in a workspace. Run 'ops-translate init <dir>' first.[/red]")
-        raise typer.Exit(1)
+        raise WorkspaceNotFoundError()
 
     # Copy file to input directory
     input_dir = workspace.root / "input" / source

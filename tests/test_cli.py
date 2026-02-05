@@ -115,7 +115,10 @@ class TestImport:
             )
 
             assert result.exit_code == 1
-            assert "must be 'powercli' or 'vrealize'" in result.stdout
+            # Check for new error message format
+            assert "Invalid source type" in result.stdout
+            assert "powercli" in result.stdout
+            assert "vrealize" in result.stdout
         finally:
             os.chdir(original_dir)
 
@@ -151,7 +154,9 @@ class TestImport:
         )
 
         assert result.exit_code == 1
-        assert "Not in a workspace" in result.stdout
+        # Check for new error message format
+        assert "workspace" in result.stdout.lower()
+        assert "init" in result.stdout
 
 
 class TestSummarize:

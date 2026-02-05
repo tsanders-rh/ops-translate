@@ -1,12 +1,15 @@
 """
-Intent and artifact validation.
+Intent and artifact validation with detailed error messages.
 """
 
-from pathlib import Path
-import yaml
 import json
-from jsonschema import validate, ValidationError, Draft7Validator
+from pathlib import Path
+
+import yaml
+from jsonschema import Draft7Validator, ValidationError, validate
 from jsonschema.exceptions import SchemaError
+
+from ops_translate.exceptions import ArtifactValidationError, IntentValidationError
 
 # Get project root to find schema
 PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -49,13 +52,13 @@ def validate_intent(intent_file: Path) -> tuple[bool, list]:
 
 def format_validation_error(error: ValidationError) -> list:
     """
-    Format jsonschema ValidationError into user-friendly messages.
+    Format jsonschema ValidationError into user-friendly messages with examples.
 
     Args:
         error: ValidationError from jsonschema
 
     Returns:
-        list: List of formatted error messages
+        list: List of formatted error messages with helpful suggestions
     """
     errors = []
 
@@ -71,31 +74,86 @@ def format_validation_error(error: ValidationError) -> list:
         missing_props = error.message.split("'")[1::2]  # Extract property names
         errors.append(f"  Required properties missing: {', '.join(missing_props)}")
 
+        # Add examples for common required fields
+        if "schema_version" in missing_props:
+            errors.append("  Example: schema_version: 1")
+        if "type" in missing_props:
+            errors.append("  Example: type: powercli")
+        if "workflow_name" in missing_props:
+            errors.append("  Example: workflow_name: provision_vm")
+
     elif error.validator == "type":
         errors.append(f"  Expected type: {error.validator_value}")
         errors.append(f"  Got: {type(error.instance).__name__}")
 
+        # Add type conversion hints
+        if error.validator_value == "integer" and isinstance(error.instance, str):
+            errors.append(f"  Hint: Remove quotes around the number: {error.instance} → {error.instance.strip().replace('\"', '')}")
+        elif error.validator_value == "string" and not isinstance(error.instance, str):
+            errors.append(f"  Hint: Add quotes around the value: {error.instance} → \"{error.instance}\"")
+
     elif error.validator == "enum":
-        errors.append(f"  Allowed values: {error.validator_value}")
+        errors.append(f"  Allowed values: {', '.join(str(v) for v in error.validator_value)}")
         errors.append(f"  Got: {error.instance}")
+
+        # Suggest closest match if applicable
+        if isinstance(error.instance, str):
+            close_matches = [v for v in error.validator_value if isinstance(v, str) and v.startswith(error.instance[0])]
+            if close_matches:
+                errors.append(f"  Did you mean: {close_matches[0]}?")
 
     elif error.validator == "pattern":
         errors.append(f"  Expected pattern: {error.validator_value}")
         errors.append(f"  Got: {error.instance}")
 
+        # Common pattern hints
+        if "snake_case" in str(error.validator_value).lower() or "_" in str(error.validator_value):
+            errors.append("  Hint: Use lowercase letters, numbers, and underscores only")
+            errors.append(f"  Example: {error.instance} → {str(error.instance).lower().replace(' ', '_').replace('-', '_')}")
+
     elif error.validator == "minimum" or error.validator == "maximum":
         errors.append(f"  Constraint: {error.validator} = {error.validator_value}")
         errors.append(f"  Got: {error.instance}")
 
-    # Add suggestion for common errors
-    if "schema_version" in str(error.path):
-        errors.append("  Hint: schema_version must be the integer 1")
-    elif "workflow_name" in str(error.path):
-        errors.append("  Hint: workflow_name must be snake_case (lowercase with underscores)")
-    elif "workload_type" in str(error.path):
-        errors.append(
-            "  Hint: workload_type must be one of: virtual_machine, container, baremetal, other"
-        )
+        # Show valid range
+        if error.validator == "minimum":
+            errors.append(f"  Hint: Value must be >= {error.validator_value}")
+        else:
+            errors.append(f"  Hint: Value must be <= {error.validator_value}")
+
+    # Add field-specific suggestions
+    field_name = str(error.path[-1]) if error.path else ""
+
+    if field_name == "schema_version":
+        errors.append("  Hint: schema_version must be the integer 1 (not a string)")
+        errors.append("  Correct:   schema_version: 1")
+        errors.append("  Incorrect: schema_version: \"1\"")
+
+    elif field_name == "workflow_name":
+        errors.append("  Hint: Use snake_case naming (lowercase with underscores)")
+        errors.append("  Correct:   workflow_name: provision_dev_vm")
+        errors.append("  Incorrect: workflow_name: Provision-Dev-VM")
+
+    elif field_name == "type":
+        errors.append("  Hint: type must be one of: powercli, vrealize, custom")
+        errors.append("  Example: type: powercli")
+
+    elif field_name == "cpu_count" or field_name == "memory_gb":
+        errors.append(f"  Hint: {field_name} must be a positive integer")
+        errors.append(f"  Example: {field_name}: 4")
+
+    elif field_name == "required":
+        errors.append("  Hint: required must be a boolean (true or false)")
+        errors.append("  Correct:   required: true")
+        errors.append("  Incorrect: required: yes")
+
+    elif "inputs" in str(error.path):
+        errors.append("  Hint: Each input must have name, type, and required fields")
+        errors.append("  Example:")
+        errors.append("    inputs:")
+        errors.append("      - name: vm_name")
+        errors.append("        type: string")
+        errors.append("        required: true")
 
     return errors
 

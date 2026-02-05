@@ -4,7 +4,9 @@ Anthropic Claude LLM provider implementation.
 
 import os
 
+from ops_translate.exceptions import LLMAPIError, LLMProviderNotAvailableError
 from ops_translate.llm.base import LLMProvider
+from ops_translate.util.retry import RetryStrategy, is_retryable_error, retry_with_backoff
 
 
 class AnthropicProvider(LLMProvider):
@@ -48,14 +50,29 @@ class AnthropicProvider(LLMProvider):
             Generated text response
 
         Raises:
-            ValueError: If API key not configured
-            Exception: If API call fails
+            LLMProviderNotAvailableError: If API key not configured
+            LLMAPIError: If API call fails
         """
         if not self.client:
-            raise ValueError(
-                f"Anthropic API key not found. Set {self.api_key_env} environment variable."
-            )
+            raise LLMProviderNotAvailableError("anthropic", self.api_key_env)
 
+        # Use retry logic for API calls
+        return self._generate_with_retry(prompt, system_prompt, max_tokens, temperature)
+
+    @retry_with_backoff(**RetryStrategy.LLM_API)
+    def _generate_with_retry(
+        self,
+        prompt: str,
+        system_prompt: str | None,
+        max_tokens: int,
+        temperature: float,
+    ) -> str:
+        """
+        Internal method with retry logic.
+
+        Raises:
+            LLMAPIError: If API call fails after retries
+        """
         try:
             messages = [{"role": "user", "content": prompt}]
 
@@ -75,7 +92,13 @@ class AnthropicProvider(LLMProvider):
             return response.content[0].text
 
         except Exception as e:
-            raise Exception(f"Anthropic API call failed: {e}")
+            # Determine if error is retryable
+            if is_retryable_error(e):
+                # Re-raise to trigger retry
+                raise
+            else:
+                # Non-retryable error
+                raise LLMAPIError("Anthropic", str(e), retry_count=0)
 
     def is_available(self) -> bool:
         """Check if Anthropic provider is available."""
