@@ -76,6 +76,65 @@ def analyze_vrealize_workflow(workflow_file: Path) -> dict[str, Any]:
     }
 
 
+def calculate_detection_confidence(match_type: str, context: str, pattern: str = "") -> float:
+    """
+    Calculate confidence score for a detection based on multiple signals.
+
+    Confidence scoring logic:
+    - API call patterns (nsxClient.createX): High confidence (0.85-0.95)
+    - Object type keywords (Segment, FirewallRule): Medium confidence (0.5-0.7)
+    - Generic keywords (nsx, tier1): Low confidence (0.3-0.5)
+    - Boosts applied for supporting evidence in context
+
+    Args:
+        match_type: Type of match - "api_call", "object_type", or "keyword"
+        context: Surrounding text context for the match
+        pattern: The specific pattern that was matched
+
+    Returns:
+        Confidence score between 0.0 and 0.95 (never 100% certain with heuristics)
+
+    Example:
+        >>> calculate_detection_confidence("api_call", "nsxClient.createSegment()", "createSegment")
+        0.9
+        >>> calculate_detection_confidence("keyword", "tier1 gateway config", "tier1")
+        0.35
+    """
+    # Base confidence by match type
+    if match_type == "api_call":
+        confidence = 0.9  # High confidence for explicit API calls
+    elif match_type == "object_type":
+        confidence = 0.6  # Medium confidence for object type names
+    elif match_type == "keyword":
+        confidence = 0.3  # Low confidence for generic keywords
+    else:
+        confidence = 0.5  # Default medium confidence
+
+    # Context-based boosts (max +0.15 total)
+    context_lower = context.lower()
+
+    # Boost if nsxClient is present
+    if "nsxclient" in context_lower:
+        confidence += 0.05
+
+    # Boost if create/update/delete verbs present
+    if any(verb in context_lower for verb in ["create", "update", "delete", "configure"]):
+        confidence += 0.05
+
+    # Boost if nsx API path pattern present
+    if re.search(r"nsx[/-]api[/-]v\d", context_lower):
+        confidence += 0.05
+
+    # Slight boost for multiple NSX-related terms
+    nsx_terms = ["segment", "firewall", "gateway", "tier", "transport", "overlay"]
+    term_count = sum(1 for term in nsx_terms if term in context_lower)
+    if term_count >= 2:
+        confidence += 0.03
+
+    # Cap at 0.95 (never 100% certain with heuristics)
+    return min(confidence, 0.95)
+
+
 def detect_nsx_operations(root: ET.Element, namespace: str = "") -> dict[str, list[dict[str, Any]]]:
     """
     Detect NSX-T operations in vRealize workflow.
@@ -190,11 +249,22 @@ def detect_nsx_operations(root: ET.Element, namespace: str = "") -> dict[str, li
                     if parent is not None and "name" in parent.attrib:
                         location = f"workflow-item[@name='{parent.attrib['name']}']"
 
+                    # Determine match type for confidence calculation
+                    if "nsxClient" in pattern:
+                        match_type = "api_call"
+                    elif pattern[0].isupper():  # CamelCase object types
+                        match_type = "object_type"
+                    else:
+                        match_type = "keyword"
+
+                    # Calculate confidence based on match type and context
+                    confidence = calculate_detection_confidence(match_type, context, pattern)
+
                     nsx_ops[category].append(
                         {
                             "name": pattern,
                             "location": location,
-                            "confidence": 0.9,  # High confidence for API pattern match
+                            "confidence": confidence,
                             "evidence": (
                                 f"Pattern match: {match.group()} in context: " f"...{context}..."
                             ),
@@ -213,11 +283,25 @@ def detect_nsx_operations(root: ET.Element, namespace: str = "") -> dict[str, li
                 if re.search(pattern, item_name, re.IGNORECASE) or re.search(
                     pattern, item_type, re.IGNORECASE
                 ):
+                    # Use item name/type as context for confidence calculation
+                    context = f"{item_name} {item_type}".strip()
+
+                    # Name-based matches are typically keywords or object types
+                    if "nsxClient" in pattern:
+                        match_type = "api_call"
+                    elif pattern[0].isupper():
+                        match_type = "object_type"
+                    else:
+                        match_type = "keyword"
+
+                    # Calculate confidence (will be lower due to less context)
+                    confidence = calculate_detection_confidence(match_type, context, pattern)
+
                     nsx_ops[category].append(
                         {
                             "name": item_name or item_type,
                             "location": f"workflow-item[@name='{item_name}']",
-                            "confidence": 0.7,  # Lower confidence for name-based match
+                            "confidence": confidence,
                             "evidence": (
                                 f"Workflow item name/type contains NSX keyword: "
                                 f"{item_name or item_type}"
@@ -304,60 +388,149 @@ def detect_custom_plugins(root: ET.Element, namespace: str = "") -> list[dict[st
 
 def detect_rest_calls(root: ET.Element, namespace: str = "") -> list[dict[str, Any]]:
     """
-    Detect external REST API calls.
+    Detect external REST API calls with structured endpoint and method extraction.
 
-    Identifies REST operations that interact with external systems.
+    Identifies REST operations that interact with external systems and extracts:
+    - HTTP method (GET, POST, PUT, DELETE, PATCH)
+    - Endpoint URL (if present)
+    - Call type (restClient, fetch, XMLHttpRequest, vRO REST objects)
 
     Args:
         root: Root element of parsed vRealize workflow XML
         namespace: XML namespace prefix
 
     Returns:
-        List of detected REST calls with metadata
+        List of detected REST calls with metadata including:
+        - endpoint: URL if detected, otherwise "unknown"
+        - method: HTTP method if detected, otherwise "UNKNOWN"
+        - call_type: Type of REST call (restClient, fetch, etc.)
+        - confidence: Confidence score (0.0-0.95)
+        - evidence: Supporting code snippet
 
     Example result:
         [
             {
                 "endpoint": "https://api.example.com/v1/resources",
                 "method": "POST",
+                "call_type": "restClient",
                 "location": "workflow-item[@name='callAPI']",
                 "confidence": 0.9,
-                "evidence": "REST call: restClient.post(url)"
+                "evidence": "REST call: restClient.post('https://...')"
             }
         ]
     """
     rest_calls = []
-
-    # REST API patterns
-    rest_patterns = [
-        r"(https?://[^\s\"']+)",  # URLs
-        r"RESTHost|RESTOperation",  # vRO REST objects
-        r"restClient\.(get|post|put|delete|patch)",  # REST client calls
-        r"fetch\s*\(",  # JavaScript fetch
-        r"XMLHttpRequest",  # XHR
-    ]
-
     script_tag = f"{namespace}script" if namespace else "script"
+
     for script_elem in root.iter(script_tag):
         script_text = script_elem.text or ""
 
-        for pattern in rest_patterns:
-            matches = re.finditer(pattern, script_text, re.IGNORECASE)
-            for match in matches:
-                # Extract context
-                start = max(0, match.start() - 50)
-                end = min(len(script_text), match.end() + 50)
-                context = script_text[start:end].strip()
+        # Pattern 1: restClient.METHOD(url, ...) - highest confidence
+        rest_client_pattern = r'restClient\.(get|post|put|delete|patch)\s*\(\s*["\']([^"\']+)'
+        for match in re.finditer(rest_client_pattern, script_text, re.IGNORECASE):
+            method, endpoint = match.groups()
+            start = max(0, match.start() - 30)
+            end = min(len(script_text), match.end() + 30)
+            context = script_text[start:end].strip()
 
-                rest_calls.append(
-                    {
-                        "endpoint": match.group(0) if pattern.startswith("(https?") else "unknown",
-                        "method": "unknown",
-                        "location": "script-block",
-                        "confidence": 0.8,
-                        "evidence": f"REST pattern: ...{context}...",
-                    }
-                )
+            rest_calls.append(
+                {
+                    "endpoint": endpoint,
+                    "method": method.upper(),
+                    "call_type": "restClient",
+                    "location": "script-block",
+                    "confidence": 0.9,  # High confidence - explicit REST client call
+                    "evidence": f"restClient call: ...{context}...",
+                }
+            )
+
+        # Pattern 2: fetch(url, options) - medium-high confidence
+        fetch_pattern = (
+            r'fetch\s*\(\s*["\']([^"\']+)["\'](?:,\s*\{[^}]*method\s*:\s*["\'](\w+)["\'])?'
+        )
+        for match in re.finditer(fetch_pattern, script_text, re.IGNORECASE):
+            endpoint = match.group(1)
+            method = match.group(2).upper() if match.group(2) else "GET"  # Default to GET
+            start = max(0, match.start() - 30)
+            end = min(len(script_text), match.end() + 30)
+            context = script_text[start:end].strip()
+
+            rest_calls.append(
+                {
+                    "endpoint": endpoint,
+                    "method": method,
+                    "call_type": "fetch",
+                    "location": "script-block",
+                    "confidence": 0.85,  # High confidence for fetch calls
+                    "evidence": f"fetch call: ...{context}...",
+                }
+            )
+
+        # Pattern 3: XMLHttpRequest - medium confidence
+        xhr_pattern = r'XMLHttpRequest.*?\.open\s*\(\s*["\'](\w+)["\']\s*,\s*["\']([^"\']+)'
+        for match in re.finditer(xhr_pattern, script_text, re.IGNORECASE | re.DOTALL):
+            method, endpoint = match.groups()
+            start = max(0, match.start() - 20)
+            end = min(len(script_text), match.end() + 20)
+            context = script_text[start:end].strip()
+
+            rest_calls.append(
+                {
+                    "endpoint": endpoint,
+                    "method": method.upper(),
+                    "call_type": "XMLHttpRequest",
+                    "location": "script-block",
+                    "confidence": 0.8,  # Medium-high confidence
+                    "evidence": f"XHR call: ...{context}...",
+                }
+            )
+
+        # Pattern 4: vRO REST objects (RESTHost/RESTOperation) - low-medium confidence
+        vro_rest_pattern = r"(RESTHost|RESTOperation)"
+        for match in re.finditer(vro_rest_pattern, script_text, re.IGNORECASE):
+            start = max(0, match.start() - 40)
+            end = min(len(script_text), match.end() + 40)
+            context = script_text[start:end].strip()
+
+            # Try to extract URL from context if present
+            url_match = re.search(r'https?://[^\s"\']+', context)
+            endpoint = url_match.group(0) if url_match else "unknown"
+
+            rest_calls.append(
+                {
+                    "endpoint": endpoint,
+                    "method": "UNKNOWN",
+                    "call_type": "vRO_REST",
+                    "location": "script-block",
+                    "confidence": 0.6,  # Lower confidence - less specific
+                    "evidence": f"vRO REST object: ...{context}...",
+                }
+            )
+
+        # Pattern 5: Standalone URLs (lowest confidence - might not be REST calls)
+        # Only include if not already matched by other patterns
+        url_pattern = r'https?://[^\s"\'<>]+'
+        for match in re.finditer(url_pattern, script_text):
+            url = match.group(0)
+
+            # Skip if this URL was already captured by a higher-confidence pattern
+            if any(call["endpoint"] == url for call in rest_calls):
+                continue
+
+            start = max(0, match.start() - 40)
+            end = min(len(script_text), match.end() + 40)
+            context = script_text[start:end].strip()
+
+            rest_calls.append(
+                {
+                    "endpoint": url,
+                    "method": "UNKNOWN",
+                    "call_type": "url_reference",
+                    "location": "script-block",
+                    "confidence": 0.4,  # Low confidence - might just be a string
+                    "evidence": f"URL reference: ...{context}...",
+                }
+            )
 
     return rest_calls
 
@@ -454,7 +627,14 @@ def write_analysis_report(analysis: dict[str, Any], output_dir: Path) -> None:
             if analysis["rest_api_calls"]:
                 f.write("### REST API Calls\n\n")
                 for call in analysis["rest_api_calls"]:
-                    f.write(f"- **{call['endpoint']}**\n")
+                    endpoint_display = (
+                        call["endpoint"]
+                        if call["endpoint"] != "unknown"
+                        else "(endpoint not extracted)"
+                    )
+                    f.write(f"- **{call['method']}** {endpoint_display}\n")
+                    f.write(f"  - Call type: {call.get('call_type', 'unknown')}\n")
+                    f.write(f"  - Confidence: {call['confidence']:.0%}\n")
                     f.write(f"  - Evidence: {call['evidence']}\n\n")
         else:
             f.write("## No External Dependencies\n\n")
