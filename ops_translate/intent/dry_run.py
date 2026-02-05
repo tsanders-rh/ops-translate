@@ -44,9 +44,7 @@ class DryRunResult:
         suggestion: str | None = None,
     ):
         """Add a validation issue."""
-        self.issues.append(
-            ValidationIssue(severity, category, message, location, suggestion)
-        )
+        self.issues.append(ValidationIssue(severity, category, message, location, suggestion))
 
     def add_step(self, step: str):
         """Add a planned execution step."""
@@ -194,9 +192,7 @@ def validate_resource_consistency(workspace, intent_data: dict, result: DryRunRe
             # Check metadata labels match intent tags
             if "metadata" in intent:
                 expected_tags = intent["metadata"].get("tags", [])
-                kubevirt_labels = (
-                    kubevirt_data.get("metadata", {}).get("labels", {})
-                )
+                kubevirt_labels = kubevirt_data.get("metadata", {}).get("labels", {})
 
                 for tag in expected_tags:
                     tag_key = tag.get("key")
@@ -260,9 +256,7 @@ def generate_execution_plan(intent_data: dict, result: DryRunResult):
             if isinstance(spec, dict) and spec.get("required")
         ]
         if required_inputs:
-            result.add_step(
-                f"2. Validate required inputs: {', '.join(required_inputs)}"
-            )
+            result.add_step(f"2. Validate required inputs: {', '.join(required_inputs)}")
         else:
             result.add_step("2. Validate inputs (all optional)")
     else:
@@ -272,9 +266,7 @@ def generate_execution_plan(intent_data: dict, result: DryRunResult):
     if "governance" in intent and "approval" in intent["governance"]:
         approval = intent["governance"]["approval"]
         if "required_when" in approval:
-            conditions = ", ".join(
-                f"{k}={v}" for k, v in approval["required_when"].items()
-            )
+            conditions = ", ".join(f"{k}={v}" for k, v in approval["required_when"].items())
             result.add_step(f"3. Check approval requirement (when: {conditions})")
         else:
             result.add_step("3. Check approval requirement (always required)")
@@ -365,15 +357,11 @@ def print_dry_run_results(result: DryRunResult):
         console.print("  [green]✓ No issues found - safe to proceed[/green]")
     elif result.is_safe_to_proceed():
         if result.has_review_items():
-            console.print(
-                "  [yellow]⚠ Safe to proceed but review items should be checked[/yellow]"
-            )
+            console.print("  [yellow]⚠ Safe to proceed but review items should be checked[/yellow]")
         else:
             console.print("  [green]✓ Safe to proceed[/green]")
     else:
-        console.print(
-            "  [red]✗ Blocking issues found - must fix before proceeding[/red]"
-        )
+        console.print("  [red]✗ Blocking issues found - must fix before proceeding[/red]")
 
 
 def run_enhanced_dry_run(workspace, config: dict) -> tuple[bool, DryRunResult]:

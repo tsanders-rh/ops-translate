@@ -113,8 +113,7 @@ class TestJSONFormat:
         workspace = Workspace(tmp_path / "workspace")
         workspace.initialize()
 
-        content = {
-            "multi.yaml": """---
+        content = {"multi.yaml": """---
 kind: ConfigMap
 metadata:
   name: config1
@@ -122,8 +121,7 @@ metadata:
 kind: ConfigMap
 metadata:
   name: config2
-"""
-        }
+"""}
 
         handler = JSONFormat(workspace.root)
         handler.write(content, "lab", sample_context)

@@ -291,9 +291,7 @@ class TestGenerateExecutionPlan:
         intent_data = {
             "intent": {
                 "workflow_name": "test",
-                "governance": {
-                    "approval": {"required_when": {"environment": "prod"}}
-                },
+                "governance": {"approval": {"required_when": {"environment": "prod"}}},
             }
         }
 

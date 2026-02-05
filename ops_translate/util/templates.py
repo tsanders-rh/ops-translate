@@ -54,9 +54,7 @@ class TemplateLoader:
         if default_template.exists():
             return default_template
 
-        raise FileNotFoundError(
-            f"Template '{template_name}' not found in workspace or defaults"
-        )
+        raise FileNotFoundError(f"Template '{template_name}' not found in workspace or defaults")
 
     def load_template(self, template_name: str) -> Template:
         """
@@ -82,9 +80,7 @@ class TemplateLoader:
 
         return env.get_template(template_path.name)
 
-    def render_template(
-        self, template_name: str, context: dict, output_file: Path
-    ) -> None:
+    def render_template(self, template_name: str, context: dict, output_file: Path) -> None:
         """
         Render a template and write to file.
 
@@ -115,9 +111,7 @@ class TemplateLoader:
         Creates templates/ directory in workspace with all default templates.
         """
         if not self.default_templates.exists():
-            raise FileNotFoundError(
-                f"Default templates not found at {self.default_templates}"
-            )
+            raise FileNotFoundError(f"Default templates not found at {self.default_templates}")
 
         # Copy entire templates directory
         if self.workspace_templates.exists():

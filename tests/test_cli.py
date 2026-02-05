@@ -459,12 +459,11 @@ class TestDryRun:
             "intent": {
                 "workflow_name": "test_workflow",
                 "workload_type": "virtual_machine",
-                "inputs": {
-                    "vm_name": {"type": "string", "required": True}
-                },
+                "inputs": {"vm_name": {"type": "string", "required": True}},
             },
         }
         import yaml
+
         intent_file.write_text(yaml.dump(intent_data))
 
         import os

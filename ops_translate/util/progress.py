@@ -36,9 +36,7 @@ def create_progress_bar() -> Progress:
 
 
 @contextmanager
-def track_progress(
-    description: str, total: int | None = None
-) -> Iterator[Progress]:
+def track_progress(description: str, total: int | None = None) -> Iterator[Progress]:
     """
     Context manager for tracking progress with a progress bar.
 

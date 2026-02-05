@@ -297,8 +297,7 @@ def get_format_handler(format_name: str, workspace_root: Path) -> OutputFormat:
 
     if format_name not in formats:
         raise ValueError(
-            f"Invalid format: {format_name}. "
-            f"Valid formats: {', '.join(formats.keys())}"
+            f"Invalid format: {format_name}. " f"Valid formats: {', '.join(formats.keys())}"
         )
 
     return formats[format_name](workspace_root)

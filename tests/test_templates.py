@@ -295,13 +295,11 @@ class TestTemplateIntegration:
         custom_template_dir = workspace.root / "templates/kubevirt"
         custom_template_dir.mkdir(parents=True)
         custom_template = custom_template_dir / "vm.yaml.j2"
-        custom_template.write_text(
-            """# Custom KubeVirt template
+        custom_template.write_text("""# Custom KubeVirt template
 kind: VirtualMachine
 metadata:
   name: custom-{{ intent.workflow_name }}
-"""
-        )
+""")
 
         # Create intent
         intent_data = {

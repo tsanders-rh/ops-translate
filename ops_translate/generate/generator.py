@@ -143,9 +143,7 @@ def parse_multifile_response(response: str) -> dict:
     return files
 
 
-def generate_with_templates(
-    workspace: Workspace, profile: str, output_format: str = "yaml"
-):
+def generate_with_templates(workspace: Workspace, profile: str, output_format: str = "yaml"):
     """
     Generate artifacts using Jinja2 templates.
 
