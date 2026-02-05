@@ -105,9 +105,7 @@ def format_validation_error(error: ValidationError) -> list:
         # Suggest closest match if applicable
         if isinstance(error.instance, str) and hasattr(validator_value, "__iter__"):
             close_matches = [
-                v
-                for v in validator_value
-                if isinstance(v, str) and v.startswith(error.instance[0])
+                v for v in validator_value if isinstance(v, str) and v.startswith(error.instance[0])
             ]
             if close_matches:
                 errors.append(f"  Did you mean: {close_matches[0]}?")
