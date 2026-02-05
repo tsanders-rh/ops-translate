@@ -137,41 +137,50 @@ def summarize():
         console.print("[red]Error: Not in a workspace.[/red]")
         raise typer.Exit(1)
 
-    console.print("[bold blue]Analyzing imported files...[/bold blue]")
-
     from ops_translate.summarize import powercli, vrealize
+    from ops_translate.util.progress import track_progress
+
+    # Count total files to analyze
+    powercli_dir = workspace.root / "input/powercli"
+    vrealize_dir = workspace.root / "input/vrealize"
+    ps_files = list(powercli_dir.glob("*.ps1")) if powercli_dir.exists() else []
+    xml_files = list(vrealize_dir.glob("*.xml")) if vrealize_dir.exists() else []
+    total_files = len(ps_files) + len(xml_files)
+
+    if total_files == 0:
+        console.print("[yellow]No files to analyze[/yellow]")
+        return
 
     summary_lines = []
     summary_lines.append("# Import Summary\n")
 
-    # Summarize PowerCLI files
-    powercli_dir = workspace.root / "input/powercli"
-    if powercli_dir.exists():
-        ps_files = list(powercli_dir.glob("*.ps1"))
+    # Analyze with progress bar
+    with track_progress("Analyzing files", total=total_files) as progress:
+        task = progress.add_task("analyzing", total=total_files)
+
+        # Summarize PowerCLI files
         if ps_files:
             summary_lines.append("## PowerCLI Scripts\n")
             for ps_file in ps_files:
-                console.print(f"  Analyzing: {ps_file.name}")
                 summary = powercli.summarize(ps_file)
                 summary_lines.append(f"### {ps_file.name}\n")
                 summary_lines.append(summary + "\n")
+                progress.update(task, advance=1, description=f"Analyzed {ps_file.name}")
 
-    # Summarize vRealize files
-    vrealize_dir = workspace.root / "input/vrealize"
-    if vrealize_dir.exists():
-        xml_files = list(vrealize_dir.glob("*.xml"))
+        # Summarize vRealize files
         if xml_files:
             summary_lines.append("## vRealize Workflows\n")
             for xml_file in xml_files:
-                console.print(f"  Analyzing: {xml_file.name}")
                 summary = vrealize.summarize(xml_file)
                 summary_lines.append(f"### {xml_file.name}\n")
                 summary_lines.append(summary + "\n")
+                progress.update(task, advance=1, description=f"Analyzed {xml_file.name}")
 
     # Write summary
     summary_file = workspace.root / "intent/summary.md"
     write_text(summary_file, "".join(summary_lines))
 
+    console.print(f"[green]✓ Analyzed {total_files} file(s)[/green]")
     console.print("[green]✓ Summary written to intent/summary.md[/green]")
 
 
