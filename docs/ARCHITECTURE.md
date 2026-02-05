@@ -5,13 +5,18 @@ Technical architecture and design documentation for ops-translate.
 ## Table of Contents
 
 1. [System Overview](#system-overview)
-2. [Architecture Principles](#architecture-principles)
-3. [Component Architecture](#component-architecture)
-4. [Data Flow](#data-flow)
-5. [Intent Schema](#intent-schema)
-6. [LLM Integration](#llm-integration)
-7. [Generation Pipeline](#generation-pipeline)
-8. [Extension Points](#extension-points)
+2. [Core Concepts](#core-concepts)
+   - [What is "Intent"?](#what-is-intent)
+   - [Why Merge Multiple Sources?](#why-merge-multiple-sources)
+   - [Merge Strategies](#merge-strategies)
+   - [Conflict Detection](#conflict-detection)
+3. [Architecture Principles](#architecture-principles)
+4. [Component Architecture](#component-architecture)
+5. [Data Flow](#data-flow)
+6. [Intent Schema](#intent-schema)
+7. [LLM Integration](#llm-integration)
+8. [Generation Pipeline](#generation-pipeline)
+9. [Extension Points](#extension-points)
 
 ## System Overview
 
@@ -93,6 +98,169 @@ Technical architecture and design documentation for ops-translate.
    - Provider abstraction (Anthropic, OpenAI, Mock)
    - Prompt management
    - Response parsing
+
+## Core Concepts
+
+### What is "Intent"?
+
+**Intent** is a normalized, platform-agnostic representation of **what** should happen, separated from **how** it happens.
+
+**Example transformation:**
+
+**VMware PowerCLI (imperative - "how"):**
+```powershell
+param([string]$VMName, [ValidateSet("dev","prod")][string]$Env)
+if ($Env -eq "prod") {
+    $Network = "prod-network"
+    $CPU = 4
+} else {
+    $Network = "dev-network"
+    $CPU = 2
+}
+New-VM -Name $VMName -NumCPU $CPU -NetworkName $Network
+```
+
+**Operational Intent (declarative - "what"):**
+```yaml
+intent:
+  workflow_name: provision_vm
+  workload_type: virtual_machine
+
+  inputs:
+    vm_name: { type: string, required: true }
+    environment: { type: enum, values: [dev, prod], required: true }
+
+  profiles:
+    network:
+      when: { environment: prod }
+      value: prod-network
+    network_else: dev-network
+
+    cpu:
+      when: { environment: prod }
+      value: 4
+    cpu_else: 2
+```
+
+**Why is this useful?**
+- ✅ **Platform-agnostic**: No VMware-specific commands or syntax
+- ✅ **Declarative**: Describes desired outcome, not implementation steps
+- ✅ **Portable**: Can generate Ansible, Terraform, KubeVirt, or other formats
+- ✅ **Validatable**: Conforms to a JSON schema for correctness checking
+- ✅ **Reviewable**: Human-readable YAML that makes operational logic explicit
+
+### Why Merge Multiple Sources?
+
+Organizations often have **multiple automation scripts** that overlap or complement each other:
+- Separate scripts for dev vs. prod environments
+- Different scripts for different VM types (web, database, etc.)
+- vRealize workflows for governance/approvals
+- PowerCLI scripts for Day 2 operations
+
+Instead of translating each source independently and managing separate outputs, ops-translate **merges** them into a unified intent that captures the complete operational picture.
+
+**Example: Two scripts doing similar things**
+
+**Source 1: `dev-vm.ps1`** (simpler, for development)
+```yaml
+intent:
+  workflow_name: provision_dev_vm
+  inputs:
+    vm_name: { type: string, required: true }
+    cpu: { type: integer, default: 2 }
+  compute:
+    cpu_cores: 2
+    memory_gb: 4
+```
+
+**Source 2: `prod-vm.ps1`** (stricter, for production)
+```yaml
+intent:
+  workflow_name: provision_prod_vm
+  inputs:
+    vm_name: { type: string, required: true }
+    cpu: { type: integer, default: 4 }
+    owner_email: { type: string, required: true }
+  compute:
+    cpu_cores: 4
+    memory_gb: 16
+  governance:
+    approval:
+      required_when: { environment: prod }
+      approvers: [ops-manager@example.com]
+```
+
+**Merged Result:** (combines best of both)
+```yaml
+intent:
+  workflow_name: provision_vm  # Unified name
+  inputs:
+    vm_name: { type: string, required: true }  # From both
+    cpu: { type: integer, required: false }    # Merged constraints
+    owner_email: { type: string, required: true }  # From prod
+  compute:
+    cpu_cores: 4      # Maximum value (prod requirement)
+    memory_gb: 16     # Maximum value (prod requirement)
+  governance:
+    approval:
+      required_when: { environment: prod }  # Preserved from prod
+      approvers: [ops-manager@example.com]
+```
+
+### Merge Strategies
+
+The `smart_merge()` function applies different strategies to different sections:
+
+| Section | Strategy | Rationale |
+|---------|----------|-----------|
+| **Inputs** | Union + reconcile types | Support all parameters from all sources |
+| **Governance** | Most restrictive | If ANY source needs approval → merged needs it (safer) |
+| **Compute** | Maximum values | Take highest CPU/memory to satisfy all requirements |
+| **Profiles** | Union | Combine all environment configs (dev, staging, prod) |
+| **Metadata/Tags** | Union | Include all tags from all sources |
+| **Day 2 Operations** | Union | Support ALL operations mentioned in any source |
+
+### Conflict Detection
+
+When sources have incompatible requirements, conflicts are reported:
+
+**Compatible differences** (auto-merged):
+```yaml
+# Source 1: cpu default is 2
+# Source 2: cpu default is 4
+# Merged: Takes maximum (4) or makes it required: false with no default
+```
+
+**Incompatible differences** (reported as conflicts):
+```yaml
+# Source 1: cpu_count has type: integer
+# Source 2: cpu_count has type: string  # Type mismatch!
+# Result: Conflict reported in intent/conflicts.md
+```
+
+### Visual Data Flow
+
+```
+VMware Sources              Intent Layer           OpenShift Output
+=============              =============          ================
+
+dev.ps1 ─────┐           ┌─────────────┐
+             ├──extract──>│             │         KubeVirt VM
+prod.ps1 ────┤           │ *.intent.   │──┐      ├─ cpu/memory
+             │           │   yaml      │  │      ├─ networks
+approval.xml─┘           │  (multiple) │  │      └─ volumes
+                         └──────┬──────┘  │
+                                │         │
+                            merge         │      Ansible
+                                │         │      ├─ playbook
+                         ┌──────▼──────┐  │      ├─ roles
+                         │   intent.   │──┴────> │   ├─ tasks
+                         │    yaml     │         │   └─ defaults
+                         │  (unified)  │         └─ inventory
+                         └─────────────┘
+```
+
+The intent layer acts as a **translation hub**: multiple VMware sources → unified intent → multiple OpenShift formats.
 
 ## Architecture Principles
 
