@@ -3,7 +3,6 @@ Custom exceptions for ops-translate with helpful error messages.
 """
 
 
-
 class OpsTranslateError(Exception):
     """Base exception for ops-translate errors."""
 
