@@ -140,21 +140,31 @@
           "type": "object",
           "description": "Environment-specific profiles",
           "patternProperties": {
+            "^[a-zA-Z_][a-zA-Z0-9_]*_else$": {
+              "type": "string",
+              "description": "Fallback value when condition is not met"
+            },
             "^[a-zA-Z_][a-zA-Z0-9_]*$": {
-              "type": "object",
-              "properties": {
-                "when": {
+              "oneOf": [
+                {
                   "type": "object",
-                  "description": "Condition for this profile"
+                  "properties": {
+                    "when": {
+                      "type": "object",
+                      "description": "Condition for this profile"
+                    },
+                    "value": {
+                      "description": "Value when condition is met"
+                    }
+                  },
+                  "required": ["when", "value"]
                 },
-                "value": {
-                  "description": "Value when condition is met"
+                {
+                  "type": "string",
+                  "description": "Simple string value"
                 }
-              }
+              ]
             }
-          },
-          "additionalProperties": {
-            "description": "Fallback values (e.g., network_else, storage_else)"
           }
         },
         "metadata": {
