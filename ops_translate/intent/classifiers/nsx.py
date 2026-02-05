@@ -12,9 +12,10 @@ from ops_translate.intent.classify import (
     MigrationPath,
     TranslatabilityLevel,
 )
+from ops_translate.intent.classifiers.base import BaseClassifier
 
 
-class NSXClassifier:
+class NsxClassifier(BaseClassifier):
     """
     Classifier for NSX-T operations detected in vRealize workflows.
 
@@ -138,6 +139,28 @@ class NSXClassifier:
             ],
         ),
     }
+
+    @property
+    def name(self) -> str:
+        """Return classifier name."""
+        return "nsx"
+
+    @property
+    def priority(self) -> int:
+        """NSX classifier has high priority since it's specific to NSX operations."""
+        return 20  # Higher priority than generic classifiers
+
+    def can_classify(self, analysis: dict[str, Any]) -> bool:
+        """
+        Return True if NSX operations are detected in the analysis.
+
+        Args:
+            analysis: Analysis results from vRealize workflow analysis
+
+        Returns:
+            True if nsx_operations key exists and is non-empty
+        """
+        return bool(analysis.get("nsx_operations"))
 
     def classify(self, analysis: dict[str, Any]) -> list[ClassifiedComponent]:
         """

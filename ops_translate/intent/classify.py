@@ -172,6 +172,81 @@ class ClassifiedComponent(NamedTuple):
         return self.level in (TranslatabilityLevel.BLOCKED, TranslatabilityLevel.MANUAL)
 
 
+def discover_classifiers() -> list:
+    """
+    Auto-discover all available classifier plugins.
+
+    Scans the classifiers directory for Python modules and attempts to import
+    classifier classes. Each classifier module should have a class that inherits
+    from BaseClassifier with a naming convention: {module_name}Classifier.
+
+    For example:
+    - classifiers/nsx.py → NsxClassifier
+    - classifiers/servicenow.py → ServicenowClassifier
+    - classifiers/plugins.py → PluginsClassifier
+
+    Returns:
+        List of classifier instances sorted by priority (highest first)
+
+    Example:
+        >>> classifiers = discover_classifiers()
+        >>> print([c.name for c in classifiers])
+        ['nsx', 'plugins', 'servicenow']
+    """
+    from pathlib import Path
+    import importlib
+    import logging
+
+    logger = logging.getLogger(__name__)
+    classifiers = []
+    classifiers_dir = Path(__file__).parent / "classifiers"
+
+    if not classifiers_dir.exists():
+        logger.warning(f"Classifiers directory not found: {classifiers_dir}")
+        return classifiers
+
+    for plugin_file in classifiers_dir.glob("*.py"):
+        if plugin_file.stem in ("__init__", "base"):
+            continue
+
+        try:
+            # Import the module
+            module_name = f"ops_translate.intent.classifiers.{plugin_file.stem}"
+            module = importlib.import_module(module_name)
+
+            # Convention: {module_name}Classifier (e.g., NsxClassifier, ServicenowClassifier)
+            # Try both capitalized and title case
+            classifier_class_name = f"{plugin_file.stem.capitalize()}Classifier"
+            classifier_class = getattr(module, classifier_class_name, None)
+
+            if classifier_class is None:
+                # Try title case (e.g., ServiceNowClassifier)
+                classifier_class_name = f"{plugin_file.stem.title()}Classifier"
+                classifier_class = getattr(module, classifier_class_name, None)
+
+            if classifier_class is not None:
+                # Instantiate the classifier
+                classifier_instance = classifier_class()
+                classifiers.append(classifier_instance)
+                logger.debug(
+                    f"Discovered classifier: {classifier_instance.name} "
+                    f"(priority: {classifier_instance.priority})"
+                )
+            else:
+                logger.warning(
+                    f"No classifier class found in {plugin_file.stem}.py "
+                    f"(expected {plugin_file.stem.capitalize()}Classifier)"
+                )
+
+        except Exception as e:
+            logger.error(f"Failed to load classifier from {plugin_file}: {e}")
+
+    # Sort by priority (lower number = higher priority)
+    classifiers.sort(key=lambda c: c.priority)
+
+    return classifiers
+
+
 def classify_components(
     analysis: dict[str, Any], classifiers: list[Any] | None = None
 ) -> list[ClassifiedComponent]:
@@ -182,32 +257,40 @@ def classify_components(
     logic using registered classifiers to determine how well each component can
     be translated to OpenShift.
 
+    If no classifiers are provided, auto-discovers all available classifier plugins
+    from the classifiers directory.
+
     Args:
         analysis: Analysis results containing detected components
-        classifiers: List of classifier instances to apply (defaults to [NSXClassifier()])
+        classifiers: Optional list of classifier instances (defaults to auto-discovery)
 
     Returns:
         List of ClassifiedComponent instances sorted by severity (worst first)
 
     Example:
         >>> from ops_translate.analyze.vrealize import analyze_vrealize_workflow
-        >>> from ops_translate.intent.classifiers.nsx import NSXClassifier
         >>> analysis = analyze_vrealize_workflow(Path("workflow.xml"))
-        >>> components = classify_components(analysis, [NSXClassifier()])
+        >>> # Auto-discover classifiers
+        >>> components = classify_components(analysis)
         >>> blocking = [c for c in components if c.is_blocking]
         >>> print(f"Found {len(blocking)} blocking components")
     """
     if classifiers is None:
-        # Import here to avoid circular dependency
-        from ops_translate.intent.classifiers.nsx import NSXClassifier
+        # Auto-discover all available classifiers
+        classifiers = discover_classifiers()
 
-        classifiers = [NSXClassifier()]
+        # Fallback to NSX classifier if discovery fails
+        if not classifiers:
+            from ops_translate.intent.classifiers.nsx import NsxClassifier
+
+            classifiers = [NsxClassifier()]
 
     classified: list[ClassifiedComponent] = []
 
-    # Apply each classifier
+    # Apply each classifier (only if it can classify this analysis)
     for classifier in classifiers:
-        classified.extend(classifier.classify(analysis))
+        if classifier.can_classify(analysis):
+            classified.extend(classifier.classify(analysis))
 
     # Sort by severity (worst first), then by name
     classified.sort(key=lambda c: (c.level.severity, c.name), reverse=True)
