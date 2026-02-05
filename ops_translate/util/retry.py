@@ -180,9 +180,7 @@ def retry_with_logging(
 
     def on_retry_callback(error: Exception, attempt: int, max_attempts: int):
         if log_callback:
-            log_callback(
-                f"Attempt {attempt}/{max_attempts} failed: {str(error)}. Retrying..."
-            )
+            log_callback(f"Attempt {attempt}/{max_attempts} failed: {str(error)}. Retrying...")
 
     return retry_with_backoff(
         max_attempts=max_attempts,

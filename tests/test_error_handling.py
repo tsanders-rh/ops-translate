@@ -245,7 +245,9 @@ class TestRetryLogic:
 
         mock_func = Mock(side_effect=[transient_error, "success"])
 
-        @retry_with_backoff(max_attempts=3, initial_delay=0.01, retryable_exceptions=(ConnectionError,))
+        @retry_with_backoff(
+            max_attempts=3, initial_delay=0.01, retryable_exceptions=(ConnectionError,)
+        )
         def operation():
             result = mock_func()
             if isinstance(result, Exception):
@@ -261,7 +263,9 @@ class TestRetryLogic:
         mock_func.reset_mock()
         mock_func.side_effect = permanent_error
 
-        @retry_with_backoff(max_attempts=3, initial_delay=0.01, retryable_exceptions=(ConnectionError,))
+        @retry_with_backoff(
+            max_attempts=3, initial_delay=0.01, retryable_exceptions=(ConnectionError,)
+        )
         def operation2():
             return mock_func()
 
@@ -383,7 +387,9 @@ class TestRetryWithLogging:
 
         mock_func = Mock(side_effect=[Exception("error1"), Exception("error2"), "success"])
 
-        @retry_with_logging(max_attempts=3, log_callback=log_callback, retryable_exceptions=(Exception,))
+        @retry_with_logging(
+            max_attempts=3, log_callback=log_callback, retryable_exceptions=(Exception,)
+        )
         def operation():
             result = mock_func()
             if isinstance(result, Exception):

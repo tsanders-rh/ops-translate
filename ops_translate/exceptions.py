@@ -45,8 +45,7 @@ class WorkspaceAlreadyExistsError(WorkspaceError):
     def __init__(self, path: str):
         message = f"Workspace already exists at: {path}"
         suggestion = (
-            "Choose a different directory or remove the existing workspace:\n"
-            f"  rm -rf {path}"
+            "Choose a different directory or remove the existing workspace:\n" f"  rm -rf {path}"
         )
         super().__init__(message, suggestion)
 
@@ -63,8 +62,7 @@ class FileNotFoundError(ImportError):
     def __init__(self, file_path: str):
         message = f"File not found: {file_path}"
         suggestion = (
-            "Check that the file path is correct and the file exists:\n"
-            f"  ls -l {file_path}"
+            "Check that the file path is correct and the file exists:\n" f"  ls -l {file_path}"
         )
         super().__init__(message, suggestion)
 
@@ -135,9 +133,7 @@ class MergeConflictError(IntentError):
 
     def __init__(self, conflicts: list[str]):
         conflict_list = "\n  - ".join(conflicts)
-        message = (
-            f"Merge conflicts detected ({len(conflicts)} conflict(s)):\n  - {conflict_list}"
-        )
+        message = f"Merge conflicts detected ({len(conflicts)} conflict(s)):\n  - {conflict_list}"
 
         suggestion = (
             "Review conflicts in intent/conflicts.md and resolve manually:\n"
@@ -309,10 +305,7 @@ class RetryableError(OpsTranslateError):
         self.attempt = attempt
         self.max_attempts = max_attempts
 
-        message = (
-            f"Operation failed (attempt {attempt}/{max_attempts}): "
-            f"{str(original_error)}"
-        )
+        message = f"Operation failed (attempt {attempt}/{max_attempts}): " f"{str(original_error)}"
         super().__init__(message)
 
 

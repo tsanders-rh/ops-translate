@@ -51,6 +51,7 @@ def handle_errors(func):
 
     return wrapper
 
+
 # Create intent subcommand group
 intent_app = typer.Typer(help="Intent management commands (extract, merge, edit)")
 app.add_typer(intent_app, name="intent")

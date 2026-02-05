@@ -88,9 +88,13 @@ def format_validation_error(error: ValidationError) -> list:
 
         # Add type conversion hints
         if error.validator_value == "integer" and isinstance(error.instance, str):
-            errors.append(f"  Hint: Remove quotes around the number: {error.instance} → {error.instance.strip().replace('\"', '')}")
+            errors.append(
+                f"  Hint: Remove quotes around the number: {error.instance} → {error.instance.strip().replace('\"', '')}"
+            )
         elif error.validator_value == "string" and not isinstance(error.instance, str):
-            errors.append(f"  Hint: Add quotes around the value: {error.instance} → \"{error.instance}\"")
+            errors.append(
+                f'  Hint: Add quotes around the value: {error.instance} → "{error.instance}"'
+            )
 
     elif error.validator == "enum":
         errors.append(f"  Allowed values: {', '.join(str(v) for v in error.validator_value)}")
@@ -98,7 +102,11 @@ def format_validation_error(error: ValidationError) -> list:
 
         # Suggest closest match if applicable
         if isinstance(error.instance, str):
-            close_matches = [v for v in error.validator_value if isinstance(v, str) and v.startswith(error.instance[0])]
+            close_matches = [
+                v
+                for v in error.validator_value
+                if isinstance(v, str) and v.startswith(error.instance[0])
+            ]
             if close_matches:
                 errors.append(f"  Did you mean: {close_matches[0]}?")
 
@@ -109,7 +117,9 @@ def format_validation_error(error: ValidationError) -> list:
         # Common pattern hints
         if "snake_case" in str(error.validator_value).lower() or "_" in str(error.validator_value):
             errors.append("  Hint: Use lowercase letters, numbers, and underscores only")
-            errors.append(f"  Example: {error.instance} → {str(error.instance).lower().replace(' ', '_').replace('-', '_')}")
+            errors.append(
+                f"  Example: {error.instance} → {str(error.instance).lower().replace(' ', '_').replace('-', '_')}"
+            )
 
     elif error.validator == "minimum" or error.validator == "maximum":
         errors.append(f"  Constraint: {error.validator} = {error.validator_value}")
@@ -127,7 +137,7 @@ def format_validation_error(error: ValidationError) -> list:
     if field_name == "schema_version":
         errors.append("  Hint: schema_version must be the integer 1 (not a string)")
         errors.append("  Correct:   schema_version: 1")
-        errors.append("  Incorrect: schema_version: \"1\"")
+        errors.append('  Incorrect: schema_version: "1"')
 
     elif field_name == "workflow_name":
         errors.append("  Hint: Use snake_case naming (lowercase with underscores)")
