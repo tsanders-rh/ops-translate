@@ -123,12 +123,12 @@ class TemplateLoader:
 
         shutil.copytree(str(self.default_templates), str(self.workspace_templates))
 
-    def list_available_templates(self) -> list[str]:
+    def list_available_templates(self) -> list[tuple[str, str]]:
         """
         List all available templates.
 
         Returns:
-            List of template names
+            List of (source, template_name) tuples where source is "workspace" or "default"
         """
         templates = []
 

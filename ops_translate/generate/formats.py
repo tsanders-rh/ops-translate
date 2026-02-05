@@ -241,7 +241,7 @@ class ArgoCDFormat(OutputFormat):
         }
 
         if automated:
-            app["spec"]["syncPolicy"]["automated"] = automated
+            app["spec"]["syncPolicy"]["automated"] = automated  # type: ignore[index]
 
         return app
 
