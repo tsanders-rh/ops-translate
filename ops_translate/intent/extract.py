@@ -3,11 +3,13 @@ Intent extraction from source files using LLM.
 """
 
 import re
+import time
 from pathlib import Path
 
 from rich.console import Console
 
 from ops_translate.llm import get_provider
+from ops_translate.util.config import get_llm_rate_limit_delay
 from ops_translate.workspace import Workspace
 
 console = Console()
@@ -41,7 +43,7 @@ def extract_all(workspace: Workspace):
     powercli_dir = workspace.root / "input/powercli"
     if powercli_dir.exists():
         ps_files = list(powercli_dir.glob("*.ps1"))
-        for ps_file in ps_files:
+        for i, ps_file in enumerate(ps_files):
             console.print(f"  Extracting intent from: {ps_file.name}")
             intent_yaml, file_assumptions = extract_powercli_intent(llm, ps_file)
 
@@ -65,11 +67,16 @@ def extract_all(workspace: Workspace):
             assumptions.extend([f"- {a}" for a in file_assumptions])
             assumptions.append("")
 
+            # Rate limiting: delay before next API call (except after last file)
+            if i < len(ps_files) - 1:
+                delay = get_llm_rate_limit_delay()
+                time.sleep(delay)
+
     # Process vRealize files
     vrealize_dir = workspace.root / "input/vrealize"
     if vrealize_dir.exists():
         xml_files = list(vrealize_dir.glob("*.xml"))
-        for xml_file in xml_files:
+        for i, xml_file in enumerate(xml_files):
             console.print(f"  Extracting intent from: {xml_file.name}")
             intent_yaml, file_assumptions = extract_vrealize_intent(llm, xml_file)
 
@@ -92,6 +99,11 @@ def extract_all(workspace: Workspace):
             assumptions.append(f"## {xml_file.name}\n")
             assumptions.extend([f"- {a}" for a in file_assumptions])
             assumptions.append("")
+
+            # Rate limiting: delay before next API call (except after last file)
+            if i < len(xml_files) - 1:
+                delay = get_llm_rate_limit_delay()
+                time.sleep(delay)
 
     # Write assumptions
     assumptions_file = workspace.root / "intent/assumptions.md"

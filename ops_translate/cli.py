@@ -3,8 +3,10 @@ CLI entry point for ops-translate.
 """
 
 import json
+import logging
 import os
 import shutil
+import subprocess
 from datetime import datetime
 from functools import wraps
 from pathlib import Path
@@ -31,6 +33,10 @@ app = typer.Typer(
     add_completion=False,
 )
 console = Console()
+logger = logging.getLogger(__name__)
+
+# Configuration constants
+MAX_IMPORT_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
 
 def handle_errors(func):
@@ -88,8 +94,20 @@ def init(
             loader.copy_default_templates_to_workspace()
             console.print("[green]✓ Copied default templates to templates/[/green]")
             console.print("[dim]  You can now customize templates for your organization[/dim]")
+        except FileNotFoundError as e:
+            # Expected error - templates directory not found
+            console.print(f"[yellow]⚠ Template directory not found: {e}[/yellow]")
+            logger.warning(f"Templates not found: {e}")
+        except PermissionError as e:
+            # Permission issue - cannot write to workspace
+            console.print(f"[red]✗ Permission denied copying templates: {e}[/red]")
+            logger.error(f"Permission error copying templates: {e}")
+            raise typer.Exit(1)
         except Exception as e:
-            console.print(f"[yellow]⚠ Could not copy templates: {e}[/yellow]")
+            # Unexpected error
+            console.print(f"[red]✗ Unexpected error copying templates: {e}[/red]")
+            logger.exception("Unexpected error copying templates")
+            raise typer.Exit(1)
 
     console.print("\n[dim]Next steps:[/dim]")
     console.print(f"  cd {workspace_dir}")
@@ -109,10 +127,26 @@ def import_cmd(
     if source not in ["powercli", "vrealize"]:
         raise InvalidSourceTypeError(source)
 
-    # Check file exists
+    # Check file exists and validate
     source_path = Path(file)
     if not source_path.exists():
         raise OpsFileNotFoundError(str(source_path))
+
+    # Validate it's a file, not a directory
+    if not source_path.is_file():
+        raise OpsFileNotFoundError(f"{source_path} is not a file")
+
+    # Check file size to prevent DoS
+    file_size = source_path.stat().st_size
+    if file_size > MAX_IMPORT_FILE_SIZE:
+        raise ValueError(
+            f"File too large: {file_size:,} bytes. "
+            f"Maximum allowed: {MAX_IMPORT_FILE_SIZE:,} bytes (50 MB)"
+        )
+
+    # Check file is readable
+    if not os.access(source_path, os.R_OK):
+        raise PermissionError(f"Cannot read file: {source_path}")
 
     # Ensure we're in a workspace
     workspace = Workspace(Path.cwd())
@@ -270,7 +304,9 @@ def edit(file: str = typer.Option(None, "--file", help="Specific intent file to 
         raise typer.Exit(0)
 
     console.print(f"[bold blue]Opening {intent_file.name} in {editor}...[/bold blue]")
-    os.system(f"{editor} {intent_file}")
+    result = subprocess.run([editor, str(intent_file)], check=False)
+    if result.returncode != 0:
+        console.print(f"[yellow]Editor exited with code {result.returncode}[/yellow]")
 
 
 @map_app.command()

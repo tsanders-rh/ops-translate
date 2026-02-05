@@ -385,15 +385,39 @@ def run_enhanced_dry_run(workspace, config: dict) -> tuple[bool, DryRunResult]:
 
     try:
         intent_data = yaml.safe_load(intent_file.read_text())
-        result.stats["intents_found"] = 1
     except yaml.YAMLError as e:
         result.add_issue(
             "BLOCKING",
             "schema",
-            f"Intent file is invalid YAML: {e}",
+            f"Intent file has invalid YAML syntax: {e}",
             location="intent/intent.yaml",
+            suggestion="Fix YAML syntax errors in the intent file",
         )
         return (False, result)
+
+    # Check if intent file is empty
+    if intent_data is None:
+        result.add_issue(
+            "BLOCKING",
+            "schema",
+            "Intent file is empty",
+            location="intent/intent.yaml",
+            suggestion="Re-run 'ops-translate intent extract' to generate intent",
+        )
+        return (False, result)
+
+    # Check if intent_data is a dict
+    if not isinstance(intent_data, dict):
+        result.add_issue(
+            "BLOCKING",
+            "schema",
+            f"Intent file has invalid structure: expected dict, got {type(intent_data).__name__}",
+            location="intent/intent.yaml",
+            suggestion="Ensure intent file contains a valid YAML mapping/object",
+        )
+        return (False, result)
+
+    result.stats["intents_found"] = 1
 
     # Run validation checks
     validate_intent_completeness(intent_data, result)

@@ -12,6 +12,30 @@ from jsonschema.exceptions import SchemaError
 # Get project root to find schema
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 
+# Module-level schema cache for performance
+_SCHEMA_CACHE: dict[str, dict] = {}
+
+
+def _load_schema(schema_name: str) -> dict:
+    """
+    Load and cache JSON schema.
+
+    Args:
+        schema_name: Name of the schema file (without .schema.json extension)
+
+    Returns:
+        Parsed JSON schema as dict
+
+    Raises:
+        FileNotFoundError: If schema file doesn't exist
+    """
+    if schema_name not in _SCHEMA_CACHE:
+        schema_file = PROJECT_ROOT / f"schema/{schema_name}.schema.json"
+        if not schema_file.exists():
+            raise FileNotFoundError(f"Schema file not found: {schema_file}")
+        _SCHEMA_CACHE[schema_name] = json.loads(schema_file.read_text())
+    return _SCHEMA_CACHE[schema_name]
+
 
 def validate_intent(intent_file: Path) -> tuple[bool, list]:
     """
@@ -24,12 +48,11 @@ def validate_intent(intent_file: Path) -> tuple[bool, list]:
         # Load intent YAML
         intent = yaml.safe_load(intent_file.read_text())
 
-        # Load schema
-        schema_file = PROJECT_ROOT / "schema/intent.schema.json"
-        if not schema_file.exists():
-            return (False, [f"Schema file not found: {schema_file}"])
-
-        schema = json.loads(schema_file.read_text())
+        # Load schema (with caching)
+        try:
+            schema = _load_schema("intent")
+        except FileNotFoundError as e:
+            return (False, [str(e)])
 
         # Validate against schema
         try:

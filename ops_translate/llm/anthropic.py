@@ -6,6 +6,7 @@ import os
 
 from ops_translate.exceptions import LLMAPIError, LLMProviderNotAvailableError
 from ops_translate.llm.base import LLMProvider
+from ops_translate.util.redact import redact_sensitive
 from ops_translate.util.retry import RetryStrategy, is_retryable_error, retry_with_backoff
 
 
@@ -74,7 +75,10 @@ class AnthropicProvider(LLMProvider):
             LLMAPIError: If API call fails after retries
         """
         try:
-            assert self.client is not None  # Checked in generate()
+            if self.client is None:
+                raise RuntimeError(
+                    "Anthropic client not initialized. Call is_available() first."
+                )
             messages = [{"role": "user", "content": prompt}]
 
             kwargs = {
@@ -94,13 +98,15 @@ class AnthropicProvider(LLMProvider):
             return str(text) if text else ""
 
         except Exception as e:
+            # Redact any sensitive data from error message
+            error_msg = redact_sensitive(str(e))
             # Determine if error is retryable
             if is_retryable_error(e):
                 # Re-raise to trigger retry
                 raise
             else:
                 # Non-retryable error
-                raise LLMAPIError("Anthropic", str(e), retry_count=0)
+                raise LLMAPIError("Anthropic", error_msg, retry_count=0)
 
     def is_available(self) -> bool:
         """Check if Anthropic provider is available."""

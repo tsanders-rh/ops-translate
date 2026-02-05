@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ops-translate Configuration",
+  "description": "Configuration schema for ops-translate workspace",
+  "type": "object",
+  "required": ["llm", "profiles"],
+  "properties": {
+    "llm": {
+      "type": "object",
+      "description": "LLM provider configuration",
+      "required": ["provider"],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": ["openai", "anthropic", "mock"],
+          "description": "LLM provider to use"
+        },
+        "model": {
+          "type": "string",
+          "description": "Model name/ID to use"
+        },
+        "api_key_env": {
+          "type": "string",
+          "description": "Environment variable containing API key"
+        },
+        "rate_limit_delay": {
+          "type": "number",
+          "minimum": 0,
+          "default": 1.0,
+          "description": "Delay in seconds between LLM API calls"
+        }
+      }
+    },
+    "profiles": {
+      "type": "object",
+      "description": "Deployment profiles (lab, prod, etc.)",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "default_namespace": {
+            "type": "string",
+            "description": "Default Kubernetes namespace"
+          },
+          "default_network": {
+            "type": "string",
+            "description": "Default network name"
+          },
+          "default_storage_class": {
+            "type": "string",
+            "description": "Default storage class"
+          }
+        }
+      }
+    }
+  }
+}

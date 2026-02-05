@@ -29,10 +29,47 @@ class TemplateLoader:
         self.workspace_root = workspace_root
         self.workspace_templates = workspace_root / "templates"
         self.default_templates = PROJECT_ROOT / "templates"
+        self._env: Environment | None = None
+        self._template_cache: dict[str, Template] = {}
 
     def has_custom_templates(self) -> bool:
         """Check if workspace has custom templates."""
         return self.workspace_templates.exists()
+
+    @property
+    def env(self) -> Environment:
+        """
+        Get or create Jinja2 environment (cached).
+
+        Returns:
+            Cached Jinja2 Environment configured for template loading
+        """
+        if self._env is None:
+            template_dirs = []
+
+            # Check workspace templates first
+            if self.workspace_templates.exists():
+                template_dirs.append(str(self.workspace_templates))
+
+            # Fall back to package templates
+            if self.default_templates.exists():
+                template_dirs.append(str(self.default_templates))
+
+            if not template_dirs:
+                raise FileNotFoundError("No template directories found")
+
+            self._env = Environment(
+                loader=FileSystemLoader(template_dirs),
+                trim_blocks=True,
+                lstrip_blocks=True,
+            )
+
+            # Add custom filters
+            self._env.filters["to_yaml_value"] = (
+                lambda x: str(x).lower() if isinstance(x, bool) else str(x)
+            )
+
+        return self._env
 
     def get_template_path(self, template_name: str) -> Path:
         """
@@ -58,27 +95,21 @@ class TemplateLoader:
 
     def load_template(self, template_name: str) -> Template:
         """
-        Load a Jinja2 template.
+        Load a Jinja2 template with caching.
 
         Args:
             template_name: Template name (e.g., "ansible/playbook.yml.j2")
 
         Returns:
-            Jinja2 Template object
+            Cached Jinja2 Template object
         """
-        template_path = self.get_template_path(template_name)
+        if template_name not in self._template_cache:
+            # Verify template exists
+            template_path = self.get_template_path(template_name)
+            # Load template using cached environment
+            self._template_cache[template_name] = self.env.get_template(template_name)
 
-        # Create Jinja2 environment with template directory
-        env = Environment(
-            loader=FileSystemLoader(template_path.parent),
-            trim_blocks=True,
-            lstrip_blocks=True,
-        )
-
-        # Add custom filters
-        env.filters["to_yaml_value"] = lambda x: str(x).lower() if isinstance(x, bool) else str(x)
-
-        return env.get_template(template_path.name)
+        return self._template_cache[template_name]
 
     def render_template(self, template_name: str, context: dict, output_file: Path) -> None:
         """
