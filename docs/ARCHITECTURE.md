@@ -976,6 +976,62 @@ def validate_intent_schema(intent: dict) -> List[str]:
 
 ## LLM Integration
 
+### When is LLM Required?
+
+**Critical Design Decision**: ops-translate separates "understanding" from "translation".
+
+**LLM Required** (One Component Only):
+- **Intent Extraction** (`ops_translate/intent/extract.py`)
+  - Converts imperative PowerCLI/vRealize code → declarative intent YAML
+  - Requires semantic understanding of code logic
+  - Alternatives: Manual intent creation, mock provider for testing
+
+**LLM NOT Required** (All Other Components):
+- **Import** - Simple file copying
+- **Summarize** - Regex-based pattern matching
+- **Merge** - Deterministic YAML reconciliation
+- **Validate** - JSON schema validation
+- **Generate** - Jinja2 template rendering
+- **Dry-run** - Static analysis
+
+**Why This Separation?**
+
+1. **Reliability**: Templates produce consistent, validated output
+2. **Performance**: No API latency for generation
+3. **Cost**: One-time extraction cost, infinite free generation
+4. **Offline**: After extraction, everything works offline
+5. **Trust**: Deterministic generation is easier to audit
+
+**Data Flow:**
+```
+PowerCLI Script          ┌─────────────┐         Intent YAML
+  (imperative)  ────────>│ LLM Extract │────────> (declarative)
+  if/else logic           │   NEEDS AI  │          normalized
+  variables               └─────────────┘          validated
+                                                       │
+                                                       │
+                                                       ▼
+                          ┌─────────────┐         Ansible + KubeVirt
+                          │  Templates  │────────>  (cloud-native)
+                          │   NO AI     │          deterministic
+                          └─────────────┘          schema-compliant
+```
+
+**Template-Based Generation is Better:**
+- ✅ 100% consistent output
+- ✅ Schema-validated by design
+- ✅ Works offline
+- ✅ No API costs
+- ✅ Fast (no network calls)
+
+**LLM-Based Generation (Experimental):**
+- ⚠️ Variable quality
+- ⚠️ Requires parsing/validation
+- ⚠️ API costs per generation
+- ⚠️ May not follow schema exactly
+
+This is why the `generate` command uses templates by default, and why the "LLM fallback to templates" warning is actually a good thing.
+
 ### Provider Abstraction
 
 ```python

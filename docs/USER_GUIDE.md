@@ -33,6 +33,63 @@ ops-translate is a CLI tool that helps you migrate from VMware automation (Power
 - **Safe**: Read-only operations with no live system access
 - **Flexible**: Works with or without AI assistance
 
+### Do I Need an LLM?
+
+**TL;DR**: Only for intent extraction. Everything else is LLM-free.
+
+ops-translate separates "understanding" (needs AI) from "translation" (doesn't need AI):
+
+| Command | LLM Required? | Why |
+|---------|---------------|-----|
+| `import` | ❌ No | Just copies files |
+| `summarize` | ❌ No | Static pattern matching |
+| `intent extract` | ✅ **YES** | Understands semantic meaning of code |
+| `intent merge` | ❌ No | Deterministic YAML reconciliation |
+| `dry-run` | ❌ No | Schema validation |
+| `generate` | ❌ No | Template-based (Jinja2) |
+
+**The only step that needs LLM is intent extraction**, which converts imperative PowerCLI/vRealize code into declarative intent YAML.
+
+**Three ways to use ops-translate:**
+
+1. **With AI** (Recommended for legacy automation)
+   ```bash
+   ops-translate intent extract  # Uses LLM
+   ops-translate generate        # Uses templates (no LLM)
+   ```
+   - Best for complex scripts
+   - Requires API key
+   - One-time cost per file
+
+2. **Without AI** (Manual intent creation)
+   ```bash
+   # Write intent.yaml yourself using schema
+   vim intent/intent.yaml
+
+   ops-translate generate --no-ai  # Templates only
+   ```
+   - 100% deterministic
+   - Works offline
+   - Free
+
+3. **Mock Provider** (Testing/Demos)
+   ```bash
+   # No API key configured
+   ops-translate intent extract  # Uses mock responses
+   ops-translate generate        # Uses templates
+   ```
+   - No API costs
+   - Good for testing workflow
+   - Not real AI understanding
+
+**Important**: Even if you use AI for extraction, **generation always uses templates** by default. This is by design:
+- ✅ Faster (no API call)
+- ✅ Deterministic (same input → same output)
+- ✅ Schema-validated
+- ✅ Works offline
+
+**Cost estimate**: Extracting intent from a typical PowerCLI script costs $0.01-0.10 per file. Generation is free.
+
 ### Who Should Use This?
 
 - Infrastructure engineers migrating from VMware to OpenShift

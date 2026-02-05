@@ -95,6 +95,54 @@ ops-translate generate --profile prod --format argocd   # ArgoCD Applications
 - **Conflict detection**: Identifies incompatibilities between source automations
 - **Day 2 aware**: Captures operational patterns beyond just provisioning
 
+## When Do You Need an LLM?
+
+**Short answer**: Only for intent extraction. Everything else works without AI.
+
+### LLM Required ✅ (One Step Only)
+
+**`ops-translate intent extract`** - Convert PowerCLI/vRealize to normalized intent
+- **Why**: Understands semantic meaning of imperative code
+- **Alternative**: Write intent.yaml files manually (see [INTENT_SCHEMA.md](docs/INTENT_SCHEMA.md))
+- **Options**: OpenAI, Anthropic, or mock provider (for testing)
+
+### No LLM Needed ❌ (Everything Else)
+
+All other commands are **deterministic** and **LLM-free**:
+- `ops-translate import` - Copies files
+- `ops-translate summarize` - Static pattern matching
+- `ops-translate intent merge` - YAML reconciliation
+- `ops-translate dry-run` - Schema validation
+- `ops-translate generate` - Template-based (Jinja2)
+
+**Visual breakdown:**
+```
+PowerCLI/vRealize  ──[LLM]──>  intent.yaml  ──[Templates]──>  Ansible + KubeVirt
+   (legacy)         NEEDS AI    (normalized)   NO AI NEEDED    (cloud-native)
+```
+
+### Three Modes
+
+1. **AI-Assisted Extraction** (Recommended)
+   - Use LLM for extraction, templates for generation
+   - Best accuracy for complex scripts
+
+2. **Manual Intent Creation** (No LLM Required)
+   - Write intent.yaml files yourself
+   - 100% deterministic, works offline
+
+3. **Mock Provider** (Testing/Demo)
+   - No API key needed
+   - Uses predefined templates
+
+### Cost & Requirements
+
+- **Extraction**: One-time LLM cost per source file (typically $0.01-0.10 per file)
+- **Generation**: Free (template-based)
+- **Offline use**: Possible after initial extraction (or with manual intent files)
+
+**Bottom line**: LLM extracts *what* your automation does. Templates generate *how* to do it in OpenShift.
+
 ## Key Features
 
 - Parse PowerCLI parameters, environment branching, and resource profiles
