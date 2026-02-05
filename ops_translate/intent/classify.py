@@ -193,9 +193,9 @@ def discover_classifiers() -> list:
         >>> print([c.name for c in classifiers])
         ['nsx', 'plugins', 'servicenow']
     """
-    from pathlib import Path
     import importlib
     import logging
+    from pathlib import Path
 
     logger = logging.getLogger(__name__)
     classifiers = []

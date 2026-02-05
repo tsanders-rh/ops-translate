@@ -112,8 +112,10 @@ def smart_merge(intents: list[dict[str, Any]]) -> dict[str, Any]:
 
     Example:
         >>> intents = [
-        ...     {'file': 'vm1.intent.yaml', 'data': {'intent': {'workflow_name': 'provision_vm', ...}}},
-        ...     {'file': 'vm2.intent.yaml', 'data': {'intent': {'workflow_name': 'provision_vm', ...}}}
+        ...     {'file': 'vm1.intent.yaml',
+        ...      'data': {'intent': {'workflow_name': 'provision_vm', ...}}},
+        ...     {'file': 'vm2.intent.yaml',
+        ...      'data': {'intent': {'workflow_name': 'provision_vm', ...}}}
         ... ]
         >>> merged = smart_merge(intents)
         >>> merged['intent']['workflow_name']

@@ -7,12 +7,12 @@ classifies them based on how well they can be automatically translated.
 
 from typing import Any
 
+from ops_translate.intent.classifiers.base import BaseClassifier
 from ops_translate.intent.classify import (
     ClassifiedComponent,
     MigrationPath,
     TranslatabilityLevel,
 )
-from ops_translate.intent.classifiers.base import BaseClassifier
 
 
 class NsxClassifier(BaseClassifier):

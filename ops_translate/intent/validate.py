@@ -75,7 +75,8 @@ def validate_intent(intent_file: Path) -> tuple[bool, list]:
         >>> if not is_valid:
         ...     for error in errors:
         ...         print(error)
-        Validation error at 'intent.workflow_name': 'Provision-VM' does not match '^[a-z][a-z0-9_]*$'
+        Validation error at 'intent.workflow_name': 'Provision-VM' does not match
+        '^[a-z][a-z0-9_]*$'
           Expected pattern: ^[a-z][a-z0-9_]*$
           Got: Provision-VM
           Hint: Use snake_case naming (lowercase with underscores)
