@@ -2,8 +2,8 @@
 Progress tracking and reporting utilities using rich.
 """
 
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator
 
 from rich.console import Console
 from rich.progress import (

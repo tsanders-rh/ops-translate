@@ -2,11 +2,13 @@
 Intent extraction from source files using LLM.
 """
 
-from pathlib import Path
-from ops_translate.workspace import Workspace
-from ops_translate.llm import get_provider
-from rich.console import Console
 import re
+from pathlib import Path
+
+from rich.console import Console
+
+from ops_translate.llm import get_provider
+from ops_translate.workspace import Workspace
 
 console = Console()
 
@@ -57,7 +59,7 @@ def extract_all(workspace: Workspace):
                 for error in errors:
                     console.print(f"[yellow]    {error}[/yellow]")
             else:
-                console.print(f"[dim]  ✓ Schema validation passed[/dim]")
+                console.print("[dim]  ✓ Schema validation passed[/dim]")
 
             assumptions.append(f"## {ps_file.name}\n")
             assumptions.extend([f"- {a}" for a in file_assumptions])
@@ -85,7 +87,7 @@ def extract_all(workspace: Workspace):
                 for error in errors:
                     console.print(f"[yellow]    {error}[/yellow]")
             else:
-                console.print(f"[dim]  ✓ Schema validation passed[/dim]")
+                console.print("[dim]  ✓ Schema validation passed[/dim]")
 
             assumptions.append(f"## {xml_file.name}\n")
             assumptions.extend([f"- {a}" for a in file_assumptions])

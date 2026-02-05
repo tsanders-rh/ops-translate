@@ -2,7 +2,6 @@
 Tests for enhanced dry-run validation.
 """
 
-import pytest
 import yaml
 
 from ops_translate.intent.dry_run import (

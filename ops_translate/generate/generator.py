@@ -182,9 +182,6 @@ def generate_with_templates(workspace: Workspace, profile: str, output_format: s
 
     # Generate KubeVirt manifest
     try:
-        from io import StringIO
-
-        kubevirt_stream = StringIO()
         kubevirt_output = workspace.root / "output/kubevirt/vm.yaml"
         loader.render_template("kubevirt/vm.yaml.j2", context, kubevirt_output)
         content["kubevirt/vm.yaml"] = kubevirt_output.read_text()

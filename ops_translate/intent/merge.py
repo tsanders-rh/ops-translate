@@ -44,19 +44,20 @@ def merge_intents(workspace: Workspace) -> bool:
         yaml.dump(merged_intent, f, default_flow_style=False, sort_keys=False)
 
     # Validate merged intent against schema
-    from ops_translate.intent.validate import validate_intent
     from rich.console import Console
+
+    from ops_translate.intent.validate import validate_intent
 
     console = Console()
 
     is_valid, errors = validate_intent(output_file)
     if not is_valid:
-        console.print(f"[yellow]Warning: Merged intent validation failed:[/yellow]")
+        console.print("[yellow]Warning: Merged intent validation failed:[/yellow]")
         for error in errors:
             console.print(f"[yellow]  {error}[/yellow]")
-        console.print(f"[yellow]Merged intent written but may have schema issues.[/yellow]")
+        console.print("[yellow]Merged intent written but may have schema issues.[/yellow]")
     else:
-        console.print(f"[dim]✓ Merged intent schema validation passed[/dim]")
+        console.print("[dim]✓ Merged intent schema validation passed[/dim]")
 
     # Check for conflicts
     conflicts = detect_conflicts(intent_files)
@@ -601,7 +602,8 @@ def _detect_governance_conflicts(intents: list[dict[str, Any]]) -> list[str]:
 
     if conflicts:
         conflicts.append(
-            "\n**Resolution:** Use the most restrictive governance policy or create environment-specific profiles.\n"
+            "\n**Resolution:** Use the most restrictive governance policy or create "
+            "environment-specific profiles.\n"
         )
 
     return conflicts
@@ -640,7 +642,8 @@ def _detect_compute_conflicts(intents: list[dict[str, Any]]) -> list[str]:
 
     if conflicts:
         conflicts.append(
-            "\n**Resolution:** Choose one specification or make resources parameterized via inputs.\n"
+            "\n**Resolution:** Choose one specification or make resources "
+            "parameterized via inputs.\n"
         )
 
     return conflicts

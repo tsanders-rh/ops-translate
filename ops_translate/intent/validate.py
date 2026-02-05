@@ -6,10 +6,8 @@ import json
 from pathlib import Path
 
 import yaml
-from jsonschema import Draft7Validator, ValidationError, validate
+from jsonschema import ValidationError, validate
 from jsonschema.exceptions import SchemaError
-
-from ops_translate.exceptions import ArtifactValidationError, IntentValidationError
 
 # Get project root to find schema
 PROJECT_ROOT = Path(__file__).parent.parent.parent

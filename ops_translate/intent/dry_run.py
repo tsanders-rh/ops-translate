@@ -2,12 +2,10 @@
 Enhanced dry-run validation with detailed checks and step planning.
 """
 
-from pathlib import Path
 from typing import NamedTuple
 
 import yaml
 from rich.console import Console
-from rich.table import Table
 
 console = Console()
 
