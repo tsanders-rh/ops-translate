@@ -104,8 +104,8 @@ class TemplateLoader:
             Cached Jinja2 Template object
         """
         if template_name not in self._template_cache:
-            # Verify template exists
-            template_path = self.get_template_path(template_name)
+            # Verify template exists (will raise if not found)
+            self.get_template_path(template_name)
             # Load template using cached environment
             self._template_cache[template_name] = self.env.get_template(template_name)
 
