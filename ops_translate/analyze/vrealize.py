@@ -38,7 +38,8 @@ def calculate_signal_counts(
         - plugin_refs: Number of custom plugin references
 
     Example:
-        >>> nsx_ops = {"segments": [{"name": "seg1"}, {"name": "seg2"}], "firewall_rules": [{"name": "fw1"}]}
+        >>> nsx_ops = {"segments": [{"name": "seg1"}, {"name": "seg2"}],
+        ...            "firewall_rules": [{"name": "fw1"}]}
         >>> plugins = [{"name": "plugin1"}]
         >>> rest_calls = [{"endpoint": "/api/v1"}]
         >>> calculate_signal_counts(nsx_ops, plugins, rest_calls)
@@ -130,7 +131,9 @@ def build_evidence_array(
         - type: Type of detection (nsx, plugin, rest_call)
 
     Example:
-        >>> nsx_ops = {"segments": [{"location": "task1", "evidence": "nsxClient.create...", "confidence": 0.9}]}
+        >>> nsx_ops = {"segments": [
+        ...     {"location": "task1", "evidence": "nsxClient.create...", "confidence": 0.9}
+        ... ]}
         >>> build_evidence_array(nsx_ops, [], [])
         [{'node': 'task1', 'snippet': 'nsxClient.create...', 'confidence': 0.9, 'type': 'nsx'}]
     """
