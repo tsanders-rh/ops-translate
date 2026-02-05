@@ -26,8 +26,10 @@ All processing happens locally. No execution by default. Full transparency at ev
 ### Try with Example Scripts
 
 ```bash
-# Install
-pip install ops-translate
+# Install from source
+git clone https://github.com/tsanders-rh/ops-translate.git
+cd ops-translate
+pip install -e .
 
 # Initialize workspace
 ops-translate init demo && cd demo
@@ -371,22 +373,26 @@ This is a v1 prototype focused on demonstrating the translation workflow. Not in
 
 See [SPEC.md](SPEC.md) for complete design details.
 
-## Requirements
-
-- Python 3.10+
-- Optional: OpenAI or Anthropic API key (for AI-assisted extraction)
-
 ## Installation
 
-```bash
-# From PyPI (once published)
-pip install ops-translate
+> **Note**: ops-translate is not yet published to PyPI. Install from source for now.
 
-# From source
-git clone https://github.com/tsanders-rh/ops-translate
+```bash
+# Clone the repository
+git clone https://github.com/tsanders-rh/ops-translate.git
 cd ops-translate
+
+# Install in development mode (recommended)
 pip install -e .
+
+# Or install normally
+pip install .
 ```
+
+**Requirements:**
+- Python 3.10 or higher
+- pip and virtualenv (recommended)
+- Optional: OpenAI or Anthropic API key for AI-assisted extraction
 
 ## Documentation
 
