@@ -29,6 +29,12 @@ All processing happens locally. No execution by default. Full transparency at ev
 # Install from source
 git clone https://github.com/tsanders-rh/ops-translate.git
 cd ops-translate
+
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install the package
 pip install -e .
 
 # Initialize workspace
@@ -381,6 +387,10 @@ See [SPEC.md](SPEC.md) for complete design details.
 # Clone the repository
 git clone https://github.com/tsanders-rh/ops-translate.git
 cd ops-translate
+
+# Create and activate virtual environment (recommended)
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install in development mode (recommended)
 pip install -e .
