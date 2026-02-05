@@ -17,7 +17,12 @@ console = Console()
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 
 
-def generate_all(workspace: Workspace, profile: str, use_ai: bool = False):
+def generate_all(
+    workspace: Workspace,
+    profile: str,
+    use_ai: bool = False,
+    output_format: str = "yaml",
+):
     """
     Generate all artifacts (KubeVirt + Ansible) using AI or templates.
 
@@ -25,14 +30,15 @@ def generate_all(workspace: Workspace, profile: str, use_ai: bool = False):
         workspace: Workspace instance
         profile: Profile name (lab/prod)
         use_ai: If True, use LLM. If False, use templates.
+        output_format: Output format (yaml, json, kustomize, argocd)
     """
     if use_ai:
-        generate_with_ai(workspace, profile)
+        generate_with_ai(workspace, profile, output_format)
     else:
-        generate_with_templates(workspace, profile)
+        generate_with_templates(workspace, profile, output_format)
 
 
-def generate_with_ai(workspace: Workspace, profile: str):
+def generate_with_ai(workspace: Workspace, profile: str, output_format: str = "yaml"):
     """
     Generate artifacts using LLM.
 
@@ -44,7 +50,7 @@ def generate_with_ai(workspace: Workspace, profile: str):
 
     if not llm.is_available():
         console.print("[yellow]Warning: LLM not available. Falling back to templates.[/yellow]")
-        generate_with_templates(workspace, profile)
+        generate_with_templates(workspace, profile, output_format)
         return
 
     # Load intent
@@ -97,12 +103,12 @@ default_storage_class: {profile_config["default_storage_class"]}"""
                 "[yellow]Warning: No files extracted from LLM response. "
                 "Falling back to templates.[/yellow]"
             )
-            generate_with_templates(workspace, profile)
+            generate_with_templates(workspace, profile, output_format)
 
     except Exception as e:
         console.print(f"[red]Error calling LLM: {e}[/red]")
         console.print("[yellow]Falling back to template-based generation[/yellow]")
-        generate_with_templates(workspace, profile)
+        generate_with_templates(workspace, profile, output_format)
 
 
 def parse_multifile_response(response: str) -> dict:
@@ -137,7 +143,9 @@ def parse_multifile_response(response: str) -> dict:
     return files
 
 
-def generate_with_templates(workspace: Workspace, profile: str):
+def generate_with_templates(
+    workspace: Workspace, profile: str, output_format: str = "yaml"
+):
     """
     Generate artifacts using Jinja2 templates.
 
@@ -145,6 +153,7 @@ def generate_with_templates(workspace: Workspace, profile: str):
     """
     import yaml
 
+    from ops_translate.generate.formats import get_format_handler
     from ops_translate.util.templates import TemplateLoader, create_template_context
 
     # Load config and intent
@@ -170,11 +179,17 @@ def generate_with_templates(workspace: Workspace, profile: str):
     # Create template context
     context = create_template_context(intent_data, profile_config, profile)
 
+    # Generate base YAML content
+    content = {}
+
     # Generate KubeVirt manifest
     try:
+        from io import StringIO
+
+        kubevirt_stream = StringIO()
         kubevirt_output = workspace.root / "output/kubevirt/vm.yaml"
         loader.render_template("kubevirt/vm.yaml.j2", context, kubevirt_output)
-        console.print(f"[dim]  Generated: {kubevirt_output.relative_to(workspace.root)}[/dim]")
+        content["kubevirt/vm.yaml"] = kubevirt_output.read_text()
     except Exception as e:
         console.print(f"[yellow]⚠ Could not generate KubeVirt manifest: {e}[/yellow]")
 
@@ -182,7 +197,7 @@ def generate_with_templates(workspace: Workspace, profile: str):
     try:
         playbook_output = workspace.root / "output/ansible/site.yml"
         loader.render_template("ansible/playbook.yml.j2", context, playbook_output)
-        console.print(f"[dim]  Generated: {playbook_output.relative_to(workspace.root)}[/dim]")
+        content["ansible/site.yml"] = playbook_output.read_text()
     except Exception as e:
         console.print(f"[yellow]⚠ Could not generate Ansible playbook: {e}[/yellow]")
 
@@ -190,9 +205,17 @@ def generate_with_templates(workspace: Workspace, profile: str):
     try:
         role_tasks_output = workspace.root / "output/ansible/roles/provision_vm/tasks/main.yml"
         loader.render_template("ansible/role_tasks.yml.j2", context, role_tasks_output)
-        console.print(f"[dim]  Generated: {role_tasks_output.relative_to(workspace.root)}[/dim]")
+        content["ansible/roles/provision_vm/tasks/main.yml"] = role_tasks_output.read_text()
     except Exception as e:
         console.print(f"[yellow]⚠ Could not generate Ansible role: {e}[/yellow]")
+
+    # Apply output format
+    if output_format != "yaml":
+        try:
+            format_handler = get_format_handler(output_format, workspace.root)
+            format_handler.write(content, profile, context)
+        except Exception as e:
+            console.print(f"[yellow]⚠ Could not apply format {output_format}: {e}[/yellow]")
 
     # Generate README
     generate_readme(workspace, profile, context)

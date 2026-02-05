@@ -332,8 +332,13 @@ def preview(target: str = typer.Option(..., "--target", help="Target platform (o
 def generate(
     profile: str = typer.Option(..., "--profile", help="Profile to use (lab|prod)"),
     no_ai: bool = typer.Option(False, "--no-ai", help="Use templates only, no AI"),
+    format: str = typer.Option(
+        "yaml",
+        "--format",
+        help="Output format: yaml, json, kustomize, argocd",
+    ),
 ):
-    """Generate Ansible and KubeVirt artifacts."""
+    """Generate Ansible and KubeVirt artifacts in various formats."""
     workspace = Workspace(Path.cwd())
     if not workspace.config_file.exists():
         console.print("[red]Error: Not in a workspace.[/red]")
@@ -345,16 +350,30 @@ def generate(
         raise typer.Exit(1)
 
     mode = "template-based" if no_ai else "AI-assisted"
-    console.print(f"[bold blue]Generating artifacts ({mode}):[/bold blue] profile={profile}")
+    console.print(
+        f"[bold blue]Generating artifacts ({mode}):[/bold blue] "
+        f"profile={profile}, format={format}"
+    )
 
     from ops_translate.generate import generate_all
 
     # Generate all artifacts
-    generate_all(workspace, profile, use_ai=not no_ai)
+    generate_all(workspace, profile, use_ai=not no_ai, output_format=format)
 
-    console.print("[green]✓ KubeVirt manifest: output/kubevirt/vm.yaml[/green]")
-    console.print("[green]✓ Ansible playbook: output/ansible/site.yml[/green]")
-    console.print("[green]✓ Ansible role: output/ansible/roles/provision_vm/[/green]")
+    # Show appropriate success messages based on format
+    if format == "json":
+        console.print("[green]✓ JSON manifests: output/json/[/green]")
+    elif format in ("kustomize", "gitops"):
+        console.print("[green]✓ Kustomize base: output/base/[/green]")
+        console.print("[green]✓ Overlays: output/overlays/{dev,staging,prod}/[/green]")
+    elif format == "argocd":
+        console.print("[green]✓ ArgoCD applications: output/argocd/[/green]")
+        console.print("[green]✓ Kustomize structure: output/base/ and output/overlays/[/green]")
+    else:  # yaml
+        console.print("[green]✓ KubeVirt manifest: output/kubevirt/vm.yaml[/green]")
+        console.print("[green]✓ Ansible playbook: output/ansible/site.yml[/green]")
+        console.print("[green]✓ Ansible role: output/ansible/roles/provision_vm/[/green]")
+
     console.print("[green]✓ README: output/README.md[/green]")
 
 
