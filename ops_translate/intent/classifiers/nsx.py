@@ -211,8 +211,11 @@ class NsxClassifier(BaseClassifier):
 
             # Create a classified component for each deduplicated operation
             for op in deduplicated:
+                # Clean up regex artifacts from the name for display
+                display_name = self._clean_display_name(op.get("name", category))
+
                 component = ClassifiedComponent(
-                    name=op.get("name", category),
+                    name=display_name,
                     component_type=f"nsx_{category}",
                     level=level,
                     reason=self._get_reason(category, level, equivalent),
@@ -438,6 +441,28 @@ class NsxClassifier(BaseClassifier):
             "confidence": confidence,
             "evidence": combined_evidence,
         }
+
+    def _clean_display_name(self, name: str) -> str:
+        """
+        Clean up regex artifacts from operation names for user-friendly display.
+
+        Removes regex escape characters (backslashes) that were used in pattern
+        matching but shouldn't be shown to end users.
+
+        Args:
+            name: Raw operation name (may contain regex escape chars)
+
+        Returns:
+            Cleaned name suitable for display
+
+        Example:
+            >>> classifier._clean_display_name("nsxClient\\.createSecurityGroup")
+            'nsxClient.createSecurityGroup'
+        """
+        # Remove backslash escapes used in regex patterns
+        cleaned = name.replace("\\.", ".").replace("\\-", "-").replace("\\(", "(").replace("\\)", ")")
+
+        return cleaned
 
     def _get_reason(
         self, category: str, level: TranslatabilityLevel, equivalent: str | None
