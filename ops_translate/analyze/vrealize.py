@@ -13,9 +13,10 @@ Analysis is performed offline without LLM assistance.
 
 import json
 import re
-import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
+
+from lxml import etree as ET
 
 from ops_translate.exceptions import FileNotFoundError as OpsFileNotFoundError
 
@@ -214,8 +215,8 @@ def analyze_vrealize_workflow(workflow_file: Path) -> dict[str, Any]:
         raise OpsFileNotFoundError(str(workflow_file))
 
     try:
-        # Parse XML (stdlib ET doesn't support line number tracking)
-        tree = ET.parse(workflow_file)
+        # Parse XML with lxml (supports line number tracking via sourceline)
+        tree = ET.parse(str(workflow_file))
         root = tree.getroot()
 
         # Extract namespace if present for proper XPath queries
@@ -425,12 +426,18 @@ def detect_nsx_operations(
                     while parent is not None and parent.tag != "workflow-item":
                         parent = parent.getparent() if hasattr(parent, "getparent") else None
 
-                    # Get location (stdlib ET doesn't support line numbers)
-                    # Use workflow-item name for traceability
+                    # Get location with line number (lxml provides sourceline)
                     location = "unknown"
-                    if parent is not None and "name" in parent.attrib:
-                        # Use workflow-item name as location
-                        location = f"{filename}:{parent.attrib['name']}"
+                    if parent is not None:
+                        line_num = parent.sourceline if hasattr(parent, "sourceline") else None
+                        if line_num:
+                            location = f"{filename}:{line_num}"
+                        elif "name" in parent.attrib:
+                            # Fallback to name if line number not available
+                            location = f"{filename}:{parent.attrib['name']}"
+                    elif hasattr(script_elem, "sourceline") and script_elem.sourceline:
+                        # Use script element's line if no parent
+                        location = f"{filename}:{script_elem.sourceline}"
 
                     # Determine match type for confidence calculation
                     if "nsxClient" in pattern:
@@ -480,8 +487,13 @@ def detect_nsx_operations(
                     # Calculate confidence (will be lower due to less context)
                     confidence = calculate_detection_confidence(match_type, context, pattern)
 
-                    # Use workflow-item name as location (stdlib ET doesn't support line numbers)
-                    location = f"{filename}:{item_name or 'unknown'}"
+                    # Get location with line number from lxml
+                    line_num = item.sourceline if hasattr(item, "sourceline") else None
+                    if line_num:
+                        location = f"{filename}:{line_num}"
+                    else:
+                        # Fallback to item name if line number not available
+                        location = f"{filename}:{item_name or 'unknown'}"
 
                     nsx_ops[category].append(
                         {

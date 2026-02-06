@@ -261,13 +261,37 @@ class NsxClassifier(BaseClassifier):
         if not operations:
             return []
 
-        # Group operations by location (operations in the same location are likely duplicates)
+        # Group operations by location
+        # For filename:line format, group nearby lines (within 5 lines) together
         location_groups: dict[str, list[dict[str, Any]]] = {}
         for op in operations:
             location = op.get("location", "unknown")
-            if location not in location_groups:
-                location_groups[location] = []
-            location_groups[location].append(op)
+
+            # Try to find a nearby location group (for line numbers)
+            merged_into_existing = False
+            if ":" in location and location != "unknown":
+                try:
+                    filename, line_str = location.rsplit(":", 1)
+                    if line_str.isdigit():
+                        line_num = int(line_str)
+                        # Check if there's a nearby location group in the same file
+                        for existing_loc in list(location_groups.keys()):
+                            if ":" in existing_loc:
+                                exist_file, exist_line_str = existing_loc.rsplit(":", 1)
+                                if exist_line_str.isdigit() and exist_file == filename:
+                                    exist_line = int(exist_line_str)
+                                    # If within 5 lines, consider same location
+                                    if abs(line_num - exist_line) <= 5:
+                                        location_groups[existing_loc].append(op)
+                                        merged_into_existing = True
+                                        break
+                except (ValueError, AttributeError):
+                    pass
+
+            if not merged_into_existing:
+                if location not in location_groups:
+                    location_groups[location] = []
+                location_groups[location].append(op)
 
         # Merge operations within each exact location
         merged_groups = []
