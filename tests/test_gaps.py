@@ -10,8 +10,6 @@ import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from ops_translate.intent.classify import (
     ClassifiedComponent,
     MigrationPath,

@@ -5,10 +5,7 @@ Tests the translatability classification framework including levels, migration p
 classified components, classifier discovery, and summary generation.
 """
 
-from pathlib import Path
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from ops_translate.intent.classify import (
     ClassifiedComponent,
@@ -58,7 +55,7 @@ class TestTranslatabilityLevel:
             TranslatabilityLevel.BLOCKED,
             TranslatabilityLevel.PARTIAL,
         ]
-        sorted_levels = sorted(levels, key=lambda l: l.severity)
+        sorted_levels = sorted(levels, key=lambda level: level.severity)
         assert sorted_levels == [
             TranslatabilityLevel.SUPPORTED,
             TranslatabilityLevel.PARTIAL,

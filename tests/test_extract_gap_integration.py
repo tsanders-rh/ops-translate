@@ -201,8 +201,6 @@ class TestGapAnalysisIntegrationDuringExtract:
 
     def test_gap_analysis_error_handling(self, temp_workspace):
         """Test that gap analysis errors don't stop extraction."""
-        import tempfile
-
         workspace = temp_workspace
 
         # Create an invalid XML file
