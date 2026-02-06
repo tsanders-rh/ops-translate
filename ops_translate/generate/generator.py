@@ -145,12 +145,14 @@ def parse_multifile_response(response: str) -> dict:
 
 def generate_with_templates(workspace: Workspace, profile: str, output_format: str = "yaml"):
     """
-    Generate artifacts using Jinja2 templates.
+    Generate artifacts using Jinja2 templates or direct generation.
 
-    Supports custom templates in workspace or falls back to defaults.
+    For standard YAML format, calls ansible.py and kubevirt.py directly to enable
+    gap analysis integration. For other formats, uses Jinja2 templates.
     """
     import yaml
 
+    from ops_translate.generate import ansible, kubevirt
     from ops_translate.generate.formats import get_format_handler
     from ops_translate.util.templates import TemplateLoader, create_template_context
 
@@ -160,6 +162,23 @@ def generate_with_templates(workspace: Workspace, profile: str, output_format: s
 
     if not intent_file.exists():
         console.print("[red]Error: intent/intent.yaml not found. Run 'intent merge' first.[/red]")
+        return
+
+    # For YAML format, check if custom templates exist
+    loader = TemplateLoader(workspace.root)
+    has_custom_templates = loader.has_custom_templates()
+
+    if output_format == "yaml" and not has_custom_templates:
+        # Use direct generation to support gap analysis (only if no custom templates)
+        try:
+            ansible.generate(workspace, profile, use_ai=False)
+            kubevirt.generate(workspace, profile, use_ai=False)
+            console.print("[green]✓ KubeVirt manifest: output/kubevirt/vm.yaml[/green]")
+            console.print("[green]✓ Ansible playbook: output/ansible/site.yml[/green]")
+            console.print("[green]✓ Ansible role: output/ansible/roles/provision_vm/[/green]")
+            console.print("[green]✓ README: output/README.md[/green]")
+        except Exception as e:
+            console.print(f"[red]Error generating artifacts: {e}[/red]")
         return
 
     intent_data = yaml.safe_load(intent_file.read_text())
