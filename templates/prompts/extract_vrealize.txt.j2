@@ -18,7 +18,7 @@ Extract the operational intent from the vRO workflow and produce a YAML document
 7. **Map resources** - Extract resource allocation patterns from scriptable tasks
 8. **Find metadata** - Identify custom properties, tags, attributes
 9. **Day 2 operations** - Infer supported operations from workflow purpose
-10. **Document assumptions** - Add an `assumptions` section for inferred information
+10. **Document assumptions** - Add an `assumptions` section ONLY if you make non-obvious inferences or decisions that aren't explicitly stated in the workflow. Omit this section if everything is directly extracted from the source.
 
 ## What to Look For
 
@@ -51,6 +51,20 @@ Extract the operational intent from the vRO workflow and produce a YAML document
 - Decision elements that branch on environment
 - Different resource pools, networks, or storage per environment
 - Look for dev/prod/staging distinctions
+
+### Assumptions (when to document)
+Only include an `assumptions` section when you make **significant inferences** such as:
+- **Interpreting complex logic** (e.g., "Approval workflow inferred from decision element - actual approval mechanism not specified")
+- **Inferring from workflow name/context** (e.g., "Day 2 operations assumed from workflow name 'VM Lifecycle Management' but not explicitly implemented")
+- **Resolving ambiguity** (e.g., "Multiple network selection paths - assumed prod-network for production based on decision logic")
+- **Setting constraints** not defined (e.g., "Memory limits not specified - set to 256GB based on common vRO patterns")
+- **Extracting from nested sub-workflows** (e.g., "Storage configuration delegated to sub-workflow - assumed standard profiles")
+
+**DO NOT include assumptions for:**
+- Direct extraction of inputs/outputs from XML elements
+- Straightforward decision logic mapping
+- Simple parameter type conversions
+- The fact that intent was extracted by LLM (this is implicit in all outputs)
 
 ## Example Input (simplified)
 ```xml
@@ -126,9 +140,8 @@ intent:
     supported: [start, stop, reconfigure]
 
 assumptions:
-  - Approval workflow inferred from decision element checking environment
-  - Day 2 operations assumed based on standard vRO VM lifecycle patterns
-  - Network profile extracted from scriptable task logic
+  - Approval mechanism inferred from decision element but actual approval task/integration not specified in workflow
+  - Day 2 operations (start/stop/reconfigure) assumed based on standard vRO VM lifecycle patterns - not explicitly defined
 ```
 
 ## Important Notes
