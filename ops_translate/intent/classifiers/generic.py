@@ -1,8 +1,9 @@
 """
-PowerCLI classifier for determining translatability of basic VM operations.
+Generic intent classifier for determining translatability of VM operations.
 
-Maps PowerCLI operations from extracted intent to OpenShift/KubeVirt equivalents
-and classifies them based on how well they can be automatically translated.
+A universal classifier that works with any intent structure, providing fallback
+classification when source-specific classifiers (PowerCLI, vRealize) don't apply.
+This classifier is designed to handle custom workflows or future source types.
 """
 
 from pathlib import Path
@@ -18,12 +19,13 @@ from ops_translate.intent.classify import (
 )
 
 
-class PowercliClassifier(BaseClassifier):
+class GenericClassifier(BaseClassifier):
     """
-    Classifier for PowerCLI operations detected in extracted intent.
+    Generic classifier for any intent structure.
 
-    This classifier analyzes the normalized intent YAML from PowerCLI scripts
-    and determines translatability of basic VM provisioning operations.
+    This classifier provides broad coverage for VM provisioning operations
+    regardless of the source type. It runs after source-specific classifiers
+    and provides baseline classification.
 
     Classification Rules:
     - VM Creation → SUPPORTED (maps to KubeVirt VirtualMachine)
@@ -31,39 +33,41 @@ class PowercliClassifier(BaseClassifier):
     - Basic Networking → SUPPORTED (maps to default pod network)
     - Basic Storage → SUPPORTED (maps to PVC/DataVolume)
     - Multi-NIC → PARTIAL (requires Multus NetworkAttachmentDefinition)
-    - Advanced Storage (snapshots, thin provisioning) → PARTIAL
+    - Advanced Storage → PARTIAL (requires CSI driver support)
+    - Approval Workflows → PARTIAL (requires custom integration)
 
     Example:
-        >>> classifier = PowerCLIClassifier()
-        >>> intent_data = {"vm_name": "web-server", "compute": {"cpu": 4}}
+        >>> classifier = GenericClassifier()
+        >>> intent_data = {"workload_type": "virtual_machine"}
         >>> components = classifier.classify_from_intent(intent_data)
     """
 
     @property
     def name(self) -> str:
         """Return classifier name."""
-        return "powercli"
+        return "generic"
 
     @property
     def priority(self) -> int:
-        """PowerCLI classifier runs with high priority (before NSX)."""
-        return 10
+        """Generic classifier runs with lowest priority (after specific classifiers)."""
+        return 1
 
     def can_classify(self, analysis: dict[str, Any]) -> bool:
         """
-        Check if this analysis contains PowerCLI intent data.
+        Generic classifier can handle any intent structure.
 
         Args:
-            analysis: Must contain 'source_type' == 'powercli' and 'intent_file' path
+            analysis: Must contain 'intent_file' path
 
         Returns:
-            True if this is PowerCLI intent data
+            True if intent_file exists
         """
-        return analysis.get("source_type") == "powercli"
+        intent_file = analysis.get("intent_file")
+        return intent_file is not None and Path(intent_file).exists()
 
     def classify(self, analysis: dict[str, Any]) -> list:
         """
-        Classify PowerCLI operations from extracted intent.
+        Classify operations from extracted intent.
 
         Args:
             analysis: Dict with 'intent_file' path to intent YAML
@@ -83,18 +87,25 @@ class PowercliClassifier(BaseClassifier):
             return []
 
         intent = data["intent"]
-        filename = Path(intent_file).stem.replace(".intent", "")
 
-        return self.classify_from_intent(intent, location=filename)
+        # Determine location from file path or workflow name
+        location = Path(intent_file).stem.replace(".intent", "")
+        if intent.get("workflow_name"):
+            location = intent["workflow_name"]
+
+        return self.classify_from_intent(intent, location=location)
 
     def classify_from_intent(
-        self, intent: dict[str, Any], location: str = "powercli"
+        self, intent: dict[str, Any], location: str = "workflow"
     ) -> list[ClassifiedComponent]:
         """
         Classify components from normalized intent structure.
 
+        This method handles various intent structures by checking multiple
+        possible locations for configuration data.
+
         Args:
-            intent: Normalized intent dict with compute, networking, storage, etc.
+            intent: Normalized intent dict
             location: Source file identifier for evidence
 
         Returns:
@@ -104,7 +115,7 @@ class PowercliClassifier(BaseClassifier):
 
         # Check for VM provisioning
         workload_type = intent.get("workload_type")
-        if workload_type == "virtual_machine" or intent.get("type") in ("powercli", "vrealize"):
+        if workload_type == "virtual_machine":
             components.append(
                 ClassifiedComponent(
                     name="VM Provisioning",
@@ -122,16 +133,8 @@ class PowercliClassifier(BaseClassifier):
                 )
             )
 
-        # Check for compute resources in inputs section
-        inputs = intent.get("inputs", {})
-        has_cpu = "cpu_count" in inputs or "cpu" in inputs or "cpu_cores" in inputs
-        has_memory = "memory_gb" in inputs or "memory" in inputs
-
-        # Also check legacy compute section for backwards compatibility
-        if intent.get("compute"):
-            compute = intent["compute"]
-            has_cpu = has_cpu or compute.get("cpu_cores") or compute.get("cpu")
-            has_memory = has_memory or compute.get("memory_gb") or compute.get("memory")
+        # Check for compute resources
+        has_cpu, has_memory = self._detect_compute_resources(intent)
 
         if has_cpu or has_memory:
             components.append(
@@ -152,21 +155,7 @@ class PowercliClassifier(BaseClassifier):
             )
 
         # Check for networking
-        networks = []
-        infrastructure = intent.get("infrastructure", {})
-
-        # Check legacy networking section
-        if intent.get("networking"):
-            networking = intent["networking"]
-            networks = networking.get("networks", [])
-        # Check infrastructure section for network info
-        elif infrastructure.get("network"):
-            network_name = infrastructure["network"]
-            networks = [{"name": network_name}]
-        # Check profiles for network configuration
-        elif intent.get("profiles", {}).get("network"):
-            # Has network profiles - treat as basic networking for now
-            networks = [{"name": "profile-based"}]
+        networks = self._detect_networks(intent)
 
         if networks:
             if len(networks) == 1 and self._is_simple_network(networks[0]):
@@ -208,14 +197,7 @@ class PowercliClassifier(BaseClassifier):
                 )
 
         # Check for storage
-        disks = []
-        if intent.get("storage"):
-            storage = intent["storage"]
-            disks = storage.get("disks", [])
-        # Check infrastructure for datastore info
-        elif infrastructure.get("datastore"):
-            # Has datastore configured - treat as basic storage
-            disks = [{"name": "boot-disk", "datastore": infrastructure["datastore"]}]
+        disks = self._detect_storage(intent)
 
         if disks:
             # Check complexity
@@ -259,6 +241,29 @@ class PowercliClassifier(BaseClassifier):
                     )
                 )
 
+        # Check for approval workflows
+        if intent.get("governance", {}).get("approval"):
+            components.append(
+                ClassifiedComponent(
+                    name="Approval Workflow",
+                    component_type="approval",
+                    level=TranslatabilityLevel.PARTIAL,
+                    reason=(
+                        "Approval logic requires custom integration with "
+                        "existing approval systems"
+                    ),
+                    openshift_equivalent="Custom operator or external approval system",
+                    migration_path=MigrationPath.PATH_B,
+                    location=location,
+                    recommendations=[
+                        "Integrate with existing approval system (ServiceNow, Jira, etc.)",
+                        "Consider using Kubernetes admission controllers",
+                        "May require custom operator development",
+                        "Document approval requirements in runbook",
+                    ],
+                )
+            )
+
         # Check for day2 operations
         if intent.get("day2_operations"):
             day2 = intent["day2_operations"]
@@ -284,6 +289,105 @@ class PowercliClassifier(BaseClassifier):
 
         return components
 
+    def _detect_compute_resources(self, intent: dict[str, Any]) -> tuple[bool, bool]:
+        """
+        Detect CPU and memory resource specifications across multiple intent structures.
+
+        Args:
+            intent: Intent dictionary
+
+        Returns:
+            Tuple of (has_cpu, has_memory) booleans
+        """
+        has_cpu = False
+        has_memory = False
+
+        # Check inputs section
+        inputs = intent.get("inputs", {})
+        has_cpu = "cpu_count" in inputs or "cpu" in inputs or "cpu_cores" in inputs
+        has_memory = "memory_gb" in inputs or "memory" in inputs
+
+        # Check resources.compute section
+        resources = intent.get("resources", {})
+        if resources.get("compute"):
+            compute = resources["compute"]
+            has_cpu = has_cpu or "cpu" in compute or "cpu_cores" in compute
+            has_memory = has_memory or "memory" in compute
+
+        # Check legacy compute section
+        if intent.get("compute"):
+            compute = intent["compute"]
+            has_cpu = has_cpu or compute.get("cpu_cores") or compute.get("cpu")
+            has_memory = has_memory or compute.get("memory_gb") or compute.get("memory")
+
+        return has_cpu, has_memory
+
+    def _detect_networks(self, intent: dict[str, Any]) -> list[dict[str, Any]]:
+        """
+        Detect network configurations across multiple intent structures.
+
+        Args:
+            intent: Intent dictionary
+
+        Returns:
+            List of network configuration dicts
+        """
+        networks = []
+        infrastructure = intent.get("infrastructure", {})
+        resources = intent.get("resources", {})
+
+        # Check legacy networking section
+        if intent.get("networking"):
+            networking = intent["networking"]
+            networks = networking.get("networks", [])
+        # Check resources.network section
+        elif resources.get("network"):
+            network_name = resources["network"]
+            if isinstance(network_name, str):
+                networks = [{"name": network_name}]
+            else:
+                networks = [network_name]
+        # Check infrastructure section for network info
+        elif infrastructure.get("network"):
+            network_name = infrastructure["network"]
+            networks = [{"name": network_name}]
+        # Check profiles for network configuration
+        elif intent.get("profiles", {}).get("network"):
+            # Has network profiles - treat as basic networking for now
+            networks = [{"name": "profile-based"}]
+
+        return networks
+
+    def _detect_storage(self, intent: dict[str, Any]) -> list[dict[str, Any]]:
+        """
+        Detect storage configurations across multiple intent structures.
+
+        Args:
+            intent: Intent dictionary
+
+        Returns:
+            List of disk configuration dicts
+        """
+        disks = []
+        infrastructure = intent.get("infrastructure", {})
+        resources = intent.get("resources", {})
+
+        # Check storage section
+        if intent.get("storage"):
+            storage = intent["storage"]
+            disks = storage.get("disks", [])
+        # Check resources.storage section
+        elif resources.get("storage"):
+            storage = resources["storage"]
+            if isinstance(storage, dict):
+                disks = storage.get("disks", [])
+        # Check infrastructure for datastore info
+        elif infrastructure.get("datastore"):
+            # Has datastore configured - treat as basic storage
+            disks = [{"name": "boot-disk", "datastore": infrastructure["datastore"]}]
+
+        return disks
+
     def _is_simple_network(self, network: dict[str, Any]) -> bool:
         """
         Check if a network config is 'simple' (default VM Network).
@@ -296,4 +400,7 @@ class PowercliClassifier(BaseClassifier):
         """
         network_name = network.get("name", "").lower()
         # Simple networks: "vm network", "default", or similar
-        return network_name in ("vm network", "default", "pod network") or not network_name
+        return (
+            network_name in ("vm network", "default", "pod network", "profile-based")
+            or not network_name
+        )

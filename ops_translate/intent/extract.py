@@ -36,14 +36,14 @@ def _run_gap_analysis_for_vrealize(workspace: Workspace, intent_files: list[Path
     if not intent_files:
         return
 
-    from ops_translate.intent.classifiers.vrealize import VRealizeClassifier
+    from ops_translate.intent.classifiers.vrealize import VrealizeClassifier
     from ops_translate.intent.gaps import generate_gap_reports
 
     console.print("\n[cyan]Running gap analysis on vRealize workflows...[/cyan]")
 
     # Collect all classified components from intent files
     all_components = []
-    classifier = VRealizeClassifier()
+    classifier = VrealizeClassifier()
 
     for intent_file in intent_files:
         try:
@@ -117,7 +117,7 @@ def _run_gap_analysis_for_powercli(workspace: Workspace, intent_files: list[Path
     if not intent_files:
         return
 
-    from ops_translate.intent.classifiers.powercli import PowerCLIClassifier
+    from ops_translate.intent.classifiers.powercli import PowercliClassifier
     from ops_translate.intent.gaps import generate_gap_reports
 
     console.print("\n[cyan]Running gap analysis on PowerCLI scripts...[/cyan]")
@@ -136,7 +136,7 @@ def _run_gap_analysis_for_powercli(workspace: Workspace, intent_files: list[Path
             }
 
             # Use PowerCLI classifier
-            classifier = PowerCLIClassifier()
+            classifier = PowercliClassifier()
             components = classifier.classify(analysis)
             all_components.extend(components)
 

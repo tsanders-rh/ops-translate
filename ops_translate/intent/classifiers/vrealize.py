@@ -18,7 +18,7 @@ from ops_translate.intent.classify import (
 )
 
 
-class VRealizeClassifier(BaseClassifier):
+class VrealizeClassifier(BaseClassifier):
     """
     Classifier for vRealize Orchestrator workflows detected in extracted intent.
 
