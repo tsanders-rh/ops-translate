@@ -23,7 +23,7 @@ class ValidationIssue(NamedTuple):
 class DryRunResult:
     """Results from dry-run validation."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.issues: list[ValidationIssue] = []
         self.steps: list[str] = []
         self.stats = {
