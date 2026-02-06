@@ -225,7 +225,13 @@ examples/
    ops-translate intent extract
    ```
 
-5. **Generate Ansible + KubeVirt artifacts:**
+5. **Review migration readiness:**
+   ```bash
+   ops-translate report --format html --profile lab
+   open output/report/index.html  # Review gaps and blockers
+   ```
+
+6. **Generate Ansible + KubeVirt artifacts:**
    ```bash
    # Using AI assistance
    ops-translate generate --profile lab
@@ -234,12 +240,12 @@ examples/
    ops-translate generate --profile lab --no-ai
    ```
 
-6. **Validate the output:**
+7. **Validate the output:**
    ```bash
    ops-translate dry-run
    ```
 
-7. **Review generated files:**
+8. **Review generated files:**
    ```bash
    tree output/
    # output/
@@ -284,16 +290,20 @@ ops-translate intent extract
 # Review extracted intent
 cat intent/environment-aware.ps1.intent.yaml
 
-# 6. Generate artifacts for lab environment
+# 6. Review migration readiness
+ops-translate report --format html --profile lab
+open output/report/index.html
+
+# 7. Generate artifacts for lab environment
 ops-translate generate --profile lab
 
-# 7. Review generated Ansible playbook
+# 8. Review generated Ansible playbook
 cat output/ansible/site.yml
 
-# 8. Review generated KubeVirt manifest
+# 9. Review generated KubeVirt manifest
 cat output/kubevirt/vm.yaml
 
-# 9. Validate everything
+# 10. Validate everything
 ops-translate dry-run
 ```
 
@@ -329,6 +339,10 @@ ops-translate intent merge
 
 # Review conflicts (if any)
 cat intent/conflicts.md
+
+# Review migration readiness before generating
+ops-translate report --format html --profile prod
+open output/report/index.html
 
 # Generate combined artifacts
 ops-translate generate --profile prod

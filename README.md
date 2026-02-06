@@ -47,10 +47,11 @@ ops-translate import --source powercli --file ../examples/powercli/environment-a
 ops-translate summarize
 ops-translate intent extract
 
-# Validate before generating
-ops-translate dry-run
+# Review migration readiness BEFORE generating
+ops-translate report --format html --profile lab
+open output/report/index.html  # Review gaps, blockers, and recommendations
 
-# Generate OpenShift artifacts (try different formats!)
+# After reviewing the report, generate artifacts
 ops-translate generate --profile lab                    # YAML (default)
 ops-translate generate --profile lab --format kustomize # GitOps
 ops-translate generate --profile lab --format argocd    # ArgoCD
