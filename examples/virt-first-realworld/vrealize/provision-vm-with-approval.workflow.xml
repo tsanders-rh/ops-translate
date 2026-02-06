@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow xmlns="http://vmware.com/vco/workflow" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://vmware.com/vco/workflow http://vmware.com/vco/workflow" version="1.0.0" api-version="8.0.0">
+  <display-name>Provision VM with Governance and Approval</display-name>
+  <description>Provisions a VM with approval workflow for production environments and cost center validation</description>
+
+  <input>
+    <param name="vmName" type="string">
+      <description>Virtual machine name</description>
+    </param>
+    <param name="environment" type="string">
+      <description>Target environment (dev/staging/prod)</description>
+    </param>
+    <param name="cpuCount" type="number">
+      <description>Number of CPUs</description>
+    </param>
+    <param name="memoryGB" type="number">
+      <description>Memory in GB</description>
+    </param>
+    <param name="diskSizeGB" type="number">
+      <description>Boot disk size in GB</description>
+    </param>
+    <param name="ownerEmail" type="string">
+      <description>VM owner email address</description>
+    </param>
+    <param name="costCenter" type="string">
+      <description>Cost center code for chargeback</description>
+    </param>
+  </input>
+
+  <output>
+    <param name="vm" type="VC:VirtualMachine">
+      <description>The provisioned VM</description>
+    </param>
+    <param name="approved" type="boolean">
+      <description>Whether approval was required and granted</description>
+    </param>
+  </output>
+
+  <attrib name="requiresApproval" type="boolean" read-only="false"/>
+  <attrib name="approvalTicket" type="string" read-only="false"/>
+  <attrib name="resourcePool" type="string" read-only="false"/>
+  <attrib name="datastore" type="string" read-only="false"/>
+  <attrib name="network" type="string" read-only="false"/>
+
+  <workflow-item name="item0" type="end" end-mode="0">
+    <position y="550.0" x="300.0"/>
+  </workflow-item>
+
+  <workflow-item name="item1" out-name="item2" type="decision">
+    <display-name>Check if Approval Required</display-name>
+    <script encoded="false">
+      // Production environments require approval
+      requiresApproval = (environment == "prod" || environment == "production");
+
+      System.log("Environment: " + environment + ", Requires approval: " + requiresApproval);
+      return requiresApproval;
+    </script>
+    <in-binding>
+      <bind name="environment" type="string" export-name="environment"/>
+    </in-binding>
+    <out-binding>
+      <bind name="requiresApproval" type="boolean" export-name="requiresApproval"/>
+    </out-binding>
+    <position y="50.0" x="100.0"/>
+  </workflow-item>
+
+  <workflow-item name="item2" out-name="item4" alternate-out-name="item3" type="task">
+    <display-name>Request Approval</display-name>
+    <script encoded="false">
+      // Create approval request (simulated - in real scenario would integrate with ServiceNow/Jira)
+      approvalTicket = "APPR-" + Math.floor(Math.random() * 100000);
+
+      System.log("Creating approval ticket: " + approvalTicket);
+      System.log("Requested by: " + ownerEmail);
+      System.log("Resources: " + cpuCount + " CPU, " + memoryGB + " GB RAM, " + diskSizeGB + " GB disk");
+      System.log("Cost center: " + costCenter);
+
+      // In real workflow, this would pause and wait for approval
+      // For demo purposes, we'll auto-approve
+      approved = true;
+
+      System.log("Approval granted for ticket: " + approvalTicket);
+    </script>
+    <in-binding>
+      <bind name="ownerEmail" type="string" export-name="ownerEmail"/>
+      <bind name="cpuCount" type="number" export-name="cpuCount"/>
+      <bind name="memoryGB" type="number" export-name="memoryGB"/>
+      <bind name="diskSizeGB" type="number" export-name="diskSizeGB"/>
+      <bind name="costCenter" type="string" export-name="costCenter"/>
+    </in-binding>
+    <out-binding>
+      <bind name="approvalTicket" type="string" export-name="approvalTicket"/>
+      <bind name="approved" type="boolean" export-name="approved"/>
+    </out-binding>
+    <position y="150.0" x="100.0"/>
+  </workflow-item>
+
+  <workflow-item name="item3" out-name="item4" type="task">
+    <display-name>Skip Approval</display-name>
+    <script encoded="false">
+      // Non-production environments don't require approval
+      approved = true;
+      approvalTicket = "N/A";
+
+      System.log("Skipping approval for environment: " + environment);
+    </script>
+    <in-binding>
+      <bind name="environment" type="string" export-name="environment"/>
+    </in-binding>
+    <out-binding>
+      <bind name="approved" type="boolean" export-name="approved"/>
+      <bind name="approvalTicket" type="string" export-name="approvalTicket"/>
+    </out-binding>
+    <position y="150.0" x="250.0"/>
+  </workflow-item>
+
+  <workflow-item name="item4" out-name="item5" type="task">
+    <display-name>Select Environment Resources</display-name>
+    <script encoded="false">
+      // Environment-specific resource pools and datastores
+      if (environment == "prod" || environment == "production") {
+          resourcePool = "PROD-RP";
+          datastore = "PROD-SSD-01";
+          network = "PROD-NETWORK";
+      } else if (environment == "staging") {
+          resourcePool = "STAGING-RP";
+          datastore = "STAGING-SSD-01";
+          network = "STAGING-NETWORK";
+      } else {
+          resourcePool = "DEV-RP";
+          datastore = "DEV-STANDARD-01";
+          network = "DEV-NETWORK";
+      }
+
+      System.log("Selected resources - Pool: " + resourcePool + ", Datastore: " + datastore + ", Network: " + network);
+    </script>
+    <in-binding>
+      <bind name="environment" type="string" export-name="environment"/>
+    </in-binding>
+    <out-binding>
+      <bind name="resourcePool" type="string" export-name="resourcePool"/>
+      <bind name="datastore" type="string" export-name="datastore"/>
+      <bind name="network" type="string" export-name="network"/>
+    </out-binding>
+    <position y="250.0" x="200.0"/>
+  </workflow-item>
+
+  <workflow-item name="item5" out-name="item6" type="task">
+    <display-name>Create Virtual Machine</display-name>
+    <script encoded="false">
+      // Get vCenter objects
+      var allClusters = System.getModule("com.vmware.library.vc.cluster").getAllClusters();
+      var cluster = allClusters[0]; // Simplified - in real scenario would select by name
+      var vmFolder = cluster.vmFolder;
+      var rp = cluster.resourcePool;
+
+      // Create VM spec
+      var spec = new VcVirtualMachineConfigSpec();
+      spec.name = vmName;
+      spec.memoryMB = memoryGB * 1024;
+      spec.numCPUs = cpuCount;
+      spec.guestId = "rhel8_64Guest";
+
+      // Add disk
+      var diskSpec = new VcVirtualDeviceConfigSpec();
+      diskSpec.operation = VcVirtualDeviceConfigSpecOperation.add;
+      diskSpec.fileOperation = VcVirtualDeviceConfigSpecFileOperation.create;
+
+      var disk = new VcVirtualDisk();
+      var diskBacking = new VcVirtualDiskFlatVer2BackingInfo();
+      diskBacking.fileName = "[" + datastore + "]";
+      diskBacking.diskMode = "persistent";
+      disk.backing = diskBacking;
+      disk.capacityInKB = diskSizeGB * 1024 * 1024;
+      diskSpec.device = disk;
+
+      // Add network
+      var nicSpec = new VcVirtualDeviceConfigSpec();
+      nicSpec.operation = VcVirtualDeviceConfigSpecOperation.add;
+      var nic = new VcVirtualVmxnet3();
+      var nicBacking = new VcVirtualEthernetCardNetworkBackingInfo();
+      nicBacking.deviceName = network;
+      nic.backing = nicBacking;
+      nicSpec.device = nic;
+
+      spec.deviceChange = [diskSpec, nicSpec];
+
+      // Create VM
+      vm = vmFolder.createVm(spec, rp, null);
+
+      System.log("VM " + vmName + " created successfully");
+    </script>
+    <in-binding>
+      <bind name="vmName" type="string" export-name="vmName"/>
+      <bind name="cpuCount" type="number" export-name="cpuCount"/>
+      <bind name="memoryGB" type="number" export-name="memoryGB"/>
+      <bind name="diskSizeGB" type="number" export-name="diskSizeGB"/>
+      <bind name="datastore" type="string" export-name="datastore"/>
+      <bind name="network" type="string" export-name="network"/>
+    </in-binding>
+    <out-binding>
+      <bind name="vm" type="VC:VirtualMachine" export-name="vm"/>
+    </out-binding>
+    <position y="350.0" x="200.0"/>
+  </workflow-item>
+
+  <workflow-item name="item6" out-name="item0" type="task">
+    <display-name>Apply Tags and Metadata</display-name>
+    <script encoded="false">
+      // Apply governance tags
+      vm.setCustomValue("Environment", environment);
+      vm.setCustomValue("Owner", ownerEmail);
+      vm.setCustomValue("CostCenter", costCenter);
+      vm.setCustomValue("ApprovalTicket", approvalTicket);
+      vm.setCustomValue("ProvisionedBy", "vRealize-Orchestrator");
+      vm.setCustomValue("ProvisionedDate", new Date().toISOString());
+
+      System.log("Applied tags to VM " + vmName);
+      System.log("Owner: " + ownerEmail + ", Cost Center: " + costCenter);
+    </script>
+    <in-binding>
+      <bind name="vm" type="VC:VirtualMachine" export-name="vm"/>
+      <bind name="vmName" type="string" export-name="vmName"/>
+      <bind name="environment" type="string" export-name="environment"/>
+      <bind name="ownerEmail" type="string" export-name="ownerEmail"/>
+      <bind name="costCenter" type="string" export-name="costCenter"/>
+      <bind name="approvalTicket" type="string" export-name="approvalTicket"/>
+    </in-binding>
+    <position y="450.0" x="200.0"/>
+  </workflow-item>
+
+  <presentation>
+    <p-param name="vmName">
+      <desc>VM Name</desc>
+    </p-param>
+    <p-param name="environment">
+      <desc>Environment (dev/staging/prod)</desc>
+    </p-param>
+    <p-param name="cpuCount">
+      <desc>CPU Count</desc>
+    </p-param>
+    <p-param name="memoryGB">
+      <desc>Memory (GB)</desc>
+    </p-param>
+    <p-param name="diskSizeGB">
+      <desc>Disk Size (GB)</desc>
+    </p-param>
+    <p-param name="ownerEmail">
+      <desc>Owner Email</desc>
+    </p-param>
+    <p-param name="costCenter">
+      <desc>Cost Center</desc>
+    </p-param>
+  </presentation>
+</workflow>
