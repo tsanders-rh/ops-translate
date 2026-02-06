@@ -65,7 +65,7 @@ class GenericClassifier(BaseClassifier):
         intent_file = analysis.get("intent_file")
         return intent_file is not None and Path(intent_file).exists()
 
-    def classify(self, analysis: dict[str, Any]) -> list:
+    def classify(self, analysis: dict[str, Any]) -> list[ClassifiedComponent]:
         """
         Classify operations from extracted intent.
 

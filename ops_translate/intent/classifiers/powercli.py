@@ -61,7 +61,7 @@ class PowercliClassifier(BaseClassifier):
         """
         return analysis.get("source_type") == "powercli"
 
-    def classify(self, analysis: dict[str, Any]) -> list:
+    def classify(self, analysis: dict[str, Any]) -> list[ClassifiedComponent]:
         """
         Classify PowerCLI operations from extracted intent.
 

@@ -62,7 +62,7 @@ class VrealizeClassifier(BaseClassifier):
         """
         return analysis.get("source_type") == "vrealize"
 
-    def classify(self, analysis: dict[str, Any]) -> list:
+    def classify(self, analysis: dict[str, Any]) -> list[ClassifiedComponent]:
         """
         Classify vRealize operations from extracted intent.
 
