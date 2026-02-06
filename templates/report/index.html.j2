@@ -142,8 +142,8 @@
                             {% if input_spec.required %}
                             <span class="badge badge-required">required</span>
                             {% endif %}
-                            {% if input_spec['values'] %}
-                            - values: {{ input_spec['values'] | join(', ') }}
+                            {% if input_spec.get('values') %}
+                            - values: {{ input_spec.get('values') | join(', ') }}
                             {% endif %}
                         </li>
                         {% endfor %}
