@@ -147,10 +147,12 @@ body {
 .badge {
     display: inline-block;
     padding: 0.25rem 0.75rem;
+    margin-left: 0.5rem;
     border-radius: 12px;
     font-size: 0.85rem;
     font-weight: 600;
     text-transform: uppercase;
+    vertical-align: middle;
 }
 
 .badge-success {
@@ -335,6 +337,12 @@ section h3 {
 
 .intent-block ul {
     margin-left: var(--spacing-md);
+    list-style-type: disc;
+}
+
+.intent-block li {
+    margin-bottom: 0.5rem;
+    line-height: 1.8;
 }
 
 .intent-block code {
