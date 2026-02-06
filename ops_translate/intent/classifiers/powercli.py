@@ -103,7 +103,8 @@ class PowerCLIClassifier(BaseClassifier):
         components = []
 
         # Check for VM provisioning
-        if intent.get("type") in ("powercli", "vrealize") or intent.get("operation") == "provision":
+        workload_type = intent.get("workload_type")
+        if workload_type == "virtual_machine" or intent.get("type") in ("powercli", "vrealize"):
             components.append(
                 ClassifiedComponent(
                     name="VM Provisioning",
@@ -121,36 +122,54 @@ class PowerCLIClassifier(BaseClassifier):
                 )
             )
 
-        # Check for compute resources
+        # Check for compute resources in inputs section
+        inputs = intent.get("inputs", {})
+        has_cpu = "cpu_count" in inputs or "cpu" in inputs or "cpu_cores" in inputs
+        has_memory = "memory_gb" in inputs or "memory" in inputs
+
+        # Also check legacy compute section for backwards compatibility
         if intent.get("compute"):
             compute = intent["compute"]
-            cpu_cores = compute.get("cpu_cores") or compute.get("cpu")
-            memory = compute.get("memory_gb") or compute.get("memory")
+            has_cpu = has_cpu or compute.get("cpu_cores") or compute.get("cpu")
+            has_memory = has_memory or compute.get("memory_gb") or compute.get("memory")
 
-            if cpu_cores or memory:
-                components.append(
-                    ClassifiedComponent(
-                        name="Compute Resources",
-                        component_type="compute_allocation",
-                        level=TranslatabilityLevel.SUPPORTED,
-                        reason="CPU and memory allocation fully supported in KubeVirt",
-                        openshift_equivalent="spec.template.spec.domain.resources",
-                        migration_path=MigrationPath.PATH_A,
-                        location=location,
-                        recommendations=[
-                            "Map CPU cores to spec.template.spec.domain.cpu.cores",
-                            "Map memory to spec.template.spec.domain.resources.requests.memory",
-                            "Consider setting resource limits for production",
-                        ],
-                    )
+        if has_cpu or has_memory:
+            components.append(
+                ClassifiedComponent(
+                    name="Compute Resources",
+                    component_type="compute_allocation",
+                    level=TranslatabilityLevel.SUPPORTED,
+                    reason="CPU and memory allocation fully supported in KubeVirt",
+                    openshift_equivalent="spec.template.spec.domain.resources",
+                    migration_path=MigrationPath.PATH_A,
+                    location=location,
+                    recommendations=[
+                        "Map CPU cores to spec.template.spec.domain.cpu.cores",
+                        "Map memory to spec.template.spec.domain.resources.requests.memory",
+                        "Consider setting resource limits for production",
+                    ],
                 )
+            )
 
         # Check for networking
+        networks = []
+        infrastructure = intent.get("infrastructure", {})
+
+        # Check legacy networking section
         if intent.get("networking"):
             networking = intent["networking"]
             networks = networking.get("networks", [])
+        # Check infrastructure section for network info
+        elif infrastructure.get("network"):
+            network_name = infrastructure["network"]
+            networks = [{"name": network_name}]
+        # Check profiles for network configuration
+        elif intent.get("profiles", {}).get("network"):
+            # Has network profiles - treat as basic networking for now
+            networks = [{"name": "profile-based"}]
 
-            if len(networks) == 0 or (len(networks) == 1 and self._is_simple_network(networks[0])):
+        if networks:
+            if len(networks) == 1 and self._is_simple_network(networks[0]):
                 # Simple single network - fully supported
                 components.append(
                     ClassifiedComponent(
@@ -189,51 +208,56 @@ class PowerCLIClassifier(BaseClassifier):
                 )
 
         # Check for storage
+        disks = []
         if intent.get("storage"):
             storage = intent["storage"]
             disks = storage.get("disks", [])
+        # Check infrastructure for datastore info
+        elif infrastructure.get("datastore"):
+            # Has datastore configured - treat as basic storage
+            disks = [{"name": "boot-disk", "datastore": infrastructure["datastore"]}]
 
-            if disks:
-                # Check complexity
-                has_advanced = any(
-                    disk.get("thin_provisioning") or disk.get("snapshot_enabled") for disk in disks
+        if disks:
+            # Check complexity
+            has_advanced = any(
+                disk.get("thin_provisioning") or disk.get("snapshot_enabled") for disk in disks
+            )
+
+            if has_advanced:
+                components.append(
+                    ClassifiedComponent(
+                        name="Advanced Storage",
+                        component_type="advanced_storage",
+                        level=TranslatabilityLevel.PARTIAL,
+                        reason="Advanced storage features require CSI driver support",
+                        openshift_equivalent="PVC + VolumeSnapshot (if CSI supports)",
+                        migration_path=MigrationPath.PATH_A,
+                        location=location,
+                        recommendations=[
+                            "Verify CSI driver supports required features",
+                            "Create PersistentVolumeClaim for each disk",
+                            "Configure VolumeSnapshotClass if snapshots needed",
+                            "Test storage provisioning in dev environment",
+                        ],
+                    )
                 )
-
-                if has_advanced:
-                    components.append(
-                        ClassifiedComponent(
-                            name="Advanced Storage",
-                            component_type="advanced_storage",
-                            level=TranslatabilityLevel.PARTIAL,
-                            reason="Advanced storage features require CSI driver support",
-                            openshift_equivalent="PVC + VolumeSnapshot (if CSI supports)",
-                            migration_path=MigrationPath.PATH_A,
-                            location=location,
-                            recommendations=[
-                                "Verify CSI driver supports required features",
-                                "Create PersistentVolumeClaim for each disk",
-                                "Configure VolumeSnapshotClass if snapshots needed",
-                                "Test storage provisioning in dev environment",
-                            ],
-                        )
+            else:
+                components.append(
+                    ClassifiedComponent(
+                        name="Basic Storage",
+                        component_type="basic_storage",
+                        level=TranslatabilityLevel.SUPPORTED,
+                        reason="Basic disk provisioning supported via PersistentVolumeClaims",
+                        openshift_equivalent="PersistentVolumeClaim + DataVolume",
+                        migration_path=MigrationPath.PATH_A,
+                        location=location,
+                        recommendations=[
+                            "Create PVC for each disk",
+                            "Map datastore to StorageClass",
+                            "Use DataVolume for bootable images",
+                        ],
                     )
-                else:
-                    components.append(
-                        ClassifiedComponent(
-                            name="Basic Storage",
-                            component_type="basic_storage",
-                            level=TranslatabilityLevel.SUPPORTED,
-                            reason="Basic disk provisioning supported via PersistentVolumeClaims",
-                            openshift_equivalent="PersistentVolumeClaim + DataVolume",
-                            migration_path=MigrationPath.PATH_A,
-                            location=location,
-                            recommendations=[
-                                "Create PVC for each disk",
-                                "Map datastore to StorageClass",
-                                "Use DataVolume for bootable images",
-                            ],
-                        )
-                    )
+                )
 
         # Check for day2 operations
         if intent.get("day2_operations"):
