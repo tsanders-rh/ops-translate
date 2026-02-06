@@ -415,7 +415,7 @@ def detect_nsx_operations(root: ET.Element, namespace: str = "") -> dict[str, li
                     context = script_text[start:end].strip()
 
                     # Find parent workflow item for location
-                    parent = script_elem
+                    parent: Any = script_elem
                     while parent is not None and parent.tag != "workflow-item":
                         parent = parent.getparent() if hasattr(parent, "getparent") else None
 

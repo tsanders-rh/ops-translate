@@ -130,6 +130,7 @@ def _write_markdown_report(
         f.write("## Detailed Component Analysis\n\n")
 
         # Group by severity level
+        level: TranslatabilityLevel
         for level in [
             TranslatabilityLevel.MANUAL,
             TranslatabilityLevel.BLOCKED,

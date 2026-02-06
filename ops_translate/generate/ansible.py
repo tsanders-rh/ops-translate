@@ -4,7 +4,7 @@ Ansible playbook and role generation.
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import yaml
 
@@ -116,7 +116,7 @@ def generate_tasks(
     """
     namespace = profile_config["default_namespace"]
 
-    tasks = [
+    tasks: list[dict[str, Any]] = [
         {
             "name": "Create KubeVirt VirtualMachine",
             "kubernetes.core.k8s": {
@@ -238,7 +238,7 @@ def _load_gaps_data(workspace: Workspace) -> dict[str, Any] | None:
 
     try:
         with open(gaps_file) as f:
-            return json.load(f)
+            return cast(dict[str, Any], json.load(f))
     except (OSError, json.JSONDecodeError):
         # Gracefully handle corrupted/unreadable gaps file
         return None
