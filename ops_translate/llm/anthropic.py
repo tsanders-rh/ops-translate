@@ -20,7 +20,8 @@ class AnthropicProvider(LLMProvider):
 
     def _initialize_client(self):
         """Initialize Anthropic client if API key is available."""
-        api_key = os.environ.get(self.api_key_env)
+        # Try configured env var first, fall back to standard ANTHROPIC_API_KEY
+        api_key = os.environ.get(self.api_key_env) or os.environ.get("ANTHROPIC_API_KEY")
         if api_key:
             try:
                 from anthropic import Anthropic
@@ -108,5 +109,6 @@ class AnthropicProvider(LLMProvider):
 
     def is_available(self) -> bool:
         """Check if Anthropic provider is available."""
-        api_key = os.environ.get(self.api_key_env)
+        # Try configured env var first, fall back to standard ANTHROPIC_API_KEY
+        api_key = os.environ.get(self.api_key_env) or os.environ.get("ANTHROPIC_API_KEY")
         return api_key is not None and self.client is not None
