@@ -456,7 +456,8 @@ def detect_nsx_operations(
                             "location": location,
                             "confidence": confidence,
                             "evidence": (
-                                f"Pattern match: {match.group()} in context: " f"...{context}..."
+                                f"Pattern match: {match.group()} in context ({location}): "
+                                f"...{context}..."
                             ),
                         }
                     )
@@ -501,7 +502,7 @@ def detect_nsx_operations(
                             "location": location,
                             "confidence": confidence,
                             "evidence": (
-                                f"Workflow item name/type contains NSX keyword: "
+                                f"Workflow item name/type contains NSX keyword ({location}): "
                                 f"{item_name or item_type}"
                             ),
                         }
