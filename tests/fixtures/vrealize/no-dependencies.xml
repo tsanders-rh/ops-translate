@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow xmlns="http://vmware.com/vco/workflow" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://vmware.com/vco/workflow http://vmware.com/vco/workflow" version="1.0.0" api-version="8.0.0">
+  <display-name>Provision Simple VM</display-name>
+  <description>Provisions a simple virtual machine with basic configuration</description>
+
+  <input>
+    <param name="vmName" type="string">
+      <description>Name of the virtual machine</description>
+    </param>
+    <param name="environment" type="string">
+      <description>Deployment environment (dev/prod)</description>
+    </param>
+    <param name="memoryMB" type="number">
+      <description>Memory in MB</description>
+    </param>
+  </input>
+
+  <output>
+    <param name="vm" type="VC:VirtualMachine">
+      <description>The created virtual machine</description>
+    </param>
+  </output>
+
+  <attrib name="vcServer" type="VC:SdkConnection" read-only="false">
+    <value>vcenter.example.com</value>
+  </attrib>
+  <attrib name="cluster" type="VC:ClusterComputeResource" read-only="false"/>
+  <attrib name="network" type="string" read-only="false"/>
+
+  <workflow-item name="item0" type="end" end-mode="0">
+    <position y="150.0" x="300.0"/>
+  </workflow-item>
+
+  <workflow-item name="item1" out-name="item2" type="task">
+    <display-name>Select Resources</display-name>
+    <script encoded="false">
+      if (environment == "prod") {
+          cluster = System.getModule("com.vmware.library.vc.cluster").getAllClusters().filter(function(c) { return c.name == "PROD-Cluster"; })[0];
+          network = "PROD-Network";
+      } else {
+          cluster = System.getModule("com.vmware.library.vc.cluster").getAllClusters().filter(function(c) { return c.name == "DEV-Cluster"; })[0];
+          network = "DEV-Network";
+      }
+    </script>
+    <in-binding>
+      <bind name="environment" type="string" export-name="environment"/>
+    </in-binding>
+    <out-binding>
+      <bind name="cluster" type="VC:ClusterComputeResource" export-name="cluster"/>
+      <bind name="network" type="string" export-name="network"/>
+    </out-binding>
+    <position y="50.0" x="100.0"/>
+  </workflow-item>
+
+  <workflow-item name="item2" out-name="item0" type="task">
+    <display-name>Create VM</display-name>
+    <script encoded="false">
+      var vmFolder = cluster.vmFolder;
+      var resourcePool = cluster.resourcePool;
+
+      var spec = new VcVirtualMachineConfigSpec();
+      spec.name = vmName;
+      spec.memoryMB = memoryMB;
+      spec.numCPUs = 4;
+      spec.guestId = "ubuntu64Guest";
+
+      vm = vmFolder.createVm(spec, resourcePool, null);
+
+      System.log("VM " + vmName + " created successfully");
+    </script>
+    <in-binding>
+      <bind name="vmName" type="string" export-name="vmName"/>
+      <bind name="memoryMB" type="number" export-name="memoryMB"/>
+      <bind name="cluster" type="VC:ClusterComputeResource" export-name="cluster"/>
+    </in-binding>
+    <out-binding>
+      <bind name="vm" type="VC:VirtualMachine" export-name="vm"/>
+    </out-binding>
+    <position y="100.0" x="200.0"/>
+  </workflow-item>
+
+  <presentation>
+    <p-param name="vmName">
+      <desc>VM Name</desc>
+    </p-param>
+    <p-param name="environment">
+      <desc>Environment</desc>
+    </p-param>
+    <p-param name="memoryMB">
+      <desc>Memory (MB)</desc>
+    </p-param>
+  </presentation>
+</workflow>

@@ -543,6 +543,26 @@ def detect_custom_plugins(root: ET.Element, namespace: str = "") -> list[dict[st
                 if plugin_name in ["System", "Math", "Date", "String", "Array"]:
                     continue
 
+                # Skip standard vCenter objects and common vRO built-ins
+                standard_objects = [
+                    "vmFolder",
+                    "resourcePool",
+                    "datacenter",
+                    "cluster",
+                    "host",
+                    "datastore",
+                    "network",
+                    "vm",
+                    "spec",
+                    "config",
+                    "Server",
+                    "Properties",
+                    "JSON",
+                    "console",
+                ]
+                if plugin_name in standard_objects:
+                    continue
+
                 # Extract context
                 start = max(0, match.start() - 50)
                 end = min(len(script_text), match.end() + 50)
