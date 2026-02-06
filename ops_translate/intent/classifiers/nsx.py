@@ -206,8 +206,11 @@ class NsxClassifier(BaseClassifier):
             else:
                 level, equivalent, path, recommendations = self.CLASSIFICATION_RULES[category]
 
-            # Create a classified component for each detected operation
-            for op in operations:
+            # Deduplicate operations before creating components
+            deduplicated = self._deduplicate_operations(operations, category)
+
+            # Create a classified component for each deduplicated operation
+            for op in deduplicated:
                 component = ClassifiedComponent(
                     name=op.get("name", category),
                     component_type=f"nsx_{category}",
@@ -222,6 +225,107 @@ class NsxClassifier(BaseClassifier):
                 classified.append(component)
 
         return classified
+
+    def _deduplicate_operations(
+        self, operations: list[dict[str, Any]], category: str
+    ) -> list[dict[str, Any]]:
+        """
+        Deduplicate NSX operations that represent the same logical operation.
+
+        Multiple detection patterns may identify the same NSX operation (e.g.,
+        "nsxClient.createSecurityGroup" and "SecurityGroup" in the same location).
+        This method consolidates them into a single operation with combined evidence.
+
+        Args:
+            operations: List of detected NSX operations
+            category: NSX category (e.g., "security_groups")
+
+        Returns:
+            Deduplicated list of operations with combined evidence
+
+        Example:
+            >>> ops = [
+            ...     {"name": "nsxClient.createSG", "location": "item1", "evidence": "API call"},
+            ...     {"name": "SecurityGroup", "location": "item1", "evidence": "Object type"},
+            ... ]
+            >>> deduped = classifier._deduplicate_operations(ops, "security_groups")
+            >>> len(deduped)
+            1
+        """
+        if not operations:
+            return []
+
+        # Group operations by location (operations in the same location are likely duplicates)
+        location_groups: dict[str, list[dict[str, Any]]] = {}
+        for op in operations:
+            location = op.get("location", "unknown")
+            if location not in location_groups:
+                location_groups[location] = []
+            location_groups[location].append(op)
+
+        # Deduplicate within each location group
+        deduplicated = []
+        for location, group in location_groups.items():
+            if len(group) == 1:
+                # Single operation at this location - no deduplication needed
+                deduplicated.append(group[0])
+            else:
+                # Multiple operations at same location - merge them
+                merged = self._merge_operations(group, category)
+                deduplicated.append(merged)
+
+        return deduplicated
+
+    def _merge_operations(
+        self, operations: list[dict[str, Any]], category: str
+    ) -> dict[str, Any]:
+        """
+        Merge multiple detections of the same operation into a single entry.
+
+        Args:
+            operations: List of operations to merge (all at same location)
+            category: NSX category
+
+        Returns:
+            Merged operation with combined evidence and highest confidence
+        """
+        # Use the most specific name (prefer API calls over object types)
+        name = category  # Default
+        for op in operations:
+            op_name = op.get("name", "")
+            if "nsxClient" in op_name:
+                # API call is most specific
+                name = op_name
+                break
+            elif op_name and op_name != category:
+                # Use first non-default name
+                name = op_name
+
+        # Combine all evidence
+        evidence_parts = []
+        for op in operations:
+            if op.get("evidence"):
+                evidence_parts.append(op["evidence"])
+
+        combined_evidence = " | ".join(evidence_parts) if evidence_parts else None
+
+        # Use highest confidence
+        confidence = max((op.get("confidence", 0.5) for op in operations), default=0.5)
+
+        # Use first non-unknown location
+        location = "unknown"
+        for op in operations:
+            loc = op.get("location", "unknown")
+            if loc != "unknown":
+                location = loc
+                break
+
+        return {
+            "name": name,
+            "location": location,
+            "confidence": confidence,
+            "evidence": combined_evidence,
+        }
 
     def _get_reason(
         self, category: str, level: TranslatabilityLevel, equivalent: str | None

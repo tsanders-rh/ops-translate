@@ -240,9 +240,10 @@ class TestGapAnalysisIntegration:
         # Verify multiple operation categories
         assert len(analysis["nsx_operations"]) >= 3
 
-        # Classify components
+        # Classify components (with deduplication, should be fewer than raw detections)
         components = classify_components(analysis)
-        assert len(components) >= 10
+        assert len(components) >= 5  # At least 5 unique components after deduplication
+        assert len(components) < total_nsx_ops  # Deduplication should reduce count
 
         # Generate reports
         with tempfile.TemporaryDirectory() as tmpdir:
