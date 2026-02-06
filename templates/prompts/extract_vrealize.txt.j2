@@ -2,6 +2,17 @@
 
 You are an expert in VMware vRealize Orchestrator (vRO) workflows and infrastructure automation. Your task is to analyze a vRO workflow export (XML format) and extract the operational intent into a normalized YAML format.
 
+{% if has_nsx %}
+## ⚠️ NSX-T INTEGRATION DETECTED
+
+This workflow contains NSX-T API calls. You MUST extract NSX features into the YAML output.
+
+**Detected NSX indicators:**
+{{ nsx_indicators }}
+
+**MANDATORY**: Include both `security:` and `integrations:` sections in your YAML output.
+{% endif %}
+
 ## Input
 You will be provided with a vRealize Orchestrator workflow export in XML format.
 
@@ -52,6 +63,65 @@ Extract the operational intent from the vRO workflow and produce a YAML document
 - Different resource pools, networks, or storage per environment
 - Look for dev/prod/staging distinctions
 
+### NSX-T Networking and Security
+**CRITICAL**: vRO workflows often integrate with NSX-T for networking and security. Look carefully for:
+
+#### NSX API Calls and REST Endpoints
+- REST calls to NSX Manager (endpoints like `/api/v1/`, `/policy/api/v1/`)
+- REST operations: `POST`, `PUT`, `PATCH` to NSX endpoints
+- Look for `RESTHostManager.createHost("nsx-api")` or similar NSX REST client creation
+
+#### NSX Security Groups
+- Variables or API paths containing: `security_group`, `ns-groups`, `NSGroup`
+- Membership assignment operations
+- Patterns like `SG-{ENV}-{TIER}` for security group names
+
+#### NSX Distributed Firewall
+- Firewall rule creation or modification
+- API paths containing: `/firewall/sections`, `/firewall/rules`
+- Rule definitions with sources, destinations, services, actions (ALLOW/DENY)
+- Tier-based isolation rules (web → app → db)
+
+#### NSX Segments (Overlay Networks)
+- Segment creation API calls (`/infra/segments`)
+- Overlay network configuration
+- VLAN/subnet assignments
+- Transport zone references
+
+#### NSX Load Balancers
+- Load balancer pool creation (`/infra/lb-pools`)
+- Virtual server configuration (`/infra/lb-virtual-servers`)
+- Member pool definitions with backend IPs/ports
+- Health monitor configurations
+
+**When NSX features are detected**, structure them in the YAML as:
+
+```yaml
+security:
+  network_segmentation:
+    enabled: true
+    security_group_pattern: "pattern-from-workflow"
+  firewall_rules:
+    tier_name:
+      when: { condition }
+      rules:
+        - name: rule-name
+          direction: IN/OUT
+          action: ALLOW/DENY
+          sources: [...]
+          destinations: [...]
+          services: [...]
+
+integrations:
+  - type: nsx-t
+    endpoint: nsx-manager-hostname
+    operations:
+      - security_group_membership
+      - firewall_rule_creation
+      - segment_creation
+      - load_balancer_configuration
+```
+
 ### Assumptions (when to document)
 Only include an `assumptions` section when you make **significant inferences** such as:
 - **Interpreting complex logic** (e.g., "Approval workflow inferred from decision element - actual approval mechanism not specified")
@@ -69,19 +139,34 @@ Only include an `assumptions` section when you make **significant inferences** s
 ## Example Input (simplified)
 ```xml
 <workflow>
-  <display-name>Provision VM with Governance</display-name>
+  <display-name>Provision VM with NSX Firewall</display-name>
   <input>
     <param name="vmName" type="string"/>
     <param name="environment" type="string"/>
+    <param name="appTier" type="string"/>
     <param name="cpuCount" type="number"/>
     <param name="memoryGB" type="number"/>
   </input>
   <workflow-item name="approvalCheck" type="decision">
     <expression>environment == "prod"</expression>
   </workflow-item>
-  <workflow-item name="setNetwork" type="scriptable-task">
+  <workflow-item name="assignSecurityGroup" type="task">
     <script>
-      network = (environment == "prod") ? "prod-network" : "dev-network";
+      securityGroup = "SG-" + environment.toUpperCase() + "-" + appTier.toUpperCase();
+      var restHost = RESTHostManager.createHost("nsx-api");
+      var request = restHost.createRequest("POST", "/api/v1/ns-groups/" + securityGroup + "/members", "");
+      request.execute(JSON.stringify({resource_type: "VirtualMachine", external_id: vm.id}));
+    </script>
+  </workflow-item>
+  <workflow-item name="createFirewallRule" type="task">
+    <script>
+      var rule = {
+        display_name: vmName + "-allow-http",
+        action: "ALLOW",
+        services: [{service: "HTTP"}]
+      };
+      var request = restHost.createRequest("POST", "/api/v1/firewall/sections/web-tier/rules", "");
+      request.execute(JSON.stringify(rule));
     </script>
   </workflow-item>
 </workflow>
@@ -95,11 +180,11 @@ sources:
     file: input/vrealize/provision.workflow.xml
 
 intent:
-  workflow_name: provision_vm_with_governance
+  workflow_name: provision_vm_with_nsx_firewall
   description: |
-    Provisions a virtual machine in vSphere with environment-specific configuration.
-    Includes approval workflow for production environments and sets up network
-    profiles based on the target environment.
+    Provisions a virtual machine in vSphere with NSX-T security integration.
+    Assigns VM to tier-based security groups and creates distributed firewall
+    rules based on application tier. Includes approval workflow for production.
   workload_type: virtual_machine
 
   inputs:
@@ -112,6 +197,11 @@ intent:
       values: [dev, prod]
       required: true
       description: Target environment
+    app_tier:
+      type: enum
+      values: [web, app, db]
+      required: true
+      description: Application tier for security segmentation
     cpu_count:
       type: integer
       required: true
@@ -130,18 +220,33 @@ intent:
       required_when:
         environment: prod
 
-  profiles:
-    network:
-      when: { environment: prod }
-      value: prod-network
-    network_else: dev-network
+  security:
+    network_segmentation:
+      enabled: true
+      security_group_pattern: "SG-{{ environment | upper }}-{{ app_tier | upper }}"
+    firewall_rules:
+      web_tier:
+        when: { app_tier: web }
+        rules:
+          - name: "{{ vm_name }}-allow-http"
+            direction: IN
+            action: ALLOW
+            sources: ["0.0.0.0/0"]
+            services: [HTTP]
+
+  integrations:
+    - type: nsx-t
+      endpoint: nsx-manager.acme.internal
+      operations:
+        - security_group_membership
+        - firewall_rule_creation
 
   day2_operations:
     supported: [start, stop, reconfigure]
 
 assumptions:
   - Approval mechanism inferred from decision element but actual approval task/integration not specified in workflow
-  - Day 2 operations (start/stop/reconfigure) assumed based on standard vRO VM lifecycle patterns - not explicitly defined
+  - Firewall rule extracted from scriptable task - additional rules for app and db tiers likely exist in similar pattern
 ```
 
 ## Important Notes
@@ -149,9 +254,12 @@ assumptions:
 - Scriptable tasks may contain JavaScript or other languages - extract the operational meaning, not implementation
 - If the workflow contains sub-workflows, note them but focus on the top-level intent
 - Some information may be in comments or description fields - use these to clarify intent
+- **NSX Integration is Critical**: Many enterprise vRO workflows integrate with NSX-T for networking and security. Carefully examine scriptable tasks for REST API calls to NSX Manager. These features have significant migration implications and must be captured in the `security` and `integrations` sections.
 
 ## Now Process This Workflow
 
 {{ workflow_content }}
 
 Remember: Output valid YAML only. No markdown, no explanations.
+
+**CRITICAL REMINDER**: If you detect ANY NSX REST API calls (RESTHostManager, /api/v1/, /policy/api/v1/), you MUST include `security` and `integrations` sections in the YAML output! Do not skip NSX features!

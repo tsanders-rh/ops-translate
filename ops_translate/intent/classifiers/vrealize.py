@@ -387,6 +387,13 @@ class VrealizeClassifier(BaseClassifier):
                 )
             )
 
+        # Delegate NSX detection to NSX classifier
+        from ops_translate.intent.classifiers.nsx import NsxClassifier
+
+        nsx_classifier = NsxClassifier()
+        nsx_components = nsx_classifier.classify_from_intent(intent, location=location)
+        components.extend(nsx_components)
+
         return components
 
     def _is_simple_network(self, network: dict[str, Any]) -> bool:

@@ -767,9 +767,42 @@ ops-translate intent merge --force
 
 ## Part 5: Artifact Generation
 
-### Step 16: Generate for Lab
+### Step 16: Review Migration Readiness
 
-Generate Ansible and KubeVirt artifacts for lab environment:
+Before generating artifacts, review the migration readiness report to understand what can be auto-translated:
+
+```bash
+ops-translate report --format html --profile lab
+```
+
+**Output**:
+```
+Generating HTML report...
+✓ Report generated successfully
+
+Report location: output/report/index.html
+```
+
+Open the report:
+```bash
+open output/report/index.html  # macOS
+# or: xdg-open output/report/index.html  # Linux
+```
+
+**What to look for in the report**:
+- **SUPPORTED** components (green) - Can be fully auto-translated
+- **PARTIAL** components (yellow) - Need manual configuration
+- **BLOCKED** components (red) - No automatic translation available
+- **Migration paths** - Specific recommendations for each component
+
+**Analysis**: Review the gaps before proceeding. For this tutorial:
+- VM provisioning, compute, and networking should be SUPPORTED
+- Approval workflow likely needs manual Ansible integration (PARTIAL)
+- Most components can be auto-generated
+
+### Step 18: Generate for Lab
+
+After reviewing the report, generate Ansible and KubeVirt artifacts for lab environment:
 
 ```bash
 ops-translate generate --profile lab
@@ -793,7 +826,7 @@ Generating README...
 ✓ Generation complete
 ```
 
-### Step 17: Review KubeVirt Manifest
+### Step 18: Review KubeVirt Manifest
 
 ```bash
 cat output/kubevirt/vm.yaml
@@ -863,7 +896,7 @@ spec:
 - Creates both VM and DataVolume
 - Preserves tagging as labels
 
-### Step 18: Review Ansible Playbook
+### Step 19: Review Ansible Playbook
 
 ```bash
 cat output/ansible/site.yml
@@ -966,7 +999,7 @@ cat output/ansible/site.yml
 - Creates KubeVirt VM
 - Uses kubernetes.core collection
 
-### Step 19: Review Ansible Role
+### Step 20: Review Ansible Role
 
 ```bash
 cat output/ansible/roles/provision_vm/tasks/main.yml
@@ -989,7 +1022,7 @@ output/ansible/
             └── main.yml
 ```
 
-### Step 20: Review Generation README
+### Step 21: Review Generation README
 
 ```bash
 cat output/README.md
@@ -999,7 +1032,7 @@ cat output/README.md
 
 ## Part 6: Testing and Deployment
 
-### Step 21: Validate Artifacts
+### Step 22: Validate Artifacts
 
 Run dry-run validation:
 
@@ -1029,7 +1062,7 @@ Validating output/ansible/site.yml...
 ✓ All validations passed
 ```
 
-### Step 22: Test Ansible Playbook (Syntax)
+### Step 23: Test Ansible Playbook (Syntax)
 
 ```bash
 cd output/ansible
@@ -1041,7 +1074,7 @@ ansible-playbook site.yml --syntax-check
 playbook: site.yml
 ```
 
-### Step 23: Test Ansible Playbook (Check Mode)
+### Step 24: Test Ansible Playbook (Check Mode)
 
 ```bash
 ansible-playbook site.yml --check --extra-vars "environment=dev vm_name=test-vm owner_email=user@example.com requester=user@example.com"
@@ -1049,7 +1082,7 @@ ansible-playbook site.yml --check --extra-vars "environment=dev vm_name=test-vm 
 
 **Note**: This does a dry run without creating resources.
 
-### Step 24: Deploy to Lab (Dev VM)
+### Step 25: Deploy to Lab (Dev VM)
 
 **Prerequisites**:
 - Access to OpenShift cluster
@@ -1108,7 +1141,7 @@ PLAY RECAP ***
 localhost: ok=7 changed=2
 ```
 
-### Step 25: Verify VM in OpenShift
+### Step 26: Verify VM in OpenShift
 
 ```bash
 # Check VM status
@@ -1122,7 +1155,7 @@ oc get vms -n virt-lab
 oc describe vm my-test-vm -n virt-lab
 ```
 
-### Step 26: Test Prod Workflow
+### Step 27: Test Prod Workflow
 
 Test prod provisioning with approval:
 
@@ -1143,7 +1176,7 @@ ansible-playbook site.yml
 # VM will be created with 4 CPU, 16 GB RAM
 ```
 
-### Step 27: Generate for Production
+### Step 28: Generate for Production
 
 Generate production-ready artifacts:
 
@@ -1167,7 +1200,7 @@ diff output/kubevirt/vm.yaml <(ops-translate generate --profile prod && cat outp
 
 Add multi-level approval and quota management.
 
-### Step 28: Create Enhanced Workflow
+### Step 29: Create Enhanced Workflow
 
 Create `governance-enhanced.ps1`:
 
@@ -1233,13 +1266,13 @@ foreach ($Tag in $Tags) {
 }
 ```
 
-### Step 29: Import Enhanced Script
+### Step 30: Import Enhanced Script
 
 ```bash
 ops-translate import --source powercli --file governance-enhanced.ps1
 ```
 
-### Step 30: Re-extract and Merge
+### Step 31: Re-extract and Merge
 
 ```bash
 # Extract new intent
@@ -1252,7 +1285,7 @@ cat intent/powercli.intent.yaml
 ops-translate intent merge --force
 ```
 
-### Step 31: Review Enhanced Intent
+### Step 32: Review Enhanced Intent
 
 The merged intent now includes:
 - Multi-tier environments (dev/test/staging/prod)
@@ -1261,7 +1294,7 @@ The merged intent now includes:
 - Priority levels
 - Enhanced tagging
 
-### Step 32: Generate Enhanced Artifacts
+### Step 33: Generate Enhanced Artifacts
 
 ```bash
 ops-translate generate --profile prod

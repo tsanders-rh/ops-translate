@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow xmlns="http://vmware.com/vco/workflow" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://vmware.com/vco/workflow http://vmware.com/vco/workflow" version="1.0.0" api-version="6.5.0">
+  <display-name>old_DB_provisioning_v3_WORKING</display-name>
+  <description>DO NOT MODIFY - This workflow provisions database VMs. Last modified 2019. Contact Bob if issues.</description>
+
+  <input>
+    <param name="dbname" type="string">
+      <description>db name</description>
+    </param>
+    <param name="env" type="string">
+      <description>prod or dev</description>
+    </param>
+    <param name="mem" type="string">
+      <description>memory</description>
+    </param>
+  </input>
+
+  <output>
+    <param name="result" type="string">
+      <description>output</description>
+    </param>
+  </output>
+
+  <attrib name="temp1" type="string" read-only="false"/>
+  <attrib name="temp2" type="string" read-only="false"/>
+  <attrib name="temp3" type="string" read-only="false"/>
+  <attrib name="flag" type="boolean" read-only="false"/>
+
+  <workflow-item name="item0" type="end" end-mode="0">
+    <position y="350.0" x="300.0"/>
+  </workflow-item>
+
+  <workflow-item name="item1" out-name="item2" type="task">
+    <display-name>step1</display-name>
+    <script encoded="false">
+      // WARNING: Don't change this - it works!
+      // Setup variables
+      temp1 = "10.50.20.100"; // vCenter IP - hardcoded because dynamic lookup broke in 2018
+      temp2 = "VLAN_200"; // Always use VLAN_200 for DB
+
+      if (env == "prod") {
+          temp3 = "PROD_DB_Cluster"; // Production cluster
+          flag = true;
+      } else {
+          temp3 = "Test_Cluster_02"; // Dev cluster (cluster 01 is full)
+          flag = false;
+      }
+
+      System.log("Using vCenter: " + temp1);
+      System.log("Network: " + temp2);
+      System.log("Cluster: " + temp3);
+    </script>
+    <in-binding>
+      <bind name="env" type="string" export-name="env"/>
+    </in-binding>
+    <out-binding>
+      <bind name="temp1" type="string" export-name="temp1"/>
+      <bind name="temp2" type="string" export-name="temp2"/>
+      <bind name="temp3" type="string" export-name="temp3"/>
+      <bind name="flag" type="boolean" export-name="flag"/>
+    </out-binding>
+    <position y="50.0" x="100.0"/>
+  </workflow-item>
+
+  <workflow-item name="item2" out-name="item3" type="task">
+    <display-name>create_vm_task</display-name>
+    <script encoded="false">
+      // Create VM - don't touch this it took weeks to get right
+      var vc = System.getModule("com.vmware.library.vc").getAllSdkConnections()[0];
+      var clusters = vc.getAllClusterComputeResources();
+
+      var targetCluster = null;
+      for (var i = 0; i < clusters.length; i++) {
+          if (clusters[i].name == temp3) {
+              targetCluster = clusters[i];
+              break;
+          }
+      }
+
+      var vmFolder = targetCluster.vmFolder;
+      var resPool = targetCluster.resourcePool;
+
+      // VM config - memory is always 16GB for DB regardless of input (learned this the hard way)
+      var vmSpec = new VcVirtualMachineConfigSpec();
+      vmSpec.name = dbname;
+      vmSpec.numCPUs = 8; // Always 8 CPUs for database VMs
+      vmSpec.memoryMB = 16384; // Force 16GB - ignore the mem parameter, it causes issues
+      vmSpec.guestId = "rhel7_64Guest";
+
+      // Add network adapter on VLAN_200
+      var nicSpec = new VcVirtualDeviceConfigSpec();
+      nicSpec.operation = VcVirtualDeviceConfigSpecOperation.add;
+      var nic = new VcVirtualE1000();
+      var nicBacking = new VcVirtualEthernetCardNetworkBackingInfo();
+      nicBacking.deviceName = temp2;
+      nic.backing = nicBacking;
+      nicSpec.device = nic;
+      vmSpec.deviceChange = [nicSpec];
+
+      var vm = vmFolder.createVm(vmSpec, resPool, null);
+
+      result = "VM created: " + dbname;
+      System.log(result);
+    </script>
+    <in-binding>
+      <bind name="dbname" type="string" export-name="dbname"/>
+      <bind name="temp2" type="string" export-name="temp2"/>
+      <bind name="temp3" type="string" export-name="temp3"/>
+    </in-binding>
+    <out-binding>
+      <bind name="result" type="string" export-name="result"/>
+    </out-binding>
+    <position y="150.0" x="200.0"/>
+  </workflow-item>
+
+  <workflow-item name="item3" out-name="item0" type="task">
+    <display-name>final_step</display-name>
+    <script encoded="false">
+      // Post-processing
+      // NOTE: This used to configure DB software but that's handled by Ansible now
+      // Leaving this here in case we need it again
+
+      System.log("DB VM provisioned successfully");
+      System.log("Remember to manually:");
+      System.log("1. Add to backup schedule");
+      System.log("2. Configure monitoring");
+      System.log("3. Email DBA team");
+      System.log("4. Update CMDB");
+
+      // Don't add any automation here - tried it, broke prod in 2020
+    </script>
+    <in-binding>
+      <bind name="result" type="string" export-name="result"/>
+    </in-binding>
+    <position y="250.0" x="200.0"/>
+  </workflow-item>
+
+  <presentation>
+    <p-param name="dbname">
+      <desc>database name (no spaces!)</desc>
+    </p-param>
+    <p-param name="env">
+      <desc>prod or dev (lowercase only)</desc>
+    </p-param>
+    <p-param name="mem">
+      <desc>memory GB (will be ignored - always 16GB)</desc>
+    </p-param>
+  </presentation>
+</workflow>

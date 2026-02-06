@@ -154,25 +154,54 @@ class NsxClassifier(BaseClassifier):
         """
         Return True if NSX operations are detected in the analysis.
 
+        Supports both old analysis format (nsx_operations) and new intent format.
+
         Args:
-            analysis: Analysis results from vRealize workflow analysis
+            analysis: Analysis results or intent file reference
 
         Returns:
-            True if nsx_operations key exists and is non-empty
+            True if NSX features are detected
         """
-        return bool(analysis.get("nsx_operations"))
+        # Old format: nsx_operations key
+        if analysis.get("nsx_operations"):
+            return True
+
+        # New format: intent_file with NSX integrations
+        if analysis.get("intent_file"):
+            from pathlib import Path
+
+            import yaml
+
+            intent_file = Path(analysis["intent_file"])
+            if intent_file.exists():
+                with open(intent_file) as f:
+                    data = yaml.safe_load(f)
+                    if data and "intent" in data:
+                        intent = data["intent"]
+                        # Check for NSX-related sections
+                        if intent.get("security") or self._has_nsx_integrations(intent):
+                            return True
+
+        return False
+
+    def _has_nsx_integrations(self, intent: dict[str, Any]) -> bool:
+        """Check if intent has NSX-T integrations."""
+        integrations = intent.get("integrations", [])
+        return any(i.get("type") == "nsx-t" for i in integrations)
 
     def classify(self, analysis: dict[str, Any]) -> list[ClassifiedComponent]:
         """
-        Classify NSX operations from analysis results.
+        Classify NSX operations from analysis results or intent YAML.
+
+        Supports both old analysis format (nsx_operations) and new intent format.
 
         Args:
-            analysis: Analysis results from ops_translate.analyze.vrealize
+            analysis: Analysis results or intent file reference
 
         Returns:
             List of ClassifiedComponent instances for all detected NSX operations
 
-        Example:
+        Example (old format):
             >>> analysis = {
             ...     "nsx_operations": {
             ...         "segments": [
@@ -184,11 +213,31 @@ class NsxClassifier(BaseClassifier):
             >>> components = classifier.classify(analysis)
             >>> len(components)
             1
-            >>> components[0].level
-            <TranslatabilityLevel.PARTIAL: 'PARTIAL'>
-        """
-        classified = []
 
+        Example (new format):
+            >>> analysis = {
+            ...     "source_type": "vrealize",
+            ...     "intent_file": "path/to/workflow.intent.yaml"
+            ... }
+            >>> components = classifier.classify(analysis)
+        """
+        # New format: intent file
+        if analysis.get("intent_file"):
+            from pathlib import Path
+
+            import yaml
+
+            intent_file = Path(analysis["intent_file"])
+            if intent_file.exists():
+                with open(intent_file) as f:
+                    data = yaml.safe_load(f)
+                    if data and "intent" in data:
+                        intent = data["intent"]
+                        filename = intent_file.stem.replace(".intent", "").replace(".workflow", "")
+                        return self.classify_from_intent(intent, location=filename)
+
+        # Old format: nsx_operations
+        classified = []
         nsx_ops = analysis.get("nsx_operations", {})
 
         for category, operations in nsx_ops.items():
@@ -228,6 +277,99 @@ class NsxClassifier(BaseClassifier):
                 classified.append(component)
 
         return classified
+
+    def classify_from_intent(
+        self, intent: dict[str, Any], location: str = "nsx"
+    ) -> list[ClassifiedComponent]:
+        """
+        Classify NSX components from normalized intent structure.
+
+        Args:
+            intent: Normalized intent dict with security, integrations sections
+            location: Source file identifier for evidence
+
+        Returns:
+            List of classified NSX components
+        """
+        components = []
+
+        security = intent.get("security", {})
+        integrations = intent.get("integrations", [])
+        nsx_integrations = [i for i in integrations if i.get("type") == "nsx-t"]
+
+        # NSX Security Groups
+        if security.get("network_segmentation") or any(
+            "security_group" in str(i.get("operations", [])).lower() for i in nsx_integrations
+        ):
+            level, equivalent, path, recommendations = self.CLASSIFICATION_RULES["security_groups"]
+            components.append(
+                ClassifiedComponent(
+                    name="NSX Security Groups",
+                    component_type="nsx_security_groups",
+                    level=level,
+                    reason=self._get_reason("security_groups", level, equivalent),
+                    openshift_equivalent=equivalent,
+                    migration_path=path,
+                    location=location,
+                    recommendations=recommendations.copy(),
+                )
+            )
+
+        # NSX Firewall Rules
+        if security.get("firewall_rules") or any(
+            "firewall" in str(i.get("operations", [])).lower() for i in nsx_integrations
+        ):
+            level, equivalent, path, recommendations = self.CLASSIFICATION_RULES["firewall_rules"]
+            components.append(
+                ClassifiedComponent(
+                    name="NSX Distributed Firewall",
+                    component_type="nsx_firewall_rules",
+                    level=level,
+                    reason=self._get_reason("firewall_rules", level, equivalent),
+                    openshift_equivalent=equivalent,
+                    migration_path=path,
+                    location=location,
+                    recommendations=recommendations.copy(),
+                )
+            )
+
+        # NSX Segments/Overlays
+        if any("segment" in str(i.get("operations", [])).lower() for i in nsx_integrations):
+            level, equivalent, path, recommendations = self.CLASSIFICATION_RULES["segments"]
+            components.append(
+                ClassifiedComponent(
+                    name="NSX Overlay Segments",
+                    component_type="nsx_segments",
+                    level=level,
+                    reason=self._get_reason("segments", level, equivalent),
+                    openshift_equivalent=equivalent,
+                    migration_path=path,
+                    location=location,
+                    recommendations=recommendations.copy(),
+                )
+            )
+
+        # NSX Load Balancer
+        if any(
+            "load_balancer" in str(i.get("operations", [])).lower()
+            or "lb" in str(i.get("operations", [])).lower()
+            for i in nsx_integrations
+        ):
+            level, equivalent, path, recommendations = self.CLASSIFICATION_RULES["load_balancers"]
+            components.append(
+                ClassifiedComponent(
+                    name="NSX Load Balancer",
+                    component_type="nsx_load_balancers",
+                    level=level,
+                    reason=self._get_reason("load_balancers", level, equivalent),
+                    openshift_equivalent=equivalent,
+                    migration_path=path,
+                    location=location,
+                    recommendations=recommendations.copy(),
+                )
+            )
+
+        return components
 
     def _deduplicate_operations(
         self, operations: list[dict[str, Any]], category: str

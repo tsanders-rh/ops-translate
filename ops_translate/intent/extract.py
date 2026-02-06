@@ -443,6 +443,8 @@ def extract_vrealize_intent(llm, xml_file: Path) -> tuple[str, list]:
     Returns:
         tuple: (intent_yaml, assumptions_list)
     """
+    import re
+
     from jinja2 import Template
 
     # Load prompt template using Jinja2
@@ -452,8 +454,31 @@ def extract_vrealize_intent(llm, xml_file: Path) -> tuple[str, list]:
     # Load workflow XML content
     workflow_content = xml_file.read_text()
 
+    # Pre-detect NSX integration
+    nsx_patterns = [
+        r'RESTHostManager\.createHost\(["\']nsx',
+        r"/api/v1/(firewall|ns-groups|segments|lb-)",
+        r"/policy/api/v1/infra/(segments|lb-|tier-)",
+        r"security[_-]group",
+        r"firewall.*rule",
+        r"nsx[_-]manager",
+    ]
+
+    nsx_indicators = []
+    has_nsx = False
+
+    for pattern in nsx_patterns:
+        matches = re.findall(pattern, workflow_content, re.IGNORECASE)
+        if matches:
+            has_nsx = True
+            nsx_indicators.append(f"- Found: {pattern} ({len(matches)} occurrence(s))")
+
     # Render prompt template with Jinja2
-    prompt = template.render(workflow_content=workflow_content)
+    prompt = template.render(
+        workflow_content=workflow_content,
+        has_nsx=has_nsx,
+        nsx_indicators="\n".join(nsx_indicators) if nsx_indicators else "",
+    )
 
     # Call LLM
     try:

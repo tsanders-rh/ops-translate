@@ -364,14 +364,46 @@
 
             <!-- Component List -->
             <div class="gaps-list">
-                {% set ns = namespace(current_file=None) %}
-                {% for component in gaps.components %}
-                    {% set file_name = component.location.split(':')[0] if component.location else 'unknown' %}
-                    {% if ns.current_file != file_name %}
-                        {% set ns.current_file = file_name %}
-                        <div id="file-{{ file_name | replace('.', '-') }}" class="file-anchor"></div>
+                {# Create mapping from base filename to full source filename #}
+                {% set location_to_source = {} %}
+                {% for source in sources %}
+                    {% set base_name = source.name.replace('.workflow.xml', '').replace('.ps1', '') %}
+                    {% set _ = location_to_source.update({base_name: source.name}) %}
+                {% endfor %}
+
+                {# Sort components by file, then by severity (BLOCKED → MANUAL → PARTIAL → SUPPORTED) #}
+                {% set severity_order = {'BLOCKED': 0, 'MANUAL': 1, 'PARTIAL': 2, 'SUPPORTED': 3} %}
+                {% set sorted_components = gaps.components | sort(attribute='location') %}
+                {% set sorted_components = sorted_components | sort(attribute='level', case_sensitive=False) %}
+
+                {# Group by file and sort within each group by severity #}
+                {% set file_groups = {} %}
+                {% for comp in gaps.components %}
+                    {% set file_name = comp.location.split(':')[0] if comp.location else 'unknown' %}
+                    {% if file_name not in file_groups %}
+                        {% set _ = file_groups.update({file_name: []}) %}
                     {% endif %}
-                <div class="gap-item gap-{{ component.level.lower() }}" data-level="{{ component.level }}">
+                    {% set _ = file_groups[file_name].append(comp) %}
+                {% endfor %}
+
+                {# Sort components within each file by severity #}
+                {% for file_name, components in file_groups.items() | sort %}
+                    {% set sorted_file_components = components | sort(attribute='level') %}
+
+                    {# Use full source filename for anchor if available #}
+                    {% set anchor_name = location_to_source.get(file_name, file_name) %}
+                    <div id="file-{{ anchor_name | replace('.', '-') }}" class="file-anchor"></div>
+
+                    {# Add visual file header for grouping #}
+                    <div class="file-section-header">
+                        <div class="file-icon">📄</div>
+                        <h3>{{ anchor_name }}</h3>
+                        {% set file_type = 'VREALIZE' if '.workflow.xml' in anchor_name else 'POWERCLI' if '.ps1' in anchor_name else 'UNKNOWN' %}
+                        <span class="badge badge-{{ file_type.lower() }}">{{ file_type }}</span>
+                    </div>
+
+                    {% for component in sorted_file_components | sort(attribute='level') %}
+                    <div class="gap-item gap-{{ component.level.lower() }}" data-level="{{ component.level }}">
                     <div class="gap-header">
                         <h3>{{ component.name }}</h3>
                         <span class="badge badge-{{ component.level.lower() }}">{{ component.level }}</span>
@@ -424,6 +456,9 @@
                     </div>
                 </div>
                 {% endfor %}
+                {# End of components loop #}
+                {% endfor %}
+                {# End of file_groups loop #}
             </div>
         </div>
     </section>

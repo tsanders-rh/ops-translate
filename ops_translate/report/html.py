@@ -279,10 +279,17 @@ def _enrich_source_status(sources: list[dict[str, Any]], gaps_data: dict[str, An
 
     for source in sources:
         filename = source["name"]
+        # Get filename without extension for matching
+        filename_base = filename.replace(".workflow.xml", "").replace(".ps1", "")
 
         # Find components from this file
+        # Components have location like "provision-vm-with-nsx-firewall"
+        # while source files have names like "provision-vm-with-nsx-firewall.workflow.xml"
         file_components = [
-            comp for comp in components if comp.get("location", "").startswith(filename)
+            comp
+            for comp in components
+            if comp.get("location", "") == filename_base
+            or comp.get("location", "").startswith(filename_base + ".")
         ]
 
         if not file_components:

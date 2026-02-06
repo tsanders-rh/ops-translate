@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow xmlns="http://vmware.com/vco/workflow" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://vmware.com/vco/workflow http://vmware.com/vco/workflow" version="1.0.0" api-version="8.0.0">
+  <display-name>Provision VM with NSX Firewall Rules</display-name>
+  <description>Provisions a VM and configures NSX-T firewall rules and security group membership for tier-based isolation</description>
+
+  <input>
+    <param name="vmName" type="string">
+      <description>Name of the virtual machine</description>
+    </param>
+    <param name="environment" type="string">
+      <description>Environment (dev, staging, prod)</description>
+    </param>
+    <param name="appTier" type="string">
+      <description>Application tier (web, app, db)</description>
+    </param>
+    <param name="cpuCount" type="number">
+      <description>Number of CPU cores</description>
+    </param>
+    <param name="memoryGB" type="number">
+      <description>Memory in GB</description>
+    </param>
+    <param name="owner" type="string">
+      <description>Owner email for tagging</description>
+    </param>
+    <param name="costCenter" type="string">
+      <description>Cost center code</description>
+    </param>
+  </input>
+
+  <output>
+    <param name="vm" type="VC:VirtualMachine">
+      <description>The provisioned virtual machine</description>
+    </param>
+    <param name="securityGroupId" type="string">
+      <description>NSX security group ID</description>
+    </param>
+  </output>
+
+  <attrib name="vcServer" type="VC:SdkConnection" read-only="false">
+    <value>vcenter.acme.internal</value>
+  </attrib>
+  <attrib name="nsxManager" type="string" read-only="false">
+    <value>nsx-manager.acme.internal</value>
+  </attrib>
+  <attrib name="cluster" type="VC:ClusterComputeResource" read-only="false"/>
+  <attrib name="network" type="string" read-only="false"/>
+  <attrib name="securityGroup" type="string" read-only="false"/>
+  <attrib name="firewallSection" type="string" read-only="false"/>
+
+  <workflow-item name="item0" type="end" end-mode="0">
+    <position y="450.0" x="300.0"/>
+  </workflow-item>
+
+  <workflow-item name="item1" out-name="item2" type="task">
+    <display-name>Select Environment Resources</display-name>
+    <script encoded="false">
+      // Environment-based resource selection
+      if (environment == "prod") {
+          cluster = System.getModule("com.vmware.library.vc.cluster").getAllClusters().filter(function(c) { return c.name == "PROD-Cluster"; })[0];
+          network = "PROD-VLAN-100";
+      } else if (environment == "staging") {
+          cluster = System.getModule("com.vmware.library.vc.cluster").getAllClusters().filter(function(c) { return c.name == "STAGING-Cluster"; })[0];
+          network = "STAGING-VLAN-200";
+      } else {
+          cluster = System.getModule("com.vmware.library.vc.cluster").getAllClusters().filter(function(c) { return c.name == "DEV-Cluster"; })[0];
+          network = "DEV-VLAN-300";
+      }
+
+      System.log("Selected cluster: " + cluster.name + ", network: " + network);
+    </script>
+    <in-binding>
+      <bind name="environment" type="string" export-name="environment"/>
+    </in-binding>
+    <out-binding>
+      <bind name="cluster" type="VC:ClusterComputeResource" export-name="cluster"/>
+      <bind name="network" type="string" export-name="network"/>
+    </out-binding>
+    <position y="50.0" x="100.0"/>
+  </workflow-item>
+
+  <workflow-item name="item2" out-name="item3" type="task">
+    <display-name>Create VM</display-name>
+    <script encoded="false">
+      var vmFolder = cluster.vmFolder;
+      var resourcePool = cluster.resourcePool;
+
+      var spec = new VcVirtualMachineConfigSpec();
+      spec.name = vmName;
+      spec.memoryMB = memoryGB * 1024;
+      spec.numCPUs = cpuCount;
+      spec.guestId = "rhel8_64Guest";
+
+      // Add network interface
+      var nicSpec = new VcVirtualDeviceConfigSpec();
+      nicSpec.operation = VcVirtualDeviceConfigSpecOperation.add;
+      var nic = new VcVirtualVmxnet3();
+      var nicBacking = new VcVirtualEthernetCardNetworkBackingInfo();
+      nicBacking.deviceName = network;
+      nic.backing = nicBacking;
+      nicSpec.device = nic;
+      spec.deviceChange = [nicSpec];
+
+      vm = vmFolder.createVm(spec, resourcePool, null);
+
+      System.log("VM " + vmName + " created successfully");
+    </script>
+    <in-binding>
+      <bind name="vmName" type="string" export-name="vmName"/>
+      <bind name="memoryGB" type="number" export-name="memoryGB"/>
+      <bind name="cpuCount" type="number" export-name="cpuCount"/>
+      <bind name="cluster" type="VC:ClusterComputeResource" export-name="cluster"/>
+      <bind name="network" type="string" export-name="network"/>
+    </in-binding>
+    <out-binding>
+      <bind name="vm" type="VC:VirtualMachine" export-name="vm"/>
+    </out-binding>
+    <position y="150.0" x="200.0"/>
+  </workflow-item>
+
+  <workflow-item name="item3" out-name="item4" type="task">
+    <display-name>Apply VM Tags</display-name>
+    <script encoded="false">
+      // Apply vSphere tags for governance
+      var tagCategory = "Environment";
+      var tagValue = environment;
+
+      // Tag with owner
+      System.log("Applying tags: env=" + environment + ", owner=" + owner + ", cost-center=" + costCenter);
+
+      // Custom attributes
+      vm.setCustomValue("Owner", owner);
+      vm.setCustomValue("CostCenter", costCenter);
+      vm.setCustomValue("AppTier", appTier);
+      vm.setCustomValue("ManagedBy", "ops-translate");
+    </script>
+    <in-binding>
+      <bind name="vm" type="VC:VirtualMachine" export-name="vm"/>
+      <bind name="environment" type="string" export-name="environment"/>
+      <bind name="owner" type="string" export-name="owner"/>
+      <bind name="costCenter" type="string" export-name="costCenter"/>
+      <bind name="appTier" type="string" export-name="appTier"/>
+    </in-binding>
+    <position y="250.0" x="200.0"/>
+  </workflow-item>
+
+  <workflow-item name="item4" out-name="item5" type="task">
+    <display-name>Assign to NSX Security Group</display-name>
+    <script encoded="false">
+      // Determine security group based on tier and environment
+      securityGroup = "SG-" + environment.toUpperCase() + "-" + appTier.toUpperCase();
+
+      // REST call to NSX Manager to add VM to security group
+      var restHost = RESTHostManager.createHost("nsx-api");
+      var restClient = restHost.createRequest("POST", "/api/v1/ns-groups/" + securityGroup + "/members", "");
+      restClient.contentType = "application/json";
+
+      var memberBody = {
+        "resource_type": "VirtualMachine",
+        "external_id": vm.id,
+        "display_name": vmName
+      };
+
+      restClient.execute(JSON.stringify(memberBody));
+      securityGroupId = securityGroup;
+
+      System.log("Added VM " + vmName + " to security group: " + securityGroup);
+    </script>
+    <in-binding>
+      <bind name="vm" type="VC:VirtualMachine" export-name="vm"/>
+      <bind name="vmName" type="string" export-name="vmName"/>
+      <bind name="environment" type="string" export-name="environment"/>
+      <bind name="appTier" type="string" export-name="appTier"/>
+    </in-binding>
+    <out-binding>
+      <bind name="securityGroup" type="string" export-name="securityGroup"/>
+      <bind name="securityGroupId" type="string" export-name="securityGroupId"/>
+    </out-binding>
+    <position y="350.0" x="200.0"/>
+  </workflow-item>
+
+  <workflow-item name="item5" out-name="item0" type="task">
+    <display-name>Create Firewall Rules</display-name>
+    <script encoded="false">
+      // Create tier-specific firewall rules
+      firewallSection = "FW-" + environment.toUpperCase() + "-" + appTier.toUpperCase();
+
+      var restHost = RESTHostManager.createHost("nsx-api");
+
+      // Define rules based on tier
+      var rules = [];
+
+      if (appTier == "web") {
+          // Web tier: allow HTTP/HTTPS from any
+          rules.push({
+              "display_name": vmName + "-allow-http",
+              "sources": [{"resource_type": "IPSet", "ip_addresses": ["0.0.0.0/0"]}],
+              "destinations": [{"resource_type": "NSGroup", "target_id": securityGroup}],
+              "services": [{"service": "HTTP"}, {"service": "HTTPS"}],
+              "action": "ALLOW",
+              "direction": "IN"
+          });
+      } else if (appTier == "app") {
+          // App tier: allow from web tier only
+          rules.push({
+              "display_name": vmName + "-allow-from-web",
+              "sources": [{"resource_type": "NSGroup", "target_id": "SG-" + environment.toUpperCase() + "-WEB"}],
+              "destinations": [{"resource_type": "NSGroup", "target_id": securityGroup}],
+              "services": [{"service": "TCP-8080"}],
+              "action": "ALLOW",
+              "direction": "IN"
+          });
+      } else if (appTier == "db") {
+          // DB tier: allow from app tier only
+          rules.push({
+              "display_name": vmName + "-allow-from-app",
+              "sources": [{"resource_type": "NSGroup", "target_id": "SG-" + environment.toUpperCase() + "-APP"}],
+              "destinations": [{"resource_type": "NSGroup", "target_id": securityGroup}],
+              "services": [{"service": "TCP-5432"}],
+              "action": "ALLOW",
+              "direction": "IN"
+          });
+      }
+
+      // Apply rules via REST API
+      for each (var rule in rules) {
+          var request = restHost.createRequest("POST", "/api/v1/firewall/sections/" + firewallSection + "/rules", "");
+          request.contentType = "application/json";
+          request.execute(JSON.stringify(rule));
+          System.log("Created firewall rule: " + rule.display_name);
+      }
+    </script>
+    <in-binding>
+      <bind name="vmName" type="string" export-name="vmName"/>
+      <bind name="environment" type="string" export-name="environment"/>
+      <bind name="appTier" type="string" export-name="appTier"/>
+      <bind name="securityGroup" type="string" export-name="securityGroup"/>
+    </in-binding>
+    <out-binding>
+      <bind name="firewallSection" type="string" export-name="firewallSection"/>
+    </out-binding>
+    <position y="450.0" x="200.0"/>
+  </workflow-item>
+
+  <presentation>
+    <p-param name="vmName">
+      <desc>VM Name</desc>
+    </p-param>
+    <p-param name="environment">
+      <desc>Environment (dev/staging/prod)</desc>
+    </p-param>
+    <p-param name="appTier">
+      <desc>Application Tier (web/app/db)</desc>
+    </p-param>
+    <p-param name="cpuCount">
+      <desc>CPU Count</desc>
+    </p-param>
+    <p-param name="memoryGB">
+      <desc>Memory (GB)</desc>
+    </p-param>
+    <p-param name="owner">
+      <desc>Owner Email</desc>
+    </p-param>
+    <p-param name="costCenter">
+      <desc>Cost Center</desc>
+    </p-param>
+  </presentation>
+</workflow>

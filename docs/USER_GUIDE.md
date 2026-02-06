@@ -222,10 +222,14 @@ cat intent/summary.md
 ops-translate intent extract
 cat intent/powercli.intent.yaml
 
-# 5. Generate artifacts
+# 5. Review migration readiness BEFORE generating
+ops-translate report --format html --profile lab
+open output/report/index.html  # Review gaps and blockers
+
+# 6. Generate artifacts
 ops-translate generate --profile lab
 
-# 6. Review output
+# 7. Review output
 ls -R output/
 cat output/README.md
 ```
@@ -339,7 +343,23 @@ ops-translate map preview --target openshift
 cat mapping/preview.md
 ```
 
-#### Step 9: Generate Artifacts
+#### Step 9: Review Migration Readiness
+
+Before generating artifacts, review the migration readiness report:
+
+```bash
+ops-translate report --format html --profile lab
+open output/report/index.html
+```
+
+This shows:
+- Components that can be auto-translated (SUPPORTED)
+- Components needing manual work (PARTIAL/BLOCKED)
+- Migration recommendations and OpenShift equivalents
+
+#### Step 10: Generate Artifacts
+
+After reviewing the report, generate artifacts:
 
 ```bash
 ops-translate generate --profile lab
@@ -351,7 +371,7 @@ This creates:
 - `output/ansible/roles/provision_vm/` - Ansible role structure
 - `output/README.md` - How to use the generated artifacts
 
-#### Step 10: Validate Output
+#### Step 11: Validate Output
 
 ```bash
 # Dry-run validation
@@ -717,6 +737,13 @@ ops-translate map preview --target openshift
 ### ops-translate generate
 
 **Purpose**: Generate Ansible playbooks and KubeVirt manifests.
+
+**⚠️ Best Practice**: Review the migration readiness report BEFORE generating:
+```bash
+ops-translate report --format html --profile lab
+open output/report/index.html
+```
+This shows what can be auto-translated vs. what needs manual work.
 
 ```bash
 ops-translate generate --profile <profile_name> [--no-ai]

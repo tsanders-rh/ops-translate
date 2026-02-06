@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow xmlns="http://vmware.com/vco/workflow" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://vmware.com/vco/workflow http://vmware.com/vco/workflow" version="1.0.0" api-version="8.0.0">
+  <display-name>Provision Web App with NSX Load Balancer</display-name>
+  <description>Creates web tier VMs on NSX segment and configures NSX load balancer with virtual server</description>
+
+  <input>
+    <param name="appName" type="string">
+      <description>Application name</description>
+    </param>
+    <param name="environment" type="string">
+      <description>Environment</description>
+    </param>
+    <param name="instanceCount" type="number">
+      <description>Number of web instances</description>
+    </param>
+    <param name="cpu" type="number">
+      <description>CPU cores per instance</description>
+    </param>
+    <param name="memory_gb" type="number">
+      <description>Memory GB per instance</description>
+    </param>
+    <param name="lbVIP" type="string">
+      <description>Load balancer virtual IP</description>
+    </param>
+  </input>
+
+  <output>
+    <param name="vms" type="Array/VC:VirtualMachine">
+      <description>Created VM instances</description>
+    </param>
+    <param name="virtualServerId" type="string">
+      <description>NSX load balancer virtual server ID</description>
+    </param>
+  </output>
+
+  <attrib name="nsxSegmentId" type="string" read-only="false"/>
+  <attrib name="lbPoolId" type="string" read-only="false"/>
+  <attrib name="vmIPs" type="Array/string" read-only="false"/>
+
+  <workflow-item name="item0" type="end" end-mode="0">
+    <position y="550.0" x="300.0"/>
+  </workflow-item>
+
+  <workflow-item name="item1" out-name="item2" type="task">
+    <display-name>Create NSX Segment</display-name>
+    <script encoded="false">
+      // Create NSX-T overlay segment for web tier
+      var segmentName = appName + "-web-segment-" + environment;
+      var subnet = "";
+
+      // Environment-specific subnets (hard-coded - legacy pattern)
+      if (environment == "prod") {
+          subnet = "172.16.10.0/24";
+      } else if (environment == "staging") {
+          subnet = "172.16.20.0/24";
+      } else {
+          subnet = "172.16.30.0/24";
+      }
+
+      var restHost = RESTHostManager.createHost("nsx-api");
+      var request = restHost.createRequest("POST", "/policy/api/v1/infra/segments", "");
+      request.contentType = "application/json";
+
+      var segmentConfig = {
+          "display_name": segmentName,
+          "subnets": [{
+              "gateway_address": subnet.split("/")[0].replace(/\.0$/, ".1") + "/" + subnet.split("/")[1],
+              "dhcp_ranges": [subnet.split("/")[0].replace(/\.0$/, ".100") + "-" + subnet.split("/")[0].replace(/\.0$/, ".200")]
+          }],
+          "transport_zone_path": "/infra/sites/default/enforcement-points/default/transport-zones/overlay-tz",
+          "connectivity_path": "/infra/tier-1s/T1-Gateway"
+      };
+
+      var response = request.execute(JSON.stringify(segmentConfig));
+      nsxSegmentId = segmentName;
+
+      System.log("Created NSX segment: " + segmentName + " with subnet: " + subnet);
+    </script>
+    <in-binding>
+      <bind name="appName" type="string" export-name="appName"/>
+      <bind name="environment" type="string" export-name="environment"/>
+    </in-binding>
+    <out-binding>
+      <bind name="nsxSegmentId" type="string" export-name="nsxSegmentId"/>
+    </out-binding>
+    <position y="50.0" x="100.0"/>
+  </workflow-item>
+
+  <workflow-item name="item2" out-name="item3" type="task">
+    <display-name>Provision VM Instances</display-name>
+    <script encoded="false">
+      vms = [];
+      vmIPs = [];
+
+      var cluster = System.getModule("com.vmware.library.vc.cluster").getAllClusters()[0];
+      var vmFolder = cluster.vmFolder;
+      var resourcePool = cluster.resourcePool;
+
+      for (var i = 1; i <= instanceCount; i++) {
+          var vmName = appName + "-web-" + i;
+
+          var spec = new VcVirtualMachineConfigSpec();
+          spec.name = vmName;
+          spec.memoryMB = memory_gb * 1024;
+          spec.numCPUs = cpu;
+          spec.guestId = "ubuntu64Guest";
+
+          // Connect to NSX segment
+          var nicSpec = new VcVirtualDeviceConfigSpec();
+          nicSpec.operation = VcVirtualDeviceConfigSpecOperation.add;
+          var nic = new VcVirtualVmxnet3();
+          var nicBacking = new VcVirtualEthernetCardNetworkBackingInfo();
+          nicBacking.deviceName = nsxSegmentId;
+          nic.backing = nicBacking;
+          nicSpec.device = nic;
+          spec.deviceChange = [nicSpec];
+
+          var vm = vmFolder.createVm(spec, resourcePool, null);
+          vms.push(vm);
+
+          // Start VM and get IP (simulated)
+          vm.powerOn();
+          var ip = "172.16." + (environment == "prod" ? "10" : environment == "staging" ? "20" : "30") + "." + (100 + i);
+          vmIPs.push(ip);
+
+          System.log("Created VM: " + vmName + " with IP: " + ip);
+      }
+    </script>
+    <in-binding>
+      <bind name="appName" type="string" export-name="appName"/>
+      <bind name="environment" type="string" export-name="environment"/>
+      <bind name="instanceCount" type="number" export-name="instanceCount"/>
+      <bind name="cpu" type="number" export-name="cpu"/>
+      <bind name="memory_gb" type="number" export-name="memory_gb"/>
+      <bind name="nsxSegmentId" type="string" export-name="nsxSegmentId"/>
+    </in-binding>
+    <out-binding>
+      <bind name="vms" type="Array/VC:VirtualMachine" export-name="vms"/>
+      <bind name="vmIPs" type="Array/string" export-name="vmIPs"/>
+    </out-binding>
+    <position y="150.0" x="200.0"/>
+  </workflow-item>
+
+  <workflow-item name="item3" out-name="item4" type="task">
+    <display-name>Create Load Balancer Pool</display-name>
+    <script encoded="false">
+      // Create NSX load balancer pool with VM instances
+      var poolName = appName + "-web-pool-" + environment;
+
+      var restHost = RESTHostManager.createHost("nsx-api");
+      var request = restHost.createRequest("POST", "/policy/api/v1/infra/lb-pools", "");
+      request.contentType = "application/json";
+
+      var members = [];
+      for each (var ip in vmIPs) {
+          members.push({
+              "display_name": ip,
+              "ip_address": ip,
+              "port": "80"
+          });
+      }
+
+      var poolConfig = {
+          "display_name": poolName,
+          "members": members,
+          "algorithm": "ROUND_ROBIN",
+          "active_monitor_paths": ["/infra/lb-monitor-profiles/default-http-lb-monitor"],
+          "snat_translation": {
+              "type": "LBSnatAutoMap"
+          }
+      };
+
+      var response = request.execute(JSON.stringify(poolConfig));
+      lbPoolId = poolName;
+
+      System.log("Created load balancer pool: " + poolName + " with " + members.length + " members");
+    </script>
+    <in-binding>
+      <bind name="appName" type="string" export-name="appName"/>
+      <bind name="environment" type="string" export-name="environment"/>
+      <bind name="vmIPs" type="Array/string" export-name="vmIPs"/>
+    </in-binding>
+    <out-binding>
+      <bind name="lbPoolId" type="string" export-name="lbPoolId"/>
+    </out-binding>
+    <position y="250.0" x="200.0"/>
+  </workflow-item>
+
+  <workflow-item name="item4" out-name="item0" type="task">
+    <display-name>Create Virtual Server</display-name>
+    <script encoded="false">
+      // Create NSX load balancer virtual server
+      var vsName = appName + "-vs-" + environment;
+
+      var restHost = RESTHostManager.createHost("nsx-api");
+      var request = restHost.createRequest("POST", "/policy/api/v1/infra/lb-virtual-servers", "");
+      request.contentType = "application/json";
+
+      var vsConfig = {
+          "display_name": vsName,
+          "ip_address": lbVIP,
+          "ports": ["80", "443"],
+          "pool_path": "/infra/lb-pools/" + lbPoolId,
+          "application_profile_path": "/infra/lb-app-profiles/default-http-lb-app-profile",
+          "enabled": true,
+          "max_concurrent_connections": 1000,
+          "max_new_connection_rate": 100
+      };
+
+      var response = request.execute(JSON.stringify(vsConfig));
+      virtualServerId = vsName;
+
+      System.log("Created virtual server: " + vsName + " at VIP: " + lbVIP);
+      System.log("Application is now accessible at: http://" + lbVIP);
+    </script>
+    <in-binding>
+      <bind name="appName" type="string" export-name="appName"/>
+      <bind name="environment" type="string" export-name="environment"/>
+      <bind name="lbVIP" type="string" export-name="lbVIP"/>
+      <bind name="lbPoolId" type="string" export-name="lbPoolId"/>
+    </in-binding>
+    <out-binding>
+      <bind name="virtualServerId" type="string" export-name="virtualServerId"/>
+    </out-binding>
+    <position y="350.0" x="200.0"/>
+  </workflow-item>
+
+  <presentation>
+    <p-param name="appName">
+      <desc>Application Name</desc>
+    </p-param>
+    <p-param name="environment">
+      <desc>Environment</desc>
+    </p-param>
+    <p-param name="instanceCount">
+      <desc>Number of Instances</desc>
+    </p-param>
+    <p-param name="cpu">
+      <desc>CPU per Instance</desc>
+    </p-param>
+    <p-param name="memory_gb">
+      <desc>Memory (GB) per Instance</desc>
+    </p-param>
+    <p-param name="lbVIP">
+      <desc>Load Balancer VIP</desc>
+    </p-param>
+  </presentation>
+</workflow>

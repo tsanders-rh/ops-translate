@@ -681,6 +681,42 @@ section h3 {
     margin-top: var(--spacing-md);
 }
 
+.file-section-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    margin: var(--spacing-lg) 0 var(--spacing-md) 0;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-left: 4px solid var(--rh-blue);
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+.file-section-header:first-of-type {
+    margin-top: 0;
+}
+
+.file-section-header .file-icon {
+    font-size: 1.5rem;
+}
+
+.file-section-header h3 {
+    flex: 1;
+    font-size: 1.1rem;
+    color: var(--rh-dark);
+    margin: 0;
+}
+
+.file-section-header .badge {
+    margin-left: auto;
+}
+
+.file-anchor {
+    /* Offset for scroll-to anchor to account for sticky elements */
+    scroll-margin-top: 2rem;
+}
+
 .gap-item {
     border: 2px solid var(--rh-gray-light);
     border-radius: 8px;
