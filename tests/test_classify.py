@@ -202,8 +202,7 @@ class TestClassifiedComponent:
         assert not supported.is_blocking
 
         partial = ClassifiedComponent(
-            name="Test", component_type="test",
-            level=TranslatabilityLevel.PARTIAL, reason="OK"
+            name="Test", component_type="test", level=TranslatabilityLevel.PARTIAL, reason="OK"
         )
         assert not partial.is_blocking
 
