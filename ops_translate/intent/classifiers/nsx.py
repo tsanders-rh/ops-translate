@@ -423,13 +423,8 @@ class NsxClassifier(BaseClassifier):
                 # Use first non-default name
                 name = op_name
 
-        # Combine all evidence with line breaks for readability
-        evidence_parts = []
-        for op in operations:
-            if op.get("evidence"):
-                evidence_parts.append(op["evidence"])
-
-        combined_evidence = "\n".join(evidence_parts) if evidence_parts else None
+        # Combine evidence, consolidating pattern matches on the same line
+        combined_evidence = self._consolidate_evidence(operations)
 
         # Use highest confidence
         confidence = max((op.get("confidence", 0.5) for op in operations), default=0.5)
@@ -448,6 +443,127 @@ class NsxClassifier(BaseClassifier):
             "confidence": confidence,
             "evidence": combined_evidence,
         }
+
+    def _consolidate_evidence(self, operations: list[dict[str, Any]]) -> str | None:
+        """
+        Consolidate evidence entries, combining pattern matches on the same line.
+
+        When multiple patterns match on the same line with similar context,
+        combine them into a single evidence entry for better readability.
+
+        Args:
+            operations: List of operations to merge
+
+        Returns:
+            Consolidated evidence string, or None if no evidence
+
+        Example:
+            Input:
+                Pattern match: nsxClient.createSG in context (file.xml:64): ...
+                Pattern match: SecurityGroup in context (file.xml:64): ...
+            Output:
+                Pattern matches: nsxClient.createSG, SecurityGroup (file.xml:64): ...
+        """
+        import re
+
+        if not operations:
+            return None
+
+        # Group evidence by location
+        evidence_by_location: dict[str, list[dict[str, Any]]] = {}
+
+        for op in operations:
+            evidence = op.get("evidence")
+            if not evidence:
+                continue
+
+            # Parse evidence to extract location and type
+            # Format 1: "Pattern match: X in context (location): ..."
+            pattern_match = re.match(
+                r"Pattern match: (.+?) in context \((.+?)\): (.+)", evidence
+            )
+            # Format 2: "Workflow item name/type contains NSX keyword (location): ..."
+            workflow_match = re.match(
+                r"Workflow item name/type contains NSX keyword \((.+?)\): (.+)", evidence
+            )
+
+            if pattern_match:
+                pattern_name = pattern_match.group(1)
+                location = pattern_match.group(2)
+                context = pattern_match.group(3)
+
+                if location not in evidence_by_location:
+                    evidence_by_location[location] = []
+
+                evidence_by_location[location].append(
+                    {
+                        "type": "pattern",
+                        "pattern": pattern_name,
+                        "context": context,
+                        "original": evidence,
+                    }
+                )
+            elif workflow_match:
+                location = workflow_match.group(1)
+                keyword = workflow_match.group(2)
+
+                if location not in evidence_by_location:
+                    evidence_by_location[location] = []
+
+                evidence_by_location[location].append(
+                    {
+                        "type": "workflow_item",
+                        "keyword": keyword,
+                        "original": evidence,
+                    }
+                )
+            else:
+                # Unknown format - keep as-is
+                if "unknown" not in evidence_by_location:
+                    evidence_by_location["unknown"] = []
+                evidence_by_location["unknown"].append(
+                    {"type": "other", "original": evidence}
+                )
+
+        # Build consolidated evidence
+        consolidated_parts = []
+
+        for location, entries in evidence_by_location.items():
+            # Separate pattern matches from workflow items
+            pattern_entries = [e for e in entries if e["type"] == "pattern"]
+            workflow_entries = [e for e in entries if e["type"] == "workflow_item"]
+            other_entries = [e for e in entries if e["type"] == "other"]
+
+            # Consolidate pattern matches on same line
+            if pattern_entries:
+                if len(pattern_entries) == 1:
+                    # Single pattern - use original format
+                    consolidated_parts.append(pattern_entries[0]["original"])
+                else:
+                    # Multiple patterns - combine them, deduplicating pattern names
+                    patterns = [e["pattern"] for e in pattern_entries]
+                    # Deduplicate while preserving order
+                    unique_patterns = []
+                    seen = set()
+                    for p in patterns:
+                        if p not in seen:
+                            unique_patterns.append(p)
+                            seen.add(p)
+                    # Use the longest context (likely most complete)
+                    context = max((e["context"] for e in pattern_entries), key=len)
+                    consolidated_parts.append(
+                        f"Pattern matches: {', '.join(unique_patterns)} ({location}): {context}"
+                    )
+
+            # Add workflow items as-is
+            for entry in workflow_entries:
+                consolidated_parts.append(entry["original"])
+
+            # Add other entries as-is
+            for entry in other_entries:
+                consolidated_parts.append(entry["original"])
+
+        return "\n".join(consolidated_parts) if consolidated_parts else None
 
     def _clean_display_name(self, name: str) -> str:
         """
