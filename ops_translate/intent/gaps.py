@@ -130,18 +130,18 @@ def _write_markdown_report(
         f.write("## Detailed Component Analysis\n\n")
 
         # Group by severity level
-        level: TranslatabilityLevel
-        for level in [
+        trans_level: TranslatabilityLevel
+        for trans_level in [
             TranslatabilityLevel.MANUAL,
             TranslatabilityLevel.BLOCKED,
             TranslatabilityLevel.PARTIAL,
             TranslatabilityLevel.SUPPORTED,
         ]:
-            level_components = [c for c in components if c.level == level]
+            level_components = [c for c in components if c.level == trans_level]
             if not level_components:
                 continue
 
-            f.write(f"### {level.emoji} {level.value} Components\n\n")
+            f.write(f"### {trans_level.emoji} {trans_level.value} Components\n\n")
 
             for comp in level_components:
                 f.write(f"#### {comp.name}\n\n")
