@@ -8,7 +8,7 @@ artifacts for human review before deployment.
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import yaml
 from jinja2 import Environment, FileSystemLoader
@@ -191,7 +191,7 @@ def _load_intent_data(workspace: Workspace) -> dict[str, Any] | None:
     merged_intent = workspace.root / "intent/intent.yaml"
     if merged_intent.exists():
         try:
-            return yaml.safe_load(merged_intent.read_text())
+            return cast(dict[str, Any], yaml.safe_load(merged_intent.read_text()))
         except yaml.YAMLError:
             pass
 
@@ -200,7 +200,7 @@ def _load_intent_data(workspace: Workspace) -> dict[str, Any] | None:
     if intent_dir.exists():
         for intent_file in intent_dir.glob("*.intent.yaml"):
             try:
-                return yaml.safe_load(intent_file.read_text())
+                return cast(dict[str, Any], yaml.safe_load(intent_file.read_text()))
             except yaml.YAMLError:
                 continue
 
@@ -219,7 +219,7 @@ def _load_gaps_data(workspace: Workspace) -> dict[str, Any] | None:
         return None
 
     try:
-        return json.loads(gaps_file.read_text())
+        return cast(dict[str, Any], json.loads(gaps_file.read_text()))
     except json.JSONDecodeError:
         return None
 
