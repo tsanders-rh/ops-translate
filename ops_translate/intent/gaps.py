@@ -74,7 +74,7 @@ def _write_markdown_report(
             "FULLY_TRANSLATABLE": "✅",
             "MOSTLY_AUTOMATIC": "✅",
             "MOSTLY_MANUAL": "⚠️",
-            "REQUIRES_MANUAL_WORK": "⚠️",
+            "HAS_BLOCKING_ISSUES": "⚠️",
         }.get(assessment, "❌")
 
         f.write(
@@ -274,7 +274,7 @@ def print_gap_summary(components: list[ClassifiedComponent]) -> None:
         "FULLY_TRANSLATABLE": "green",
         "MOSTLY_AUTOMATIC": "green",
         "MOSTLY_MANUAL": "yellow",
-        "REQUIRES_MANUAL_WORK": "yellow",
+        "HAS_BLOCKING_ISSUES": "yellow",
     }.get(assessment, "red")
 
     assessment_text = assessment.replace("_", " ").title()

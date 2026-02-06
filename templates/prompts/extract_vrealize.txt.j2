@@ -11,13 +11,14 @@ Extract the operational intent from the vRO workflow and produce a YAML document
 ## Rules
 1. **Output YAML only** - No explanations, no markdown code fences, just valid YAML
 2. **Conform to schema** - Follow the intent.schema.json structure exactly
-3. **Extract inputs/outputs** - Parse `<inputs>` and `<outputs>` elements
-4. **Detect decision points** - Look for `<decision>` elements with branching logic
-5. **Identify governance** - Look for approval tasks, user interaction elements
-6. **Map resources** - Extract resource allocation patterns from scriptable tasks
-7. **Find metadata** - Identify custom properties, tags, attributes
-8. **Day 2 operations** - Infer supported operations from workflow purpose
-9. **Document assumptions** - Add an `assumptions` section for inferred information
+3. **Generate description** - Write a 1-3 sentence human-readable summary of what the workflow does
+4. **Extract inputs/outputs** - Parse `<inputs>` and `<outputs>` elements
+5. **Detect decision points** - Look for `<decision>` elements with branching logic
+6. **Identify governance** - Look for approval tasks, user interaction elements
+7. **Map resources** - Extract resource allocation patterns from scriptable tasks
+8. **Find metadata** - Identify custom properties, tags, attributes
+9. **Day 2 operations** - Infer supported operations from workflow purpose
+10. **Document assumptions** - Add an `assumptions` section ONLY if you make non-obvious inferences or decisions that aren't explicitly stated in the workflow. Omit this section if everything is directly extracted from the source.
 
 ## What to Look For
 
@@ -51,6 +52,20 @@ Extract the operational intent from the vRO workflow and produce a YAML document
 - Different resource pools, networks, or storage per environment
 - Look for dev/prod/staging distinctions
 
+### Assumptions (when to document)
+Only include an `assumptions` section when you make **significant inferences** such as:
+- **Interpreting complex logic** (e.g., "Approval workflow inferred from decision element - actual approval mechanism not specified")
+- **Inferring from workflow name/context** (e.g., "Day 2 operations assumed from workflow name 'VM Lifecycle Management' but not explicitly implemented")
+- **Resolving ambiguity** (e.g., "Multiple network selection paths - assumed prod-network for production based on decision logic")
+- **Setting constraints** not defined (e.g., "Memory limits not specified - set to 256GB based on common vRO patterns")
+- **Extracting from nested sub-workflows** (e.g., "Storage configuration delegated to sub-workflow - assumed standard profiles")
+
+**DO NOT include assumptions for:**
+- Direct extraction of inputs/outputs from XML elements
+- Straightforward decision logic mapping
+- Simple parameter type conversions
+- The fact that intent was extracted by LLM (this is implicit in all outputs)
+
 ## Example Input (simplified)
 ```xml
 <workflow>
@@ -81,6 +96,10 @@ sources:
 
 intent:
   workflow_name: provision_vm_with_governance
+  description: |
+    Provisions a virtual machine in vSphere with environment-specific configuration.
+    Includes approval workflow for production environments and sets up network
+    profiles based on the target environment.
   workload_type: virtual_machine
 
   inputs:
@@ -121,9 +140,8 @@ intent:
     supported: [start, stop, reconfigure]
 
 assumptions:
-  - Approval workflow inferred from decision element checking environment
-  - Day 2 operations assumed based on standard vRO VM lifecycle patterns
-  - Network profile extracted from scriptable task logic
+  - Approval mechanism inferred from decision element but actual approval task/integration not specified in workflow
+  - Day 2 operations (start/stop/reconfigure) assumed based on standard vRO VM lifecycle patterns - not explicitly defined
 ```
 
 ## Important Notes

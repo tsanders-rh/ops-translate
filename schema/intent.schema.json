@@ -42,6 +42,10 @@
           "type": "string",
           "description": "Name of the operational workflow"
         },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of what this workflow does"
+        },
         "workload_type": {
           "type": "string",
           "enum": ["virtual_machine", "container", "mixed"],

@@ -16,6 +16,9 @@
 
     function init() {
         setupCardFiltering();
+        setupClearFilterButton();
+        setupViewFindingsLinks();
+        setupExportButtons();
     }
 
     /**
@@ -24,6 +27,8 @@
     function setupCardFiltering() {
         const cards = document.querySelectorAll('.summary-cards .card');
         const gapItems = document.querySelectorAll('.gap-item');
+        const filterIndicator = document.getElementById('filter-indicator');
+        const filterName = document.getElementById('filter-name');
 
         if (cards.length === 0 || gapItems.length === 0) {
             return;  // No filtering needed
@@ -34,13 +39,12 @@
         cards.forEach(card => {
             card.addEventListener('click', function() {
                 const filter = this.dataset.filter;
+                const filterLabel = this.querySelector('.card-label').textContent;
 
                 // Toggle filter
                 if (activeFilter === filter) {
                     // Clear filter
-                    activeFilter = null;
-                    cards.forEach(c => c.classList.remove('active-filter'));
-                    gapItems.forEach(item => item.classList.remove('hidden'));
+                    clearFilter();
                 } else {
                     // Apply filter
                     activeFilter = filter;
@@ -58,6 +62,12 @@
                         }
                     });
 
+                    // Show filter indicator
+                    if (filterIndicator && filterName) {
+                        filterName.textContent = filterLabel;
+                        filterIndicator.classList.remove('hidden');
+                    }
+
                     // Scroll to gaps section
                     const gapsSection = document.querySelector('.gaps-section');
                     if (gapsSection) {
@@ -66,6 +76,151 @@
                 }
             });
         });
+
+        // Make clearFilter accessible to other functions
+        window.clearGapFilter = clearFilter;
+
+        function clearFilter() {
+            activeFilter = null;
+            cards.forEach(c => c.classList.remove('active-filter'));
+            gapItems.forEach(item => item.classList.remove('hidden'));
+
+            // Hide filter indicator
+            if (filterIndicator) {
+                filterIndicator.classList.add('hidden');
+            }
+        }
+    }
+
+    /**
+     * Setup clear filter button
+     */
+    function setupClearFilterButton() {
+        const clearBtn = document.getElementById('clear-filter');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                if (window.clearGapFilter) {
+                    window.clearGapFilter();
+                }
+            });
+        }
+    }
+
+    /**
+     * Setup "View Findings" links to clear filters before navigating
+     */
+    function setupViewFindingsLinks() {
+        const viewFindingsLinks = document.querySelectorAll('.action-link');
+
+        viewFindingsLinks.forEach(link => {
+            link.addEventListener('click', function() {
+                // Clear any active filter so user sees all findings for this file
+                if (window.clearGapFilter) {
+                    window.clearGapFilter();
+                }
+                // Let the default anchor navigation happen
+            });
+        });
+    }
+
+    /**
+     * Setup export buttons (PDF and CSV)
+     */
+    function setupExportButtons() {
+        const pdfBtn = document.getElementById('export-pdf');
+        const csvBtn = document.getElementById('export-csv');
+
+        if (pdfBtn) {
+            pdfBtn.addEventListener('click', exportAsPDF);
+        }
+
+        if (csvBtn) {
+            csvBtn.addEventListener('click', exportAsCSV);
+        }
+    }
+
+    /**
+     * Export report as PDF using browser print
+     */
+    function exportAsPDF() {
+        window.print();
+    }
+
+    /**
+     * Export migration tasks as CSV
+     */
+    function exportAsCSV() {
+        if (!window.reportData || !window.reportData.gaps || !window.reportData.gaps.components) {
+            alert('No gaps data available for export');
+            return;
+        }
+
+        const components = window.reportData.gaps.components;
+        const workspace = window.reportData.workspace || 'workspace';
+        const timestamp = window.reportData.timestamp || new Date().toISOString();
+
+        // CSV header
+        const headers = [
+            'Component',
+            'Type',
+            'Level',
+            'Migration Path',
+            'Location',
+            'Reason',
+            'OpenShift Equivalent',
+            'Recommendations'
+        ];
+
+        // Build CSV rows
+        const rows = components.map(comp => {
+            return [
+                escapeCSV(comp.name || ''),
+                escapeCSV(comp.component_type || ''),
+                escapeCSV(comp.level || ''),
+                escapeCSV(comp.migration_path || ''),
+                escapeCSV(comp.location || ''),
+                escapeCSV(comp.reason || ''),
+                escapeCSV(comp.openshift_equivalent || ''),
+                escapeCSV((comp.recommendations || []).join('; '))
+            ];
+        });
+
+        // Combine header and rows
+        const csvContent = [
+            headers.join(','),
+            ...rows.map(row => row.join(','))
+        ].join('\n');
+
+        // Create download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const filename = `${workspace}-migration-tasks-${timestamp.replace(/:/g, '-')}.csv`;
+
+        if (navigator.msSaveBlob) {
+            // IE 10+
+            navigator.msSaveBlob(blob, filename);
+        } else {
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    }
+
+    /**
+     * Escape CSV field
+     */
+    function escapeCSV(field) {
+        if (field === null || field === undefined) {
+            return '';
+        }
+        const str = String(field);
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+            return '"' + str.replace(/"/g, '""') + '"';
+        }
+        return str;
     }
 
 })();

@@ -57,7 +57,7 @@ def workspace_with_gaps(temp_workspace):
         "workflow_name": "test-workflow",
         "summary": {
             "total_components": 4,
-            "overall_assessment": "REQUIRES_MANUAL_WORK",
+            "overall_assessment": "HAS_BLOCKING_ISSUES",
             "counts": {"SUPPORTED": 1, "PARTIAL": 2, "BLOCKED": 1, "MANUAL": 0},
             "has_blocking_issues": True,
             "requires_manual_work": True,
@@ -207,7 +207,7 @@ class TestBuildReportContext:
 
         assert "summary" in context
         assert context["summary"]["total_components"] == 4
-        assert context["summary"]["overall_assessment"] == "REQUIRES_MANUAL_WORK"
+        assert context["summary"]["overall_assessment"] == "HAS_BLOCKING_ISSUES"
         assert context["summary"]["has_blocking_issues"] is True
 
 
@@ -236,9 +236,9 @@ class TestGenerateHTMLReport:
         content = report_file.read_text()
         assert "summary-cards" in content
         assert "Supported" in content
-        assert "Review Required" in content
+        assert "Partial Translation" in content
         assert "Blocked" in content
-        assert "Manual" in content
+        assert "Custom" in content
 
     def test_report_shows_intent_when_available(self, workspace_with_intent):
         """Test that report displays intent when available."""

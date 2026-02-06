@@ -13,9 +13,10 @@ Analysis is performed offline without LLM assistance.
 
 import json
 import re
-import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
+
+from lxml import etree
 
 from ops_translate.exceptions import FileNotFoundError as OpsFileNotFoundError
 
@@ -214,18 +215,19 @@ def analyze_vrealize_workflow(workflow_file: Path) -> dict[str, Any]:
         raise OpsFileNotFoundError(str(workflow_file))
 
     try:
-        tree = ET.parse(workflow_file)
+        # Parse XML with lxml (supports line number tracking via sourceline)
+        tree = etree.parse(str(workflow_file))
         root = tree.getroot()
 
         # Extract namespace if present for proper XPath queries
         namespace = ""
         if root.tag.startswith("{"):
             namespace = root.tag.split("}")[0] + "}"
-    except ET.ParseError as e:
+    except etree.ParseError as e:
         raise ValueError(f"Invalid XML in {workflow_file}: {e}")
 
-    # Detect various external dependencies
-    nsx_ops = detect_nsx_operations(root, namespace)
+    # Detect various external dependencies (pass filename for location tracking)
+    nsx_ops = detect_nsx_operations(root, namespace, workflow_file)
     plugins = detect_custom_plugins(root, namespace)
     rest_calls = detect_rest_calls(root, namespace)
 
@@ -309,7 +311,9 @@ def calculate_detection_confidence(match_type: str, context: str, pattern: str =
     return min(confidence, 0.95)
 
 
-def detect_nsx_operations(root: ET.Element, namespace: str = "") -> dict[str, list[dict[str, Any]]]:
+def detect_nsx_operations(
+    root: etree.Element, namespace: str = "", workflow_file: Path | None = None
+) -> dict[str, list[dict[str, Any]]]:
     """
     Detect NSX-T operations in vRealize workflow.
 
@@ -321,6 +325,7 @@ def detect_nsx_operations(root: ET.Element, namespace: str = "") -> dict[str, li
     Args:
         root: Root element of parsed vRealize workflow XML
         namespace: XML namespace prefix (e.g., "{http://vmware.com/vco/workflow}")
+        workflow_file: Path to workflow file for location tracking (optional)
 
     Returns:
         Dictionary mapping NSX operation categories to detected instances.
@@ -331,7 +336,7 @@ def detect_nsx_operations(root: ET.Element, namespace: str = "") -> dict[str, li
             "segments": [
                 {
                     "name": "Create Web Tier Segment",
-                    "location": "workflow-item[@name='createSegment']",
+                    "location": "workflow.xml:32",
                     "confidence": 0.95,
                     "evidence": "Found API call: nsxClient.createSegment()"
                 }
@@ -339,6 +344,8 @@ def detect_nsx_operations(root: ET.Element, namespace: str = "") -> dict[str, li
             "firewall_rules": [...],
         }
     """
+    # Get filename for location reporting
+    filename = workflow_file.name if workflow_file else "workflow.xml"
     nsx_ops: dict[str, list[dict[str, Any]]] = {
         "segments": [],
         "firewall_rules": [],
@@ -419,9 +426,18 @@ def detect_nsx_operations(root: ET.Element, namespace: str = "") -> dict[str, li
                     while parent is not None and parent.tag != "workflow-item":
                         parent = parent.getparent() if hasattr(parent, "getparent") else None
 
+                    # Get location with line number (lxml provides sourceline)
                     location = "unknown"
-                    if parent is not None and "name" in parent.attrib:
-                        location = f"workflow-item[@name='{parent.attrib['name']}']"
+                    if parent is not None:
+                        line_num = parent.sourceline if hasattr(parent, "sourceline") else None
+                        if line_num:
+                            location = f"{filename}:{line_num}"
+                        elif "name" in parent.attrib:
+                            # Fallback to name if line number not available
+                            location = f"{filename}:{parent.attrib['name']}"
+                    elif hasattr(script_elem, "sourceline") and script_elem.sourceline:
+                        # Use script element's line if no parent
+                        location = f"{filename}:{script_elem.sourceline}"
 
                     # Determine match type for confidence calculation
                     if "nsxClient" in pattern:
@@ -440,7 +456,8 @@ def detect_nsx_operations(root: ET.Element, namespace: str = "") -> dict[str, li
                             "location": location,
                             "confidence": confidence,
                             "evidence": (
-                                f"Pattern match: {match.group()} in context: " f"...{context}..."
+                                f"Pattern match: {match.group()} in context ({location}): "
+                                f"...{context}..."
                             ),
                         }
                     )
@@ -471,13 +488,21 @@ def detect_nsx_operations(root: ET.Element, namespace: str = "") -> dict[str, li
                     # Calculate confidence (will be lower due to less context)
                     confidence = calculate_detection_confidence(match_type, context, pattern)
 
+                    # Get location with line number from lxml
+                    line_num = item.sourceline if hasattr(item, "sourceline") else None
+                    if line_num:
+                        location = f"{filename}:{line_num}"
+                    else:
+                        # Fallback to item name if line number not available
+                        location = f"{filename}:{item_name or 'unknown'}"
+
                     nsx_ops[category].append(
                         {
                             "name": item_name or item_type,
-                            "location": f"workflow-item[@name='{item_name}']",
+                            "location": location,
                             "confidence": confidence,
                             "evidence": (
-                                f"Workflow item name/type contains NSX keyword: "
+                                f"Workflow item name/type contains NSX keyword ({location}): "
                                 f"{item_name or item_type}"
                             ),
                         }
@@ -487,7 +512,7 @@ def detect_nsx_operations(root: ET.Element, namespace: str = "") -> dict[str, li
     return {k: v for k, v in nsx_ops.items() if v}
 
 
-def detect_custom_plugins(root: ET.Element, namespace: str = "") -> list[dict[str, Any]]:
+def detect_custom_plugins(root: etree.Element, namespace: str = "") -> list[dict[str, Any]]:
     """
     Detect custom vRealize plugin usage.
 
@@ -580,7 +605,7 @@ def detect_custom_plugins(root: ET.Element, namespace: str = "") -> list[dict[st
     return plugins
 
 
-def detect_rest_calls(root: ET.Element, namespace: str = "") -> list[dict[str, Any]]:
+def detect_rest_calls(root: etree.Element, namespace: str = "") -> list[dict[str, Any]]:
     """
     Detect external REST API calls with structured endpoint and method extraction.
 

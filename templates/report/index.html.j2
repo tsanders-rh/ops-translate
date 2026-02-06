@@ -23,37 +23,61 @@
         </div>
     </header>
 
+    <!-- Executive Summary -->
+    {% if executive_summary %}
+    <section class="executive-summary-section">
+        <div class="container">
+            <div class="executive-summary">
+                <div class="executive-icon">📋</div>
+                <p class="executive-text">{{ executive_summary }}</p>
+            </div>
+
+            <!-- Export Actions -->
+            <div class="export-actions">
+                <button id="export-pdf" class="export-btn export-pdf">
+                    <span class="export-icon">📄</span>
+                    <span>Export as PDF</span>
+                </button>
+                <button id="export-csv" class="export-btn export-csv">
+                    <span class="export-icon">📊</span>
+                    <span>Export Migration Tasks (CSV)</span>
+                </button>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
     <!-- At a Glance Summary Cards -->
     <section class="summary-section">
         <div class="container">
             <h2>Translation Status</h2>
             <div class="summary-cards">
-                <div class="card card-supported" data-filter="SUPPORTED">
+                <div class="card card-supported" data-filter="SUPPORTED" title="Components that can be fully automatically translated to OpenShift-native equivalents">
                     <div class="card-icon">✅</div>
                     <div class="card-content">
                         <div class="card-number">{{ summary.counts.SUPPORTED }}</div>
                         <div class="card-label">Supported</div>
                     </div>
                 </div>
-                <div class="card card-partial" data-filter="PARTIAL">
+                <div class="card card-partial" data-filter="PARTIAL" title="Core intent detected, but target platform mapping requires manual decisions">
                     <div class="card-icon">⚠️</div>
                     <div class="card-content">
                         <div class="card-number">{{ summary.counts.PARTIAL }}</div>
-                        <div class="card-label">Review Required</div>
+                        <div class="card-label">Partial Translation</div>
                     </div>
                 </div>
-                <div class="card card-blocked" data-filter="BLOCKED">
+                <div class="card card-blocked" data-filter="BLOCKED" title="Components that cannot be automatically translated and require manual implementation">
                     <div class="card-icon">🚫</div>
                     <div class="card-content">
                         <div class="card-number">{{ summary.counts.BLOCKED }}</div>
                         <div class="card-label">Blocked</div>
                     </div>
                 </div>
-                <div class="card card-manual" data-filter="MANUAL">
+                <div class="card card-manual" data-filter="MANUAL" title="Components with complex custom logic requiring specialist review and implementation">
                     <div class="card-icon">🔧</div>
                     <div class="card-content">
                         <div class="card-number">{{ summary.counts.MANUAL }}</div>
-                        <div class="card-label">Manual</div>
+                        <div class="card-label">Custom</div>
                     </div>
                 </div>
             </div>
@@ -63,8 +87,6 @@
                 <strong>Overall Assessment:</strong>
                 {% if summary.overall_assessment == "FULLY_TRANSLATABLE" %}
                 <span class="badge badge-success">Fully Translatable</span>
-                {% elif summary.overall_assessment == "REQUIRES_MANUAL_WORK" %}
-                <span class="badge badge-warning">Requires Manual Work</span>
                 {% elif summary.overall_assessment == "HAS_BLOCKING_ISSUES" %}
                 <span class="badge badge-error">Has Blocking Issues</span>
                 {% elif summary.overall_assessment == "MOSTLY_MANUAL" %}
@@ -72,6 +94,49 @@
                 {% else %}
                 <span class="badge badge-info">{{ summary.overall_assessment.replace('_', ' ').title() }}</span>
                 {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Migration Paths Quick Reference -->
+            {% if gaps and gaps.components %}
+            <div class="migration-paths-quick">
+                <h4>Migration Paths Used in This Report</h4>
+                <div class="paths-grid">
+                    <div class="path-item">
+                        <span class="badge badge-path-a">PATH A</span>
+                        <span class="path-desc">Native OpenShift replacement</span>
+                    </div>
+                    <div class="path-item">
+                        <span class="badge badge-path-b">PATH B</span>
+                        <span class="path-desc">Hybrid approach (keep existing)</span>
+                    </div>
+                    <div class="path-item">
+                        <span class="badge badge-path-c">PATH C</span>
+                        <span class="path-desc">Custom specialist implementation</span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Next Steps Callout -->
+            {% if summary.has_blocking_issues and gaps and gaps.components %}
+            <div class="next-steps-callout">
+                <h3>🚧 Blocking Issue Identified</h3>
+                {% for component in gaps.components %}
+                    {% if component.level == "BLOCKED" %}
+                    <div class="blocking-item">
+                        <p class="blocking-component"><strong>{{ component.name }}</strong> has no direct OpenShift equivalent.</p>
+                        <p class="blocking-guidance">
+                            {% if component.recommendations and component.recommendations|length > 0 %}
+                            {{ component.recommendations[0] }}
+                            {% else %}
+                            Migration will require custom implementation or architectural review.
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+                <p class="callout-footer">This prevents full automation but the problem is solvable with specialist input.</p>
             </div>
             {% endif %}
         </div>
@@ -87,8 +152,8 @@
                     <tr>
                         <th>File Name</th>
                         <th>Type</th>
-                        <th>Size</th>
-                        <th>Path</th>
+                        <th>Status</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -102,8 +167,20 @@
                             <span class="badge badge-vrealize">vRealize</span>
                             {% endif %}
                         </td>
-                        <td class="file-size">{{ (source.size / 1024) | round(1) }} KB</td>
-                        <td class="file-path">{{ source.path }}</td>
+                        <td>
+                            {% if source.status %}
+                            <span class="status-{{ source.status.lower() }}">{{ source.status_icon }} {{ source.status_text }}</span>
+                            {% else %}
+                            <span class="status-unknown">⚠ Needs Review</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if source.component_count and source.component_count > 0 %}
+                            <a href="#file-{{ source.name | replace('.', '-') }}" class="action-link">View Findings</a>
+                            {% else %}
+                            <span class="no-action">Review intent</span>
+                            {% endif %}
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -126,6 +203,12 @@
                     <p><strong>Name:</strong> {{ intent.intent.workflow_name }}</p>
                     {% if intent.intent.workload_type %}
                     <p><strong>Workload Type:</strong> {{ intent.intent.workload_type }}</p>
+                    {% endif %}
+                    {% if intent.intent.description %}
+                    <div class="workflow-description">
+                        <h4>Description</h4>
+                        <p>{{ intent.intent.description }}</p>
+                    </div>
                     {% endif %}
                 </div>
                 {% endif %}
@@ -240,6 +323,12 @@
         <div class="container">
             <h2>Gaps & Migration Guidance</h2>
 
+            <!-- Filter Indicator -->
+            <div id="filter-indicator" class="filter-indicator hidden">
+                <span class="filter-text">Filtering by: <strong id="filter-name"></strong></span>
+                <button id="clear-filter" class="clear-filter-btn">Clear Filter ✕</button>
+            </div>
+
             {% if summary.has_blocking_issues %}
             <div class="alert alert-error">
                 <strong>⚠️ Action Required:</strong> This workflow contains components that cannot be automatically translated. Manual implementation or architectural changes will be required.
@@ -254,9 +343,34 @@
             </div>
             {% endif %}
 
+            <!-- Migration Path Legend -->
+            <div class="migration-legend">
+                <h3>Migration Paths</h3>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <span class="badge badge-path-a">PATH A</span>
+                        <span class="legend-description">OpenShift-native replacement available - can be automatically translated</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="badge badge-path-b">PATH B</span>
+                        <span class="legend-description">Hybrid approach - keep existing system temporarily while planning migration</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="badge badge-path-c">PATH C</span>
+                        <span class="legend-description">Custom specialist implementation required - significant effort needed</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Component List -->
             <div class="gaps-list">
+                {% set ns = namespace(current_file=None) %}
                 {% for component in gaps.components %}
+                    {% set file_name = component.location.split(':')[0] if component.location else 'unknown' %}
+                    {% if ns.current_file != file_name %}
+                        {% set ns.current_file = file_name %}
+                        <div id="file-{{ file_name | replace('.', '-') }}" class="file-anchor"></div>
+                    {% endif %}
                 <div class="gap-item gap-{{ component.level.lower() }}" data-level="{{ component.level }}">
                     <div class="gap-header">
                         <h3>{{ component.name }}</h3>
@@ -264,6 +378,9 @@
                     </div>
                     <div class="gap-body">
                         <p><strong>Type:</strong> {{ component.component_type }}</p>
+                        {% if component.location %}
+                        <p><strong>Location:</strong> <code>{{ component.location }}</code></p>
+                        {% endif %}
                         <p><strong>Reason:</strong> {{ component.reason }}</p>
 
                         {% if component.openshift_equivalent %}
@@ -272,7 +389,18 @@
 
                         {% if component.migration_path %}
                         <p><strong>Migration Path:</strong>
+                            {% if component.migration_path == "PATH_A" %}
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            {% elif component.migration_path == "PATH_B" %}
+                            <span class="badge badge-path-b">PATH B</span>
+                            <span class="path-description">Hybrid approach - keep existing temporarily</span>
+                            {% elif component.migration_path == "PATH_C" %}
+                            <span class="badge badge-path-c">PATH C</span>
+                            <span class="path-description">Custom specialist implementation required</span>
+                            {% else %}
                             <span class="badge badge-path">{{ component.migration_path }}</span>
+                            {% endif %}
                         </p>
                         {% endif %}
 
@@ -299,6 +427,53 @@
             </div>
         </div>
     </section>
+    {% endif %}
+
+    <!-- Hybrid Retention Section -->
+    {% if gaps and gaps.components %}
+    {% set hybrid_components = [] %}
+    {% for component in gaps.components %}
+        {% if component.migration_path == "PATH_B" %}
+            {% set _ = hybrid_components.append(component) %}
+        {% endif %}
+    {% endfor %}
+    {% if hybrid_components %}
+    <section class="hybrid-section">
+        <div class="container">
+            <h2>What Stays in VMware / NSX (Hybrid Approach)</h2>
+
+            <div class="hybrid-intro">
+                <p><strong>Hybrid architectures are a valid migration strategy.</strong> The following components can remain in your existing VMware/NSX environment while you migrate workloads to OpenShift.</p>
+            </div>
+
+            <div class="hybrid-list">
+                {% for component in hybrid_components %}
+                <div class="hybrid-item">
+                    <div class="hybrid-header">
+                        <h3>{{ component.name }}</h3>
+                        <span class="badge badge-path-b">PATH B</span>
+                    </div>
+                    <p class="hybrid-reason">{{ component.reason }}</p>
+                    {% if component.recommendations %}
+                    <div class="hybrid-guidance">
+                        <strong>Hybrid Integration:</strong>
+                        <ul>
+                            {% for rec in component.recommendations[:3] %}
+                            <li>{{ rec }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="hybrid-footer">
+                <p>💡 <strong>Why Hybrid?</strong> Retaining proven infrastructure reduces migration risk and allows incremental modernization. You can evaluate OpenShift-native alternatives on your timeline.</p>
+            </div>
+        </div>
+    </section>
+    {% endif %}
     {% endif %}
 
     <!-- Generated Artifacts -->
@@ -373,7 +548,7 @@
             <details class="appendix-content">
                 <summary><h2>Assumptions</h2></summary>
                 <div class="markdown-content">
-                    {{ assumptions_md }}
+                    {{ assumptions_md | safe }}
                 </div>
             </details>
         </div>
@@ -386,8 +561,11 @@
         <div class="container">
             <details class="appendix-content">
                 <summary><h2>Conflicts</h2></summary>
+                <div class="conflicts-impact">
+                    <strong>Impact:</strong> These conflicts do not block migration, but must be resolved for clean parameter validation and artifact generation.
+                </div>
                 <div class="markdown-content alert-warning">
-                    {{ conflicts_md }}
+                    {{ conflicts_md | safe }}
                 </div>
             </details>
         </div>
@@ -402,6 +580,14 @@
         </div>
     </footer>
 
+    <script>
+        // Pass gaps data to JavaScript for CSV export
+        window.reportData = {
+            workspace: "{{ workspace.name }}",
+            timestamp: "{{ workspace.timestamp[:19] }}",
+            gaps: {{ gaps | tojson | safe if gaps else '{}' }}
+        };
+    </script>
     <script src="assets/app.js"></script>
 </body>
 </html>

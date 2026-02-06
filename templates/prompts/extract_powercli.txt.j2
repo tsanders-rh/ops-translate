@@ -11,13 +11,14 @@ Extract the operational intent from the PowerCLI script and produce a YAML docum
 ## Rules
 1. **Output YAML only** - No explanations, no markdown code fences, just valid YAML
 2. **Conform to schema** - Follow the intent.schema.json structure exactly
-3. **Extract parameters** - Identify all script parameters from the `param()` block
-4. **Detect branching** - Look for environment-specific logic (dev/prod, staging, etc.)
-5. **Identify governance** - Look for approval requirements, validation rules, quotas
-6. **Map resources** - Extract network, storage, compute specifications
-7. **Find metadata** - Identify tags, labels, custom attributes
-8. **Day 2 operations** - Infer what operations the script supports beyond provisioning
-9. **Document assumptions** - Add an `assumptions` section if you infer anything not explicitly stated
+3. **Generate description** - Write a 1-3 sentence human-readable summary of what the script does
+4. **Extract parameters** - Identify all script parameters from the `param()` block
+5. **Detect branching** - Look for environment-specific logic (dev/prod, staging, etc.)
+6. **Identify governance** - Look for approval requirements, validation rules, quotas
+7. **Map resources** - Extract network, storage, compute specifications
+8. **Find metadata** - Identify tags, labels, custom attributes
+9. **Day 2 operations** - Infer what operations the script supports beyond provisioning
+10. **Document assumptions** - Add an `assumptions` section ONLY if you make non-obvious inferences or decisions that aren't explicitly stated in the code. Omit this section if everything is directly extracted from the source.
 
 ## What to Look For
 
@@ -47,6 +48,19 @@ Extract the operational intent from the PowerCLI script and produce a YAML docum
 - Resource validation (CPU/memory limits)
 - Cost center or owner tracking
 
+### Assumptions (when to document)
+Only include an `assumptions` section when you make **significant inferences** such as:
+- **Inferring behavior** not explicitly coded (e.g., "Assumed day2_operations based on standard VM lifecycle patterns")
+- **Setting constraints** not defined in source (e.g., "CPU limit of 32 cores based on typical vSphere constraints - not specified in script")
+- **Interpreting ambiguous logic** (e.g., "Network selection logic unclear - assumed prod-network for prod environment")
+- **Filling gaps** in incomplete scripts (e.g., "Storage profile not specified - assumed standard datastore")
+
+**DO NOT include assumptions for:**
+- Simple extraction of parameters from param() blocks
+- Direct mapping of script commands to intent fields
+- Obvious naming conventions (e.g., converting VMName to vm_name)
+- The fact that intent was extracted by LLM (this is implicit in all outputs)
+
 ## Example Input
 ```powershell
 param(
@@ -74,6 +88,10 @@ sources:
 
 intent:
   workflow_name: provision_vm
+  description: |
+    Provisions a new virtual machine in vSphere with configurable CPU and memory.
+    Uses environment-based logic to select the appropriate network (prod-net or dev-net)
+    and applies environment tags for tracking.
   workload_type: virtual_machine
 
   inputs:
@@ -117,9 +135,8 @@ intent:
     supported: [start, stop]
 
 assumptions:
-  - Inferred day2_operations from New-VM command (start/stop are standard)
-  - No explicit approval workflow detected
-  - CPU and memory limits set based on common VMware constraints
+  - CPU max of 32 and memory max of 256GB set based on typical vSphere constraints (not specified in source)
+  - Day 2 operations (start/stop) inferred from VM provisioning context but not explicitly implemented in script
 ```
 
 ## Now Process This Script
