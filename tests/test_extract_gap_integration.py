@@ -191,13 +191,21 @@ class TestGapAnalysisIntegrationDuringExtract:
         assert (workspace.root / "intent/gaps.md").exists()
         assert (workspace.root / "intent/gaps.json").exists()
 
-        # Check that it's marked as fully translatable
+        # Check overall assessment
         import json
 
         gaps_json = (workspace.root / "intent/gaps.json").read_text()
         report = json.loads(gaps_json)
 
-        assert report["summary"]["overall_assessment"] == "FULLY_TRANSLATABLE"
+        # With the new classifiers, this workflow is detected as MOSTLY_AUTOMATIC
+        # because it has governance/approval logic that requires manual configuration
+        assert report["summary"]["overall_assessment"] in [
+            "FULLY_TRANSLATABLE",
+            "MOSTLY_AUTOMATIC",
+        ]
+
+        # Verify it has no blocking issues (this is the key point of "no dependencies")
+        assert not report["summary"]["has_blocking_issues"]
 
     def test_gap_analysis_error_handling(self, temp_workspace):
         """Test that gap analysis errors don't stop extraction."""

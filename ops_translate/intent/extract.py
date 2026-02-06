@@ -18,78 +18,207 @@ console = Console()
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 
 
-def _run_gap_analysis_for_vrealize(workspace: Workspace, xml_files: list[Path]) -> None:
+def _run_gap_analysis_for_vrealize(workspace: Workspace, intent_files: list[Path]) -> None:
     """
-    Run gap analysis on vRealize workflows and generate reports.
+    Run gap analysis on vRealize workflow intent files and generate reports.
 
-    Analyzes each vRealize workflow for translatability issues (NSX operations,
-    custom plugins, REST calls), classifies components, and generates gap reports.
-    Displays console warnings if blocking issues are found.
+    Analyzes extracted vRealize intent for translatability of basic VM operations,
+    classifies components, and generates gap reports.
 
     Args:
         workspace: Workspace instance
-        xml_files: List of vRealize workflow XML files that were processed
+        intent_files: List of vRealize intent YAML files that were created
 
     Side Effects:
         - Writes intent/gaps.md and intent/gaps.json
-        - Displays console warnings for blocking issues
+        - Displays console info about classification results
     """
-    if not xml_files:
+    if not intent_files:
         return
 
-    # Import gap analysis modules
-    from ops_translate.analyze.vrealize import analyze_vrealize_workflow
-    from ops_translate.intent.classify import classify_components
+    from ops_translate.intent.classifiers.vrealize import VrealizeClassifier
     from ops_translate.intent.gaps import generate_gap_reports
 
     console.print("\n[cyan]Running gap analysis on vRealize workflows...[/cyan]")
 
+    # Collect all classified components from intent files
     all_components = []
+    classifier = VrealizeClassifier()
 
-    # Analyze each workflow
-    for xml_file in xml_files:
+    for intent_file in intent_files:
         try:
-            console.print(f"  Analyzing: {xml_file.name}")
-            analysis = analyze_vrealize_workflow(xml_file)
+            console.print(f"  Analyzing: {intent_file.name}")
 
-            # Classify detected components
-            components = classify_components(analysis)
+            # Create analysis dict for classifier
+            analysis = {
+                "source_type": "vrealize",
+                "intent_file": str(intent_file),
+            }
+
+            # Classify the workflow
+            components = classifier.classify(analysis)
             all_components.extend(components)
 
-            # Show summary for this file if issues found
-            blocking = [c for c in components if c.is_blocking]
-            if blocking:
-                console.print(f"    [yellow]⚠ Found {len(blocking)} blocking issue(s)[/yellow]")
+            # Show summary for this file
+            if components:
+                supported = sum(1 for c in components if c.level.value == "SUPPORTED")
+                partial = sum(1 for c in components if c.level.value == "PARTIAL")
+                console.print(
+                    f"    [dim]✓ Classified {len(components)} components "
+                    f"({supported} supported, {partial} partial)[/dim]"
+                )
 
         except Exception as e:
-            console.print(f"    [yellow]Warning: Gap analysis failed: {e}[/yellow]")
+            console.print(f"    [yellow]Warning: Classification failed: {e}[/yellow]")
             continue
 
-    # Generate consolidated gap reports (always generate, even if no issues)
+    # Generate consolidated gap reports
     output_dir = workspace.root / "intent"
     generate_gap_reports(all_components, output_dir, "vRealize workflows")
     console.print(
         "[dim]  ✓ Gap analysis reports written to intent/gaps.md and intent/gaps.json[/dim]"
     )
 
-    # Display summary warnings
-    blocking_count = sum(1 for c in all_components if c.is_blocking)
+    # Display summary
+    supported_count = sum(1 for c in all_components if c.level.value == "SUPPORTED")
     partial_count = sum(1 for c in all_components if c.level.value == "PARTIAL")
+    blocking_count = sum(1 for c in all_components if c.is_blocking)
 
+    if supported_count > 0:
+        console.print(
+            f"\n[green]✓ {supported_count} vRealize operation(s) fully supported.[/green]"
+        )
+    if partial_count > 0:
+        console.print(
+            f"[yellow]ℹ {partial_count} operation(s) require manual configuration.[/yellow]"
+        )
     if blocking_count > 0:
         console.print(
-            f"\n[yellow]⚠ Warning: Found {blocking_count} component(s) that cannot be automatically translated.[/yellow]"
+            f"[yellow]⚠ {blocking_count} operation(s) cannot be automatically translated.[/yellow]"
         )
+
+
+def _run_gap_analysis_for_powercli(workspace: Workspace, intent_files: list[Path]) -> None:
+    """
+    Run gap analysis on PowerCLI intent files and generate reports.
+
+    Analyzes extracted PowerCLI intent for translatability of basic VM operations,
+    classifies components, and generates gap reports. Unlike vRealize analysis which
+    works with raw XML, this works with extracted intent YAML files.
+
+    Args:
+        workspace: Workspace instance
+        intent_files: List of PowerCLI intent YAML files that were created
+
+    Side Effects:
+        - Updates intent/gaps.md and intent/gaps.json (appends to vRealize gaps if present)
+        - Displays console info about classification results
+    """
+    if not intent_files:
+        return
+
+    from ops_translate.intent.classifiers.powercli import PowercliClassifier
+    from ops_translate.intent.gaps import generate_gap_reports
+
+    console.print("\n[cyan]Running gap analysis on PowerCLI scripts...[/cyan]")
+
+    all_components = []
+
+    # Analyze each intent file
+    for intent_file in intent_files:
+        try:
+            console.print(f"  Analyzing: {intent_file.stem}.ps1")
+
+            # Build analysis dict for PowerCLI classifier
+            analysis = {
+                "source_type": "powercli",
+                "intent_file": str(intent_file),
+            }
+
+            # Use PowerCLI classifier
+            classifier = PowercliClassifier()
+            components = classifier.classify(analysis)
+            all_components.extend(components)
+
+            # Show summary for this file
+            if components:
+                supported_count = sum(1 for c in components if c.level.value == "SUPPORTED")
+                partial_count = sum(1 for c in components if c.level.value == "PARTIAL")
+                console.print(
+                    f"    [dim]✓ Classified {len(components)} components "
+                    f"({supported_count} supported, {partial_count} partial)[/dim]"
+                )
+
+        except Exception as e:
+            console.print(f"    [yellow]Warning: Gap analysis failed: {e}[/yellow]")
+            continue
+
+    # Load existing vRealize gaps if they exist
+    existing_components = []
+    gaps_json = workspace.root / "intent/gaps.json"
+    if gaps_json.exists():
+        import json
+
+        with open(gaps_json) as f:
+            existing_data = json.load(f)
+            from ops_translate.intent.classify import (
+                ClassifiedComponent,
+                MigrationPath,
+                TranslatabilityLevel,
+            )
+
+            # Reconstruct ClassifiedComponent objects from JSON
+            for comp_dict in existing_data.get("components", []):
+                level = TranslatabilityLevel[comp_dict["level"]]
+                path = (
+                    MigrationPath[comp_dict["migration_path"]]
+                    if comp_dict.get("migration_path")
+                    else None
+                )
+                existing_components.append(
+                    ClassifiedComponent(
+                        name=comp_dict["name"],
+                        component_type=comp_dict["component_type"],
+                        level=level,
+                        reason=comp_dict["reason"],
+                        openshift_equivalent=comp_dict.get("openshift_equivalent"),
+                        migration_path=path,
+                        evidence=comp_dict.get("evidence"),
+                        location=comp_dict.get("location"),
+                        recommendations=comp_dict.get("recommendations", []),
+                    )
+                )
+
+    # Combine with PowerCLI components
+    combined_components = existing_components + all_components
+
+    # Generate consolidated gap reports
+    output_dir = workspace.root / "intent"
+    workflow_name = "PowerCLI and vRealize" if existing_components else "PowerCLI scripts"
+    generate_gap_reports(combined_components, output_dir, workflow_name)
+    console.print(
+        "[dim]  ✓ Gap analysis reports updated in intent/gaps.md and intent/gaps.json[/dim]"
+    )
+
+    # Display summary
+    supported_count = sum(1 for c in all_components if c.level.value == "SUPPORTED")
+    partial_count = sum(1 for c in all_components if c.level.value == "PARTIAL")
+    blocking_count = sum(1 for c in all_components if c.is_blocking)
+
+    if supported_count > 0:
         console.print(
-            "[yellow]  Review intent/gaps.md for migration guidance and manual implementation steps.[/yellow]\n"
+            f"\n[green]✓ {supported_count} PowerCLI operation(s) fully supported.[/green]"
         )
-    elif partial_count > 0:
+    if partial_count > 0:
         console.print(
-            f"\n[yellow]ℹ Found {partial_count} component(s) requiring manual configuration.[/yellow]"
+            f"[yellow]ℹ {partial_count} operation(s) require manual configuration.[/yellow]"
         )
-        console.print("[yellow]  Review intent/gaps.md for recommendations.[/yellow]\n")
-    else:
-        console.print("\n[green]✓ All workflows can be automatically translated.[/green]\n")
+    if blocking_count > 0:
+        console.print(
+            f"[yellow]⚠ {blocking_count} operation(s) cannot be automatically translated.[/yellow]"
+        )
+
+    console.print()
 
 
 def extract_all(workspace: Workspace):
@@ -173,6 +302,8 @@ def extract_all(workspace: Workspace):
 
     # Process PowerCLI files
     powercli_dir = workspace.root / "input/powercli"
+    powercli_intent_files = []  # Track intent files for gap analysis
+
     if powercli_dir.exists():
         ps_files = list(powercli_dir.glob("*.ps1"))
         for i, ps_file in enumerate(ps_files):
@@ -199,6 +330,9 @@ def extract_all(workspace: Workspace):
             assumptions.extend([f"- {a}" for a in file_assumptions])
             assumptions.append("")
 
+            # Track for gap analysis
+            powercli_intent_files.append(output_file)
+
             # Rate limiting: delay before next API call (except after last file)
             if i < len(ps_files) - 1:
                 delay = get_llm_rate_limit_delay()
@@ -206,7 +340,7 @@ def extract_all(workspace: Workspace):
 
     # Process vRealize files
     vrealize_dir = workspace.root / "input/vrealize"
-    vrealize_xml_files = []  # Track processed files for gap analysis
+    vrealize_intent_files = []  # Track intent files for gap analysis
 
     if vrealize_dir.exists():
         xml_files = list(vrealize_dir.glob("*.xml"))
@@ -234,8 +368,8 @@ def extract_all(workspace: Workspace):
             assumptions.extend([f"- {a}" for a in file_assumptions])
             assumptions.append("")
 
-            # Track for gap analysis
-            vrealize_xml_files.append(xml_file)
+            # Track intent file for gap analysis
+            vrealize_intent_files.append(output_file)
 
             # Rate limiting: delay before next API call (except after last file)
             if i < len(xml_files) - 1:
@@ -243,7 +377,11 @@ def extract_all(workspace: Workspace):
                 time.sleep(delay)
 
         # Run gap analysis on vRealize workflows
-        _run_gap_analysis_for_vrealize(workspace, vrealize_xml_files)
+        _run_gap_analysis_for_vrealize(workspace, vrealize_intent_files)
+
+    # Run gap analysis on PowerCLI scripts
+    if powercli_intent_files:
+        _run_gap_analysis_for_powercli(workspace, powercli_intent_files)
 
     # Write assumptions
     assumptions_file = workspace.root / "intent/assumptions.md"

@@ -312,7 +312,7 @@ def calculate_detection_confidence(match_type: str, context: str, pattern: str =
 
 
 def detect_nsx_operations(
-    root: etree.Element, namespace: str = "", workflow_file: Path | None = None
+    root: etree._Element, namespace: str = "", workflow_file: Path | None = None
 ) -> dict[str, list[dict[str, Any]]]:
     """
     Detect NSX-T operations in vRealize workflow.
@@ -512,7 +512,7 @@ def detect_nsx_operations(
     return {k: v for k, v in nsx_ops.items() if v}
 
 
-def detect_custom_plugins(root: etree.Element, namespace: str = "") -> list[dict[str, Any]]:
+def detect_custom_plugins(root: etree._Element, namespace: str = "") -> list[dict[str, Any]]:
     """
     Detect custom vRealize plugin usage.
 
@@ -605,7 +605,7 @@ def detect_custom_plugins(root: etree.Element, namespace: str = "") -> list[dict
     return plugins
 
 
-def detect_rest_calls(root: etree.Element, namespace: str = "") -> list[dict[str, Any]]:
+def detect_rest_calls(root: etree._Element, namespace: str = "") -> list[dict[str, Any]]:
     """
     Detect external REST API calls with structured endpoint and method extraction.
 
