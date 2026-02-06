@@ -254,6 +254,25 @@
             </div>
             {% endif %}
 
+            <!-- Migration Path Legend -->
+            <div class="migration-legend">
+                <h3>Migration Paths</h3>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <span class="badge badge-path-a">PATH A</span>
+                        <span class="legend-description">OpenShift-native replacement available - can be automatically translated</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="badge badge-path-b">PATH B</span>
+                        <span class="legend-description">Hybrid approach - keep existing system temporarily while planning migration</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="badge badge-path-c">PATH C</span>
+                        <span class="legend-description">Custom specialist implementation required - significant effort needed</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Component List -->
             <div class="gaps-list">
                 {% for component in gaps.components %}
@@ -272,7 +291,18 @@
 
                         {% if component.migration_path %}
                         <p><strong>Migration Path:</strong>
+                            {% if component.migration_path == "PATH_A" %}
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            {% elif component.migration_path == "PATH_B" %}
+                            <span class="badge badge-path-b">PATH B</span>
+                            <span class="path-description">Hybrid approach - keep existing temporarily</span>
+                            {% elif component.migration_path == "PATH_C" %}
+                            <span class="badge badge-path-c">PATH C</span>
+                            <span class="path-description">Custom specialist implementation required</span>
+                            {% else %}
                             <span class="badge badge-path">{{ component.migration_path }}</span>
+                            {% endif %}
                         </p>
                         {% endif %}
 
