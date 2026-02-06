@@ -48,7 +48,7 @@ class TestDetectNSXOperations:
         workflow_file = FIXTURES_DIR / "nsx-medium.xml"
 
         root, namespace = parse_workflow(workflow_file)
-        
+
         nsx_ops = detect_nsx_operations(root, namespace)
 
         assert "firewall_rules" in nsx_ops
@@ -63,7 +63,7 @@ class TestDetectNSXOperations:
         workflow_file = FIXTURES_DIR / "nsx-medium.xml"
 
         root, namespace = parse_workflow(workflow_file)
-        
+
         nsx_ops = detect_nsx_operations(root, namespace)
 
         assert "security_groups" in nsx_ops
@@ -78,7 +78,7 @@ class TestDetectNSXOperations:
         workflow_file = FIXTURES_DIR / "nsx-heavy.xml"
 
         root, namespace = parse_workflow(workflow_file)
-        
+
         nsx_ops = detect_nsx_operations(root, namespace)
 
         # Should detect multiple categories
@@ -92,7 +92,7 @@ class TestDetectNSXOperations:
         workflow_file = FIXTURES_DIR / "no-dependencies.xml"
 
         root, namespace = parse_workflow(workflow_file)
-        
+
         nsx_ops = detect_nsx_operations(root, namespace)
 
         # Should return empty dict or dict with empty lists
@@ -135,7 +135,7 @@ class TestDetectCustomPlugins:
         workflow_file = FIXTURES_DIR / "no-dependencies.xml"
 
         root, namespace = parse_workflow(workflow_file)
-        
+
         plugins = detect_custom_plugins(root, namespace)
 
         # Should return empty list
@@ -150,7 +150,7 @@ class TestDetectRestCalls:
         workflow_file = FIXTURES_DIR / "rest-api.xml"
 
         root, namespace = parse_workflow(workflow_file)
-        
+
         rest_calls = detect_rest_calls(root, namespace)
 
         # Should detect GET, POST, PUT, DELETE
@@ -164,7 +164,7 @@ class TestDetectRestCalls:
         workflow_file = FIXTURES_DIR / "rest-api.xml"
 
         root, namespace = parse_workflow(workflow_file)
-        
+
         rest_calls = detect_rest_calls(root, namespace)
 
         # Should detect fetch() calls
@@ -176,7 +176,7 @@ class TestDetectRestCalls:
         workflow_file = FIXTURES_DIR / "rest-api.xml"
 
         root, namespace = parse_workflow(workflow_file)
-        
+
         rest_calls = detect_rest_calls(root, namespace)
 
         # Should detect XMLHttpRequest
@@ -188,7 +188,7 @@ class TestDetectRestCalls:
         workflow_file = FIXTURES_DIR / "rest-api.xml"
 
         root, namespace = parse_workflow(workflow_file)
-        
+
         rest_calls = detect_rest_calls(root, namespace)
 
         for call in rest_calls:
@@ -203,7 +203,7 @@ class TestDetectRestCalls:
         workflow_file = FIXTURES_DIR / "no-dependencies.xml"
 
         root, namespace = parse_workflow(workflow_file)
-        
+
         rest_calls = detect_rest_calls(root, namespace)
 
         assert len(rest_calls) == 0

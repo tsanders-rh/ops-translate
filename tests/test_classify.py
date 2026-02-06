@@ -179,20 +179,17 @@ class TestClassifiedComponent:
 
         # PARTIAL, BLOCKED, MANUAL all require manual work
         partial = ClassifiedComponent(
-            name="Test", component_type="test",
-            level=TranslatabilityLevel.PARTIAL, reason="Partial"
+            name="Test", component_type="test", level=TranslatabilityLevel.PARTIAL, reason="Partial"
         )
         assert partial.requires_manual_work
 
         blocked = ClassifiedComponent(
-            name="Test", component_type="test",
-            level=TranslatabilityLevel.BLOCKED, reason="Blocked"
+            name="Test", component_type="test", level=TranslatabilityLevel.BLOCKED, reason="Blocked"
         )
         assert blocked.requires_manual_work
 
         manual = ClassifiedComponent(
-            name="Test", component_type="test",
-            level=TranslatabilityLevel.MANUAL, reason="Manual"
+            name="Test", component_type="test", level=TranslatabilityLevel.MANUAL, reason="Manual"
         )
         assert manual.requires_manual_work
 
@@ -200,8 +197,7 @@ class TestClassifiedComponent:
         """Test is_blocking property."""
         # SUPPORTED and PARTIAL are not blocking
         supported = ClassifiedComponent(
-            name="Test", component_type="test",
-            level=TranslatabilityLevel.SUPPORTED, reason="OK"
+            name="Test", component_type="test", level=TranslatabilityLevel.SUPPORTED, reason="OK"
         )
         assert not supported.is_blocking
 
@@ -213,14 +209,12 @@ class TestClassifiedComponent:
 
         # BLOCKED and MANUAL are blocking
         blocked = ClassifiedComponent(
-            name="Test", component_type="test",
-            level=TranslatabilityLevel.BLOCKED, reason="Blocked"
+            name="Test", component_type="test", level=TranslatabilityLevel.BLOCKED, reason="Blocked"
         )
         assert blocked.is_blocking
 
         manual = ClassifiedComponent(
-            name="Test", component_type="test",
-            level=TranslatabilityLevel.MANUAL, reason="Manual"
+            name="Test", component_type="test", level=TranslatabilityLevel.MANUAL, reason="Manual"
         )
         assert manual.is_blocking
 
@@ -388,21 +382,17 @@ class TestGenerateClassificationSummary:
     def test_summary_counts(self):
         """Test that summary counts components correctly."""
         components = [
+            ClassifiedComponent("c1", "t1", TranslatabilityLevel.SUPPORTED, "OK"),
+            ClassifiedComponent("c2", "t2", TranslatabilityLevel.SUPPORTED, "OK"),
             ClassifiedComponent(
-                "c1", "t1", TranslatabilityLevel.SUPPORTED, "OK"
+                "c3",
+                "t3",
+                TranslatabilityLevel.PARTIAL,
+                "Partial",
+                migration_path=MigrationPath.PATH_A,
             ),
-            ClassifiedComponent(
-                "c2", "t2", TranslatabilityLevel.SUPPORTED, "OK"
-            ),
-            ClassifiedComponent(
-                "c3", "t3", TranslatabilityLevel.PARTIAL, "Partial", migration_path=MigrationPath.PATH_A
-            ),
-            ClassifiedComponent(
-                "c4", "t4", TranslatabilityLevel.BLOCKED, "Blocked"
-            ),
-            ClassifiedComponent(
-                "c5", "t5", TranslatabilityLevel.MANUAL, "Manual"
-            ),
+            ClassifiedComponent("c4", "t4", TranslatabilityLevel.BLOCKED, "Blocked"),
+            ClassifiedComponent("c5", "t5", TranslatabilityLevel.MANUAL, "Manual"),
         ]
 
         summary = generate_classification_summary(components)
@@ -458,20 +448,20 @@ class TestGenerateClassificationSummary:
         """Test that migration paths are counted correctly."""
         components = [
             ClassifiedComponent(
-                "c1", "t1", TranslatabilityLevel.PARTIAL, "OK",
-                migration_path=MigrationPath.PATH_A
+                "c1", "t1", TranslatabilityLevel.PARTIAL, "OK", migration_path=MigrationPath.PATH_A
             ),
             ClassifiedComponent(
-                "c2", "t2", TranslatabilityLevel.PARTIAL, "OK",
-                migration_path=MigrationPath.PATH_A
+                "c2", "t2", TranslatabilityLevel.PARTIAL, "OK", migration_path=MigrationPath.PATH_A
             ),
             ClassifiedComponent(
-                "c3", "t3", TranslatabilityLevel.BLOCKED, "Blocked",
-                migration_path=MigrationPath.PATH_B
+                "c3",
+                "t3",
+                TranslatabilityLevel.BLOCKED,
+                "Blocked",
+                migration_path=MigrationPath.PATH_B,
             ),
             ClassifiedComponent(
-                "c4", "t4", TranslatabilityLevel.SUPPORTED, "OK",
-                migration_path=None
+                "c4", "t4", TranslatabilityLevel.SUPPORTED, "OK", migration_path=None
             ),
         ]
 

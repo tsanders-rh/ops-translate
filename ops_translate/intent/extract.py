@@ -59,9 +59,7 @@ def _run_gap_analysis_for_vrealize(workspace: Workspace, xml_files: list[Path]) 
             # Show summary for this file if issues found
             blocking = [c for c in components if c.is_blocking]
             if blocking:
-                console.print(
-                    f"    [yellow]⚠ Found {len(blocking)} blocking issue(s)[/yellow]"
-                )
+                console.print(f"    [yellow]⚠ Found {len(blocking)} blocking issue(s)[/yellow]")
 
         except Exception as e:
             console.print(f"    [yellow]Warning: Gap analysis failed: {e}[/yellow]")
@@ -70,15 +68,13 @@ def _run_gap_analysis_for_vrealize(workspace: Workspace, xml_files: list[Path]) 
     # Generate consolidated gap reports (always generate, even if no issues)
     output_dir = workspace.root / "intent"
     generate_gap_reports(all_components, output_dir, "vRealize workflows")
-    console.print("[dim]  ✓ Gap analysis reports written to intent/gaps.md and intent/gaps.json[/dim]")
+    console.print(
+        "[dim]  ✓ Gap analysis reports written to intent/gaps.md and intent/gaps.json[/dim]"
+    )
 
     # Display summary warnings
     blocking_count = sum(1 for c in all_components if c.is_blocking)
-    partial_count = sum(
-        1
-        for c in all_components
-        if c.level.value == "PARTIAL"
-    )
+    partial_count = sum(1 for c in all_components if c.level.value == "PARTIAL")
 
     if blocking_count > 0:
         console.print(
@@ -91,13 +87,9 @@ def _run_gap_analysis_for_vrealize(workspace: Workspace, xml_files: list[Path]) 
         console.print(
             f"\n[yellow]ℹ Found {partial_count} component(s) requiring manual configuration.[/yellow]"
         )
-        console.print(
-            "[yellow]  Review intent/gaps.md for recommendations.[/yellow]\n"
-        )
+        console.print("[yellow]  Review intent/gaps.md for recommendations.[/yellow]\n")
     else:
-        console.print(
-            "\n[green]✓ All workflows can be automatically translated.[/green]\n"
-        )
+        console.print("\n[green]✓ All workflows can be automatically translated.[/green]\n")
 
 
 def extract_all(workspace: Workspace):

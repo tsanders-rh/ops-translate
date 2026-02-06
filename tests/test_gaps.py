@@ -419,12 +419,8 @@ class TestPrintGapSummary:
         mock_console_class.return_value = mock_console
 
         components = [
-            ClassifiedComponent(
-                "c1", "t1", TranslatabilityLevel.SUPPORTED, "OK"
-            ),
-            ClassifiedComponent(
-                "c2", "t2", TranslatabilityLevel.PARTIAL, "Partial"
-            ),
+            ClassifiedComponent("c1", "t1", TranslatabilityLevel.SUPPORTED, "OK"),
+            ClassifiedComponent("c2", "t2", TranslatabilityLevel.PARTIAL, "Partial"),
         ]
 
         print_gap_summary(components)
@@ -439,9 +435,7 @@ class TestPrintGapSummary:
         mock_console_class.return_value = mock_console
 
         components = [
-            ClassifiedComponent(
-                "blocker", "type", TranslatabilityLevel.BLOCKED, "Blocked"
-            )
+            ClassifiedComponent("blocker", "type", TranslatabilityLevel.BLOCKED, "Blocked")
         ]
 
         print_gap_summary(components)
@@ -457,16 +451,11 @@ class TestPrintGapSummary:
         mock_console_class.return_value = mock_console
 
         components = [
-            ClassifiedComponent(
-                "supported", "type", TranslatabilityLevel.SUPPORTED, "OK"
-            )
+            ClassifiedComponent("supported", "type", TranslatabilityLevel.SUPPORTED, "OK")
         ]
 
         print_gap_summary(components)
 
         # Check that success message was printed
         print_calls = [str(call) for call in mock_console.print.call_args_list]
-        assert any(
-            "fully automatically translated" in str(call).lower()
-            for call in print_calls
-        )
+        assert any("fully automatically translated" in str(call).lower() for call in print_calls)

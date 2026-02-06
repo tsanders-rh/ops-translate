@@ -67,9 +67,7 @@ class TestGapAnalysisIntegrationDuringExtract:
         assert "Gap Analysis Report" in gaps_md
         assert "vRealize workflows" in gaps_md
 
-    def test_gap_reports_contain_nsx_components(
-        self, temp_workspace, nsx_workflow_fixture
-    ):
+    def test_gap_reports_contain_nsx_components(self, temp_workspace, nsx_workflow_fixture):
         """Test that gap reports identify NSX components."""
         workspace = temp_workspace
 
@@ -86,14 +84,16 @@ class TestGapAnalysisIntegrationDuringExtract:
         gaps_md = (workspace.root / "intent/gaps.md").read_text()
 
         # Should mention NSX components
-        assert "nsx" in gaps_md.lower() or "segment" in gaps_md.lower() or "firewall" in gaps_md.lower()
+        assert (
+            "nsx" in gaps_md.lower()
+            or "segment" in gaps_md.lower()
+            or "firewall" in gaps_md.lower()
+        )
 
         # Should have component analysis
         assert "Component Analysis" in gaps_md or "Components" in gaps_md
 
-    def test_gaps_json_is_valid_and_machine_readable(
-        self, temp_workspace, nsx_workflow_fixture
-    ):
+    def test_gaps_json_is_valid_and_machine_readable(self, temp_workspace, nsx_workflow_fixture):
         """Test that gaps.json is valid JSON with expected structure."""
         import json
 
@@ -154,9 +154,7 @@ class TestGapAnalysisIntegrationDuringExtract:
         input_dir.mkdir(parents=True, exist_ok=True)
 
         shutil.copy2(nsx_workflow_fixture, input_dir / nsx_workflow_fixture.name)
-        shutil.copy2(
-            no_deps_workflow_fixture, input_dir / no_deps_workflow_fixture.name
-        )
+        shutil.copy2(no_deps_workflow_fixture, input_dir / no_deps_workflow_fixture.name)
 
         # Run extraction
         extract_all(workspace)
@@ -225,9 +223,7 @@ class TestGapAnalysisIntegrationDuringExtract:
         # Intent file should still be created (with placeholder)
         assert (workspace.root / "intent/invalid.intent.yaml").exists()
 
-    def test_intent_files_created_before_gap_analysis(
-        self, temp_workspace, nsx_workflow_fixture
-    ):
+    def test_intent_files_created_before_gap_analysis(self, temp_workspace, nsx_workflow_fixture):
         """Test that intent files are created even if gap analysis fails."""
         workspace = temp_workspace
 

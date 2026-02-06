@@ -45,9 +45,7 @@ class TestGapAnalysisIntegration:
         # Step 3: Generate gap reports
         with tempfile.TemporaryDirectory() as tmpdir:
             output_dir = Path(tmpdir)
-            generate_gap_reports(
-                components, output_dir, workflow_file.stem
-            )
+            generate_gap_reports(components, output_dir, workflow_file.stem)
 
             # Verify reports were created
             assert (output_dir / "gaps.md").exists()
@@ -154,14 +152,12 @@ class TestGapAnalysisIntegration:
 
         # Filter for components that should have recommendations
         partial_or_blocked = [
-            c for c in components
-            if c.level.value in ("PARTIAL", "BLOCKED", "MANUAL")
+            c for c in components if c.level.value in ("PARTIAL", "BLOCKED", "MANUAL")
         ]
 
         # At least some should have recommendations
         has_recommendations = any(
-            c.recommendations and len(c.recommendations) > 0
-            for c in partial_or_blocked
+            c.recommendations and len(c.recommendations) > 0 for c in partial_or_blocked
         )
         assert has_recommendations
 
@@ -172,10 +168,7 @@ class TestGapAnalysisIntegration:
         components = classify_components(analysis)
 
         # Filter for components that need migration paths
-        needs_path = [
-            c for c in components
-            if c.level.value in ("PARTIAL", "BLOCKED", "MANUAL")
-        ]
+        needs_path = [c for c in components if c.level.value in ("PARTIAL", "BLOCKED", "MANUAL")]
 
         # All should have migration paths assigned
         for component in needs_path:
@@ -241,9 +234,7 @@ class TestGapAnalysisIntegration:
         analysis = analyze_vrealize_workflow(workflow_file)
 
         # Verify comprehensive NSX detection
-        total_nsx_ops = sum(
-            len(ops) for ops in analysis["nsx_operations"].values()
-        )
+        total_nsx_ops = sum(len(ops) for ops in analysis["nsx_operations"].values())
         assert total_nsx_ops >= 10
 
         # Verify multiple operation categories
