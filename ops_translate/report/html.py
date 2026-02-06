@@ -175,8 +175,7 @@ def _generate_executive_summary(summary: dict[str, Any], gaps_data: dict[str, An
     # Generate summary based on assessment
     if assessment == "FULLY_TRANSLATABLE":
         return (
-            "This workflow can be fully automatically migrated to "
-            "OpenShift-native equivalents."
+            "This workflow can be fully automatically migrated to " "OpenShift-native equivalents."
         )
 
     elif has_blocking and blocked_components:
