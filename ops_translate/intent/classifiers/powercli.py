@@ -282,6 +282,71 @@ class PowercliClassifier(BaseClassifier):
                     )
                 )
 
+        # Check for resource pools
+        if infrastructure.get("resource_pool") or intent.get("resource_pool"):
+            components.append(
+                ClassifiedComponent(
+                    name="Resource Pool Mapping",
+                    component_type="resource_pool",
+                    level=TranslatabilityLevel.SUPPORTED,
+                    reason="Resource pools map to Kubernetes namespaces",
+                    openshift_equivalent="Namespace",
+                    migration_path=MigrationPath.PATH_A,
+                    location=location,
+                    recommendations=[
+                        "Map resource pool to target namespace",
+                        "Configure ResourceQuota for resource limits",
+                        "Use LimitRange for default pod constraints",
+                    ],
+                )
+            )
+
+        # Check for tags and metadata
+        if intent.get("metadata"):
+            metadata = intent["metadata"]
+            has_tags = metadata.get("tags") or metadata.get("labels")
+
+            if has_tags:
+                components.append(
+                    ClassifiedComponent(
+                        name="Tags and Metadata",
+                        component_type="metadata",
+                        level=TranslatabilityLevel.SUPPORTED,
+                        reason="Tags and custom attributes map to Kubernetes labels",
+                        openshift_equivalent="metadata.labels",
+                        migration_path=MigrationPath.PATH_A,
+                        location=location,
+                        recommendations=[
+                            "Map vSphere tags to Kubernetes labels",
+                            "Convert custom attributes to annotations",
+                            "Follow label naming conventions (kubernetes.io/*)",
+                        ],
+                    )
+                )
+
+        # Check for guest customization
+        if intent.get("guest_customization") or intent.get("customization"):
+            components.append(
+                ClassifiedComponent(
+                    name="Guest Customization",
+                    component_type="guest_customization",
+                    level=TranslatabilityLevel.PARTIAL,
+                    reason=(
+                        "Guest customization requires cloud-init or "
+                        "similar initialization mechanism"
+                    ),
+                    openshift_equivalent="cloud-init via Secret or ConfigMap",
+                    migration_path=MigrationPath.PATH_B,
+                    location=location,
+                    recommendations=[
+                        "Convert customization spec to cloud-init user-data",
+                        "Store cloud-init config in Secret or ConfigMap",
+                        "Use cloudInitNoCloud volume for injection",
+                        "May require guest OS to support cloud-init",
+                    ],
+                )
+            )
+
         return components
 
     def _is_simple_network(self, network: dict[str, Any]) -> bool:
