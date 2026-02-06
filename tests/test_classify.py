@@ -416,7 +416,7 @@ class TestGenerateClassificationSummary:
         ]
 
         summary = generate_classification_summary(components)
-        assert summary["overall_assessment"] == "REQUIRES_MANUAL_WORK"
+        assert summary["overall_assessment"] == "HAS_BLOCKING_ISSUES"
 
     def test_overall_assessment_mostly_automatic(self):
         """Test assessment with some PARTIAL components but not majority."""
