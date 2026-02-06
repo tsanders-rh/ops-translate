@@ -28,32 +28,32 @@
         <div class="container">
             <h2>Translation Status</h2>
             <div class="summary-cards">
-                <div class="card card-supported" data-filter="SUPPORTED">
+                <div class="card card-supported" data-filter="SUPPORTED" title="Components that can be fully automatically translated to OpenShift-native equivalents">
                     <div class="card-icon">✅</div>
                     <div class="card-content">
                         <div class="card-number">{{ summary.counts.SUPPORTED }}</div>
                         <div class="card-label">Supported</div>
                     </div>
                 </div>
-                <div class="card card-partial" data-filter="PARTIAL">
+                <div class="card card-partial" data-filter="PARTIAL" title="Components that can be partially translated but require manual configuration or review">
                     <div class="card-icon">⚠️</div>
                     <div class="card-content">
                         <div class="card-number">{{ summary.counts.PARTIAL }}</div>
                         <div class="card-label">Review Required</div>
                     </div>
                 </div>
-                <div class="card card-blocked" data-filter="BLOCKED">
+                <div class="card card-blocked" data-filter="BLOCKED" title="Components that cannot be automatically translated and require manual implementation">
                     <div class="card-icon">🚫</div>
                     <div class="card-content">
                         <div class="card-number">{{ summary.counts.BLOCKED }}</div>
                         <div class="card-label">Blocked</div>
                     </div>
                 </div>
-                <div class="card card-manual" data-filter="MANUAL">
+                <div class="card card-manual" data-filter="MANUAL" title="Components with complex custom logic requiring specialist review and implementation">
                     <div class="card-icon">🔧</div>
                     <div class="card-content">
                         <div class="card-number">{{ summary.counts.MANUAL }}</div>
-                        <div class="card-label">Manual</div>
+                        <div class="card-label">Custom</div>
                     </div>
                 </div>
             </div>
@@ -63,8 +63,6 @@
                 <strong>Overall Assessment:</strong>
                 {% if summary.overall_assessment == "FULLY_TRANSLATABLE" %}
                 <span class="badge badge-success">Fully Translatable</span>
-                {% elif summary.overall_assessment == "REQUIRES_MANUAL_WORK" %}
-                <span class="badge badge-warning">Requires Manual Work</span>
                 {% elif summary.overall_assessment == "HAS_BLOCKING_ISSUES" %}
                 <span class="badge badge-error">Has Blocking Issues</span>
                 {% elif summary.overall_assessment == "MOSTLY_MANUAL" %}
@@ -87,8 +85,8 @@
                     <tr>
                         <th>File Name</th>
                         <th>Type</th>
-                        <th>Size</th>
-                        <th>Path</th>
+                        <th>Status</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -102,8 +100,20 @@
                             <span class="badge badge-vrealize">vRealize</span>
                             {% endif %}
                         </td>
-                        <td class="file-size">{{ (source.size / 1024) | round(1) }} KB</td>
-                        <td class="file-path">{{ source.path }}</td>
+                        <td>
+                            {% if source.status %}
+                            <span class="status-{{ source.status.lower() }}">{{ source.status_icon }} {{ source.status_text }}</span>
+                            {% else %}
+                            <span class="status-unknown">⚠ Needs Review</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if source.component_count and source.component_count > 0 %}
+                            <a href="#file-{{ source.name | replace('.', '-') }}" class="action-link">View Findings</a>
+                            {% else %}
+                            <span class="muted">No findings</span>
+                            {% endif %}
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -246,6 +256,12 @@
         <div class="container">
             <h2>Gaps & Migration Guidance</h2>
 
+            <!-- Filter Indicator -->
+            <div id="filter-indicator" class="filter-indicator hidden">
+                <span class="filter-text">Filtering by: <strong id="filter-name"></strong></span>
+                <button id="clear-filter" class="clear-filter-btn">Clear Filter ✕</button>
+            </div>
+
             {% if summary.has_blocking_issues %}
             <div class="alert alert-error">
                 <strong>⚠️ Action Required:</strong> This workflow contains components that cannot be automatically translated. Manual implementation or architectural changes will be required.
@@ -281,7 +297,13 @@
 
             <!-- Component List -->
             <div class="gaps-list">
+                {% set ns = namespace(current_file=None) %}
                 {% for component in gaps.components %}
+                    {% set file_name = component.location.split(':')[0] if component.location else 'unknown' %}
+                    {% if ns.current_file != file_name %}
+                        {% set ns.current_file = file_name %}
+                        <div id="file-{{ file_name | replace('.', '-') }}" class="file-anchor"></div>
+                    {% endif %}
                 <div class="gap-item gap-{{ component.level.lower() }}" data-level="{{ component.level }}">
                     <div class="gap-header">
                         <h3>{{ component.name }}</h3>
@@ -412,7 +434,7 @@
             <details class="appendix-content">
                 <summary><h2>Assumptions</h2></summary>
                 <div class="markdown-content">
-                    {{ assumptions_md }}
+                    {{ assumptions_md | safe }}
                 </div>
             </details>
         </div>
@@ -426,7 +448,7 @@
             <details class="appendix-content">
                 <summary><h2>Conflicts</h2></summary>
                 <div class="markdown-content alert-warning">
-                    {{ conflicts_md }}
+                    {{ conflicts_md | safe }}
                 </div>
             </details>
         </div>

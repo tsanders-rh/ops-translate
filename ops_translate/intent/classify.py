@@ -331,7 +331,7 @@ def generate_classification_summary(components: list[ClassifiedComponent]) -> di
     if total == 0:
         assessment = "FULLY_TRANSLATABLE"
     elif counts["BLOCKED"] > 0 or counts["MANUAL"] > 0:
-        assessment = "REQUIRES_MANUAL_WORK"
+        assessment = "HAS_BLOCKING_ISSUES"
     elif counts["PARTIAL"] > total * 0.5:
         assessment = "MOSTLY_MANUAL"
     elif counts["PARTIAL"] > 0:

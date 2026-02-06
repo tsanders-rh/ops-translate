@@ -3,6 +3,7 @@
 :root {
     /* Red Hat colors */
     --rh-red: #ee0000;
+    --rh-blue: #0066cc;
     --rh-dark: #1a1a1a;
     --rh-gray-dark: #3c3f42;
     --rh-gray: #6a6e73;
@@ -34,7 +35,7 @@ body {
     font-size: 16px;
     line-height: 1.6;
     color: var(--rh-gray-dark);
-    background-color: #f5f5f5;
+    background-color: #ffffff;
 }
 
 .container {
@@ -103,6 +104,28 @@ body {
 .card:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card.active-filter {
+    border-width: 3px;
+    box-shadow: 0 0 0 3px rgba(238, 0, 0, 0.2);
+    transform: scale(1.05);
+}
+
+.card-supported.active-filter {
+    box-shadow: 0 0 0 3px rgba(62, 134, 53, 0.3);
+}
+
+.card-partial.active-filter {
+    box-shadow: 0 0 0 3px rgba(240, 171, 0, 0.3);
+}
+
+.card-blocked.active-filter {
+    box-shadow: 0 0 0 3px rgba(201, 25, 11, 0.3);
+}
+
+.card-manual.active-filter {
+    box-shadow: 0 0 0 3px rgba(138, 141, 144, 0.3);
 }
 
 .card-supported {
@@ -323,6 +346,52 @@ section h3 {
     font-size: 0.9rem;
 }
 
+/* Status Column */
+.status-supported {
+    color: var(--color-supported);
+    font-weight: 600;
+}
+
+.status-needs_review {
+    color: var(--color-partial);
+    font-weight: 600;
+}
+
+.status-blocked {
+    color: var(--color-blocked);
+    font-weight: 600;
+}
+
+.status-unknown {
+    color: var(--rh-gray);
+    font-weight: 600;
+}
+
+/* Action Links */
+.action-link {
+    color: var(--rh-blue);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+.action-link:hover {
+    color: var(--rh-red);
+    text-decoration: underline;
+}
+
+.muted {
+    color: var(--rh-gray);
+    font-style: italic;
+    font-size: 0.9rem;
+}
+
+/* File Anchors */
+.file-anchor {
+    scroll-margin-top: 80px;
+    position: relative;
+}
+
 /* Intent Blocks */
 .intent-block {
     margin-bottom: var(--spacing-md);
@@ -406,6 +475,44 @@ section h3 {
 .yaml-toggle code {
     font-family: "Courier New", monospace;
     font-size: 0.9rem;
+}
+
+/* Filter Indicator */
+.filter-indicator {
+    background: #fff4e5;
+    border: 2px solid var(--color-partial);
+    border-radius: 8px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+}
+
+.filter-text {
+    color: #7d4f00;
+    font-size: 0.95rem;
+}
+
+.filter-text strong {
+    color: var(--rh-dark);
+    text-transform: uppercase;
+}
+
+.clear-filter-btn {
+    background: var(--rh-red);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.clear-filter-btn:hover {
+    background: #b30000;
 }
 
 /* Gaps */
