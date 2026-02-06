@@ -301,68 +301,51 @@ class NsxClassifier(BaseClassifier):
         Returns:
             Consolidated list with unknown detections merged into workflow items
         """
-        # Separate unknown detections from workflow item detections
+        # Separate unknown detections from file:line detections
         unknown_ops = [op for op in operations if op.get("location") == "unknown"]
-        workflow_ops = [op for op in operations if op.get("location", "").startswith("workflow-item")]
-        other_ops = [
-            op
-            for op in operations
-            if op.get("location") != "unknown"
-            and not op.get("location", "").startswith("workflow-item")
-        ]
+        # File:line format is "filename.xml:123" or "filename.xml:itemname"
+        located_ops = [op for op in operations if op.get("location") != "unknown"]
 
-        if not unknown_ops or not workflow_ops:
+        if not unknown_ops or not located_ops:
             # No consolidation possible
             return operations
 
-        # Try to match unknown detections with workflow items
-        consolidated_workflow_ops = []
-        unmatched_unknown = []
+        # Track which unknown ops have been matched
+        matched_unknown_indices = set()
+        consolidated_result = []
 
-        for workflow_op in workflow_ops:
-            # Check if any unknown operations match this workflow item
-            workflow_name = workflow_op.get("name", "").lower()
-            matched = False
+        # Try to match each located op with unknown ops
+        for located_op in located_ops:
+            located_name = located_op.get("name", "").lower()
+            matching_unknowns = []
 
-            for unknown_op in unknown_ops:
+            # Find all unknown ops that match this located op
+            for idx, unknown_op in enumerate(unknown_ops):
+                if idx in matched_unknown_indices:
+                    continue
+
                 unknown_name = unknown_op.get("name", "").lower()
 
-                # Match if names are related (contains similar keywords)
-                # e.g., workflow "createSecurityGroup" contains script "nsxClient.createSecurityGroup"
-                if (
-                    self._names_are_related(workflow_name, unknown_name, category)
-                    or self._names_are_related(unknown_name, workflow_name, category)
-                ):
-                    # Merge the unknown detection into the workflow item
-                    merged = self._merge_operations([workflow_op, unknown_op], category)
-                    consolidated_workflow_ops.append(merged)
-                    matched = True
-                    break
+                # Match if names are related
+                if self._names_are_related(located_name, unknown_name, category):
+                    matching_unknowns.append(unknown_op)
+                    matched_unknown_indices.add(idx)
 
-            if not matched:
-                # Keep workflow op as-is
-                consolidated_workflow_ops.append(workflow_op)
+            # Merge located op with all matching unknowns
+            if matching_unknowns:
+                all_ops_to_merge = [located_op] + matching_unknowns
+                merged = self._merge_operations(all_ops_to_merge, category)
+                consolidated_result.append(merged)
+            else:
+                # No matches - keep located op as-is
+                consolidated_result.append(located_op)
 
-        # Keep any unmatched unknown operations
-        matched_unknown_names = {
-            op.get("name")
-            for op in operations
-            if op.get("location") == "unknown" and op not in unmatched_unknown
-        }
-        for unknown_op in unknown_ops:
-            if unknown_op.get("name") not in matched_unknown_names:
-                # Check if it was matched
-                was_matched = False
-                for workflow_op in workflow_ops:
-                    workflow_name = workflow_op.get("name", "").lower()
-                    unknown_name = unknown_op.get("name", "").lower()
-                    if self._names_are_related(workflow_name, unknown_name, category):
-                        was_matched = True
-                        break
-                if not was_matched:
-                    unmatched_unknown.append(unknown_op)
+        # Add any unmatched unknown operations
+        for idx, unknown_op in enumerate(unknown_ops):
+            if idx not in matched_unknown_indices:
+                consolidated_result.append(unknown_op)
 
-        return consolidated_workflow_ops + unmatched_unknown + other_ops
+        return consolidated_result
 
     def _names_are_related(self, name1: str, name2: str, category: str) -> bool:
         """

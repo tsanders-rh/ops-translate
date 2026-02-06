@@ -214,6 +214,7 @@ def analyze_vrealize_workflow(workflow_file: Path) -> dict[str, Any]:
         raise OpsFileNotFoundError(str(workflow_file))
 
     try:
+        # Parse XML (stdlib ET doesn't support line number tracking)
         tree = ET.parse(workflow_file)
         root = tree.getroot()
 
@@ -224,8 +225,8 @@ def analyze_vrealize_workflow(workflow_file: Path) -> dict[str, Any]:
     except ET.ParseError as e:
         raise ValueError(f"Invalid XML in {workflow_file}: {e}")
 
-    # Detect various external dependencies
-    nsx_ops = detect_nsx_operations(root, namespace)
+    # Detect various external dependencies (pass filename for location tracking)
+    nsx_ops = detect_nsx_operations(root, namespace, workflow_file)
     plugins = detect_custom_plugins(root, namespace)
     rest_calls = detect_rest_calls(root, namespace)
 
@@ -309,7 +310,9 @@ def calculate_detection_confidence(match_type: str, context: str, pattern: str =
     return min(confidence, 0.95)
 
 
-def detect_nsx_operations(root: ET.Element, namespace: str = "") -> dict[str, list[dict[str, Any]]]:
+def detect_nsx_operations(
+    root: ET.Element, namespace: str = "", workflow_file: Path | None = None
+) -> dict[str, list[dict[str, Any]]]:
     """
     Detect NSX-T operations in vRealize workflow.
 
@@ -321,6 +324,7 @@ def detect_nsx_operations(root: ET.Element, namespace: str = "") -> dict[str, li
     Args:
         root: Root element of parsed vRealize workflow XML
         namespace: XML namespace prefix (e.g., "{http://vmware.com/vco/workflow}")
+        workflow_file: Path to workflow file for location tracking (optional)
 
     Returns:
         Dictionary mapping NSX operation categories to detected instances.
@@ -331,7 +335,7 @@ def detect_nsx_operations(root: ET.Element, namespace: str = "") -> dict[str, li
             "segments": [
                 {
                     "name": "Create Web Tier Segment",
-                    "location": "workflow-item[@name='createSegment']",
+                    "location": "workflow.xml:32",
                     "confidence": 0.95,
                     "evidence": "Found API call: nsxClient.createSegment()"
                 }
@@ -339,6 +343,8 @@ def detect_nsx_operations(root: ET.Element, namespace: str = "") -> dict[str, li
             "firewall_rules": [...],
         }
     """
+    # Get filename for location reporting
+    filename = workflow_file.name if workflow_file else "workflow.xml"
     nsx_ops: dict[str, list[dict[str, Any]]] = {
         "segments": [],
         "firewall_rules": [],
@@ -419,9 +425,12 @@ def detect_nsx_operations(root: ET.Element, namespace: str = "") -> dict[str, li
                     while parent is not None and parent.tag != "workflow-item":
                         parent = parent.getparent() if hasattr(parent, "getparent") else None
 
+                    # Get location (stdlib ET doesn't support line numbers)
+                    # Use workflow-item name for traceability
                     location = "unknown"
                     if parent is not None and "name" in parent.attrib:
-                        location = f"workflow-item[@name='{parent.attrib['name']}']"
+                        # Use workflow-item name as location
+                        location = f"{filename}:{parent.attrib['name']}"
 
                     # Determine match type for confidence calculation
                     if "nsxClient" in pattern:
@@ -471,10 +480,13 @@ def detect_nsx_operations(root: ET.Element, namespace: str = "") -> dict[str, li
                     # Calculate confidence (will be lower due to less context)
                     confidence = calculate_detection_confidence(match_type, context, pattern)
 
+                    # Use workflow-item name as location (stdlib ET doesn't support line numbers)
+                    location = f"{filename}:{item_name or 'unknown'}"
+
                     nsx_ops[category].append(
                         {
                             "name": item_name or item_type,
-                            "location": f"workflow-item[@name='{item_name}']",
+                            "location": location,
                             "confidence": confidence,
                             "evidence": (
                                 f"Workflow item name/type contains NSX keyword: "
