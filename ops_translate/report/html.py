@@ -144,10 +144,7 @@ def build_report_context(workspace: Workspace, profile: str | None = None) -> di
         }
 
     # Generate executive summary
-    context["executive_summary"] = _generate_executive_summary(
-        context["summary"],
-        context["gaps"]
-    )
+    context["executive_summary"] = _generate_executive_summary(context["summary"], context["gaps"])
 
     return context
 
@@ -172,8 +169,7 @@ def _generate_executive_summary(summary: dict[str, Any], gaps_data: dict[str, An
     if gaps_data and has_blocking:
         components = gaps_data.get("components", [])
         blocked_components = [
-            comp.get("name", "Unknown") for comp in components
-            if comp.get("level") == "BLOCKED"
+            comp.get("name", "Unknown") for comp in components if comp.get("level") == "BLOCKED"
         ]
 
     # Generate summary based on assessment
@@ -203,7 +199,9 @@ def _generate_executive_summary(summary: dict[str, Any], gaps_data: dict[str, An
         return "This workflow is ready for automated migration review."
 
 
-def _load_source_files(workspace: Workspace, gaps_data: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+def _load_source_files(
+    workspace: Workspace, gaps_data: dict[str, Any] | None = None
+) -> list[dict[str, Any]]:
     """
     Load list of source files from workspace.
 
@@ -270,8 +268,7 @@ def _enrich_source_status(sources: list[dict[str, Any]], gaps_data: dict[str, An
 
         # Find components from this file
         file_components = [
-            comp for comp in components
-            if comp.get("location", "").startswith(filename)
+            comp for comp in components if comp.get("location", "").startswith(filename)
         ]
 
         if not file_components:
@@ -383,13 +380,10 @@ def _is_meaningless_assumptions(content: str) -> bool:
     normalized = content.lower().strip()
 
     # Get all lines
-    lines = [line.strip() for line in normalized.split('\n') if line.strip()]
+    lines = [line.strip() for line in normalized.split("\n") if line.strip()]
 
     # Filter to only assumption lines (bullet points starting with -)
-    assumption_lines = [
-        line for line in lines
-        if line.startswith('-')
-    ]
+    assumption_lines = [line for line in lines if line.startswith("-")]
 
     # If no assumption lines at all, it's meaningless
     if not assumption_lines:
@@ -397,8 +391,7 @@ def _is_meaningless_assumptions(content: str) -> bool:
 
     # Check if all assumptions are just the default message
     meaningful_assumptions = [
-        line for line in assumption_lines
-        if 'intent extracted via llm' not in line.lower()
+        line for line in assumption_lines if "intent extracted via llm" not in line.lower()
     ]
 
     # If no meaningful assumptions remain, it's meaningless

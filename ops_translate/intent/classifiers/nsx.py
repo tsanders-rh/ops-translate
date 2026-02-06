@@ -398,9 +398,7 @@ class NsxClassifier(BaseClassifier):
 
         return False
 
-    def _merge_operations(
-        self, operations: list[dict[str, Any]], category: str
-    ) -> dict[str, Any]:
+    def _merge_operations(self, operations: list[dict[str, Any]], category: str) -> dict[str, Any]:
         """
         Merge multiple detections of the same operation into a single entry.
 
@@ -479,9 +477,7 @@ class NsxClassifier(BaseClassifier):
 
             # Parse evidence to extract location and type
             # Format 1: "Pattern match: X in context (location): ..."
-            pattern_match = re.match(
-                r"Pattern match: (.+?) in context \((.+?)\): (.+)", evidence
-            )
+            pattern_match = re.match(r"Pattern match: (.+?) in context \((.+?)\): (.+)", evidence)
             # Format 2: "Workflow item name/type contains NSX keyword (location): ..."
             workflow_match = re.match(
                 r"Workflow item name/type contains NSX keyword \((.+?)\): (.+)", evidence
@@ -521,9 +517,7 @@ class NsxClassifier(BaseClassifier):
                 # Unknown format - keep as-is
                 if "unknown" not in evidence_by_location:
                     evidence_by_location["unknown"] = []
-                evidence_by_location["unknown"].append(
-                    {"type": "other", "original": evidence}
-                )
+                evidence_by_location["unknown"].append({"type": "other", "original": evidence})
 
         # Build consolidated evidence
         consolidated_parts = []
@@ -583,7 +577,9 @@ class NsxClassifier(BaseClassifier):
             'nsxClient.createSecurityGroup'
         """
         # Remove backslash escapes used in regex patterns
-        cleaned = name.replace("\\.", ".").replace("\\-", "-").replace("\\(", "(").replace("\\)", ")")
+        cleaned = (
+            name.replace("\\.", ".").replace("\\-", "-").replace("\\(", "(").replace("\\)", ")")
+        )
 
         return cleaned
 
