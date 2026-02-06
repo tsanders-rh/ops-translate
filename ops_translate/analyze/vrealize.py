@@ -16,7 +16,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from lxml import etree as ET
+from lxml import etree
 
 from ops_translate.exceptions import FileNotFoundError as OpsFileNotFoundError
 
@@ -216,14 +216,14 @@ def analyze_vrealize_workflow(workflow_file: Path) -> dict[str, Any]:
 
     try:
         # Parse XML with lxml (supports line number tracking via sourceline)
-        tree = ET.parse(str(workflow_file))
+        tree = etree.parse(str(workflow_file))
         root = tree.getroot()
 
         # Extract namespace if present for proper XPath queries
         namespace = ""
         if root.tag.startswith("{"):
             namespace = root.tag.split("}")[0] + "}"
-    except ET.ParseError as e:
+    except etree.ParseError as e:
         raise ValueError(f"Invalid XML in {workflow_file}: {e}")
 
     # Detect various external dependencies (pass filename for location tracking)
@@ -312,7 +312,7 @@ def calculate_detection_confidence(match_type: str, context: str, pattern: str =
 
 
 def detect_nsx_operations(
-    root: ET.Element, namespace: str = "", workflow_file: Path | None = None
+    root: etree.Element, namespace: str = "", workflow_file: Path | None = None
 ) -> dict[str, list[dict[str, Any]]]:
     """
     Detect NSX-T operations in vRealize workflow.
@@ -512,7 +512,7 @@ def detect_nsx_operations(
     return {k: v for k, v in nsx_ops.items() if v}
 
 
-def detect_custom_plugins(root: ET.Element, namespace: str = "") -> list[dict[str, Any]]:
+def detect_custom_plugins(root: etree.Element, namespace: str = "") -> list[dict[str, Any]]:
     """
     Detect custom vRealize plugin usage.
 
@@ -605,7 +605,7 @@ def detect_custom_plugins(root: ET.Element, namespace: str = "") -> list[dict[st
     return plugins
 
 
-def detect_rest_calls(root: ET.Element, namespace: str = "") -> list[dict[str, Any]]:
+def detect_rest_calls(root: etree.Element, namespace: str = "") -> list[dict[str, Any]]:
     """
     Detect external REST API calls with structured endpoint and method extraction.
 
