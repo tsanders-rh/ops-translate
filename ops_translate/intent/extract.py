@@ -443,8 +443,9 @@ def extract_vrealize_intent(llm, xml_file: Path) -> tuple[str, list]:
     Returns:
         tuple: (intent_yaml, assumptions_list)
     """
-    from jinja2 import Template
     import re
+
+    from jinja2 import Template
 
     # Load prompt template using Jinja2
     template_file = PROJECT_ROOT / "templates/prompts/extract_vrealize.txt.j2"

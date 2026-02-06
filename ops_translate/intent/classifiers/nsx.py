@@ -169,6 +169,7 @@ class NsxClassifier(BaseClassifier):
         # New format: intent_file with NSX integrations
         if analysis.get("intent_file"):
             from pathlib import Path
+
             import yaml
 
             intent_file = Path(analysis["intent_file"])
@@ -223,6 +224,7 @@ class NsxClassifier(BaseClassifier):
         # New format: intent file
         if analysis.get("intent_file"):
             from pathlib import Path
+
             import yaml
 
             intent_file = Path(analysis["intent_file"])
