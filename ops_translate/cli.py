@@ -570,9 +570,9 @@ def report(
         # Generate report
         report_file = generate_html_report(workspace, profile=profile, output_path=out)
 
-        console.print(f"[green]✓ Report generated successfully[/green]")
+        console.print("[green]✓ Report generated successfully[/green]")
         console.print(f"\n[bold]Report location:[/bold] {report_file}")
-        console.print(f"\n[dim]Open the report in your browser:[/dim]")
+        console.print("\n[dim]Open the report in your browser:[/dim]")
         console.print(f"  open {report_file}")
 
     except Exception as e:
