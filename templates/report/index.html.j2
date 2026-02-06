@@ -283,6 +283,9 @@
                     </div>
                     <div class="gap-body">
                         <p><strong>Type:</strong> {{ component.component_type }}</p>
+                        {% if component.location %}
+                        <p><strong>Location:</strong> <code>{{ component.location }}</code></p>
+                        {% endif %}
                         <p><strong>Reason:</strong> {{ component.reason }}</p>
 
                         {% if component.openshift_equivalent %}
