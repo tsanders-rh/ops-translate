@@ -174,23 +174,38 @@ def _generate_executive_summary(summary: dict[str, Any], gaps_data: dict[str, An
 
     # Generate summary based on assessment
     if assessment == "FULLY_TRANSLATABLE":
-        return "This workflow can be fully automatically migrated to OpenShift-native equivalents."
+        return (
+            "This workflow can be fully automatically migrated to "
+            "OpenShift-native equivalents."
+        )
 
     elif has_blocking and blocked_components:
         # Mention specific blockers
         if len(blocked_components) == 1:
             blocker = blocked_components[0]
-            return f"This workflow can be migrated with partial automation; {blocker} requires custom design."
+            return (
+                f"This workflow can be migrated with partial automation; "
+                f"{blocker} requires custom design."
+            )
         else:
             blocker_count = len(blocked_components)
-            return f"This workflow can be migrated with partial automation; {blocker_count} components require custom design."
+            return (
+                f"This workflow can be migrated with partial automation; "
+                f"{blocker_count} components require custom design."
+            )
 
     elif counts.get("PARTIAL", 0) > 0:
         partial_count = counts.get("PARTIAL", 0)
         if partial_count == 1:
-            return "This workflow can be migrated with partial automation; manual configuration required for 1 component."
+            return (
+                "This workflow can be migrated with partial automation; "
+                "manual configuration required for 1 component."
+            )
         else:
-            return f"This workflow can be migrated with partial automation; manual configuration required for {partial_count} components."
+            return (
+                f"This workflow can be migrated with partial automation; "
+                f"manual configuration required for {partial_count} components."
+            )
 
     elif counts.get("MANUAL", 0) > 0:
         return "This workflow requires custom specialist implementation for migration."
