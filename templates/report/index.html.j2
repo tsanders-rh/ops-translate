@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translation Report - {{ workspace.name }}</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="report-header">
+        <div class="container">
+            <div class="header-content">
+                <h1>ops-translate</h1>
+                <div class="header-meta">
+                    <span class="workspace-name">{{ workspace.name }}</span>
+                    <span class="separator">|</span>
+                    <span class="profile-name">Profile: {{ profile.name }}</span>
+                    <span class="separator">|</span>
+                    <span class="timestamp">{{ workspace.timestamp[:19] }}</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- At a Glance Summary Cards -->
+    <section class="summary-section">
+        <div class="container">
+            <h2>Translation Status</h2>
+            <div class="summary-cards">
+                <div class="card card-supported" data-filter="SUPPORTED">
+                    <div class="card-icon">✅</div>
+                    <div class="card-content">
+                        <div class="card-number">{{ summary.counts.SUPPORTED }}</div>
+                        <div class="card-label">Supported</div>
+                    </div>
+                </div>
+                <div class="card card-partial" data-filter="PARTIAL">
+                    <div class="card-icon">⚠️</div>
+                    <div class="card-content">
+                        <div class="card-number">{{ summary.counts.PARTIAL }}</div>
+                        <div class="card-label">Review Required</div>
+                    </div>
+                </div>
+                <div class="card card-blocked" data-filter="BLOCKED">
+                    <div class="card-icon">🚫</div>
+                    <div class="card-content">
+                        <div class="card-number">{{ summary.counts.BLOCKED }}</div>
+                        <div class="card-label">Blocked</div>
+                    </div>
+                </div>
+                <div class="card card-manual" data-filter="MANUAL">
+                    <div class="card-icon">🔧</div>
+                    <div class="card-content">
+                        <div class="card-number">{{ summary.counts.MANUAL }}</div>
+                        <div class="card-label">Manual</div>
+                    </div>
+                </div>
+            </div>
+
+            {% if summary.overall_assessment %}
+            <div class="overall-assessment">
+                <strong>Overall Assessment:</strong>
+                {% if summary.overall_assessment == "FULLY_TRANSLATABLE" %}
+                <span class="badge badge-success">Fully Translatable</span>
+                {% elif summary.overall_assessment == "REQUIRES_MANUAL_WORK" %}
+                <span class="badge badge-warning">Requires Manual Work</span>
+                {% elif summary.overall_assessment == "HAS_BLOCKING_ISSUES" %}
+                <span class="badge badge-error">Has Blocking Issues</span>
+                {% elif summary.overall_assessment == "MOSTLY_MANUAL" %}
+                <span class="badge badge-error">Mostly Manual</span>
+                {% else %}
+                <span class="badge badge-info">{{ summary.overall_assessment.replace('_', ' ').title() }}</span>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- Workflow Inventory -->
+    {% if sources %}
+    <section class="inventory-section">
+        <div class="container">
+            <h2>Source Files</h2>
+            <table class="inventory-table">
+                <thead>
+                    <tr>
+                        <th>File Name</th>
+                        <th>Type</th>
+                        <th>Size</th>
+                        <th>Path</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for source in sources %}
+                    <tr>
+                        <td class="file-name">{{ source.name }}</td>
+                        <td>
+                            {% if source.type == "PowerCLI" %}
+                            <span class="badge badge-powercli">PowerCLI</span>
+                            {% else %}
+                            <span class="badge badge-vrealize">vRealize</span>
+                            {% endif %}
+                        </td>
+                        <td class="file-size">{{ (source.size / 1024) | round(1) }} KB</td>
+                        <td class="file-path">{{ source.path }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Intent Overview -->
+    {% if intent %}
+    <section class="intent-section">
+        <div class="container">
+            <h2>Intent Overview</h2>
+            <div class="intent-content">
+                {% if intent.intent %}
+                <!-- Workflow Info -->
+                {% if intent.intent.workflow_name %}
+                <div class="intent-block">
+                    <h3>Workflow</h3>
+                    <p><strong>Name:</strong> {{ intent.intent.workflow_name }}</p>
+                    {% if intent.intent.workload_type %}
+                    <p><strong>Workload Type:</strong> {{ intent.intent.workload_type }}</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Inputs -->
+                {% if intent.intent.inputs %}
+                <div class="intent-block">
+                    <h3>Inputs</h3>
+                    <ul>
+                        {% for input_name, input_spec in intent.intent.inputs.items() %}
+                        <li>
+                            <code>{{ input_name }}</code>
+                            ({{ input_spec.type }})
+                            {% if input_spec.required %}
+                            <span class="badge badge-required">required</span>
+                            {% endif %}
+                            {% if input_spec.values %}
+                            - values: {{ input_spec.values | join(', ') }}
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <!-- Compute -->
+                {% if intent.intent.compute %}
+                <div class="intent-block">
+                    <h3>Compute</h3>
+                    {% if intent.intent.compute.cpu_cores %}
+                    <p><strong>CPU Cores:</strong> {{ intent.intent.compute.cpu_cores }}</p>
+                    {% endif %}
+                    {% if intent.intent.compute.memory_mb %}
+                    <p><strong>Memory:</strong> {{ intent.intent.compute.memory_mb }} MB</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Networking -->
+                {% if intent.intent.networking %}
+                <div class="intent-block">
+                    <h3>Networking</h3>
+                    {% for net in intent.intent.networking %}
+                    <div class="network-item">
+                        {% if net.name %}
+                        <p><strong>Network:</strong> {{ net.name }}</p>
+                        {% endif %}
+                        {% if net.type %}
+                        <p><strong>Type:</strong> {{ net.type }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Storage -->
+                {% if intent.intent.storage %}
+                <div class="intent-block">
+                    <h3>Storage</h3>
+                    {% for disk in intent.intent.storage %}
+                    <div class="storage-item">
+                        {% if disk.size_gb %}
+                        <p><strong>Size:</strong> {{ disk.size_gb }} GB</p>
+                        {% endif %}
+                        {% if disk.type %}
+                        <p><strong>Type:</strong> {{ disk.type }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Governance -->
+                {% if intent.intent.governance %}
+                <div class="intent-block">
+                    <h3>Governance</h3>
+                    {% if intent.intent.governance.approval %}
+                    <p><strong>Approval Required:</strong>
+                        {% if intent.intent.governance.approval.required_when %}
+                        When {{ intent.intent.governance.approval.required_when | tojson }}
+                        {% else %}
+                        Yes
+                        {% endif %}
+                    </p>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Show YAML -->
+                <details class="yaml-toggle">
+                    <summary>Show Raw YAML</summary>
+                    <pre><code>{{ intent | tojson(indent=2) }}</code></pre>
+                </details>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+    {% else %}
+    <section class="intent-section">
+        <div class="container">
+            <h2>Intent Overview</h2>
+            <div class="alert alert-warning">
+                No intent data found. Run <code>ops-translate intent extract</code> to generate intent.
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Gaps & Migration Paths -->
+    {% if gaps and gaps.components %}
+    <section class="gaps-section">
+        <div class="container">
+            <h2>Gaps & Migration Guidance</h2>
+
+            {% if summary.has_blocking_issues %}
+            <div class="alert alert-error">
+                <strong>⚠️ Action Required:</strong> This workflow contains components that cannot be automatically translated. Manual implementation or architectural changes will be required.
+            </div>
+            {% elif summary.requires_manual_work %}
+            <div class="alert alert-warning">
+                <strong>ℹ️ Manual Configuration Needed:</strong> This workflow can be mostly automated, but some components require manual configuration or review.
+            </div>
+            {% else %}
+            <div class="alert alert-success">
+                <strong>✅ Ready for Automatic Translation:</strong> All components in this workflow can be automatically translated to OpenShift-native equivalents.
+            </div>
+            {% endif %}
+
+            <!-- Component List -->
+            <div class="gaps-list">
+                {% for component in gaps.components %}
+                <div class="gap-item gap-{{ component.level.lower() }}" data-level="{{ component.level }}">
+                    <div class="gap-header">
+                        <h3>{{ component.name }}</h3>
+                        <span class="badge badge-{{ component.level.lower() }}">{{ component.level }}</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> {{ component.component_type }}</p>
+                        <p><strong>Reason:</strong> {{ component.reason }}</p>
+
+                        {% if component.openshift_equivalent %}
+                        <p><strong>OpenShift Equivalent:</strong> {{ component.openshift_equivalent }}</p>
+                        {% endif %}
+
+                        {% if component.migration_path %}
+                        <p><strong>Migration Path:</strong>
+                            <span class="badge badge-path">{{ component.migration_path }}</span>
+                        </p>
+                        {% endif %}
+
+                        {% if component.recommendations %}
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                {% for rec in component.recommendations %}
+                                <li>{{ rec }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+
+                        {% if component.evidence %}
+                        <details class="evidence-toggle">
+                            <summary>Show Evidence</summary>
+                            <pre><code>{{ component.evidence }}</code></pre>
+                        </details>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Generated Artifacts -->
+    {% if artifacts.kubevirt or artifacts.ansible %}
+    <section class="artifacts-section">
+        <div class="container">
+            <h2>Generated Artifacts</h2>
+
+            {% if artifacts.kubevirt %}
+            <div class="artifact-group">
+                <h3>KubeVirt Manifests</h3>
+                <ul class="artifact-list">
+                    {% for artifact in artifacts.kubevirt %}
+                    <li>
+                        <span class="artifact-name">{{ artifact.name }}</span>
+                        <span class="artifact-path">{{ artifact.path }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if artifacts.ansible %}
+            <div class="artifact-group">
+                <h3>Ansible Playbooks & Roles</h3>
+                <ul class="artifact-list">
+                    {% for artifact in artifacts.ansible %}
+                    <li>
+                        <span class="artifact-name">{{ artifact.name }}</span>
+                        <span class="artifact-path">{{ artifact.path }}</span>
+                        {% if artifact.type == "role" and artifact.name.startswith("role: custom_") %}
+                        <span class="badge badge-warning">Manual Work Required</span>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- What's Next Checklist -->
+            <div class="next-steps">
+                <h3>What's Next?</h3>
+                <ul class="checklist">
+                    {% if gaps and gaps.components %}
+                    <li>Review gaps and migration guidance above</li>
+                    {% endif %}
+                    {% if assumptions_md %}
+                    <li>Review assumptions (see below)</li>
+                    {% endif %}
+                    <li>Run <code>ops-translate dry-run</code> to validate configuration</li>
+                    <li>Apply generated artifacts in a lab environment first</li>
+                    <li>Test functionality before promoting to production</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+    {% else %}
+    <section class="artifacts-section">
+        <div class="container">
+            <h2>Generated Artifacts</h2>
+            <div class="alert alert-info">
+                No artifacts generated yet. Run <code>ops-translate generate --profile {{ profile.name }}</code> to generate KubeVirt and Ansible artifacts.
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Assumptions -->
+    {% if assumptions_md %}
+    <section class="appendix-section">
+        <div class="container">
+            <details class="appendix-content">
+                <summary><h2>Assumptions</h2></summary>
+                <div class="markdown-content">
+                    {{ assumptions_md }}
+                </div>
+            </details>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Conflicts -->
+    {% if conflicts_md %}
+    <section class="appendix-section">
+        <div class="container">
+            <details class="appendix-content">
+                <summary><h2>Conflicts</h2></summary>
+                <div class="markdown-content alert-warning">
+                    {{ conflicts_md }}
+                </div>
+            </details>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Footer -->
+    <footer class="report-footer">
+        <div class="container">
+            <p>Generated by <strong>ops-translate</strong> at {{ workspace.timestamp[:19] }}</p>
+            <p class="disclaimer">This report is read-only and for review purposes. No changes will be applied automatically.</p>
+        </div>
+    </footer>
+
+    <script src="assets/app.js"></script>
+</body>
+</html>

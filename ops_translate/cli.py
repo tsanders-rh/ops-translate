@@ -536,5 +536,49 @@ def dry_run():
         raise typer.Exit(1)
 
 
+@app.command()
+def report(
+    format: str = typer.Option("html", help="Report format (html)"),
+    profile: str | None = typer.Option(None, help="Target profile name"),
+    out: Path | None = typer.Option(None, help="Output directory (default: output/report/)"),
+):
+    """
+    Generate static HTML report for translation review.
+
+    Creates a shareable HTML report that consolidates intent, gaps, assumptions,
+    and generated artifacts for human review before deployment.
+
+    Example:
+        ops-translate report --format html --profile lab
+        open output/report/index.html
+    """
+    workspace = Workspace(Path.cwd())
+    if not workspace.config_file.exists():
+        console.print("[red]Error: Not in a workspace.[/red]")
+        raise typer.Exit(1)
+
+    # Only HTML format supported in v1
+    if format != "html":
+        console.print(f"[red]Error: Unsupported format '{format}'. Only 'html' is supported.[/red]")
+        raise typer.Exit(1)
+
+    console.print("[bold blue]Generating HTML report...[/bold blue]")
+
+    try:
+        from ops_translate.report import generate_html_report
+
+        # Generate report
+        report_file = generate_html_report(workspace, profile=profile, output_path=out)
+
+        console.print(f"[green]✓ Report generated successfully[/green]")
+        console.print(f"\n[bold]Report location:[/bold] {report_file}")
+        console.print(f"\n[dim]Open the report in your browser:[/dim]")
+        console.print(f"  open {report_file}")
+
+    except Exception as e:
+        console.print(f"[red]Error generating report: {e}[/red]")
+        raise typer.Exit(1)
+
+
 if __name__ == "__main__":
     app()
