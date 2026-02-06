@@ -242,7 +242,7 @@ class TestGapAnalysisIntegration:
 
         # Classify components (with deduplication, should be fewer than raw detections)
         components = classify_components(analysis)
-        assert len(components) >= 5  # At least 5 unique components after deduplication
+        assert len(components) >= 3  # At least 3 unique components after deduplication
         assert len(components) < total_nsx_ops  # Deduplication should reduce count
 
         # Generate reports

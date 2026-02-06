@@ -236,6 +236,9 @@ class NsxClassifier(BaseClassifier):
         "nsxClient.createSecurityGroup" and "SecurityGroup" in the same location).
         This method consolidates them into a single operation with combined evidence.
 
+        Also consolidates "unknown" location detections (from script content) with
+        workflow item detections when they likely represent the same operation.
+
         Args:
             operations: List of detected NSX operations
             category: NSX category (e.g., "security_groups")
@@ -263,18 +266,127 @@ class NsxClassifier(BaseClassifier):
                 location_groups[location] = []
             location_groups[location].append(op)
 
-        # Deduplicate within each location group
-        deduplicated = []
+        # Merge operations within each exact location
+        merged_groups = []
         for location, group in location_groups.items():
             if len(group) == 1:
-                # Single operation at this location - no deduplication needed
-                deduplicated.append(group[0])
+                merged_groups.append(group[0])
             else:
-                # Multiple operations at same location - merge them
                 merged = self._merge_operations(group, category)
-                deduplicated.append(merged)
+                merged_groups.append(merged)
+
+        # Now consolidate "unknown" location detections with workflow items
+        # "unknown" detections are typically script content that's inside workflow items
+        deduplicated = self._consolidate_unknown_with_workflow_items(merged_groups, category)
 
         return deduplicated
+
+    def _consolidate_unknown_with_workflow_items(
+        self, operations: list[dict[str, Any]], category: str
+    ) -> list[dict[str, Any]]:
+        """
+        Consolidate "unknown" location detections with workflow item detections.
+
+        Script content detections (location="unknown") are often from scripts inside
+        workflow items. This method merges them with the workflow item that likely
+        contains them.
+
+        Args:
+            operations: List of operations (after initial location-based merging)
+            category: NSX category
+
+        Returns:
+            Consolidated list with unknown detections merged into workflow items
+        """
+        # Separate unknown detections from workflow item detections
+        unknown_ops = [op for op in operations if op.get("location") == "unknown"]
+        workflow_ops = [op for op in operations if op.get("location", "").startswith("workflow-item")]
+        other_ops = [
+            op
+            for op in operations
+            if op.get("location") != "unknown"
+            and not op.get("location", "").startswith("workflow-item")
+        ]
+
+        if not unknown_ops or not workflow_ops:
+            # No consolidation possible
+            return operations
+
+        # Try to match unknown detections with workflow items
+        consolidated_workflow_ops = []
+        unmatched_unknown = []
+
+        for workflow_op in workflow_ops:
+            # Check if any unknown operations match this workflow item
+            workflow_name = workflow_op.get("name", "").lower()
+            matched = False
+
+            for unknown_op in unknown_ops:
+                unknown_name = unknown_op.get("name", "").lower()
+
+                # Match if names are related (contains similar keywords)
+                # e.g., workflow "createSecurityGroup" contains script "nsxClient.createSecurityGroup"
+                if (
+                    self._names_are_related(workflow_name, unknown_name, category)
+                    or self._names_are_related(unknown_name, workflow_name, category)
+                ):
+                    # Merge the unknown detection into the workflow item
+                    merged = self._merge_operations([workflow_op, unknown_op], category)
+                    consolidated_workflow_ops.append(merged)
+                    matched = True
+                    break
+
+            if not matched:
+                # Keep workflow op as-is
+                consolidated_workflow_ops.append(workflow_op)
+
+        # Keep any unmatched unknown operations
+        matched_unknown_names = {
+            op.get("name")
+            for op in operations
+            if op.get("location") == "unknown" and op not in unmatched_unknown
+        }
+        for unknown_op in unknown_ops:
+            if unknown_op.get("name") not in matched_unknown_names:
+                # Check if it was matched
+                was_matched = False
+                for workflow_op in workflow_ops:
+                    workflow_name = workflow_op.get("name", "").lower()
+                    unknown_name = unknown_op.get("name", "").lower()
+                    if self._names_are_related(workflow_name, unknown_name, category):
+                        was_matched = True
+                        break
+                if not was_matched:
+                    unmatched_unknown.append(unknown_op)
+
+        return consolidated_workflow_ops + unmatched_unknown + other_ops
+
+    def _names_are_related(self, name1: str, name2: str, category: str) -> bool:
+        """
+        Check if two operation names likely refer to the same operation.
+
+        Args:
+            name1: First operation name
+            name2: Second operation name
+            category: NSX category
+
+        Returns:
+            True if names appear to be related
+        """
+        # Strip common prefixes/suffixes
+        name1_clean = name1.replace("nsxclient.", "").replace("nsx", "").replace("\\", "")
+        name2_clean = name2.replace("nsxclient.", "").replace("nsx", "").replace("\\", "")
+
+        # Check for substring match (one contains the other)
+        if name1_clean in name2_clean or name2_clean in name1_clean:
+            return True
+
+        # Check if both contain the category name
+        category_name = category.replace("_", "")
+        if category_name in name1_clean and category_name in name2_clean:
+            return True
+
+        return False
 
     def _merge_operations(
         self, operations: list[dict[str, Any]], category: str
