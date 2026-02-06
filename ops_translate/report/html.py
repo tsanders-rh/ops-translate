@@ -143,7 +143,64 @@ def build_report_context(workspace: Workspace, profile: str | None = None) -> di
             "requires_manual_work": False,
         }
 
+    # Generate executive summary
+    context["executive_summary"] = _generate_executive_summary(
+        context["summary"],
+        context["gaps"]
+    )
+
     return context
+
+
+def _generate_executive_summary(summary: dict[str, Any], gaps_data: dict[str, Any] | None) -> str:
+    """
+    Generate a one-line executive summary for the report.
+
+    Args:
+        summary: Summary statistics from gap analysis
+        gaps_data: Full gaps data with components
+
+    Returns:
+        One-sentence executive summary string
+    """
+    assessment = summary.get("overall_assessment", "UNKNOWN")
+    has_blocking = summary.get("has_blocking_issues", False)
+    counts = summary.get("counts", {})
+
+    # Find blocked components for specific mention
+    blocked_components = []
+    if gaps_data and has_blocking:
+        components = gaps_data.get("components", [])
+        blocked_components = [
+            comp.get("name", "Unknown") for comp in components
+            if comp.get("level") == "BLOCKED"
+        ]
+
+    # Generate summary based on assessment
+    if assessment == "FULLY_TRANSLATABLE":
+        return "This workflow can be fully automatically migrated to OpenShift-native equivalents."
+
+    elif has_blocking and blocked_components:
+        # Mention specific blockers
+        if len(blocked_components) == 1:
+            blocker = blocked_components[0]
+            return f"This workflow can be migrated with partial automation; {blocker} requires custom design."
+        else:
+            blocker_count = len(blocked_components)
+            return f"This workflow can be migrated with partial automation; {blocker_count} components require custom design."
+
+    elif counts.get("PARTIAL", 0) > 0:
+        partial_count = counts.get("PARTIAL", 0)
+        if partial_count == 1:
+            return "This workflow can be migrated with partial automation; manual configuration required for 1 component."
+        else:
+            return f"This workflow can be migrated with partial automation; manual configuration required for {partial_count} components."
+
+    elif counts.get("MANUAL", 0) > 0:
+        return "This workflow requires custom specialist implementation for migration."
+
+    else:
+        return "This workflow is ready for automated migration review."
 
 
 def _load_source_files(workspace: Workspace, gaps_data: dict[str, Any] | None = None) -> list[dict[str, Any]]:
@@ -218,10 +275,10 @@ def _enrich_source_status(sources: list[dict[str, Any]], gaps_data: dict[str, An
         ]
 
         if not file_components:
-            # No components found - default to needs review
-            source["status"] = "NEEDS_REVIEW"
-            source["status_icon"] = "⚠"
-            source["status_text"] = "Needs Review"
+            # No gaps found - file is clean or fully supported
+            source["status"] = "NO_ISSUES"
+            source["status_icon"] = "✓"
+            source["status_text"] = "No Issues Found"
         else:
             # Check component levels
             levels = [comp.get("level") for comp in file_components]

@@ -18,6 +18,7 @@
         setupCardFiltering();
         setupClearFilterButton();
         setupViewFindingsLinks();
+        setupExportButtons();
     }
 
     /**
@@ -120,6 +121,106 @@
                 // Let the default anchor navigation happen
             });
         });
+    }
+
+    /**
+     * Setup export buttons (PDF and CSV)
+     */
+    function setupExportButtons() {
+        const pdfBtn = document.getElementById('export-pdf');
+        const csvBtn = document.getElementById('export-csv');
+
+        if (pdfBtn) {
+            pdfBtn.addEventListener('click', exportAsPDF);
+        }
+
+        if (csvBtn) {
+            csvBtn.addEventListener('click', exportAsCSV);
+        }
+    }
+
+    /**
+     * Export report as PDF using browser print
+     */
+    function exportAsPDF() {
+        window.print();
+    }
+
+    /**
+     * Export migration tasks as CSV
+     */
+    function exportAsCSV() {
+        if (!window.reportData || !window.reportData.gaps || !window.reportData.gaps.components) {
+            alert('No gaps data available for export');
+            return;
+        }
+
+        const components = window.reportData.gaps.components;
+        const workspace = window.reportData.workspace || 'workspace';
+        const timestamp = window.reportData.timestamp || new Date().toISOString();
+
+        // CSV header
+        const headers = [
+            'Component',
+            'Type',
+            'Level',
+            'Migration Path',
+            'Location',
+            'Reason',
+            'OpenShift Equivalent',
+            'Recommendations'
+        ];
+
+        // Build CSV rows
+        const rows = components.map(comp => {
+            return [
+                escapeCSV(comp.name || ''),
+                escapeCSV(comp.component_type || ''),
+                escapeCSV(comp.level || ''),
+                escapeCSV(comp.migration_path || ''),
+                escapeCSV(comp.location || ''),
+                escapeCSV(comp.reason || ''),
+                escapeCSV(comp.openshift_equivalent || ''),
+                escapeCSV((comp.recommendations || []).join('; '))
+            ];
+        });
+
+        // Combine header and rows
+        const csvContent = [
+            headers.join(','),
+            ...rows.map(row => row.join(','))
+        ].join('\n');
+
+        // Create download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const filename = `${workspace}-migration-tasks-${timestamp.replace(/:/g, '-')}.csv`;
+
+        if (navigator.msSaveBlob) {
+            // IE 10+
+            navigator.msSaveBlob(blob, filename);
+        } else {
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    }
+
+    /**
+     * Escape CSV field
+     */
+    function escapeCSV(field) {
+        if (field === null || field === undefined) {
+            return '';
+        }
+        const str = String(field);
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+            return '"' + str.replace(/"/g, '""') + '"';
+        }
+        return str;
     }
 
 })();
