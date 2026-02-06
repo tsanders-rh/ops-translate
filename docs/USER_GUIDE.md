@@ -515,6 +515,100 @@ cat intent/assumptions.md
 **Confidence**: High
 ```
 
+**Automatic Gap Analysis (vRealize Only)**:
+
+When extracting intent from vRealize workflows, ops-translate automatically analyzes them for translatability issues:
+
+```bash
+ops-translate intent extract
+```
+
+Output includes:
+```
+Running gap analysis on vRealize workflows...
+  Analyzing: nsx-provisioning.xml
+    ⚠ Found 3 blocking issue(s)
+  ✓ Gap analysis reports written to intent/gaps.md and intent/gaps.json
+
+⚠ Warning: Found 3 component(s) that cannot be automatically translated.
+  Review intent/gaps.md for migration guidance.
+```
+
+**Gap analysis output files**:
+- `intent/gaps.md` - Human-readable report with migration paths and recommendations
+- `intent/gaps.json` - Machine-readable data for tooling integration
+
+**What gets analyzed**:
+- NSX-T operations (segments, firewall rules, load balancers, security groups, etc.)
+- Custom vRO plugins (ServiceNow, Infoblox, Active Directory, etc.)
+- REST API calls to external systems
+- vRealize-specific constructs
+
+**Classification levels**:
+- ✅ **SUPPORTED** - Fully automatic translation to OpenShift-native equivalent
+- ⚠️ **PARTIAL** - Can translate but requires manual configuration
+- 🚫 **BLOCKED** - Cannot auto-translate, requires manual implementation
+- 👷 **MANUAL** - Complex custom logic requiring specialist review
+
+**Example gap report** (`intent/gaps.md`):
+```markdown
+# Gap Analysis Report: nsx-provisioning.xml
+
+## Executive Summary
+
+**Overall Assessment**: REQUIRES_MANUAL_WORK
+
+- Total Components: 5
+- ✅ SUPPORTED: 2
+- ⚠️ PARTIAL: 2
+- 🚫 BLOCKED: 1
+
+## Detailed Component Analysis
+
+### NSX Firewall Rule
+
+**Type**: `nsx_firewall_rule`
+**Classification**: ⚠️ PARTIAL
+**OpenShift Equivalent**: NetworkPolicy
+**Migration Path**: PATH_A - OpenShift-native replacement
+
+**Why this classification**:
+NSX distributed firewall rules can be replaced with Kubernetes NetworkPolicy,
+but require manual translation of rule syntax and testing.
+
+**Recommendations**:
+1. Create NetworkPolicy manifest with equivalent rules
+2. Test pod-to-pod connectivity in dev environment
+3. Consider Calico for advanced features (egress rules, logging)
+4. Review default-deny policies
+
+**Evidence**: `nsxClient.createFirewallRule()` at line 45
+
+**Example NetworkPolicy**:
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: web-to-app-allow
+spec:
+  podSelector:
+    matchLabels:
+      app: web
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: app-tier
+    ports:
+    - protocol: TCP
+      port: 8080
+```
+```
+
+When you run `ops-translate generate`, these gaps are automatically incorporated into the Ansible playbooks as TODO tasks and role stubs. See [ops-translate generate](#ops-translate-generate) for details.
+
 ### ops-translate intent edit
 
 **Purpose**: Manually edit extracted intent.
@@ -650,6 +744,134 @@ ops-translate generate --profile prod
 # Generate without AI (template-based)
 ops-translate generate --profile lab --no-ai
 ```
+
+**Gap Analysis Integration**:
+
+When vRealize workflows have been analyzed (via `intent extract`), the generated Ansible playbooks automatically include:
+
+1. **TODO tasks** for components requiring manual work
+2. **Role stubs** for BLOCKED/MANUAL components
+3. **Migration guidance** as embedded comments
+
+**Example: Generated playbook with gaps** (`output/ansible/site.yml`):
+```yaml
+---
+- name: Provision VM with NSX networking
+  hosts: localhost
+  tasks:
+    # Gap Analysis Summary:
+    # - 2 PARTIAL components require manual configuration
+    # - 1 BLOCKED component requires manual implementation
+    # Review intent/gaps.md for detailed migration guidance
+
+    - name: "TODO: Review NSX segment migration (PARTIAL)"
+      debug:
+        msg: |
+          CLASSIFICATION: PARTIAL
+          COMPONENT: NSX Segment
+          OPENSHIFT EQUIVALENT: NetworkAttachmentDefinition (Multus CNI)
+          MIGRATION PATH: PATH_A - OpenShift-native replacement
+
+          RECOMMENDATIONS:
+          - Create NetworkAttachmentDefinition manifest
+          - Configure Multus CNI on target cluster
+          - Test network connectivity
+          - Update VM spec to reference NAD
+
+          EVIDENCE: nsxClient.createSegment() detected at line 23
+      tags: [manual_review_required]
+
+    - name: "TODO: Implement NSX firewall rule migration (PARTIAL)"
+      debug:
+        msg: |
+          CLASSIFICATION: PARTIAL
+          COMPONENT: NSX Firewall Rule
+          OPENSHIFT EQUIVALENT: NetworkPolicy
+          MIGRATION PATH: PATH_A - OpenShift-native replacement
+
+          RECOMMENDATIONS:
+          - Create NetworkPolicy manifest with equivalent rules
+          - Test pod-to-pod connectivity
+          - Consider Calico for advanced features
+      tags: [manual_review_required]
+
+    # Normal automation tasks follow...
+    - name: Create KubeVirt VM
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ lookup('file', 'kubevirt/vm.yaml') }}"
+```
+
+**Auto-generated role stubs** (`output/ansible/roles/nsx_segment_migration/`):
+
+For BLOCKED/MANUAL components, ops-translate generates role scaffolding:
+
+```
+output/ansible/roles/
+└── nsx_segment_migration/
+    ├── README.md                 # Migration guidance
+    ├── tasks/main.yml            # TODO placeholders
+    └── defaults/main.yml         # Discovered parameters
+```
+
+**Role README** (`roles/nsx_segment_migration/README.md`):
+```markdown
+# NSX Segment Migration Role
+
+**Classification**: PARTIAL
+**OpenShift Equivalent**: NetworkAttachmentDefinition (Multus CNI)
+**Migration Path**: PATH_A - OpenShift-native replacement
+
+## Overview
+
+This role was auto-generated because NSX segment operations were detected
+in the source vRealize workflow that cannot be fully automatically translated.
+
+## What Needs Implementation
+
+1. Create NetworkAttachmentDefinition manifest
+2. Configure Multus CNI on target cluster
+3. Test network connectivity
+4. Update VM spec to reference NAD
+
+## Discovered Parameters
+
+The following parameters were extracted from the source workflow:
+- segment_name: "web-tier-segment"
+- vlan_ids: [100]
+- gateway_address: "192.168.1.1/24"
+
+## Implementation Steps
+
+[Detailed steps based on migration path...]
+
+## Testing
+
+[Testing checklist...]
+```
+
+**Role tasks** (`roles/nsx_segment_migration/tasks/main.yml`):
+```yaml
+---
+# TODO: Implement NSX segment migration
+# Classification: PARTIAL
+# OpenShift Equivalent: NetworkAttachmentDefinition
+
+- name: TODO - Create NetworkAttachmentDefinition
+  fail:
+    msg: |
+      This task is a placeholder. Implement NAD creation here.
+      See README.md for guidance.
+  tags: [manual_implementation_required]
+
+- name: TODO - Verify Multus CNI configuration
+  fail:
+    msg: |
+      This task is a placeholder. Add CNI verification logic.
+  tags: [manual_implementation_required]
+```
+
+This gives you a clear starting point for manual work instead of starting from scratch.
 
 ### ops-translate dry-run
 

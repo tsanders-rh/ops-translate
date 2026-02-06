@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow xmlns="http://vmware.com/vco/workflow" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://vmware.com/vco/workflow http://vmware.com/vco/workflow" version="1.0.0" api-version="8.0.0">
+  <display-name>NSX Medium Test - Mixed PARTIAL and BLOCKED</display-name>
+  <description>Test fixture with 8 NSX operations: 5 PARTIAL, 3 BLOCKED</description>
+
+  <input>
+    <param name="vmName" type="string"/>
+    <param name="environment" type="string"/>
+  </input>
+
+  <workflow-item name="item0" type="end" end-mode="0">
+    <position y="300.0" x="500.0"/>
+  </workflow-item>
+
+  <workflow-item name="item1" out-name="item2" type="task">
+    <display-name>Create Segments</display-name>
+    <script encoded="false">
+      var nsxClient = System.getModule("com.vmware.library.nsx").getNsxClient();
+
+      // PARTIAL: segments (3 operations)
+      var webSegment = nsxClient.createSegment({
+        displayName: "web-tier-segment"
+      });
+
+      var appSegment = nsxClient.createSegment({
+        displayName: "app-tier-segment"
+      });
+
+      var dbSegment = nsxClient.createSegment({
+        displayName: "db-tier-segment"
+      });
+
+      System.log("Created 3 network segments");
+    </script>
+    <position y="50.0" x="100.0"/>
+  </workflow-item>
+
+  <workflow-item name="item2" out-name="item3" type="task">
+    <display-name>Configure Firewall Rules</display-name>
+    <script encoded="false">
+      var nsxClient = System.getModule("com.vmware.library.nsx").getNsxClient();
+
+      // PARTIAL: firewall_rules (2 operations)
+      var webToAppRule = nsxClient.createFirewallRule({
+        displayName: "web-to-app-allow",
+        source_groups: ["web-tier"],
+        destination_groups: ["app-tier"],
+        services: ["HTTP", "HTTPS"],
+        action: "ALLOW"
+      });
+
+      var appToDbRule = nsxClient.createFirewallRule({
+        displayName: "app-to-db-allow",
+        source_groups: ["app-tier"],
+        destination_groups: ["db-tier"],
+        services: ["MYSQL"],
+        action: "ALLOW"
+      });
+
+      System.log("Created 2 firewall rules");
+    </script>
+    <position y="100.0" x="200.0"/>
+  </workflow-item>
+
+  <workflow-item name="item3" out-name="item0" type="task">
+    <display-name>Create Security Groups</display-name>
+    <script encoded="false">
+      var nsxClient = System.getModule("com.vmware.library.nsx").getNsxClient();
+
+      // BLOCKED: security_groups (3 operations)
+      var webSG = nsxClient.createSecurityGroup({
+        displayName: "web-tier-sg",
+        members: []
+      });
+
+      var appSG = nsxClient.createSecurityGroup({
+        displayName: "app-tier-sg",
+        members: []
+      });
+
+      var dbSG = nsxClient.createSecurityGroup({
+        displayName: "db-tier-sg",
+        members: []
+      });
+
+      System.log("Created 3 security groups");
+    </script>
+    <position y="150.0" x="300.0"/>
+  </workflow-item>
+</workflow>

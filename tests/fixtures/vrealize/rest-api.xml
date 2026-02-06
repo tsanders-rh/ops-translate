@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow xmlns="http://vmware.com/vco/workflow" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://vmware.com/vco/workflow http://vmware.com/vco/workflow" version="1.0.0" api-version="8.0.0">
+  <display-name>REST API Calls Test</display-name>
+  <description>Test fixture with various REST API call patterns</description>
+
+  <input>
+    <param name="apiKey" type="string"/>
+    <param name="vmId" type="string"/>
+  </input>
+
+  <workflow-item name="item0" type="end" end-mode="0">
+    <position y="250.0" x="500.0"/>
+  </workflow-item>
+
+  <workflow-item name="item1" out-name="item2" type="task">
+    <display-name>REST Client Method Calls</display-name>
+    <script encoded="false">
+      // Pattern 1: restClient.METHOD() calls
+      var restClient = System.getModule("com.vmware.library.http").createRestClient();
+
+      // GET request
+      var response = restClient.get("https://api.example.com/v1/vms/" + vmId);
+
+      // POST request
+      var createPayload = {
+        name: "new-vm",
+        type: "linux"
+      };
+      var created = restClient.post("https://api.example.com/v1/vms", JSON.stringify(createPayload));
+
+      // PUT request
+      var updatePayload = { status: "active" };
+      restClient.put("https://api.example.com/v1/vms/" + vmId, JSON.stringify(updatePayload));
+
+      // DELETE request
+      restClient.delete("https://api.example.com/v1/temp/" + vmId);
+
+      System.log("REST client calls completed");
+    </script>
+    <position y="50.0" x="100.0"/>
+  </workflow-item>
+
+  <workflow-item name="item2" out-name="item3" type="task">
+    <display-name>Fetch API Calls</display-name>
+    <script encoded="false">
+      // Pattern 2: fetch() calls
+      var headers = {
+        "Authorization": "Bearer " + apiKey,
+        "Content-Type": "application/json"
+      };
+
+      var options = {
+        method: "GET",
+        headers: headers
+      };
+
+      var response = fetch("https://monitoring.example.com/api/metrics", options);
+      var metrics = JSON.parse(response.body);
+
+      System.log("Fetch API call completed");
+    </script>
+    <position y="100.0" x="200.0"/>
+  </workflow-item>
+
+  <workflow-item name="item3" out-name="item4" type="task">
+    <display-name>XMLHttpRequest Calls</display-name>
+    <script encoded="false">
+      // Pattern 3: XMLHttpRequest
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", "https://config.example.com/api/settings");
+      xhr.setRequestHeader("Authorization", "Bearer " + apiKey);
+      xhr.send();
+
+      System.log("XMLHttpRequest completed");
+    </script>
+    <position y="150.0" x="300.0"/>
+  </workflow-item>
+
+  <workflow-item name="item4" out-name="item0" type="task">
+    <display-name>vRO REST Objects</display-name>
+    <script encoded="false">
+      // Pattern 4: vRO REST plugin objects
+      var restHost = new RESTHost("https://external-api.example.com");
+      var restOperation = new RESTOperation("/v2/resources");
+
+      var request = restOperation.createRequest(null, vmId);
+      request.execute();
+
+      System.log("vRO REST operation executed");
+    </script>
+    <position y="200.0" x="400.0"/>
+  </workflow-item>
+</workflow>

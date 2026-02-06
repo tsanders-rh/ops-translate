@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow xmlns="http://vmware.com/vco/workflow" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://vmware.com/vco/workflow http://vmware.com/vco/workflow" version="1.0.0" api-version="8.0.0">
+  <display-name>NSX Light Test - PARTIAL Only</display-name>
+  <description>Test fixture with 2 NSX segment operations (PARTIAL classification)</description>
+
+  <input>
+    <param name="vmName" type="string">
+      <description>VM name</description>
+    </param>
+    <param name="segmentName" type="string">
+      <description>NSX segment name</description>
+    </param>
+  </input>
+
+  <workflow-item name="item0" type="end" end-mode="0">
+    <position y="150.0" x="300.0"/>
+  </workflow-item>
+
+  <workflow-item name="item1" out-name="item2" type="task">
+    <display-name>Create NSX Segment</display-name>
+    <script encoded="false">
+      // Create network segment using NSX-T API
+      var nsxClient = System.getModule("com.vmware.library.nsx").getNsxClient();
+
+      var segment = nsxClient.createSegment({
+        displayName: segmentName,
+        transport_zone_path: "/infra/sites/default/enforcement-points/default/transport-zones/overlay-tz"
+      });
+
+      System.log("Created segment: " + segment.displayName);
+    </script>
+    <in-binding>
+      <bind name="segmentName" type="string" export-name="segmentName"/>
+    </in-binding>
+    <position y="50.0" x="100.0"/>
+  </workflow-item>
+
+  <workflow-item name="item2" out-name="item0" type="task">
+    <display-name>Attach VM to Segment</display-name>
+    <script encoded="false">
+      // Reference to Segment object type
+      var segment = new Segment();
+      segment.name = segmentName;
+
+      System.log("Attaching VM " + vmName + " to segment");
+    </script>
+    <in-binding>
+      <bind name="vmName" type="string" export-name="vmName"/>
+      <bind name="segmentName" type="string" export-name="segmentName"/>
+    </in-binding>
+    <position y="100.0" x="200.0"/>
+  </workflow-item>
+</workflow>

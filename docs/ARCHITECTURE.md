@@ -1225,6 +1225,460 @@ def resolve_profile(intent: dict, profile: dict) -> dict:
     return resolved
 ```
 
+## Gap Analysis Architecture
+
+### Overview
+
+The gap analysis system automatically assesses the translatability of vRealize workflows to OpenShift, providing migration guidance for components that cannot be fully automatically translated.
+
+**Architecture Goals:**
+- Detect NSX operations, custom plugins, and external dependencies
+- Classify components by translatability level
+- Generate actionable migration recommendations
+- Integrate seamlessly into existing workflow (runs during `intent extract`)
+- Support plugin-based extensibility for new component types
+
+### Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│              ops-translate intent extract                   │
+└─────────────────┬───────────────────────────────────────────┘
+                  │
+                  │ (for vRealize workflows)
+                  ▼
+┌─────────────────────────────────────────────────────────────┐
+│                 Workflow Analyzer                           │
+│              (analyze/vrealize.py)                          │
+├─────────────────────────────────────────────────────────────┤
+│  • Parse XML workflow structure                             │
+│  • Detect NSX API calls (createSegment, createFirewall...)  │
+│  • Detect custom vRO plugins (ServiceNow, Infoblox...)      │
+│  • Detect REST API calls to external systems                │
+│  • Calculate confidence scores (0.0-1.0)                    │
+│  • Capture evidence (line numbers, code snippets)           │
+└─────────────────┬───────────────────────────────────────────┘
+                  │
+                  │ analysis = {
+                  │   "nsx_operations": {...},
+                  │   "custom_plugins": [...],
+                  │   "rest_api_calls": [...],
+                  │   "signals": {"nsx_keywords": 5, ...}
+                  │ }
+                  ▼
+┌─────────────────────────────────────────────────────────────┐
+│               Classification System                         │
+│               (intent/classify.py)                          │
+├─────────────────────────────────────────────────────────────┤
+│  • Discover classifier plugins (intent/classifiers/)        │
+│  • Run each classifier: can_classify() → classify()         │
+│  • Assign translatability levels (SUPPORTED/PARTIAL/etc)    │
+│  • Assign migration paths (PATH_A/PATH_B/PATH_C)            │
+│  • Add recommendations for each component                   │
+│  • Sort by severity (worst issues first)                    │
+└─────────────────┬───────────────────────────────────────────┘
+                  │
+                  │ components = [
+                  │   ClassifiedComponent(
+                  │     name="NSX Segment",
+                  │     level=PARTIAL,
+                  │     migration_path=PATH_A,
+                  │     recommendations=[...]
+                  │   ), ...
+                  │ ]
+                  ▼
+┌─────────────────────────────────────────────────────────────┐
+│                 Gap Report Generator                        │
+│                  (intent/gaps.py)                           │
+├─────────────────────────────────────────────────────────────┤
+│  • Generate gaps.md (Markdown report)                       │
+│  • Generate gaps.json (machine-readable)                    │
+│  • Display console warnings                                 │
+│  • Create migration guidance summaries                      │
+└─────────────────┬───────────────────────────────────────────┘
+                  │
+                  │ Output:
+                  │   intent/gaps.md
+                  │   intent/gaps.json
+                  ▼
+┌─────────────────────────────────────────────────────────────┐
+│           Ansible Gap Scaffolding                           │
+│           (generate/ansible.py)                             │
+├─────────────────────────────────────────────────────────────┤
+│  • Load gaps.json                                           │
+│  • Inject TODO tasks for PARTIAL/BLOCKED components        │
+│  • Generate role stubs for MANUAL components                │
+│  • Add gap summary header to playbooks                      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Component Details
+
+#### 1. Workflow Analyzer (`analyze/vrealize.py`)
+
+**Purpose**: Parse vRealize workflow XML and detect external dependencies.
+
+**Detection Patterns:**
+
+NSX Operations:
+```python
+# API call detection (high confidence)
+pattern = r'nsxClient\.(create|update|delete|get)(\w+)\('
+# → createSegment, createFirewallRule, etc.
+
+# Object type detection (medium confidence)
+pattern = r'new\s+(Segment|FirewallRule|LoadBalancer)\('
+# → Type instantiation
+
+# Keyword detection (low confidence)
+keywords = ['nsx', 'segment', 'tier', 'firewall']
+# → Contextual mentions
+```
+
+Custom Plugins:
+```python
+# Module path detection
+pattern = r'System\.getModule\("([^"]+)"\)'
+# → "com.vmware.library.servicenow"
+
+# Type annotations
+pattern = r'type="([^:]+):([^"]+)"'
+# → ServiceNow:Connection, Infoblox:Server
+```
+
+REST Calls:
+```python
+# restClient methods
+pattern = r'restClient\.(get|post|put|delete|patch)\('
+
+# fetch() calls
+pattern = r'fetch\(["\']([^"\']+)'
+
+# XMLHttpRequest
+pattern = r'new XMLHttpRequest\(\)'
+```
+
+**Confidence Scoring:**
+```python
+def calculate_detection_confidence(detection_type, context, keyword):
+    base_scores = {
+        "api_call": 0.85,       # nsxClient.createSegment()
+        "object_type": 0.60,    # new Segment()
+        "keyword": 0.30,        # "nsx tier1"
+    }
+
+    confidence = base_scores[detection_type]
+
+    # Boost for supportive context
+    if "nsx" in context.lower(): confidence += 0.05
+    if ".createSegment" in context: confidence += 0.05
+    if "POST" in context or "/api" in context: confidence += 0.05
+
+    # Cap at 0.95 (never 100% certain)
+    return min(confidence, 0.95)
+```
+
+#### 2. Classifier Plugin System (`intent/classifiers/`)
+
+**Base Interface** (`classifiers/base.py`):
+```python
+class BaseClassifier:
+    """Base class for component classifiers."""
+
+    name: str  # Classifier identifier
+    priority: int  # Lower = runs first
+
+    def can_classify(self, analysis: dict) -> bool:
+        """Return True if this classifier can handle the analysis."""
+        raise NotImplementedError
+
+    def classify(self, analysis: dict) -> list[ClassifiedComponent]:
+        """Classify components from analysis data."""
+        raise NotImplementedError
+```
+
+**NSX Classifier** (`classifiers/nsx.py`):
+```python
+class NSXClassifier(BaseClassifier):
+    name = "nsx"
+    priority = 10
+
+    def can_classify(self, analysis: dict) -> bool:
+        return bool(analysis.get("nsx_operations"))
+
+    def classify(self, analysis: dict) -> list[ClassifiedComponent]:
+        components = []
+
+        # Classify NSX segments
+        for segment in analysis["nsx_operations"].get("segments", []):
+            components.append(ClassifiedComponent(
+                name="NSX Segment",
+                component_type="nsx_segment",
+                level=TranslatabilityLevel.PARTIAL,
+                reason="Can be replaced with NetworkAttachmentDefinition",
+                openshift_equivalent="NetworkAttachmentDefinition (Multus CNI)",
+                migration_path=MigrationPath.PATH_A,
+                evidence=segment["evidence"],
+                recommendations=[
+                    "Create NetworkAttachmentDefinition manifest",
+                    "Configure Multus CNI on target cluster",
+                    "Test network connectivity",
+                ],
+            ))
+
+        # Classify NSX firewall rules → NetworkPolicy (PARTIAL)
+        # Classify NSX security groups → NetworkPolicy (BLOCKED)
+        # Classify NSX load balancers → Service/Route (PARTIAL)
+
+        return components
+```
+
+**Classifier Discovery:**
+```python
+def discover_classifiers() -> list[BaseClassifier]:
+    """Auto-discover and instantiate all classifiers."""
+    classifiers_dir = Path(__file__).parent / "classifiers"
+
+    classifiers = []
+    for py_file in classifiers_dir.glob("*.py"):
+        if py_file.stem == "base" or py_file.stem.startswith("_"):
+            continue
+
+        # Dynamic import and instantiation
+        module = importlib.import_module(f"ops_translate.intent.classifiers.{py_file.stem}")
+
+        for name, obj in inspect.getmembers(module, inspect.isclass):
+            if issubclass(obj, BaseClassifier) and obj != BaseClassifier:
+                classifiers.append(obj())
+
+    # Sort by priority (lower number = higher priority)
+    return sorted(classifiers, key=lambda c: c.priority)
+```
+
+#### 3. Classification Levels
+
+```python
+class TranslatabilityLevel(Enum):
+    """Component translatability classification."""
+
+    SUPPORTED = "SUPPORTED"  # Fully automatic
+    PARTIAL = "PARTIAL"      # Auto with manual config
+    BLOCKED = "BLOCKED"      # Cannot auto-translate
+    MANUAL = "MANUAL"        # Custom logic required
+
+    @property
+    def emoji(self) -> str:
+        return {"SUPPORTED": "✅", "PARTIAL": "⚠️",
+                "BLOCKED": "🚫", "MANUAL": "👷"}[self.value]
+
+    @property
+    def severity(self) -> int:
+        """For sorting (higher severity = more problematic)."""
+        return {"SUPPORTED": 0, "PARTIAL": 1,
+                "BLOCKED": 2, "MANUAL": 3}[self.value]
+```
+
+#### 4. Migration Paths
+
+```python
+class MigrationPath(Enum):
+    """Recommended migration approach."""
+
+    PATH_A = "PATH_A"  # OpenShift-native replacement
+    PATH_B = "PATH_B"  # Hybrid (keep existing temporarily)
+    PATH_C = "PATH_C"  # Custom specialist implementation
+
+    @property
+    def description(self) -> str:
+        return {
+            "PATH_A": "OpenShift-native replacement",
+            "PATH_B": "Hybrid approach (keep existing temporarily)",
+            "PATH_C": "Custom specialist implementation",
+        }[self.value]
+```
+
+**Path Selection Logic:**
+- **PATH_A**: Direct OpenShift equivalent exists (e.g., NetworkPolicy for NSX firewall)
+- **PATH_B**: Keep VMware component temporarily, plan replacement (e.g., external load balancer)
+- **PATH_C**: No direct equivalent, requires custom development (e.g., complex ServiceNow integration)
+
+#### 5. Gap Report Generation
+
+**Markdown Report Structure** (`gaps.md`):
+```markdown
+# Gap Analysis Report: {workflow_name}
+
+## Executive Summary
+- Overall Assessment: REQUIRES_MANUAL_WORK
+- Total Components: 8
+- ✅ SUPPORTED: 3
+- ⚠️ PARTIAL: 3
+- 🚫 BLOCKED: 2
+
+## Migration Path Recommendations
+### PATH_A: OpenShift-native replacement (3 components)
+### PATH_B: Hybrid approach (2 components)
+### PATH_C: Custom specialist implementation (3 components)
+
+## Detailed Component Analysis
+[For each component: type, classification, equivalent, recommendations, evidence]
+
+## Next Steps
+1. Review BLOCKED/MANUAL components
+2. Choose migration path
+3. Implement manual tasks
+...
+```
+
+**JSON Report Structure** (`gaps.json`):
+```json
+{
+  "workflow_name": "nsx-provisioning",
+  "summary": {
+    "total_components": 8,
+    "counts": {
+      "SUPPORTED": 3,
+      "PARTIAL": 3,
+      "BLOCKED": 2,
+      "MANUAL": 0
+    },
+    "overall_assessment": "REQUIRES_MANUAL_WORK",
+    "has_blocking_issues": true,
+    "requires_manual_work": true,
+    "migration_paths": {
+      "PATH_A": 3,
+      "PATH_B": 2,
+      "PATH_C": 3,
+      "NONE": 0
+    }
+  },
+  "components": [
+    {
+      "name": "NSX Segment",
+      "component_type": "nsx_segment",
+      "level": "PARTIAL",
+      "reason": "Can be replaced with NetworkAttachmentDefinition",
+      "openshift_equivalent": "NetworkAttachmentDefinition (Multus CNI)",
+      "migration_path": "PATH_A",
+      "evidence": "nsxClient.createSegment() at line 23",
+      "location": "workflow.xml:23",
+      "recommendations": [
+        "Create NetworkAttachmentDefinition manifest",
+        "Configure Multus CNI on target cluster",
+        "Test network connectivity"
+      ]
+    }
+  ],
+  "migration_guidance": {
+    "overall_assessment": "REQUIRES_MANUAL_WORK",
+    "has_blocking_issues": true,
+    "requires_manual_work": true,
+    "recommended_paths": ["PATH_A", "PATH_B", "PATH_C"]
+  }
+}
+```
+
+#### 6. Ansible Gap Scaffolding
+
+**TODO Task Injection:**
+```python
+def _inject_gap_todos(tasks: list[dict], gaps_data: dict) -> tuple[list[dict], str]:
+    """Inject TODO tasks for gap analysis findings."""
+    todo_tasks = []
+
+    for component in gaps_data["components"]:
+        if component["level"] in ("PARTIAL", "BLOCKED", "MANUAL"):
+            todo_task = {
+                "_comment": f"# TODO: {component['name']} ({component['level']})\n",
+                "name": f"TODO: Review {component['name']} migration ({component['level']})",
+                "debug": {
+                    "msg": f"""
+CLASSIFICATION: {component['level']}
+COMPONENT: {component['name']}
+OPENSHIFT EQUIVALENT: {component.get('openshift_equivalent', 'N/A')}
+MIGRATION PATH: {component.get('migration_path', 'N/A')}
+
+RECOMMENDATIONS:
+{chr(10).join('- ' + r for r in component.get('recommendations', []))}
+"""
+                },
+                "tags": ["manual_review_required" if component["level"] == "PARTIAL"
+                        else "manual_implementation_required"]
+            }
+            todo_tasks.append(todo_task)
+
+    return todo_tasks
+```
+
+**Role Stub Generation:**
+```python
+def _create_manual_role_stub(output_dir, component, workspace):
+    """Create Ansible role stub for MANUAL components."""
+    role_name = component["component_type"]
+    role_dir = output_dir / "ansible/roles" / role_name
+
+    # Create role structure
+    (role_dir / "tasks").mkdir(parents=True, exist_ok=True)
+    (role_dir / "defaults").mkdir(parents=True, exist_ok=True)
+
+    # Generate README with migration guidance
+    readme_content = f"""
+# {component['name']} Migration Role
+
+**Classification**: {component['level']}
+**OpenShift Equivalent**: {component.get('openshift_equivalent', 'N/A')}
+**Migration Path**: {component.get('migration_path', 'N/A')}
+
+## What Needs Implementation
+{chr(10).join('- ' + r for r in component.get('recommendations', []))}
+
+## Evidence
+{component.get('evidence', 'No evidence available')}
+"""
+    (role_dir / "README.md").write_text(readme_content)
+
+    # Generate tasks/main.yml with TODO placeholders
+    # Generate defaults/main.yml with discovered parameters
+```
+
+### Extension: Adding New Classifiers
+
+To add support for new component types (e.g., vRealize custom actions, Active Directory operations):
+
+1. **Create classifier** (`intent/classifiers/custom_action.py`):
+```python
+from .base import BaseClassifier
+
+class CustomActionClassifier(BaseClassifier):
+    name = "custom_action"
+    priority = 20  # Run after NSX classifier
+
+    def can_classify(self, analysis: dict) -> bool:
+        return bool(analysis.get("custom_actions"))
+
+    def classify(self, analysis: dict) -> list[ClassifiedComponent]:
+        # Implement classification logic
+        pass
+```
+
+2. **Update analyzer** (`analyze/vrealize.py`):
+```python
+def analyze_vrealize_workflow(xml_file: Path) -> dict:
+    # ... existing code ...
+
+    # Add custom action detection
+    custom_actions = detect_custom_actions(root, namespace)
+
+    return {
+        # ... existing fields ...
+        "custom_actions": custom_actions,
+    }
+```
+
+3. **Classifier auto-discovered** - No registration needed!
+
+The plugin system automatically discovers and uses new classifiers based on the `BaseClassifier` interface.
+
 ## Extension Points
 
 ### Adding New Source Types

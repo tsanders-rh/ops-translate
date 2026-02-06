@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow xmlns="http://vmware.com/vco/workflow" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://vmware.com/vco/workflow http://vmware.com/vco/workflow" version="1.0.0" api-version="8.0.0">
+  <display-name>Custom Plugins Test</display-name>
+  <description>Test fixture with custom vRO plugin references</description>
+
+  <input>
+    <param name="ticketId" type="string"/>
+    <param name="vmName" type="string"/>
+    <param name="ipAddress" type="string"/>
+  </input>
+
+  <attrib name="serviceNowConnection" type="ServiceNow:Connection" read-only="false"/>
+  <attrib name="infobloxServer" type="Infoblox:Server" read-only="false"/>
+  <attrib name="ipamRecord" type="IPAM:IPRecord" read-only="false"/>
+
+  <workflow-item name="item0" type="end" end-mode="0">
+    <position y="200.0" x="400.0"/>
+  </workflow-item>
+
+  <workflow-item name="item1" out-name="item2" type="task">
+    <display-name>Create ServiceNow Change Request</display-name>
+    <script encoded="false">
+      // Custom plugin: ServiceNow
+      var snow = System.getModule("com.vmware.library.servicenow").getConnection();
+
+      var changeRequest = snow.createChangeRequest({
+        shortDescription: "Provision VM: " + vmName,
+        requestedBy: "automation",
+        category: "Infrastructure"
+      });
+
+      System.log("Created ServiceNow change request: " + changeRequest.number);
+    </script>
+    <in-binding>
+      <bind name="vmName" type="string" export-name="vmName"/>
+    </in-binding>
+    <position y="50.0" x="100.0"/>
+  </workflow-item>
+
+  <workflow-item name="item2" out-name="item3" type="task">
+    <display-name>Reserve IP Address</display-name>
+    <script encoded="false">
+      // Custom plugin: Infoblox IPAM
+      var infoblox = System.getModule("com.vmware.library.infoblox").getServer();
+
+      ipamRecord = infoblox.getNextAvailableIP({
+        network: "10.0.0.0/24",
+        hostname: vmName
+      });
+
+      System.log("Reserved IP: " + ipamRecord.ipAddress);
+    </script>
+    <in-binding>
+      <bind name="vmName" type="string" export-name="vmName"/>
+    </in-binding>
+    <out-binding>
+      <bind name="ipamRecord" type="IPAM:IPRecord" export-name="ipamRecord"/>
+    </out-binding>
+    <position y="100.0" x="200.0"/>
+  </workflow-item>
+
+  <workflow-item name="item3" out-name="item0" type="task">
+    <display-name>Update CMDB</display-name>
+    <script encoded="false">
+      // Custom plugin: ServiceNow CMDB
+      var cmdb = System.getModule("com.vmware.library.servicenow").getCMDB();
+
+      cmdb.createCI({
+        name: vmName,
+        type: "Virtual Machine",
+        ipAddress: ipamRecord.ipAddress,
+        status: "Provisioning"
+      });
+
+      System.log("CMDB CI created for " + vmName);
+    </script>
+    <in-binding>
+      <bind name="vmName" type="string" export-name="vmName"/>
+      <bind name="ipamRecord" type="IPAM:IPRecord" export-name="ipamRecord"/>
+    </in-binding>
+    <position y="150.0" x="300.0"/>
+  </workflow-item>
+</workflow>

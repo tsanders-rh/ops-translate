@@ -197,8 +197,10 @@ def discover_classifiers() -> list:
     import logging
     from pathlib import Path
 
+    from ops_translate.intent.classifiers.base import BaseClassifier
+
     logger = logging.getLogger(__name__)
-    classifiers = []
+    classifiers: list[BaseClassifier] = []
     classifiers_dir = Path(__file__).parent / "classifiers"
 
     if not classifiers_dir.exists():

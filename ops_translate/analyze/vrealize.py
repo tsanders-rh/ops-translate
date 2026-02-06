@@ -415,7 +415,7 @@ def detect_nsx_operations(root: ET.Element, namespace: str = "") -> dict[str, li
                     context = script_text[start:end].strip()
 
                     # Find parent workflow item for location
-                    parent = script_elem
+                    parent: Any = script_elem
                     while parent is not None and parent.tag != "workflow-item":
                         parent = parent.getparent() if hasattr(parent, "getparent") else None
 
@@ -541,6 +541,26 @@ def detect_custom_plugins(root: ET.Element, namespace: str = "") -> list[dict[st
                 if any(plugin_name.startswith(std) for std in standard_plugins):
                     continue
                 if plugin_name in ["System", "Math", "Date", "String", "Array"]:
+                    continue
+
+                # Skip standard vCenter objects and common vRO built-ins
+                standard_objects = [
+                    "vmFolder",
+                    "resourcePool",
+                    "datacenter",
+                    "cluster",
+                    "host",
+                    "datastore",
+                    "network",
+                    "vm",
+                    "spec",
+                    "config",
+                    "Server",
+                    "Properties",
+                    "JSON",
+                    "console",
+                ]
+                if plugin_name in standard_objects:
                     continue
 
                 # Extract context
