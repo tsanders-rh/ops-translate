@@ -11,13 +11,14 @@ Extract the operational intent from the vRO workflow and produce a YAML document
 ## Rules
 1. **Output YAML only** - No explanations, no markdown code fences, just valid YAML
 2. **Conform to schema** - Follow the intent.schema.json structure exactly
-3. **Extract inputs/outputs** - Parse `<inputs>` and `<outputs>` elements
-4. **Detect decision points** - Look for `<decision>` elements with branching logic
-5. **Identify governance** - Look for approval tasks, user interaction elements
-6. **Map resources** - Extract resource allocation patterns from scriptable tasks
-7. **Find metadata** - Identify custom properties, tags, attributes
-8. **Day 2 operations** - Infer supported operations from workflow purpose
-9. **Document assumptions** - Add an `assumptions` section for inferred information
+3. **Generate description** - Write a 1-3 sentence human-readable summary of what the workflow does
+4. **Extract inputs/outputs** - Parse `<inputs>` and `<outputs>` elements
+5. **Detect decision points** - Look for `<decision>` elements with branching logic
+6. **Identify governance** - Look for approval tasks, user interaction elements
+7. **Map resources** - Extract resource allocation patterns from scriptable tasks
+8. **Find metadata** - Identify custom properties, tags, attributes
+9. **Day 2 operations** - Infer supported operations from workflow purpose
+10. **Document assumptions** - Add an `assumptions` section for inferred information
 
 ## What to Look For
 
@@ -81,6 +82,10 @@ sources:
 
 intent:
   workflow_name: provision_vm_with_governance
+  description: |
+    Provisions a virtual machine in vSphere with environment-specific configuration.
+    Includes approval workflow for production environments and sets up network
+    profiles based on the target environment.
   workload_type: virtual_machine
 
   inputs:

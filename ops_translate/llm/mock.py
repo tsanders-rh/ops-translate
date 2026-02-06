@@ -50,6 +50,10 @@ sources:
 
 intent:
   workflow_name: provision_vm_with_governance
+  description: |
+    Provisions a virtual machine in vSphere with environment-specific configuration.
+    Includes approval workflow for production environments and applies governance
+    policies for resource allocation and cost tracking.
   workload_type: virtual_machine
 
   inputs:
@@ -117,6 +121,10 @@ sources:
 
 intent:
   workflow_name: provision_vm_with_governance
+  description: |
+    Provisions a virtual machine in vSphere with NSX-T networking and security
+    configuration. Includes approval workflow for production environments, applies
+    security groups, configures load balancer, and sets up firewall rules.
   workload_type: virtual_machine
 
   inputs:

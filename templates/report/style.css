@@ -352,6 +352,30 @@ section h3 {
     font-family: "Courier New", monospace;
 }
 
+.workflow-description {
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-sm);
+    background: #fff;
+    border-left: 3px solid var(--rh-blue);
+    border-radius: 4px;
+}
+
+.workflow-description h4 {
+    margin-top: 0;
+    margin-bottom: var(--spacing-xs);
+    color: var(--rh-blue);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.workflow-description p {
+    margin: 0;
+    line-height: 1.6;
+    color: #333;
+    white-space: pre-wrap;
+}
+
 /* YAML Toggle */
 .yaml-toggle {
     margin-top: var(--spacing-md);

@@ -127,6 +127,12 @@
                     {% if intent.intent.workload_type %}
                     <p><strong>Workload Type:</strong> {{ intent.intent.workload_type }}</p>
                     {% endif %}
+                    {% if intent.intent.description %}
+                    <div class="workflow-description">
+                        <h4>Description</h4>
+                        <p>{{ intent.intent.description }}</p>
+                    </div>
+                    {% endif %}
                 </div>
                 {% endif %}
 
