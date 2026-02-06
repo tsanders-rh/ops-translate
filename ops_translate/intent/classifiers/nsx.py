@@ -423,13 +423,13 @@ class NsxClassifier(BaseClassifier):
                 # Use first non-default name
                 name = op_name
 
-        # Combine all evidence
+        # Combine all evidence with line breaks for readability
         evidence_parts = []
         for op in operations:
             if op.get("evidence"):
                 evidence_parts.append(op["evidence"])
 
-        combined_evidence = " | ".join(evidence_parts) if evidence_parts else None
+        combined_evidence = "\n".join(evidence_parts) if evidence_parts else None
 
         # Use highest confidence
         confidence = max((op.get("confidence", 0.5) for op in operations), default=0.5)
