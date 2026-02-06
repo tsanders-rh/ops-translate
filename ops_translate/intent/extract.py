@@ -456,11 +456,11 @@ def extract_vrealize_intent(llm, xml_file: Path) -> tuple[str, list]:
     # Pre-detect NSX integration
     nsx_patterns = [
         r'RESTHostManager\.createHost\(["\']nsx',
-        r'/api/v1/(firewall|ns-groups|segments|lb-)',
-        r'/policy/api/v1/infra/(segments|lb-|tier-)',
-        r'security[_-]group',
-        r'firewall.*rule',
-        r'nsx[_-]manager',
+        r"/api/v1/(firewall|ns-groups|segments|lb-)",
+        r"/policy/api/v1/infra/(segments|lb-|tier-)",
+        r"security[_-]group",
+        r"firewall.*rule",
+        r"nsx[_-]manager",
     ]
 
     nsx_indicators = []
@@ -476,7 +476,7 @@ def extract_vrealize_intent(llm, xml_file: Path) -> tuple[str, list]:
     prompt = template.render(
         workflow_content=workflow_content,
         has_nsx=has_nsx,
-        nsx_indicators="\n".join(nsx_indicators) if nsx_indicators else ""
+        nsx_indicators="\n".join(nsx_indicators) if nsx_indicators else "",
     )
 
     # Call LLM

@@ -332,9 +332,7 @@ class NsxClassifier(BaseClassifier):
             )
 
         # NSX Segments/Overlays
-        if any(
-            "segment" in str(i.get("operations", [])).lower() for i in nsx_integrations
-        ):
+        if any("segment" in str(i.get("operations", [])).lower() for i in nsx_integrations):
             level, equivalent, path, recommendations = self.CLASSIFICATION_RULES["segments"]
             components.append(
                 ClassifiedComponent(
