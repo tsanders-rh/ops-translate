@@ -147,6 +147,10 @@ PowerCLI/vRealize  ──[LLM]──>  intent.yaml  ──[Templates]──>  An
 
 - Parse PowerCLI parameters, environment branching, and resource profiles
 - Extract vRealize workflow logic including approvals and governance
+- **Automatic gap analysis for vRealize workflows** - Detects NSX operations, custom plugins, and REST calls
+- **Translatability assessment** - Classifies components as SUPPORTED, PARTIAL, BLOCKED, or MANUAL
+- **Migration path guidance** - Provides specific recommendations for non-translatable components
+- **Smart Ansible scaffolding** - Generates TODO tasks and role stubs for manual work
 - Detect conflicts during intent merge (different approval requirements, network mappings, etc.)
 - Generate KubeVirt VirtualMachine manifests
 - Generate Ansible roles with proper structure and defaults
@@ -316,6 +320,89 @@ Status: SAFE TO PROCEED (with 2 review items)
 - 🟡 **REVIEW**: Should verify but not blocking
 - 🟢 **SAFE**: No issues found
 
+### Automatic Gap Analysis (vRealize Workflows)
+
+When extracting intent from vRealize workflows, ops-translate automatically analyzes them for translatability issues and provides migration guidance:
+
+```bash
+ops-translate intent extract
+```
+
+**What gets analyzed:**
+- NSX-T operations (segments, firewall rules, load balancers, security groups)
+- Custom vRO plugins (ServiceNow, Infoblox, etc.)
+- REST API calls to external systems
+- vRealize-specific constructs
+
+**Output:**
+
+1. **Console warnings** - Immediate feedback during extraction:
+```
+Running gap analysis on vRealize workflows...
+  Analyzing: nsx-provisioning.xml
+    ⚠ Found 3 blocking issue(s)
+  ✓ Gap analysis reports written to intent/gaps.md and intent/gaps.json
+
+⚠ Warning: Found 3 component(s) that cannot be automatically translated.
+  Review intent/gaps.md for migration guidance and manual implementation steps.
+```
+
+2. **Gap reports** - Detailed analysis in `intent/`:
+   - `gaps.md` - Human-readable report with migration paths and recommendations
+   - `gaps.json` - Machine-readable for tooling integration
+
+3. **Smart scaffolding** - When you run `generate`, Ansible playbooks include:
+   - **TODO tasks** for PARTIAL components (need configuration)
+   - **Role stubs** for BLOCKED/MANUAL components (need implementation)
+   - **Migration guidance** embedded as comments
+
+**Classification levels:**
+- ✅ **SUPPORTED** - Fully automatic translation to OpenShift-native
+- ⚠️ **PARTIAL** - Can translate with manual configuration needed
+- 🚫 **BLOCKED** - Cannot auto-translate, requires manual implementation
+- 👷 **MANUAL** - Complex custom logic requiring specialist review
+
+**Migration paths:**
+- **PATH_A**: OpenShift-native replacement available (e.g., NetworkPolicy for NSX firewall)
+- **PATH_B**: Hybrid approach - keep existing system temporarily
+- **PATH_C**: Custom specialist implementation required
+
+**Example gap report snippet:**
+```markdown
+## NSX Firewall Rule
+
+**Type**: `nsx_firewall_rule`
+**Classification**: ⚠️ PARTIAL
+**OpenShift Equivalent**: NetworkPolicy
+**Migration Path**: PATH_A - OpenShift-native replacement
+
+**Recommendations**:
+- Create NetworkPolicy manifest with equivalent rules
+- Test pod-to-pod connectivity
+- Consider Calico for advanced features
+- Review default-deny policies
+
+**Evidence**:
+nsxClient.createFirewallRule() at line 45
+```
+
+**Generated Ansible includes TODO tasks:**
+```yaml
+- name: "TODO: Implement NSX firewall rule migration"
+  debug:
+    msg: |
+      CLASSIFICATION: PARTIAL
+      OPENSHIFT EQUIVALENT: NetworkPolicy
+      MIGRATION PATH: PATH_A - OpenShift-native replacement
+
+      RECOMMENDATIONS:
+      - Create NetworkPolicy manifest with equivalent rules
+      - Test pod-to-pod connectivity
+  tags: [manual_review_required]
+```
+
+This gives you a clear migration roadmap before writing any code.
+
 ## Example Output
 
 After running `ops-translate generate`, you'll have:
@@ -325,11 +412,18 @@ output/
 ├── kubevirt/
 │   └── vm.yaml                    # KubeVirt VirtualMachine manifest
 ├── ansible/
-│   ├── site.yml                   # Main playbook
+│   ├── site.yml                   # Main playbook with TODO tasks for gaps
 │   └── roles/
-│       └── provision_vm/
-│           ├── tasks/main.yml
-│           └── defaults/main.yml
+│       ├── provision_vm/
+│       │   ├── tasks/main.yml
+│       │   └── defaults/main.yml
+│       └── nsx_segment_migration/ # Auto-generated stub for manual work
+│           ├── README.md          # Migration guidance
+│           ├── tasks/main.yml     # TODO placeholders
+│           └── defaults/main.yml  # Discovered parameters
+├── intent/
+│   ├── gaps.md                    # Human-readable gap analysis
+│   └── gaps.json                  # Machine-readable gap data
 └── README.md                      # How to run the artifacts
 ```
 
@@ -421,9 +515,10 @@ ops-translate generate --profile prod  # Uses prod settings
 This is a v1 prototype focused on demonstrating the translation workflow. Not included:
 
 - Live VMware/vCenter access
-- NSX network policy conversion
 - Full Ansible Automation Platform workflow import
 - Production-grade correctness guarantees
+
+**Note**: NSX operations are now detected and analyzed via gap analysis, providing migration guidance even though automatic conversion is not always possible.
 
 See [SPEC.md](SPEC.md) for complete design details.
 
