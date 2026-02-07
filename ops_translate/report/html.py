@@ -177,8 +177,10 @@ def _consolidate_supported_patterns(gaps_data: dict[str, Any]) -> list[dict[str,
 
     Example:
         >>> gaps = {"components": [
-        ...     {"name": "Provision VM", "component_type": "vm_provisioning", "level": "SUPPORTED", "location": "provision"},
-        ...     {"name": "VM Memory", "component_type": "vm_provisioning", "level": "SUPPORTED", "location": "configure"}
+        ...     {"name": "Provision VM", "component_type": "vm_provisioning",
+        ...      "level": "SUPPORTED", "location": "provision"},
+        ...     {"name": "VM Memory", "component_type": "vm_provisioning",
+        ...      "level": "SUPPORTED", "location": "configure"}
         ... ]}
         >>> result = _consolidate_supported_patterns(gaps)
         >>> result[0]["count"]
