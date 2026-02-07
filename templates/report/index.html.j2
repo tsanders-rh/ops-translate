@@ -281,7 +281,7 @@
 
     <!-- Workflow Inventory -->
     {% if sources %}
-    <section class="inventory-section">
+    <section class="inventory-section layer-3">
         <div class="container">
             <h2>Source Files</h2>
             <table class="inventory-table">
@@ -328,7 +328,7 @@
 
     <!-- Intent Overview -->
     {% if intent %}
-    <section class="intent-section">
+    <section class="intent-section layer-3">
         <div class="container">
             <h2>Intent Overview</h2>
             <div class="intent-content">
@@ -444,7 +444,7 @@
         </div>
     </section>
     {% else %}
-    <section class="intent-section">
+    <section class="intent-section layer-3">
         <div class="container">
             <h2>Intent Overview</h2>
             <div class="alert alert-warning">
@@ -456,7 +456,7 @@
 
     <!-- Gaps & Migration Paths -->
     {% if gaps and gaps.components %}
-    <section class="gaps-section">
+    <section class="gaps-section layer-3">
         <div class="container">
             <h2>Gaps & Migration Guidance</h2>
 
@@ -625,7 +625,7 @@
         {% endif %}
     {% endfor %}
     {% if hybrid_components %}
-    <section class="hybrid-section">
+    <section class="hybrid-section layer-3">
         <div class="container">
             <h2>What Stays in VMware / NSX (Hybrid Approach)</h2>
 
@@ -665,7 +665,7 @@
 
     <!-- Generated Artifacts -->
     {% if artifacts.kubevirt or artifacts.ansible %}
-    <section class="artifacts-section">
+    <section class="artifacts-section layer-3">
         <div class="container">
             <h2>Generated Artifacts</h2>
 
@@ -718,7 +718,7 @@
         </div>
     </section>
     {% else %}
-    <section class="artifacts-section">
+    <section class="artifacts-section layer-3">
         <div class="container">
             <h2>Generated Artifacts</h2>
             <div class="alert alert-info">
@@ -730,7 +730,7 @@
 
     <!-- Assumptions -->
     {% if assumptions_md %}
-    <section class="appendix-section">
+    <section class="appendix-section layer-3">
         <div class="container">
             <details class="appendix-content">
                 <summary><h2>Assumptions</h2></summary>
@@ -744,7 +744,7 @@
 
     <!-- Conflicts -->
     {% if conflicts_md %}
-    <section class="appendix-section">
+    <section class="appendix-section layer-3">
         <div class="container">
             <details class="appendix-content">
                 <summary><h2>Conflicts</h2></summary>

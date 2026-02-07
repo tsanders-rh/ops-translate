@@ -1395,3 +1395,40 @@ pre code {
         width: 100%;
     }
 }
+
+/* ================================================================ */
+/* Progressive Disclosure - Layer Styling                          */
+/* ================================================================ */
+
+/* Layer 2: Architecture Impact - Prominent placement */
+.layer-2 {
+    background: linear-gradient(to bottom, #f8f9fa 0%, #ffffff 100%);
+    border-top: 3px solid var(--rh-blue);
+    padding-top: var(--spacing-xl);
+    padding-bottom: var(--spacing-xl);
+}
+
+.layer-2 h2 {
+    color: var(--rh-blue);
+    border-bottom: 2px solid var(--rh-blue);
+    padding-bottom: var(--spacing-sm);
+    margin-bottom: var(--spacing-lg);
+}
+
+/* Layer 3: Implementation Details - Subdued styling */
+.layer-3 {
+    background-color: #fafafa;
+    border-top: 1px solid var(--rh-gray-light);
+}
+
+.layer-3 h2 {
+    color: var(--rh-gray);
+    font-size: 1.5rem;
+}
+
+/* Badge warning color for "Requires Design Decisions" */
+.badge-warning {
+    background-color: var(--color-partial);
+    color: #ffffff;
+    font-weight: 600;
+}
