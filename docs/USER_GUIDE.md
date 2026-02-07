@@ -223,8 +223,8 @@ ops-translate intent extract
 cat intent/powercli.intent.yaml
 
 # 5. Review migration readiness BEFORE generating
-ops-translate report --format html --profile lab
-open output/report/index.html  # Review gaps and blockers
+ops-translate report
+open output/report/index.html  # Interactive report with recommendations
 
 # 6. Generate artifacts
 ops-translate generate --profile lab
@@ -345,17 +345,19 @@ cat mapping/preview.md
 
 #### Step 9: Review Migration Readiness
 
-Before generating artifacts, review the migration readiness report:
+Before generating artifacts, review the interactive migration readiness report:
 
 ```bash
-ops-translate report --format html --profile lab
+ops-translate report
 open output/report/index.html
 ```
 
-This shows:
-- Components that can be auto-translated (SUPPORTED)
-- Components needing manual work (PARTIAL/BLOCKED)
-- Migration recommendations and OpenShift equivalents
+This interactive HTML report shows:
+- **3-layer progressive disclosure**: Executive summary, architecture planning, implementation details
+- **Translation status**: Supported, Partial, Expert-Guided, Custom classifications
+- **Expert recommendations**: Production-grade patterns organized by team
+- **Migration paths**: PATH A/B/C guidance with OpenShift equivalents
+- **Interactive features**: Filters, collapsible sections, CSV export
 
 #### Step 10: Generate Artifacts
 
@@ -567,8 +569,8 @@ Running gap analysis on vRealize workflows...
 **Classification levels**:
 - ✅ **SUPPORTED** - Fully automatic translation to OpenShift-native equivalent
 - ⚠️ **PARTIAL** - Can translate but requires manual configuration
-- 🚫 **BLOCKED** - Cannot auto-translate, requires manual implementation
-- 👷 **MANUAL** - Complex custom logic requiring specialist review
+- 🎯 **EXPERT-GUIDED** - Production-grade patterns available from Red Hat experts
+- 🔧 **CUSTOM** - Complex custom logic requiring specialist review
 
 **Example gap report** (`intent/gaps.md`):
 ```markdown
@@ -581,7 +583,7 @@ Running gap analysis on vRealize workflows...
 - Total Components: 5
 - ✅ SUPPORTED: 2
 - ⚠️ PARTIAL: 2
-- 🚫 BLOCKED: 1
+- 🎯 EXPERT-GUIDED: 1
 
 ## Detailed Component Analysis
 
@@ -734,16 +736,138 @@ ops-translate map preview --target openshift
 | New-HardDisk | DataVolume | Persistent volume claim |
 ```
 
+### ops-translate report
+
+**Purpose**: Generate interactive HTML migration readiness report.
+
+```bash
+ops-translate report
+```
+
+**Output**: `output/report/index.html` (self-contained HTML with embedded CSS/JS)
+
+**When to use**: After `intent extract` and BEFORE `generate` to review migration complexity, gaps, and expert recommendations.
+
+#### What the Report Shows
+
+The HTML report provides a comprehensive migration analysis organized in **3 progressive disclosure layers**:
+
+**Layer 1: Executive Summary**
+- Translation status cards (Supported, Partial, Expert-Guided, Custom)
+- Real-world migration story with actual component counts
+- Target architecture snapshot showing end-state
+- How to read this report guide for different audiences
+- Overall migration assessment
+
+**Layer 2: Architecture & Planning**
+- Expert recommendations by team (Platform, Network, Security)
+- Migration path quick reference (PATH A/B/C)
+- Consolidated SUPPORTED patterns (reduced repetition)
+- Detailed gap analysis with OpenShift equivalents
+
+**Layer 3: Implementation Details** (collapsible)
+- Intent overview (workflow info, inputs, outputs, integrations)
+- Generated artifacts preview
+- Source code evidence with line numbers
+
+#### Interactive Features
+
+- **Click to filter**: Click summary cards to filter gaps by severity level
+- **Team-based filters**: Filter expert recommendations by Platform/Network/Security teams
+- **Collapsible sections**: Layer 3 sections expand on demand
+- **SUPPORTED toggle**: Hide/show fully-supported patterns (hidden by default)
+- **Export options**: PDF (print) and CSV (migration tasks)
+
+#### Multi-Audience Design
+
+The report serves different stakeholders:
+
+| Audience | Recommended Path |
+|----------|-----------------|
+| **Executives** | Executive Summary → Migration Story → Target Architecture |
+| **Platform Teams** | Architecture Snapshot → Expert Recommendations → Implementation Details |
+| **NetOps / SecOps** | NSX Migration Findings → Expert-Guided Security & Governance Patterns |
+
+#### Understanding Migration Classifications
+
+| Label | Meaning | Example |
+|-------|---------|---------|
+| **Supported** | Auto-translatable to OpenShift | VM provisioning, CPU/memory config |
+| **Partial Translation** | Core intent detected, manual mapping needed | Custom network policies, advanced storage |
+| **Expert-Guided** | Production-grade patterns available from Red Hat | NSX firewall rules, approval workflows |
+| **Custom** | Complex custom logic requiring specialist review | Custom plugins, JavaScript scriptable tasks |
+
+#### Example Workflow
+
+```bash
+# Extract intent
+ops-translate intent extract
+
+# Generate and review report
+ops-translate report
+open output/report/index.html
+
+# Review the report to:
+# 1. Understand what will auto-translate (SUPPORTED)
+# 2. Identify components needing manual work (PARTIAL/CUSTOM)
+# 3. Access expert recommendations for complex patterns (EXPERT-GUIDED)
+# 4. Plan migration based on PATH A/B/C guidance
+
+# After reviewing, generate artifacts
+ops-translate generate --profile lab
+```
+
+#### Report Sections Explained
+
+**Migration Story**
+- Shows actual counts from your workspace analysis
+- Demonstrates proven automation for standard patterns
+- Highlights availability of expert patterns for complex scenarios
+- Not a research project - production-grade guidance
+
+**Target Architecture Snapshot**
+- Explicit end-state showing what runs where
+- OpenShift Virtualization for VM workloads
+- Ansible Automation Platform for orchestration
+- OpenShift Networking (OVN-Kubernetes, NetworkPolicy, Ingress)
+- Clarifies virt-first migration journey
+
+**Expert Recommendations**
+- Production-grade patterns from successful customer migrations
+- Organized by team responsibility (Platform, Network, Security)
+- Includes implementation guidance and OpenShift equivalents
+- Emphasizes supported automation stack (not DIY)
+
+**Gap Analysis**
+- Component-by-component analysis with severity levels
+- Migration path assignments (PATH A/B/C)
+- Evidence from source code with file locations and line numbers
+- Specific recommendations for each component
+
+**Consolidated SUPPORTED Patterns**
+- Groups repeated SUPPORTED components by type
+- Shows "VM Provisioning (5 instances across 2 files)" instead of listing each
+- Reduces report length while preserving full detail
+- Hidden by default (toggle to show)
+
+#### Tips
+
+- **Review BEFORE generating**: Understand migration complexity before creating artifacts
+- **Share with stakeholders**: Report is self-contained HTML (no server required)
+- **Use filters**: Focus on specific severity levels or teams
+- **Export to CSV**: Create migration task tracking in your project management tool
+- **Print to PDF**: Create offline documentation or presentations
+
 ### ops-translate generate
 
 **Purpose**: Generate Ansible playbooks and KubeVirt manifests.
 
 **⚠️ Best Practice**: Review the migration readiness report BEFORE generating:
 ```bash
-ops-translate report --format html --profile lab
+ops-translate report
 open output/report/index.html
 ```
-This shows what can be auto-translated vs. what needs manual work.
+The interactive report shows translation status, expert recommendations, and migration paths to help you understand what will be automated vs. what needs manual work.
 
 ```bash
 ops-translate generate --profile <profile_name> [--no-ai]
@@ -777,7 +901,7 @@ ops-translate generate --profile lab --no-ai
 When vRealize workflows have been analyzed (via `intent extract`), the generated Ansible playbooks automatically include:
 
 1. **TODO tasks** for components requiring manual work
-2. **Role stubs** for BLOCKED/MANUAL components
+2. **Role stubs** for EXPERT-GUIDED/CUSTOM components
 3. **Migration guidance** as embedded comments
 
 **Example: Generated playbook with gaps** (`output/ansible/site.yml`):
@@ -788,7 +912,7 @@ When vRealize workflows have been analyzed (via `intent extract`), the generated
   tasks:
     # Gap Analysis Summary:
     # - 2 PARTIAL components require manual configuration
-    # - 1 BLOCKED component requires manual implementation
+    # - 1 EXPERT-GUIDED component has production patterns available
     # Review intent/gaps.md for detailed migration guidance
 
     - name: "TODO: Review NSX segment migration (PARTIAL)"
@@ -831,7 +955,7 @@ When vRealize workflows have been analyzed (via `intent extract`), the generated
 
 **Auto-generated role stubs** (`output/ansible/roles/nsx_segment_migration/`):
 
-For BLOCKED/MANUAL components, ops-translate generates role scaffolding:
+For EXPERT-GUIDED/CUSTOM components, ops-translate generates role scaffolding:
 
 ```
 output/ansible/roles/

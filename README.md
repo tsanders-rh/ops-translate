@@ -48,8 +48,8 @@ ops-translate summarize
 ops-translate intent extract
 
 # Review migration readiness BEFORE generating
-ops-translate report --format html --profile lab
-open output/report/index.html  # Review gaps, blockers, and recommendations
+ops-translate report
+open output/report/index.html  # Interactive report with expert recommendations
 
 # After reviewing the report, generate artifacts
 ops-translate generate --profile lab                    # YAML (default)
@@ -149,8 +149,8 @@ PowerCLI/vRealize  ──[LLM]──>  intent.yaml  ──[Templates]──>  An
 - Parse PowerCLI parameters, environment branching, and resource profiles
 - Extract vRealize workflow logic including approvals and governance
 - **Automatic gap analysis for vRealize workflows** - Detects NSX operations, custom plugins, and REST calls
-- **Translatability assessment** - Classifies components as SUPPORTED, PARTIAL, BLOCKED, or MANUAL
-- **Migration path guidance** - Provides specific recommendations for non-translatable components
+- **Translatability assessment** - Classifies components as SUPPORTED, PARTIAL, EXPERT-GUIDED, or CUSTOM
+- **Migration path guidance** - Provides specific recommendations with production-grade patterns
 - **Smart Ansible scaffolding** - Generates TODO tasks and role stubs for manual work
 - Detect conflicts during intent merge (different approval requirements, network mappings, etc.)
 - Generate KubeVirt VirtualMachine manifests
@@ -354,14 +354,14 @@ Running gap analysis on vRealize workflows...
 
 3. **Smart scaffolding** - When you run `generate`, Ansible playbooks include:
    - **TODO tasks** for PARTIAL components (need configuration)
-   - **Role stubs** for BLOCKED/MANUAL components (need implementation)
+   - **Role stubs** for EXPERT-GUIDED/CUSTOM components (need implementation)
    - **Migration guidance** embedded as comments
 
 **Classification levels:**
 - ✅ **SUPPORTED** - Fully automatic translation to OpenShift-native
 - ⚠️ **PARTIAL** - Can translate with manual configuration needed
-- 🚫 **BLOCKED** - Cannot auto-translate, requires manual implementation
-- 👷 **MANUAL** - Complex custom logic requiring specialist review
+- 🎯 **EXPERT-GUIDED** - Production-grade patterns available from Red Hat experts
+- 🔧 **CUSTOM** - Complex custom logic requiring specialist review
 
 **Migration paths:**
 - **PATH_A**: OpenShift-native replacement available (e.g., NetworkPolicy for NSX firewall)
