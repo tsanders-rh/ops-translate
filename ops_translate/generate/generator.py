@@ -195,7 +195,6 @@ def generate_with_templates(workspace: Workspace, profile: str, output_format: s
 
     # Check if we can work with gaps.json instead of merged intent
     has_merged_intent = intent_file.exists()
-    has_gaps_data = gaps_file.exists()
 
     # For YAML format, check if custom templates exist
     loader = TemplateLoader(workspace.root)
