@@ -713,7 +713,9 @@ def apply_decisions_to_components(
                         new_evidence_list = list(component.evidence)
                 else:
                     new_evidence_list = []
-                new_evidence_list.append(f"Decision applied: {new_classification} (from user answers)")
+                new_evidence_list.append(
+                    f"Decision applied: {new_classification} (from user answers)"
+                )
                 new_evidence = "\n".join(new_evidence_list)
 
                 updated_component = ClassifiedComponent(

@@ -344,9 +344,7 @@ def interview_generate():
         # Normalize evidence to string (handle both string and list from gaps.json)
         evidence_raw = comp_data.get("evidence")
         if evidence_raw:
-            evidence = (
-                "\n".join(evidence_raw) if isinstance(evidence_raw, list) else evidence_raw
-            )
+            evidence = "\n".join(evidence_raw) if isinstance(evidence_raw, list) else evidence_raw
         else:
             evidence = None
 
@@ -428,9 +426,7 @@ def interview_apply():
         # Normalize evidence to string (handle both string and list from gaps.json)
         evidence_raw = comp_data.get("evidence")
         if evidence_raw:
-            evidence = (
-                "\n".join(evidence_raw) if isinstance(evidence_raw, list) else evidence_raw
-            )
+            evidence = "\n".join(evidence_raw) if isinstance(evidence_raw, list) else evidence_raw
         else:
             evidence = None
 
