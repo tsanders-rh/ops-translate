@@ -1644,3 +1644,288 @@ pre code {
 .layer-3-collapsible summary:hover .expand-hint {
     color: var(--rh-gray-dark);
 }
+
+/* ================================================================ */
+/* Real-World Migration Story Section                              */
+/* ================================================================ */
+
+.migration-story-section {
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+    padding: var(--spacing-xl) 0;
+    border-top: 1px solid var(--rh-gray-light);
+}
+
+.migration-story {
+    background: white;
+    border-radius: 8px;
+    padding: var(--spacing-xl);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.story-header {
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.story-label {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--rh-blue);
+    background: rgba(0, 102, 204, 0.1);
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    margin-bottom: var(--spacing-sm);
+}
+
+.story-header h2 {
+    font-size: 1.75rem;
+    color: var(--rh-dark);
+    margin: var(--spacing-sm) 0 0 0;
+}
+
+.story-intro {
+    font-size: 1.1rem;
+    color: var(--rh-gray-dark);
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.story-results {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-xl);
+    margin: var(--spacing-lg) 0;
+    flex-wrap: wrap;
+}
+
+.story-stat {
+    text-align: center;
+    padding: var(--spacing-md);
+    min-width: 140px;
+}
+
+.stat-number {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--rh-blue);
+    line-height: 1;
+}
+
+.story-stat.stat-highlight .stat-number {
+    color: var(--color-partial);
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--rh-gray);
+    margin-top: var(--spacing-xs);
+    line-height: 1.3;
+}
+
+.story-conclusion {
+    font-size: 1.05rem;
+    color: var(--rh-gray-dark);
+    text-align: center;
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--rh-gray-light);
+}
+
+/* ================================================================ */
+/* Target Architecture Snapshot Section                            */
+/* ================================================================ */
+
+.target-architecture-section {
+    background: white;
+    padding: var(--spacing-xl) 0;
+    border-top: 3px solid var(--rh-blue);
+}
+
+.target-architecture-section h2 {
+    color: var(--rh-blue);
+    font-size: 2rem;
+    margin-bottom: var(--spacing-sm);
+}
+
+.architecture-intro {
+    font-size: 1.1rem;
+    color: var(--rh-gray);
+    margin-bottom: var(--spacing-xl);
+}
+
+.architecture-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.architecture-card {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: var(--spacing-lg);
+    border-left: 4px solid var(--rh-blue);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.architecture-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.arch-virt {
+    border-left-color: var(--color-supported);
+}
+
+.arch-network {
+    border-left-color: var(--color-partial);
+}
+
+.arch-expert {
+    border-left-color: var(--rh-blue);
+}
+
+.arch-icon {
+    font-size: 2.5rem;
+    margin-bottom: var(--spacing-sm);
+}
+
+.architecture-card h3 {
+    color: var(--rh-dark);
+    font-size: 1.3rem;
+    margin-bottom: var(--spacing-sm);
+}
+
+.arch-description {
+    color: var(--rh-gray);
+    font-size: 0.95rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.arch-components {
+    list-style: none;
+    margin: var(--spacing-md) 0;
+    padding: 0;
+}
+
+.arch-components li {
+    padding: var(--spacing-xs) 0;
+    color: var(--rh-gray-dark);
+    font-size: 0.9rem;
+    border-bottom: 1px solid #e8ecf1;
+}
+
+.arch-components li:last-child {
+    border-bottom: none;
+}
+
+.arch-components code {
+    background: rgba(0, 0, 0, 0.05);
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.85rem;
+    color: var(--rh-blue);
+}
+
+.arch-badge {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-top: var(--spacing-md);
+}
+
+/* Migration Journey */
+.migration-journey {
+    background: linear-gradient(to right, #f0f9ff, #e0f2fe);
+    border-radius: 8px;
+    padding: var(--spacing-xl);
+    margin-top: var(--spacing-xl);
+}
+
+.migration-journey h3 {
+    color: var(--rh-dark);
+    font-size: 1.5rem;
+    margin-bottom: var(--spacing-lg);
+    text-align: center;
+}
+
+.journey-phases {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    flex-wrap: wrap;
+}
+
+.journey-phase {
+    background: white;
+    border-radius: 8px;
+    padding: var(--spacing-lg);
+    flex: 1;
+    min-width: 250px;
+    max-width: 400px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.phase-number {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    background: var(--rh-blue);
+    color: white;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 40px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: var(--spacing-sm);
+}
+
+.phase-content h4 {
+    color: var(--rh-dark);
+    font-size: 1.1rem;
+    margin-bottom: var(--spacing-xs);
+}
+
+.phase-content p {
+    color: var(--rh-gray);
+    font-size: 0.9rem;
+    margin-bottom: var(--spacing-sm);
+}
+
+.phase-badge {
+    display: inline-block;
+    background: rgba(0, 102, 204, 0.1);
+    color: var(--rh-blue);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.journey-arrow {
+    font-size: 2rem;
+    color: var(--rh-blue);
+    font-weight: 700;
+}
+
+.journey-note {
+    background: white;
+    padding: var(--spacing-md);
+    border-radius: 4px;
+    border-left: 4px solid var(--rh-blue);
+    color: var(--rh-gray-dark);
+    font-size: 0.95rem;
+}
+
+/* Card sublabel for "Expert-Guided (Patterns Available)" */
+.card-sublabel {
+    font-size: 0.7rem;
+    font-weight: normal;
+    opacity: 0.9;
+}
