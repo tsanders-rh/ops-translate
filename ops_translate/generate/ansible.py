@@ -366,14 +366,18 @@ def _inject_gap_todos(
             comment_lines.append(f"# Owner: {recommendation.get('owner', 'Unknown')}")
             comment_lines.append("#")
             comment_lines.append("# Recommended Ansible Approach:")
-            comment_lines.append(f"#   {recommendation.get('ansible_approach', 'See recommendations.md')}")
+            comment_lines.append(
+                f"#   {recommendation.get('ansible_approach', 'See recommendations.md')}"
+            )
             comment_lines.append("#")
             if recommendation.get("openshift_primitives"):
                 comment_lines.append("# OpenShift/Kubernetes Primitives:")
                 for primitive in recommendation["openshift_primitives"]:
                     comment_lines.append(f"#   - {primitive}")
                 comment_lines.append("#")
-            comment_lines.append("# See: intent/recommendations.md for detailed implementation steps")
+            comment_lines.append(
+                "# See: intent/recommendations.md for detailed implementation steps"
+            )
         else:
             # Fall back to basic gap analysis info
             if comp.get("openshift_equivalent"):
@@ -448,8 +452,7 @@ def _create_manual_role_stub(
             rec_type = rec.get("component_type", "").rstrip("s")  # Remove trailing 's' for matching
             comp_type_normalized = component_type.rstrip("s")
 
-            if (rec_type == comp_type_normalized and
-                rec.get("component_name") == component_name):
+            if rec_type == comp_type_normalized and rec.get("component_name") == component_name:
                 recommendation = rec
                 break
 
@@ -505,7 +508,9 @@ def _create_manual_role_stub(
             for i, step in enumerate(recommendation["implementation_steps"], 1):
                 readme_content += f"{i}. {step}\n"
         else:
-            readme_content += "1. Review the component requirements in `intent/recommendations.md`\n"
+            readme_content += (
+                "1. Review the component requirements in `intent/recommendations.md`\n"
+            )
             readme_content += "2. Design an OpenShift-native solution or hybrid approach\n"
             readme_content += "3. Implement tasks in `tasks/main.yml`\n"
 
@@ -523,7 +528,9 @@ def _create_manual_role_stub(
 ## Testing & Validation
 
 """
-        readme_content += recommendation.get("testing_guidance", "Test thoroughly in dev environment before production use.")
+        readme_content += recommendation.get(
+            "testing_guidance", "Test thoroughly in dev environment before production use."
+        )
 
         readme_content += """
 
@@ -664,7 +671,7 @@ component_type: "{component_type}"
             # Add comment describing the variable
             defaults_content += f"# {description}\n"
             # Add placeholder variable
-            defaults_content += f"{var_name}: \"TODO: Define {var_name}\"\n"
+            defaults_content += f'{var_name}: "TODO: Define {var_name}"\n'
             defaults_content += "\n"
     else:
         defaults_content += "# TODO: Define required variables based on component requirements\n"

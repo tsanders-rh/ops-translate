@@ -510,7 +510,10 @@ def generate_recommendations_from_components(
 
         # NSX components
         if "nsx" in component.component_type:
-            if "firewall" in component.component_type or "distributed_firewall" in component.component_type:
+            if (
+                "firewall" in component.component_type
+                or "distributed_firewall" in component.component_type
+            ):
                 rec = RecommendationEngine.generate_nsx_firewall_recommendation(
                     component_name=component.name,
                     location=component.location,
