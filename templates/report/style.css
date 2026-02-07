@@ -1923,9 +1923,85 @@ pre code {
     font-size: 0.95rem;
 }
 
-/* Card sublabel for "Expert-Guided (Patterns Available)" */
+/* Card sublabel for "Expert-Guided (Security & Governance Patterns)" */
 .card-sublabel {
     font-size: 0.7rem;
     font-weight: normal;
     opacity: 0.9;
+}
+
+/* ================================================================ */
+/* Reading Guide Section                                           */
+/* ================================================================ */
+
+.reading-guide-section {
+    background: #fafbfc;
+    padding: var(--spacing-lg) 0;
+    border-top: 1px solid var(--rh-gray-light);
+    border-bottom: 1px solid var(--rh-gray-light);
+}
+
+.reading-guide {
+    background: white;
+    border-radius: 8px;
+    padding: var(--spacing-lg);
+    border: 2px solid #e1e8ed;
+}
+
+.reading-guide h3 {
+    color: var(--rh-dark);
+    font-size: 1.3rem;
+    margin-bottom: var(--spacing-md);
+    text-align: center;
+}
+
+.guide-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.guide-item {
+    text-align: center;
+    padding: var(--spacing-md);
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e1e8ed;
+}
+
+.guide-icon {
+    font-size: 2rem;
+    margin-bottom: var(--spacing-xs);
+}
+
+.guide-item h4 {
+    color: var(--rh-dark);
+    font-size: 1rem;
+    margin-bottom: var(--spacing-xs);
+}
+
+.guide-item p {
+    color: var(--rh-gray);
+    font-size: 0.85rem;
+    line-height: 1.4;
+    margin: 0;
+}
+
+/* AAP Integration Note */
+.aap-integration-note {
+    margin-top: var(--spacing-lg);
+    padding: var(--spacing-md);
+    background: linear-gradient(to right, #f0f9ff, #e0f2fe);
+    border-left: 4px solid var(--rh-blue);
+    border-radius: 4px;
+}
+
+.aap-integration-note p {
+    margin: 0;
+    color: var(--rh-gray-dark);
+    font-size: 0.95rem;
+}
+
+.aap-integration-note strong {
+    color: var(--rh-blue);
 }

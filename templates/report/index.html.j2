@@ -81,6 +81,32 @@
         </div>
     </section>
 
+    <!-- How to Read This Report -->
+    <section class="reading-guide-section">
+        <div class="container">
+            <div class="reading-guide">
+                <h3>📖 How to Read This Report</h3>
+                <div class="guide-grid">
+                    <div class="guide-item">
+                        <div class="guide-icon">👔</div>
+                        <h4>Executives</h4>
+                        <p>Executive Summary → Migration Story → Target Architecture</p>
+                    </div>
+                    <div class="guide-item">
+                        <div class="guide-icon">⚙️</div>
+                        <h4>Platform Teams</h4>
+                        <p>Architecture Snapshot → Expert Recommendations → Implementation Details</p>
+                    </div>
+                    <div class="guide-item">
+                        <div class="guide-icon">🔒</div>
+                        <h4>NetOps / SecOps</h4>
+                        <p>NSX Migration Findings → Expert-Guided Security & Governance Patterns</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- At a Glance Summary Cards -->
     <section class="summary-section">
         <div class="container">
@@ -104,7 +130,7 @@
                     <div class="card-icon">🎯</div>
                     <div class="card-content">
                         <div class="card-number">{{ summary.counts.BLOCKED }}</div>
-                        <div class="card-label">Expert-Guided<br><span class="card-sublabel">(Patterns Available)</span></div>
+                        <div class="card-label">Expert-Guided<br><span class="card-sublabel">(Security & Governance Patterns)</span></div>
                     </div>
                 </div>
                 <div class="card card-manual" data-filter="MANUAL" title="Components with complex custom logic requiring specialist review and implementation">
@@ -224,6 +250,11 @@
                     </ul>
                     <div class="arch-badge badge-warning">{{ (summary.counts.BLOCKED or 0) + (summary.counts.MANUAL or 0) }} components use proven patterns</div>
                 </div>
+            </div>
+
+            <!-- AAP Integration Note -->
+            <div class="aap-integration-note">
+                <p><strong>🔧 Supported Automation Stack:</strong> Expert-guided patterns are delivered as Ansible roles and workflows, aligning with Red Hat's supported automation stack (Ansible Automation Platform). This ensures production-grade support, not DIY scripting.</p>
             </div>
 
             <!-- Migration Journey -->
