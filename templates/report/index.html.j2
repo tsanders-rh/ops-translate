@@ -641,7 +641,8 @@
                         <!-- Role stub info -->
                         {% if rec.ansible_role_stub %}
                         <div class="recommendation-footer">
-                            <span class="role-stub-info">📁 Role stub: <code>output/ansible/roles/{{ rec.ansible_role_stub }}/</code></span>
+                            <span class="role-stub-info">📁 Role stub will be generated at: <code>output/ansible/roles/{{ rec.ansible_role_stub }}/</code></span>
+                            <p class="role-stub-note">Run <code>ops-translate generate --format ansible --profile &lt;profile&gt;</code> to create the role stub with implementation guidance.</p>
                         </div>
                         {% endif %}
                     </div>

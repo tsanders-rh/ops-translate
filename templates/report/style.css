@@ -1362,6 +1362,20 @@ pre code {
     font-size: 0.85rem;
 }
 
+.role-stub-note {
+    margin-top: var(--spacing-xs);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.role-stub-note code {
+    background: var(--bg-secondary);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+}
+
 @media (max-width: 768px) {
     .recommendation-header {
         flex-direction: column;
