@@ -405,7 +405,22 @@
                     {% for component in sorted_file_components | sort(attribute='level') %}
                     <div class="gap-item gap-{{ component.level.lower() }}" data-level="{{ component.level }}">
                     <div class="gap-header">
-                        <h3>{{ component.name }}</h3>
+                        <h3>
+                            {{ component.name }}
+                            {# Add vRealize-specific indicators #}
+                            {% if 'approval' in component.component_type %}
+                            <span class="vrealize-indicator" title="vRealize Approval Workflow">⚙️ Approval</span>
+                            {% endif %}
+                            {% if 'orchestration' in component.component_type %}
+                            <span class="vrealize-indicator" title="vRealize Orchestration Complexity">🔄 Orchestration</span>
+                            {% endif %}
+                            {% if 'vro_plugin' in component.component_type or 'vro_' in component.component_type %}
+                            <span class="vrealize-indicator" title="vRO Plugin/Integration">🔌 vRO Plugin</span>
+                            {% endif %}
+                            {% if 'nsx' in component.component_type %}
+                            <span class="vrealize-indicator vrealize-indicator-nsx" title="NSX-T Component">🔒 NSX-T</span>
+                            {% endif %}
+                        </h3>
                         <span class="badge badge-{{ component.level.lower() }}">{{ component.level }}</span>
                     </div>
                     <div class="gap-body">

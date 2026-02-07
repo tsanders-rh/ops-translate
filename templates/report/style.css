@@ -749,6 +749,28 @@ section h3 {
 
 .gap-header h3 {
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    flex-wrap: wrap;
+}
+
+/* vRealize-specific indicators */
+.vrealize-indicator {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    margin-left: var(--spacing-xs);
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.vrealize-indicator-nsx {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    box-shadow: 0 2px 4px rgba(245, 87, 108, 0.3);
 }
 
 .gap-body p {
