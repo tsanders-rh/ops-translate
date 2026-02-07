@@ -13,7 +13,7 @@ Key principles:
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import yaml
 
@@ -368,7 +368,7 @@ def apply_answers(
     """
     # Load answers
     with open(answers_file) as f:
-        answers_data = yaml.safe_load(f)
+        answers_data = cast(dict[str, Any], yaml.safe_load(f))
 
     answers = answers_data.get("answers", {})
 
@@ -634,7 +634,7 @@ def load_decisions(decisions_file: Path) -> dict[str, Any] | None:
         return None
 
     with open(decisions_file) as f:
-        return yaml.safe_load(f)
+        return cast(dict[str, Any] | None, yaml.safe_load(f))
 
 
 def apply_decisions_to_components(
@@ -704,8 +704,11 @@ def apply_decisions_to_components(
                         new_recommendations.append(f"  - {step}")
 
                 # Add decision metadata to evidence
-                new_evidence = list(component.evidence) if component.evidence else []
-                new_evidence.append(f"Decision applied: {new_classification} (from user answers)")
+                new_evidence_list = (
+                    component.evidence.split("\n") if component.evidence else []
+                )
+                new_evidence_list.append(f"Decision applied: {new_classification} (from user answers)")
+                new_evidence = "\n".join(new_evidence_list)
 
                 updated_component = ClassifiedComponent(
                     name=component.name,

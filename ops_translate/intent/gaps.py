@@ -196,10 +196,7 @@ def _write_markdown_report(
 
                 if comp.evidence:
                     f.write("**Evidence**:\n```\n")
-                    if isinstance(comp.evidence, list):
-                        f.write("\n".join(comp.evidence))
-                    else:
-                        f.write(comp.evidence)
+                    f.write(comp.evidence)
                     f.write("\n```\n\n")
 
                 if comp.recommendations:
