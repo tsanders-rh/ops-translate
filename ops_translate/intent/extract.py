@@ -6,8 +6,10 @@ import re
 import time
 from pathlib import Path
 
+import yaml
 from rich.console import Console
 
+from ops_translate.intent.normalize import normalize_intent_schema
 from ops_translate.llm import get_provider
 from ops_translate.util.config import get_llm_rate_limit_delay
 from ops_translate.workspace import Workspace
@@ -16,6 +18,45 @@ console = Console()
 
 # Get project root to find prompts
 PROJECT_ROOT = Path(__file__).parent.parent.parent
+
+
+def _normalize_intent_file(intent_file: Path) -> bool:
+    """
+    Normalize intent YAML file to fix common LLM schema deviations.
+
+    Loads the file, applies normalization (number→integer, dict→array for tags),
+    and writes the normalized version back to the same file.
+
+    Args:
+        intent_file: Path to intent YAML file to normalize
+
+    Returns:
+        True if normalization was applied, False if file was already valid or error
+
+    Side Effects:
+        Modifies intent_file in-place if normalization needed
+    """
+    try:
+        # Load raw intent data
+        with open(intent_file) as f:
+            data = yaml.safe_load(f)
+
+        if not data:
+            return False
+
+        # Apply normalization (modifies data in-place)
+        normalized = normalize_intent_schema(data)
+
+        # Always write normalized version back
+        # (normalize_intent_schema modifies in-place, so always write)
+        with open(intent_file, "w") as f:
+            yaml.dump(normalized, f, default_flow_style=False, sort_keys=False)
+
+        return True
+
+    except Exception:
+        # If normalization fails, leave file as-is
+        return False
 
 
 def _run_gap_analysis_for_vrealize(workspace: Workspace, intent_files: list[Path]) -> None:
@@ -313,6 +354,9 @@ def extract_all(workspace: Workspace):
             output_file = workspace.root / "intent" / f"{ps_file.stem}.intent.yaml"
             output_file.write_text(intent_yaml)
 
+            # Normalize schema deviations (number→integer, dict→array for tags)
+            _normalize_intent_file(output_file)
+
             # Validate extracted intent
             from ops_translate.intent.validate import validate_intent
 
@@ -350,6 +394,9 @@ def extract_all(workspace: Workspace):
 
             output_file = workspace.root / "intent" / f"{xml_file.stem}.intent.yaml"
             output_file.write_text(intent_yaml)
+
+            # Normalize schema deviations (number→integer, dict→array for tags)
+            _normalize_intent_file(output_file)
 
             # Validate extracted intent
             from ops_translate.intent.validate import validate_intent

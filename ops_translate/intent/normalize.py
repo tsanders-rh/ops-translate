@@ -45,15 +45,59 @@ def normalize_intent_schema(intent_data: dict[str, Any]) -> dict[str, Any]:
     if "metadata" in intent and isinstance(intent["metadata"], dict):
         metadata = intent["metadata"]
 
-        # If tags is a dict, convert to array of {key, value} objects
+        # If tags is a dict, convert to array of {key, value/value_from} objects
         if "tags" in metadata and isinstance(metadata["tags"], dict):
             tag_dict = metadata["tags"]
-            metadata["tags"] = [{"key": k, "value": v} for k, v in tag_dict.items()]
+            tag_array = []
+
+            for key, value in tag_dict.items():
+                tag_obj = {"key": key}
+
+                # Handle different tag value formats from LLM
+                if isinstance(value, dict):
+                    # LLM format: {source: input, parameter: param_name}
+                    if value.get("source") == "input" and "parameter" in value:
+                        tag_obj["value_from"] = value["parameter"]
+                    elif "value" in value:
+                        tag_obj["value"] = str(value["value"])
+                    else:
+                        # Fallback: use the dict as a string value
+                        tag_obj["value"] = str(value)
+                elif isinstance(value, str):
+                    # Simple string value
+                    tag_obj["value"] = value
+                else:
+                    # Other types: convert to string
+                    tag_obj["value"] = str(value)
+
+                tag_array.append(tag_obj)
+
+            metadata["tags"] = tag_array
 
         # Same for labels
         if "labels" in metadata and isinstance(metadata["labels"], dict):
             label_dict = metadata["labels"]
-            metadata["labels"] = [{"key": k, "value": v} for k, v in label_dict.items()]
+            label_array = []
+
+            for key, value in label_dict.items():
+                label_obj = {"key": key}
+
+                # Handle different label value formats from LLM
+                if isinstance(value, dict):
+                    if value.get("source") == "input" and "parameter" in value:
+                        label_obj["value_from"] = value["parameter"]
+                    elif "value" in value:
+                        label_obj["value"] = str(value["value"])
+                    else:
+                        label_obj["value"] = str(value)
+                elif isinstance(value, str):
+                    label_obj["value"] = value
+                else:
+                    label_obj["value"] = str(value)
+
+                label_array.append(label_obj)
+
+            metadata["labels"] = label_array
 
     return intent_data
 
