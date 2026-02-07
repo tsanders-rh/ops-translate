@@ -23,10 +23,6 @@ def _generate_role_stubs_from_gaps(workspace: Workspace):
 
     This is called after AI generation to add role stubs that AI can't create.
     """
-    import json
-    from pathlib import Path
-    from typing import Any, cast
-
     from ops_translate.generate.ansible import (
         _create_manual_role_stub,
         _load_gaps_data,
