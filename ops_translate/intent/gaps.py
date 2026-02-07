@@ -26,9 +26,11 @@ def generate_gap_reports(
     """
     Generate gap analysis reports in both Markdown and JSON formats.
 
-    Creates two files in the output directory:
-    - gaps.md: Human-readable report with migration guidance
-    - gaps.json: Machine-readable report for tooling integration
+    Creates four files in the output directory:
+    - gaps.md: Human-readable gap report with migration guidance
+    - gaps.json: Machine-readable gap report for tooling integration
+    - recommendations.md: Expert-guided implementation recommendations
+    - recommendations.json: Machine-readable recommendations
 
     Args:
         components: List of classified components from classification
@@ -36,7 +38,7 @@ def generate_gap_reports(
         workflow_name: Name of the workflow being analyzed (for report title)
 
     Side Effects:
-        Writes gaps.md and gaps.json to output_dir
+        Writes gaps.md, gaps.json, recommendations.md, and recommendations.json to output_dir
 
     Example:
         >>> from ops_translate.intent.classify import classify_components
@@ -48,13 +50,31 @@ def generate_gap_reports(
     # Generate summary statistics
     summary = generate_classification_summary(components)
 
-    # Write Markdown report
+    # Write gap reports
     md_file = output_dir / "gaps.md"
     _write_markdown_report(md_file, components, summary, workflow_name)
 
-    # Write JSON report
     json_file = output_dir / "gaps.json"
     _write_json_report(json_file, components, summary, workflow_name)
+
+    # Generate and write recommendations
+    from ops_translate.intent.recommend import (
+        generate_recommendations_from_components,
+        generate_recommendations_json,
+        generate_recommendations_markdown,
+    )
+
+    recommendations = generate_recommendations_from_components(components)
+
+    # Write recommendations.md
+    rec_md_file = output_dir / "recommendations.md"
+    rec_md_content = generate_recommendations_markdown(recommendations)
+    rec_md_file.write_text(rec_md_content)
+
+    # Write recommendations.json
+    rec_json_file = output_dir / "recommendations.json"
+    rec_json_content = generate_recommendations_json(recommendations)
+    rec_json_file.write_text(rec_json_content)
 
 
 def _write_markdown_report(
