@@ -118,7 +118,7 @@ class OrchestrationClassifier(BaseClassifier):
         Returns:
             List of classified orchestration components
         """
-        components = []
+        components: list[ClassifiedComponent] = []
 
         if not self._has_orchestration_patterns(intent):
             return components

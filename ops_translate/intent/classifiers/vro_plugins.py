@@ -121,7 +121,7 @@ class Vro_pluginsClassifier(BaseClassifier):
         Returns:
             List of classified integration components
         """
-        components = []
+        components: list[ClassifiedComponent] = []
 
         if not self._has_plugin_patterns(intent):
             return components
