@@ -1093,3 +1093,305 @@ pre code {
 .hidden {
     display: none !important;
 }
+
+/* ============================================================================
+   Recommendations Section
+   ============================================================================ */
+
+.recommendations-section {
+    background: var(--bg-secondary);
+    padding: var(--spacing-xl) 0;
+}
+
+.recommendations-intro {
+    background: white;
+    border-left: 4px solid var(--color-primary);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    border-radius: var(--radius-md);
+}
+
+.recommendations-intro p {
+    margin-bottom: var(--spacing-sm);
+}
+
+.recommendations-intro p:last-child {
+    margin-bottom: 0;
+}
+
+.recommendations-note {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+/* Recommendation filters */
+.recommendation-filters {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-md);
+    background: white;
+    border-radius: var(--radius-md);
+    flex-wrap: wrap;
+}
+
+.filter-label {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.rec-filter-btn {
+    padding: var(--spacing-xs) var(--spacing-md);
+    border: 2px solid var(--border-color);
+    background: white;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.rec-filter-btn:hover {
+    border-color: var(--color-primary);
+    background: var(--bg-secondary);
+}
+
+.rec-filter-btn.active {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+}
+
+/* Recommendations list */
+.recommendations-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.recommendation-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-color);
+}
+
+.recommendation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 2px solid var(--border-color);
+}
+
+.recommendation-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.5rem;
+}
+
+.recommendation-badges {
+    display: flex;
+    gap: var(--spacing-xs);
+    flex-wrap: wrap;
+}
+
+.badge-owner {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.badge-component-type {
+    background: var(--bg-secondary);
+    color: var(--text-muted);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid var(--border-color);
+}
+
+/* Recommendation body sections */
+.recommendation-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.recommendation-section h4 {
+    margin: 0 0 var(--spacing-sm) 0;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.recommendation-section p {
+    margin: 0;
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+
+.primitives-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+}
+
+.primitives-list li {
+    background: var(--bg-secondary);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+}
+
+.primitives-list code {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+/* Collapsible details */
+.recommendation-details {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm);
+}
+
+.recommendation-details summary {
+    cursor: pointer;
+    list-style: none;
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    transition: background 0.2s ease;
+}
+
+.recommendation-details summary::-webkit-details-marker {
+    display: none;
+}
+
+.recommendation-details summary::before {
+    content: "▶ ";
+    display: inline-block;
+    transition: transform 0.2s ease;
+    margin-right: var(--spacing-xs);
+}
+
+.recommendation-details[open] summary::before {
+    transform: rotate(90deg);
+}
+
+.recommendation-details summary:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.recommendation-details summary h4 {
+    display: inline;
+    margin: 0;
+}
+
+.implementation-steps {
+    padding-left: var(--spacing-lg);
+    margin: var(--spacing-md) 0 0 0;
+}
+
+.implementation-steps li {
+    margin-bottom: var(--spacing-sm);
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+
+.required-inputs {
+    margin: var(--spacing-md) 0 0 0;
+}
+
+.required-inputs dt {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-top: var(--spacing-sm);
+}
+
+.required-inputs dd {
+    margin: var(--spacing-xs) 0 0 var(--spacing-md);
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.references-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.references-list li {
+    margin-bottom: var(--spacing-xs);
+}
+
+.references-list a {
+    color: var(--color-primary);
+    text-decoration: none;
+    word-break: break-all;
+}
+
+.references-list a:hover {
+    text-decoration: underline;
+}
+
+.recommendation-footer {
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--border-color);
+}
+
+.role-stub-info {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.role-stub-info code {
+    background: var(--bg-secondary);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+}
+
+.role-stub-note {
+    margin-top: var(--spacing-xs);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.role-stub-note code {
+    background: var(--bg-secondary);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+    .recommendation-header {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    .recommendation-badges {
+        width: 100%;
+    }
+
+    .recommendation-filters {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .rec-filter-btn {
+        width: 100%;
+    }
+}

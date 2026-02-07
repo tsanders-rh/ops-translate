@@ -223,4 +223,39 @@
         return str;
     }
 
+    /**
+     * Initialize recommendation filters
+     */
+    function initRecommendationFilters() {
+        const filterButtons = document.querySelectorAll('.rec-filter-btn');
+        const recommendationCards = document.querySelectorAll('.recommendation-card');
+
+        if (filterButtons.length === 0 || recommendationCards.length === 0) {
+            return;
+        }
+
+        filterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const selectedTeam = button.getAttribute('data-team');
+
+                // Update active button
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                // Filter cards
+                recommendationCards.forEach(card => {
+                    const cardTeam = card.getAttribute('data-team');
+                    if (selectedTeam === 'all' || cardTeam === selectedTeam) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        });
+    }
+
+    // Initialize recommendation filters on page load
+    initRecommendationFilters();
+
 })();

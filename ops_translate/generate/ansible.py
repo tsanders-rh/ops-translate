@@ -35,6 +35,7 @@ def generate(workspace: Workspace, profile: str, use_ai: bool = False):
 
     # Load gap analysis data if available
     gaps_data = _load_gaps_data(workspace)
+    recommendations_data = _load_recommendations_data(workspace)
 
     # Generate site.yml playbook
     playbook_content = generate_playbook(profile, gaps_data)
@@ -45,17 +46,17 @@ def generate(workspace: Workspace, profile: str, use_ai: bool = False):
     ensure_dir(role_dir / "tasks")
     ensure_dir(role_dir / "defaults")
 
-    tasks_content = generate_tasks(profile_config, use_ai, gaps_data)
+    tasks_content = generate_tasks(profile_config, use_ai, gaps_data, recommendations_data)
     write_text(role_dir / "tasks/main.yml", tasks_content)
 
     defaults_content = generate_defaults(profile_config)
     write_text(role_dir / "defaults/main.yml", defaults_content)
 
-    # Generate role stubs for MANUAL components
+    # Generate role stubs for MANUAL/BLOCKED components
     if gaps_data:
         for component in gaps_data.get("components", []):
             if component.get("level") in ["BLOCKED", "MANUAL"]:
-                _create_manual_role_stub(output_dir, component, workspace)
+                _create_manual_role_stub(output_dir, component, workspace, recommendations_data)
 
     # Generate README
     readme_content = generate_readme(profile)
@@ -106,13 +107,17 @@ def generate_playbook(profile: str, gaps_data: dict[str, Any] | None = None) -> 
 
 
 def generate_tasks(
-    profile_config: dict, use_ai: bool, gaps_data: dict[str, Any] | None = None
+    profile_config: dict,
+    use_ai: bool,
+    gaps_data: dict[str, Any] | None = None,
+    recommendations_data: dict[str, Any] | None = None,
 ) -> str:
     """
     Generate Ansible tasks.
 
     If gaps_data is provided, injects TODO tasks for PARTIAL/BLOCKED/MANUAL
-    components before the main provisioning tasks.
+    components before the main provisioning tasks. If recommendations_data is
+    provided, includes detailed implementation guidance in TODO comments.
     """
     namespace = profile_config["default_namespace"]
 
@@ -143,7 +148,7 @@ def generate_tasks(
 
     # Inject gap analysis TODOs if available
     if gaps_data:
-        tasks, _ = _inject_gap_todos(tasks, gaps_data)
+        tasks, _ = _inject_gap_todos(tasks, gaps_data, recommendations_data)
 
     # Convert to YAML with custom handling for comments
     tasks_yaml = "---\n"
@@ -244,7 +249,38 @@ def _load_gaps_data(workspace: Workspace) -> dict[str, Any] | None:
         return None
 
 
-def _inject_gap_todos(tasks: list[dict], gaps_data: dict[str, Any]) -> tuple[list[dict], str]:
+def _load_recommendations_data(workspace: Workspace) -> dict[str, Any] | None:
+    """
+    Load recommendations data from intent/recommendations.json if it exists.
+
+    Args:
+        workspace: Workspace instance
+
+    Returns:
+        Recommendations data dict, or None if recommendations.json doesn't exist
+
+    Example:
+        >>> recs = _load_recommendations_data(workspace)
+        >>> if recs:
+        ...     print(f"Found {len(recs['recommendations'])} recommendations")
+    """
+    recs_file = workspace.root / "intent/recommendations.json"
+    if not recs_file.exists():
+        return None
+
+    try:
+        with open(recs_file) as f:
+            return cast(dict[str, Any], json.load(f))
+    except (OSError, json.JSONDecodeError):
+        # Gracefully handle corrupted/unreadable recommendations file
+        return None
+
+
+def _inject_gap_todos(
+    tasks: list[dict],
+    gaps_data: dict[str, Any],
+    recommendations_data: dict[str, Any] | None = None,
+) -> tuple[list[dict], str]:
     """
     Inject TODO tasks for gap analysis findings.
 
@@ -252,9 +288,13 @@ def _inject_gap_todos(tasks: list[dict], gaps_data: dict[str, Any]) -> tuple[lis
     the main provisioning tasks. Each TODO includes classification, OpenShift
     equivalent, migration path, and recommendations.
 
+    If recommendations_data is provided, uses detailed implementation guidance
+    from expert recommendations instead of basic gap analysis recommendations.
+
     Args:
         tasks: Existing Ansible tasks list
         gaps_data: Gap analysis data from gaps.json
+        recommendations_data: Optional recommendations data from recommendations.json
 
     Returns:
         Tuple of (updated_tasks, summary_comment)
@@ -262,13 +302,20 @@ def _inject_gap_todos(tasks: list[dict], gaps_data: dict[str, Any]) -> tuple[lis
     Example:
         >>> tasks = [{"name": "Create VM", ...}]
         >>> gaps_data = {"components": [...], "summary": {...}}
-        >>> updated_tasks, summary = _inject_gap_todos(tasks, gaps_data)
+        >>> updated_tasks, summary = _inject_gap_todos(tasks, gaps_data, recs_data)
     """
     if not gaps_data or not gaps_data.get("components"):
         return tasks, ""
 
     components = gaps_data["components"]
     summary = gaps_data["summary"]
+
+    # Build recommendation lookup by component type and name
+    rec_lookup = {}
+    if recommendations_data and recommendations_data.get("recommendations"):
+        for rec in recommendations_data["recommendations"]:
+            key = (rec.get("component_type"), rec.get("component_name"))
+            rec_lookup[key] = rec
 
     # Build summary comment for top of playbook
     summary_lines = [
@@ -309,20 +356,44 @@ def _inject_gap_todos(tasks: list[dict], gaps_data: dict[str, Any]) -> tuple[lis
         comp_name = comp.get("name", "unnamed")
         comment_lines = [f"# TODO: {level} - {comp_type} '{comp_name}'"]
 
-        if comp.get("openshift_equivalent"):
-            comment_lines.append(f"# OpenShift Equivalent: {comp['openshift_equivalent']}")
+        # Check if we have a detailed recommendation for this component
+        rec_key = (comp_type, comp_name)
+        recommendation = rec_lookup.get(rec_key)
+
+        if recommendation:
+            # Use detailed recommendation guidance
+            comment_lines.append("#")
+            comment_lines.append(f"# Owner: {recommendation.get('owner', 'Unknown')}")
+            comment_lines.append("#")
+            comment_lines.append("# Recommended Ansible Approach:")
+            comment_lines.append(
+                f"#   {recommendation.get('ansible_approach', 'See recommendations.md')}"
+            )
+            comment_lines.append("#")
+            if recommendation.get("openshift_primitives"):
+                comment_lines.append("# OpenShift/Kubernetes Primitives:")
+                for primitive in recommendation["openshift_primitives"]:
+                    comment_lines.append(f"#   - {primitive}")
+                comment_lines.append("#")
+            comment_lines.append(
+                "# See: intent/recommendations.md for detailed implementation steps"
+            )
         else:
-            comment_lines.append("# OpenShift Equivalent: None (requires custom solution)")
+            # Fall back to basic gap analysis info
+            if comp.get("openshift_equivalent"):
+                comment_lines.append(f"# OpenShift Equivalent: {comp['openshift_equivalent']}")
+            else:
+                comment_lines.append("# OpenShift Equivalent: None (requires custom solution)")
 
-        if comp.get("migration_path"):
-            comment_lines.append(f"# Migration Path: {comp['migration_path']}")
+            if comp.get("migration_path"):
+                comment_lines.append(f"# Migration Path: {comp['migration_path']}")
 
-        if comp.get("recommendations"):
-            comment_lines.append("# Recommendations:")
-            for rec in comp["recommendations"]:
-                comment_lines.append(f"#   - {rec}")
+            if comp.get("recommendations"):
+                comment_lines.append("# Recommendations:")
+                for rec in comp["recommendations"]:
+                    comment_lines.append(f"#   - {rec}")
 
-        comment_lines.append("# See: intent/gaps.md for details")
+            comment_lines.append("# See: intent/gaps.md for details")
 
         # Create task with comment header
         task = {
@@ -341,30 +412,56 @@ def _inject_gap_todos(tasks: list[dict], gaps_data: dict[str, Any]) -> tuple[lis
 
 
 def _create_manual_role_stub(
-    output_dir: Path, component: dict[str, Any], workspace: Workspace
+    output_dir: Path,
+    component: dict[str, Any],
+    workspace: Workspace,
+    recommendations_data: dict[str, Any] | None = None,
 ) -> None:
     """
-    Create Ansible role stub for MANUAL components.
+    Create Ansible role stub for MANUAL/BLOCKED components.
 
     Generates a role directory structure with README, tasks, and defaults
-    for components that require manual implementation.
+    for components that require manual implementation. If recommendations_data
+    is provided, includes detailed implementation guidance in the README.
 
     Args:
         output_dir: Base output directory (e.g., workspace.root/output/ansible)
         component: Component data dict from gaps.json
         workspace: Workspace instance
+        recommendations_data: Optional recommendations data from recommendations.json
 
     Example:
         >>> _create_manual_role_stub(
         ...     Path("output/ansible"),
         ...     {"name": "web-sg", "component_type": "nsx_security_groups", ...},
-        ...     workspace
+        ...     workspace,
+        ...     recs_data
         ... )
         # Creates: output/ansible/roles/nsx_security_groups/
     """
     # Sanitize role name
     component_type = component.get("component_type", "manual_component")
-    role_name = component_type.replace("-", "_").lower()
+    component_name = component.get("name", "unnamed")
+
+    # Find matching recommendation
+    recommendation = None
+    if recommendations_data and recommendations_data.get("recommendations"):
+        for rec in recommendations_data["recommendations"]:
+            # Match on both component_type and component_name
+            # Handle plural/singular variations (e.g., nsx_security_groups vs nsx_security_group)
+            rec_type = rec.get("component_type", "").rstrip("s")  # Remove trailing 's' for matching
+            comp_type_normalized = component_type.rstrip("s")
+
+            if rec_type == comp_type_normalized and rec.get("component_name") == component_name:
+                recommendation = rec
+                break
+
+    # Use role stub name from recommendation if available, otherwise sanitize component type
+    if recommendation and recommendation.get("ansible_role_stub"):
+        role_name = recommendation["ansible_role_stub"]
+    else:
+        role_name = component_type.replace("-", "_").lower()
+
     role_dir = output_dir / "roles" / role_name
 
     # Skip if role already exists
@@ -375,13 +472,86 @@ def _create_manual_role_stub(
     ensure_dir(role_dir / "tasks")
     ensure_dir(role_dir / "defaults")
 
-    # Generate README
-    readme_content = f"""# {role_name.replace('_', ' ').title()} Role
+    # Generate README with detailed guidance if recommendation is available
+    if recommendation:
+        readme_content = f"""# {role_name.replace('_', ' ').title()} Role
 
 ## Component
 
-**Name:** {component.get('name', 'unnamed')}
-**Type:** {component.get('component_type', 'unknown')}
+**Name:** {component_name}
+**Type:** {component_type}
+**Classification:** {component.get('level', 'MANUAL')}
+**Owner:** {recommendation.get('owner', 'Unknown')}
+
+## Why Not Auto-Translatable
+
+{recommendation.get('reason_not_auto_translatable', 'No reason provided.')}
+
+## Recommended Ansible Approach
+
+{recommendation.get('ansible_approach', 'See intent/recommendations.md')}
+
+## OpenShift/Kubernetes Primitives
+
+"""
+        if recommendation.get("openshift_primitives"):
+            for primitive in recommendation["openshift_primitives"]:
+                readme_content += f"- `{primitive}`\n"
+        else:
+            readme_content += "- None specified\n"
+
+        readme_content += """
+## Implementation Steps
+
+"""
+        if recommendation.get("implementation_steps"):
+            for i, step in enumerate(recommendation["implementation_steps"], 1):
+                readme_content += f"{i}. {step}\n"
+        else:
+            readme_content += (
+                "1. Review the component requirements in `intent/recommendations.md`\n"
+            )
+            readme_content += "2. Design an OpenShift-native solution or hybrid approach\n"
+            readme_content += "3. Implement tasks in `tasks/main.yml`\n"
+
+        readme_content += """
+## Required Inputs
+
+"""
+        if recommendation.get("required_inputs"):
+            for var_name, description in recommendation["required_inputs"].items():
+                readme_content += f"- `{var_name}`: {description}\n"
+        else:
+            readme_content += "_No specific inputs documented_\n"
+
+        readme_content += """
+## Testing & Validation
+
+"""
+        readme_content += recommendation.get(
+            "testing_guidance", "Test thoroughly in dev environment before production use."
+        )
+
+        readme_content += """
+
+## References
+
+"""
+        if recommendation.get("references"):
+            for ref in recommendation["references"]:
+                readme_content += f"- {ref}\n"
+        else:
+            readme_content += "- [Gap Analysis Report](../../../intent/gaps.md)\n"
+            readme_content += "- [Migration Recommendations](../../../intent/recommendations.md)\n"
+
+    else:
+        # Fall back to basic README without detailed recommendation
+        readme_content = f"""# {role_name.replace('_', ' ').title()} Role
+
+## Component
+
+**Name:** {component_name}
+**Type:** {component_type}
 **Classification:** {component.get('level', 'MANUAL')}
 
 ## Migration Guidance
@@ -390,28 +560,28 @@ def _create_manual_role_stub(
 
 """
 
-    if component.get("openshift_equivalent"):
-        readme_content += f"""**OpenShift Equivalent:** {component['openshift_equivalent']}
+        if component.get("openshift_equivalent"):
+            readme_content += f"""**OpenShift Equivalent:** {component['openshift_equivalent']}
 
 """
-    else:
-        readme_content += """**OpenShift Equivalent:** None - requires custom solution
+        else:
+            readme_content += """**OpenShift Equivalent:** None - requires custom solution
 
 """
 
-    readme_content += f"""**Migration Path:** {component.get('migration_path', 'Unknown')}
+        readme_content += f"""**Migration Path:** {component.get('migration_path', 'Unknown')}
 
 ## Recommendations
 
 """
 
-    if component.get("recommendations"):
-        for rec in component["recommendations"]:
-            readme_content += f"- {rec}\n"
-    else:
-        readme_content += "- No specific recommendations provided\n"
+        if component.get("recommendations"):
+            for rec in component["recommendations"]:
+                readme_content += f"- {rec}\n"
+        else:
+            readme_content += "- No specific recommendations provided\n"
 
-    readme_content += """
+        readme_content += """
 ## Implementation
 
 This role stub has been created because this component requires manual
@@ -423,6 +593,15 @@ implementation. You will need to:
 4. Define variables in `defaults/main.yml`
 5. Test thoroughly in a non-production environment
 
+## References
+
+- [Gap Analysis Report](../../../intent/gaps.md)
+- [OpenShift Documentation](https://docs.openshift.com/)
+- [KubeVirt Documentation](https://kubevirt.io/user-guide/)
+"""
+
+    # Add evidence section
+    readme_content += """
 ## Evidence
 
 """
@@ -450,15 +629,22 @@ implementation. You will need to:
     write_text(role_dir / "README.md", readme_content)
 
     # Generate tasks/main.yml with TODO placeholders
+    if recommendation and recommendation.get("ansible_todo_task"):
+        # Use the detailed TODO from recommendation
+        todo_comment = recommendation["ansible_todo_task"]
+    else:
+        # Use basic TODO
+        todo_comment = f"""# TODO: Implement {component_name} migration
+# Classification: {component.get('level', 'MANUAL')}
+# See README.md for guidance"""
+
     tasks_content = f"""---
 # Tasks for {role_name}
 # This is a STUB - manual implementation required
 
-# TODO: Implement {component.get('name', 'component')} migration
-# Classification: {component.get('level', 'MANUAL')}
-# See README.md for guidance
+{todo_comment}
 
-- name: "TODO: Implement {component.get('name', 'component')} migration"
+- name: "TODO: Implement {component_name} migration"
   ansible.builtin.debug:
     msg: "Manual implementation required - see role README.md"
   tags:
@@ -471,13 +657,24 @@ implementation. You will need to:
     # Generate defaults/main.yml with discovered parameters
     defaults_content = f"""---
 # Default variables for {role_name}
-# TODO: Define required variables based on component requirements
 
 # Component information
-component_name: "{component.get('name', 'unnamed')}"
-component_type: "{component.get('component_type', 'unknown')}"
+component_name: "{component_name}"
+component_type: "{component_type}"
 
-# Add your implementation-specific variables here
 """
+
+    # Add required inputs from recommendation if available
+    if recommendation and recommendation.get("required_inputs"):
+        defaults_content += "# Required inputs (see README.md for descriptions)\n"
+        for var_name, description in recommendation["required_inputs"].items():
+            # Add comment describing the variable
+            defaults_content += f"# {description}\n"
+            # Add placeholder variable
+            defaults_content += f'{var_name}: "TODO: Define {var_name}"\n'
+            defaults_content += "\n"
+    else:
+        defaults_content += "# TODO: Define required variables based on component requirements\n"
+        defaults_content += "# See README.md for guidance\n"
 
     write_text(role_dir / "defaults/main.yml", defaults_content)
