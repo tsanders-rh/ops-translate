@@ -851,6 +851,96 @@
                             </div>
                         </details>
                         {% endif %}
+
+                        {# Expert Implementation Guide - shown for PARTIAL/BLOCKED/MANUAL components #}
+                        {% if component.name in recommendations_by_component and component.level in ['PARTIAL', 'BLOCKED', 'MANUAL'] %}
+                        {% set rec = recommendations_by_component[component.name] %}
+                        <details class="recommendation-toggle">
+                            <summary>📖 Expert Implementation Guide</summary>
+                            <div class="recommendation-section">
+                                <div class="recommendation-header">
+                                    <span class="recommendation-owner-badge">Owner: {{ rec.owner }}</span>
+                                </div>
+
+                                <div class="recommendation-block">
+                                    <h4>Why Not Auto-Translatable</h4>
+                                    <p>{{ rec.reason_not_auto_translatable }}</p>
+                                </div>
+
+                                <div class="recommendation-block">
+                                    <h4>Recommended Ansible Approach</h4>
+                                    <p>{{ rec.ansible_approach }}</p>
+                                </div>
+
+                                <div class="recommendation-block">
+                                    <h4>OpenShift/Kubernetes Primitives</h4>
+                                    <ul class="primitives-list">
+                                        {% for primitive in rec.openshift_primitives %}
+                                        <li><code>{{ primitive }}</code></li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+
+                                <div class="recommendation-block">
+                                    <h4>Implementation Steps</h4>
+                                    <ol class="implementation-steps">
+                                        {% for step in rec.implementation_steps %}
+                                        <li>{{ step }}</li>
+                                        {% endfor %}
+                                    </ol>
+                                </div>
+
+                                <div class="recommendation-block">
+                                    <h4>Required Inputs</h4>
+                                    {% if rec.required_inputs %}
+                                    <table class="inputs-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Variable</th>
+                                                <th>Description</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for var_name, description in rec.required_inputs.items() %}
+                                            <tr>
+                                                <td><code>{{ var_name }}</code></td>
+                                                <td>{{ description }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                    {% else %}
+                                    <p class="no-inputs">No specific inputs required</p>
+                                    {% endif %}
+                                </div>
+
+                                <div class="recommendation-block">
+                                    <h4>Testing & Validation</h4>
+                                    <p>{{ rec.testing_guidance }}</p>
+                                </div>
+
+                                {% if rec.references %}
+                                <div class="recommendation-block">
+                                    <h4>References</h4>
+                                    <ul class="references-list">
+                                        {% for reference in rec.references %}
+                                        <li><a href="{{ reference }}" target="_blank" rel="noopener">{{ reference }}</a></li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                {% endif %}
+
+                                {% if rec.ansible_role_stub %}
+                                <div class="recommendation-block ansible-scaffolding">
+                                    <h4>🛠️ Ansible Scaffolding Generated</h4>
+                                    <p>A role stub with implementation guidance has been created at:</p>
+                                    <code class="role-path">output/ansible/roles/{{ rec.ansible_role_stub }}/</code>
+                                    <p class="scaffolding-note">See the role's README.md for detailed implementation guidance.</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </details>
+                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}

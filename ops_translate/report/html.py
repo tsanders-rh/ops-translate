@@ -171,6 +171,17 @@ def build_report_context(workspace: Workspace, profile: str | None = None) -> di
     else:
         context["questions_by_location"] = {}
 
+    # Build recommendations lookup by component name
+    if recommendations_data and "recommendations" in recommendations_data:
+        recommendations_by_component: dict[str, dict[str, Any]] = {}
+        for rec in recommendations_data["recommendations"]:
+            component_name = rec.get("component_name")
+            if component_name:
+                recommendations_by_component[component_name] = rec
+        context["recommendations_by_component"] = recommendations_by_component
+    else:
+        context["recommendations_by_component"] = {}
+
     return context
 
 

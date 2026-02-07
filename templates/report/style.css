@@ -2216,3 +2216,201 @@ pre code {
 .copy-yaml-btn.copied::after {
     content: " ✓";
 }
+
+/* Expert Recommendations Section */
+.recommendation-toggle {
+    margin-top: var(--spacing-md);
+    border: 2px solid #10b981;
+    border-radius: 8px;
+    background: linear-gradient(to bottom, #f0fdf4, #ffffff);
+}
+
+.recommendation-toggle summary {
+    cursor: pointer;
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-weight: 600;
+    color: #059669;
+    background: linear-gradient(to right, #d1fae5, #f0fdf4);
+    border-radius: 6px;
+    user-select: none;
+}
+
+.recommendation-toggle summary:hover {
+    background: linear-gradient(to right, #a7f3d0, #d1fae5);
+}
+
+.recommendation-toggle[open] summary {
+    border-bottom: 1px solid #d1fae5;
+    border-radius: 6px 6px 0 0;
+}
+
+.recommendation-section {
+    padding: var(--spacing-md);
+}
+
+.recommendation-header {
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid #d1fae5;
+}
+
+.recommendation-owner-badge {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: #059669;
+    color: white;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.recommendation-block {
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-md);
+    background: #f9fafb;
+    border-left: 4px solid #10b981;
+    border-radius: 4px;
+}
+
+.recommendation-block h4 {
+    margin-top: 0;
+    margin-bottom: var(--spacing-sm);
+    color: #059669;
+    font-size: 1rem;
+}
+
+.recommendation-block p {
+    margin: 0;
+    line-height: 1.6;
+    color: var(--rh-gray-dark);
+}
+
+.primitives-list {
+    margin: 0;
+    padding-left: var(--spacing-md);
+    list-style-type: none;
+}
+
+.primitives-list li {
+    margin-bottom: var(--spacing-xs);
+}
+
+.primitives-list li::before {
+    content: "▸ ";
+    color: #10b981;
+    font-weight: bold;
+    margin-right: var(--spacing-xs);
+}
+
+.primitives-list code {
+    background: #e0f2fe;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.9rem;
+    color: #0369a1;
+}
+
+.implementation-steps {
+    margin: 0;
+    padding-left: var(--spacing-lg);
+    color: var(--rh-gray-dark);
+}
+
+.implementation-steps li {
+    margin-bottom: var(--spacing-sm);
+    line-height: 1.6;
+}
+
+.implementation-steps li::marker {
+    color: #10b981;
+    font-weight: bold;
+}
+
+.inputs-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: var(--spacing-sm);
+}
+
+.inputs-table th,
+.inputs-table td {
+    padding: var(--spacing-sm);
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.inputs-table th {
+    background: #f3f4f6;
+    color: var(--rh-gray-dark);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.inputs-table code {
+    background: #fef3c7;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.9rem;
+    color: #92400e;
+}
+
+.inputs-table tr:hover {
+    background: #f9fafb;
+}
+
+.no-inputs {
+    color: var(--rh-gray);
+    font-style: italic;
+}
+
+.references-list {
+    margin: 0;
+    padding-left: var(--spacing-md);
+    list-style-type: none;
+}
+
+.references-list li {
+    margin-bottom: var(--spacing-xs);
+}
+
+.references-list li::before {
+    content: "🔗 ";
+    margin-right: var(--spacing-xs);
+}
+
+.references-list a {
+    color: var(--rh-blue);
+    text-decoration: none;
+    word-break: break-all;
+}
+
+.references-list a:hover {
+    text-decoration: underline;
+}
+
+.ansible-scaffolding {
+    background: linear-gradient(to right, #fef3c7, #fefce8);
+    border-left-color: #f59e0b;
+}
+
+.ansible-scaffolding h4 {
+    color: #d97706;
+}
+
+.ansible-scaffolding .role-path {
+    display: block;
+    margin: var(--spacing-sm) 0;
+    padding: var(--spacing-sm);
+    background: #451a03;
+    color: #fde68a;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    font-size: 0.9rem;
+}
+
+.scaffolding-note {
+    margin-top: var(--spacing-sm);
+    font-size: 0.9rem;
+    color: #92400e;
+    font-style: italic;
+}
