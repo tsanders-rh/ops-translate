@@ -608,3 +608,118 @@ def save_decisions(decisions: dict[str, Any], output_file: Path) -> None:
     output_file.parent.mkdir(parents=True, exist_ok=True)
     with open(output_file, "w") as f:
         yaml.dump(decisions, f, default_flow_style=False, sort_keys=False)
+
+
+def load_decisions(decisions_file: Path) -> dict[str, Any] | None:
+    """
+    Load decisions from decisions.yaml file.
+
+    Args:
+        decisions_file: Path to intent/decisions.yaml
+
+    Returns:
+        Decisions dict or None if file doesn't exist
+
+    Example:
+        >>> decisions = load_decisions(Path("intent/decisions.yaml"))
+        >>> if decisions:
+        ...     print(decisions['decisions']['myworkflow']['classification'])
+        'PARTIAL'
+    """
+    if not decisions_file.exists():
+        return None
+
+    with open(decisions_file) as f:
+        return yaml.safe_load(f)
+
+
+def apply_decisions_to_components(
+    components: list[ClassifiedComponent],
+    decisions: dict[str, Any],
+) -> list[ClassifiedComponent]:
+    """
+    Apply decisions to reclassify components.
+
+    Creates new ClassifiedComponent instances with updated classifications
+    based on user decisions. Original components are not modified.
+
+    Args:
+        components: Original classified components
+        decisions: Decisions dict from decisions.yaml
+
+    Returns:
+        New list of components with updated classifications
+
+    Example:
+        >>> decisions = load_decisions(Path("intent/decisions.yaml"))
+        >>> updated = apply_decisions_to_components(components, decisions)
+        >>> # Find the updated component
+        >>> for comp in updated:
+        ...     if comp.location == "myworkflow":
+        ...         print(comp.level)
+        TranslatabilityLevel.PARTIAL
+    """
+    if not decisions or "decisions" not in decisions:
+        return components
+
+    decision_map = decisions["decisions"]
+    updated_components = []
+
+    for component in components:
+        # Check if there's a decision for this component
+        if component.location in decision_map:
+            decision = decision_map[component.location]
+            new_classification = decision.get("classification")
+
+            # Map string classification to TranslatabilityLevel enum
+            level_map = {
+                "SUPPORTED": TranslatabilityLevel.SUPPORTED,
+                "PARTIAL": TranslatabilityLevel.PARTIAL,
+                "EXPERT-GUIDED": TranslatabilityLevel.BLOCKED,
+                "BLOCKED": TranslatabilityLevel.BLOCKED,  # Alias
+                "CUSTOM": TranslatabilityLevel.MANUAL,
+                "MANUAL": TranslatabilityLevel.MANUAL,  # Alias
+            }
+
+            if new_classification and new_classification in level_map:
+                # Create new component with updated classification
+                new_reason = decision.get("reason", component.reason)
+
+                # Add decision-based notes to recommendations
+                new_recommendations = list(component.recommendations) if component.recommendations else []
+                if decision.get("warnings"):
+                    new_recommendations.insert(0, "⚠️ Decision-based warnings:")
+                    for warning in decision["warnings"]:
+                        new_recommendations.insert(1, f"  - {warning}")
+
+                if decision.get("manual_steps_required"):
+                    new_recommendations.append("Manual steps required:")
+                    for step in decision["manual_steps_required"]:
+                        new_recommendations.append(f"  - {step}")
+
+                # Add decision metadata to evidence
+                new_evidence = list(component.evidence) if component.evidence else []
+                new_evidence.append(
+                    f"Decision applied: {new_classification} (from user answers)"
+                )
+
+                updated_component = ClassifiedComponent(
+                    name=component.name,
+                    component_type=component.component_type,
+                    level=level_map[new_classification],
+                    reason=new_reason,
+                    openshift_equivalent=component.openshift_equivalent,
+                    migration_path=component.migration_path,
+                    location=component.location,
+                    recommendations=new_recommendations,
+                    evidence=new_evidence,
+                )
+                updated_components.append(updated_component)
+            else:
+                # No valid classification in decision, keep original
+                updated_components.append(component)
+        else:
+            # No decision for this component, keep original
+            updated_components.append(component)
+
+    return updated_components

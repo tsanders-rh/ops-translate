@@ -446,9 +446,21 @@ def interview_apply():
         console.print(f"    {reason}")
 
     console.print()
+    console.print("[bold blue]Regenerating gap reports with updated classifications...[/bold blue]")
+
+    # Regenerate gap reports (will auto-apply decisions.yaml)
+    from ops_translate.intent.gaps import generate_gap_reports
+
+    # Write updated gap reports - generate_gap_reports will auto-apply decisions
+    generate_gap_reports(
+        components, workspace.root / "intent", workflow_name=workspace.root.name
+    )
+
+    console.print("[green]✓ Gap reports updated with decision-based classifications[/green]")
+    console.print()
     console.print("[bold]Next steps:[/bold]")
-    console.print("  1. Review decisions.yaml")
-    console.print("  2. Re-run: ops-translate report")
+    console.print("  1. Review updated intent/gaps.md and intent/gaps.json")
+    console.print("  2. Re-run: ops-translate report (to see updated HTML report)")
     console.print("  3. Generate artifacts: ops-translate generate --profile <profile>")
 
 

@@ -32,6 +32,8 @@ def generate_gap_reports(
     - recommendations.md: Expert-guided implementation recommendations
     - recommendations.json: Machine-readable recommendations
 
+    Automatically applies decisions from decisions.yaml if present.
+
     Args:
         components: List of classified components from classification
         output_dir: Directory to write report files (typically workspace/intent/)
@@ -46,6 +48,18 @@ def generate_gap_reports(
         >>> generate_gap_reports(components, Path("intent"), "MyWorkflow")
     """
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Apply decisions if decisions.yaml exists
+    decisions_file = output_dir / "decisions.yaml"
+    if decisions_file.exists():
+        from ops_translate.intent.interview import (
+            apply_decisions_to_components,
+            load_decisions,
+        )
+
+        decisions = load_decisions(decisions_file)
+        if decisions:
+            components = apply_decisions_to_components(components, decisions)
 
     # Generate summary statistics
     summary = generate_classification_summary(components)
@@ -182,7 +196,10 @@ def _write_markdown_report(
 
                 if comp.evidence:
                     f.write("**Evidence**:\n```\n")
-                    f.write(comp.evidence)
+                    if isinstance(comp.evidence, list):
+                        f.write("\n".join(comp.evidence))
+                    else:
+                        f.write(comp.evidence)
                     f.write("\n```\n\n")
 
                 if comp.recommendations:

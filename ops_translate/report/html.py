@@ -110,6 +110,7 @@ def build_report_context(workspace: Workspace, profile: str | None = None) -> di
     # Load gaps data first (needed for source file status)
     gaps_data = _load_gaps_data(workspace)
     recommendations_data = _load_recommendations_data(workspace)
+    decisions_data = _load_decisions_data(workspace)
 
     # Build context
     context: dict[str, Any] = {
@@ -126,6 +127,7 @@ def build_report_context(workspace: Workspace, profile: str | None = None) -> di
         "intent": _load_intent_data(workspace),
         "gaps": gaps_data,
         "recommendations": recommendations_data,
+        "decisions": decisions_data,
         "assumptions_md": _load_markdown_file(workspace.root / "intent/assumptions.md"),
         "conflicts_md": _load_markdown_file(workspace.root / "intent/conflicts.md"),
         "artifacts": _detect_generated_artifacts(workspace),
@@ -454,6 +456,25 @@ def _load_recommendations_data(workspace: Workspace) -> dict[str, Any] | None:
     try:
         return cast(dict[str, Any], json.loads(recommendations_file.read_text()))
     except json.JSONDecodeError:
+        return None
+
+
+def _load_decisions_data(workspace: Workspace) -> dict[str, Any] | None:
+    """
+    Load decisions.yaml data if available.
+
+    Returns:
+        Decisions data dict or None if not found
+    """
+    decisions_file = workspace.root / "intent/decisions.yaml"
+    if not decisions_file.exists():
+        return None
+
+    try:
+        import yaml
+
+        return cast(dict[str, Any], yaml.safe_load(decisions_file.read_text()))
+    except yaml.YAMLError:
         return None
 
 
