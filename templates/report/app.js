@@ -20,6 +20,7 @@
         setupViewFindingsLinks();
         setupExportButtons();
         setupSupportedToggle();
+        setupInterviewQuestions();
     }
 
     /**
@@ -297,5 +298,123 @@
 
     // Initialize recommendation filters on page load
     initRecommendationFilters();
+
+    /**
+     * Setup interview question handlers
+     */
+    function setupInterviewQuestions() {
+        const generateButtons = document.querySelectorAll('.interview-generate-yaml');
+
+        generateButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const componentLocation = this.getAttribute('data-component-location');
+                const interviewSection = this.closest('.interview-section');
+                const questions = interviewSection.querySelectorAll('.interview-question');
+
+                // Collect answers
+                const answers = {};
+                let allAnswered = true;
+
+                questions.forEach(question => {
+                    const questionId = question.getAttribute('data-question-id');
+                    const selectedOption = question.querySelector('input[type="radio"]:checked');
+
+                    if (selectedOption) {
+                        answers[questionId] = selectedOption.value;
+                    } else {
+                        allAnswered = false;
+                    }
+                });
+
+                if (!allAnswered) {
+                    alert('Please answer all questions before generating the YAML snippet.');
+                    return;
+                }
+
+                // Generate YAML snippet
+                const yamlSnippet = generateAnswersYAML(answers);
+
+                // Display YAML output
+                const yamlOutput = interviewSection.querySelector('.interview-yaml-output');
+                const yamlCodeElement = yamlOutput.querySelector('.yaml-snippet');
+                yamlCodeElement.textContent = yamlSnippet;
+                yamlOutput.style.display = 'block';
+
+                // Setup copy button
+                const copyBtn = yamlOutput.querySelector('.copy-yaml-btn');
+                setupCopyButton(copyBtn, yamlSnippet);
+            });
+        });
+    }
+
+    /**
+     * Generate answers.yaml formatted snippet
+     */
+    function generateAnswersYAML(answers) {
+        const lines = [];
+
+        for (const [questionId, answer] of Object.entries(answers)) {
+            lines.push(`  ${questionId}: ${answer}`);
+        }
+
+        return lines.join('\n');
+    }
+
+    /**
+     * Setup copy to clipboard functionality
+     */
+    function setupCopyButton(button, text) {
+        // Remove old event listeners by cloning
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
+
+        newButton.addEventListener('click', function() {
+            // Try modern clipboard API first
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showCopiedFeedback(newButton);
+                }).catch(err => {
+                    fallbackCopy(text, newButton);
+                });
+            } else {
+                fallbackCopy(text, newButton);
+            }
+        });
+    }
+
+    /**
+     * Fallback copy method for older browsers
+     */
+    function fallbackCopy(text, button) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+
+        try {
+            document.execCommand('copy');
+            showCopiedFeedback(button);
+        } catch (err) {
+            alert('Failed to copy to clipboard. Please copy manually.');
+        }
+
+        document.body.removeChild(textarea);
+    }
+
+    /**
+     * Show visual feedback that text was copied
+     */
+    function showCopiedFeedback(button) {
+        const originalText = button.textContent;
+        button.textContent = 'Copied!';
+        button.classList.add('copied');
+
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.classList.remove('copied');
+        }, 2000);
+    }
 
 })();

@@ -801,6 +801,56 @@
                             <pre><code>{{ component.evidence }}</code></pre>
                         </details>
                         {% endif %}
+
+                        {# Interview Questions - shown only for PARTIAL/BLOCKED/MANUAL components #}
+                        {% if component.location and component.location in questions_by_location and component.level in ['PARTIAL', 'BLOCKED', 'MANUAL'] %}
+                        {% set component_questions = questions_by_location[component.location] %}
+                        <details class="interview-toggle">
+                            <summary>💡 Answer Questions to Unlock Automation</summary>
+                            <div class="interview-section">
+                                <p class="interview-intro">
+                                    Help us understand your requirements. Your answers will determine if this component can be automatically translated.
+                                </p>
+
+                                {% for question in component_questions %}
+                                <div class="interview-question" data-question-id="{{ question.id }}">
+                                    <h4>{{ question.prompt }}</h4>
+                                    <div class="interview-options">
+                                        {% for option in question.options %}
+                                        <label class="interview-option">
+                                            <input type="radio"
+                                                   name="{{ question.id }}"
+                                                   value="{{ option.value }}"
+                                                   data-impact="{{ option.impact | default('') }}">
+                                            <div class="option-content">
+                                                <div class="option-label">{{ option.label }}</div>
+                                                {% if option.description %}
+                                                <div class="option-description">{{ option.description }}</div>
+                                                {% endif %}
+                                                {% if option.impact %}
+                                                <div class="option-impact">→ {{ option.impact }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+
+                                <div class="interview-actions">
+                                    <button class="interview-generate-yaml" data-component-location="{{ component.location }}">
+                                        Generate answers.yaml Snippet
+                                    </button>
+                                </div>
+
+                                <div class="interview-yaml-output" style="display: none;">
+                                    <h4>Add to intent/answers.yaml:</h4>
+                                    <pre><code class="yaml-snippet"></code></pre>
+                                    <button class="copy-yaml-btn">Copy to Clipboard</button>
+                                </div>
+                            </div>
+                        </details>
+                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}

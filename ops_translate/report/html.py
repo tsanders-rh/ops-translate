@@ -110,6 +110,8 @@ def build_report_context(workspace: Workspace, profile: str | None = None) -> di
     # Load gaps data first (needed for source file status)
     gaps_data = _load_gaps_data(workspace)
     recommendations_data = _load_recommendations_data(workspace)
+    decisions_data = _load_decisions_data(workspace)
+    questions_data = _load_questions_data(workspace)
 
     # Build context
     context: dict[str, Any] = {
@@ -126,6 +128,8 @@ def build_report_context(workspace: Workspace, profile: str | None = None) -> di
         "intent": _load_intent_data(workspace),
         "gaps": gaps_data,
         "recommendations": recommendations_data,
+        "decisions": decisions_data,
+        "questions": questions_data,
         "assumptions_md": _load_markdown_file(workspace.root / "intent/assumptions.md"),
         "conflicts_md": _load_markdown_file(workspace.root / "intent/conflicts.md"),
         "artifacts": _detect_generated_artifacts(workspace),
@@ -153,6 +157,19 @@ def build_report_context(workspace: Workspace, profile: str | None = None) -> di
         context["consolidated_supported"] = _consolidate_supported_patterns(context["gaps"])
     else:
         context["consolidated_supported"] = []
+
+    # Build questions lookup by component location
+    if questions_data and "questions" in questions_data:
+        questions_by_location: dict[str, list[dict[str, Any]]] = {}
+        for question in questions_data["questions"]:
+            location = question.get("location")  # Questions use "location" not "component_location"
+            if location:
+                if location not in questions_by_location:
+                    questions_by_location[location] = []
+                questions_by_location[location].append(question)
+        context["questions_by_location"] = questions_by_location
+    else:
+        context["questions_by_location"] = {}
 
     return context
 
@@ -454,6 +471,42 @@ def _load_recommendations_data(workspace: Workspace) -> dict[str, Any] | None:
     try:
         return cast(dict[str, Any], json.loads(recommendations_file.read_text()))
     except json.JSONDecodeError:
+        return None
+
+
+def _load_decisions_data(workspace: Workspace) -> dict[str, Any] | None:
+    """
+    Load decisions.yaml data if available.
+
+    Returns:
+        Decisions data dict or None if not found
+    """
+    decisions_file = workspace.root / "intent/decisions.yaml"
+    if not decisions_file.exists():
+        return None
+
+    try:
+        import yaml
+
+        return cast(dict[str, Any], yaml.safe_load(decisions_file.read_text()))
+    except yaml.YAMLError:
+        return None
+
+
+def _load_questions_data(workspace: Workspace) -> dict[str, Any] | None:
+    """
+    Load questions.json data if available.
+
+    Returns:
+        Questions data dict or None if not found
+    """
+    questions_file = workspace.root / "intent/questions.json"
+    if not questions_file.exists():
+        return None
+
+    try:
+        return cast(dict[str, Any], json.loads(questions_file.read_text()))
+    except (json.JSONDecodeError, OSError):
         return None
 
 

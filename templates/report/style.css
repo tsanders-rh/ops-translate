@@ -2022,3 +2022,197 @@ pre code {
 .aap-integration-note strong {
     color: var(--rh-blue);
 }
+
+/* Interview Questions Section */
+.interview-toggle {
+    margin-top: var(--spacing-md);
+    border: 2px solid #0066cc;
+    border-radius: 8px;
+    background: linear-gradient(to bottom, #f0f9ff, #ffffff);
+}
+
+.interview-toggle summary {
+    cursor: pointer;
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-weight: 600;
+    color: var(--rh-blue);
+    background: linear-gradient(to right, #e0f2fe, #f0f9ff);
+    border-radius: 6px;
+    user-select: none;
+}
+
+.interview-toggle summary:hover {
+    background: linear-gradient(to right, #bae6fd, #e0f2fe);
+}
+
+.interview-toggle[open] summary {
+    border-bottom: 1px solid var(--rh-gray-light);
+    border-radius: 6px 6px 0 0;
+}
+
+.interview-section {
+    padding: var(--spacing-md);
+}
+
+.interview-intro {
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-sm);
+    background: #fff7ed;
+    border-left: 4px solid #f0ab00;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: var(--rh-gray-dark);
+}
+
+.interview-question {
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--rh-gray-light);
+}
+
+.interview-question:last-of-type {
+    border-bottom: none;
+}
+
+.interview-question h4 {
+    margin-bottom: var(--spacing-sm);
+    color: var(--rh-gray-dark);
+    font-size: 1rem;
+}
+
+.interview-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.interview-option {
+    display: flex;
+    align-items: flex-start;
+    padding: var(--spacing-sm);
+    border: 1px solid var(--rh-gray-light);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.interview-option:hover {
+    border-color: var(--rh-blue);
+    background: #f8fafc;
+}
+
+.interview-option input[type="radio"] {
+    margin-top: 4px;
+    margin-right: var(--spacing-sm);
+    cursor: pointer;
+}
+
+.interview-option input[type="radio"]:checked ~ .option-content {
+    color: var(--rh-dark);
+}
+
+.interview-option:has(input[type="radio"]:checked) {
+    border-color: var(--rh-blue);
+    background: #e0f2fe;
+}
+
+.option-content {
+    flex: 1;
+}
+
+.option-label {
+    font-weight: 600;
+    color: var(--rh-gray-dark);
+    margin-bottom: 4px;
+}
+
+.option-description {
+    font-size: 0.85rem;
+    color: var(--rh-gray);
+    margin-bottom: 4px;
+}
+
+.option-impact {
+    font-size: 0.85rem;
+    color: var(--rh-blue);
+    font-weight: 500;
+    font-style: italic;
+    margin-top: 4px;
+}
+
+.interview-actions {
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--rh-gray-light);
+}
+
+.interview-generate-yaml {
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--rh-blue);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.interview-generate-yaml:hover {
+    background: #0052a3;
+}
+
+.interview-generate-yaml:disabled {
+    background: var(--rh-gray-light);
+    cursor: not-allowed;
+}
+
+.interview-yaml-output {
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: #f8fafc;
+    border: 1px solid var(--rh-gray-light);
+    border-radius: 6px;
+}
+
+.interview-yaml-output h4 {
+    margin-bottom: var(--spacing-sm);
+    color: var(--rh-gray-dark);
+    font-size: 0.9rem;
+}
+
+.interview-yaml-output pre {
+    background: var(--rh-dark);
+    color: #a5f3fc;
+    padding: var(--spacing-md);
+    border-radius: 4px;
+    overflow-x: auto;
+    margin-bottom: var(--spacing-sm);
+}
+
+.interview-yaml-output code {
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    font-size: 0.85rem;
+}
+
+.copy-yaml-btn {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--rh-gray-dark);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.copy-yaml-btn:hover {
+    background: var(--rh-dark);
+}
+
+.copy-yaml-btn.copied {
+    background: var(--color-supported);
+}
+
+.copy-yaml-btn.copied::after {
+    content: " ✓";
+}

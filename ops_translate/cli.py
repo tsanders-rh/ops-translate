@@ -309,6 +309,182 @@ def edit(file: str = typer.Option(None, "--file", help="Specific intent file to 
         console.print(f"[yellow]Editor exited with code {result.returncode}[/yellow]")
 
 
+@intent_app.command(name="interview-generate")
+def interview_generate():
+    """Generate targeted interview questions for PARTIAL/EXPERT-GUIDED components."""
+    from ops_translate.intent.interview import generate_questions, save_questions
+
+    workspace = Workspace(Path.cwd())
+    if not workspace.config_file.exists():
+        console.print("[red]Error: Not in a workspace.[/red]")
+        raise typer.Exit(1)
+
+    console.print("[bold blue]Generating interview questions...[/bold blue]")
+
+    # Load gap analysis results
+    gaps_file = workspace.root / "intent/gaps.json"
+    if not gaps_file.exists():
+        console.print(
+            "[red]Error: gaps.json not found. Run 'ops-translate intent extract' first.[/red]"
+        )
+        raise typer.Exit(1)
+
+    with open(gaps_file) as f:
+        gaps_data = json.load(f)
+
+    # Get classified components
+    from ops_translate.intent.classify import (
+        ClassifiedComponent,
+        MigrationPath,
+        TranslatabilityLevel,
+    )
+
+    components = []
+    for comp_data in gaps_data.get("components", []):
+        # Normalize evidence to string (handle both string and list from gaps.json)
+        evidence_raw = comp_data.get("evidence")
+        if evidence_raw:
+            evidence = "\n".join(evidence_raw) if isinstance(evidence_raw, list) else evidence_raw
+        else:
+            evidence = None
+
+        components.append(
+            ClassifiedComponent(
+                name=comp_data["name"],
+                component_type=comp_data["component_type"],
+                level=TranslatabilityLevel(comp_data["level"]),
+                reason=comp_data.get("reason", ""),
+                openshift_equivalent=comp_data.get("openshift_equivalent", ""),
+                migration_path=MigrationPath(comp_data["migration_path"]),
+                location=comp_data.get("location", "unknown"),
+                recommendations=comp_data.get("recommendations", []),
+                evidence=evidence,
+            )
+        )
+
+    # Generate questions
+    questions = generate_questions(components, workspace.root)
+
+    # Count questions
+    question_count = len(questions.get("questions", []))
+
+    if question_count == 0:
+        console.print("[yellow]No interview questions needed.[/yellow]")
+        console.print("All components are either SUPPORTED or don't have question generators yet.")
+        return
+
+    # Save to file
+    output_file = workspace.root / "intent/questions.json"
+    save_questions(questions, output_file)
+
+    console.print(f"[green]✓ Generated {question_count} questions[/green]")
+    console.print(
+        f"[green]✓ Questions written to {output_file.relative_to(workspace.root)}[/green]"
+    )
+    console.print()
+    console.print("[bold]Next steps:[/bold]")
+    console.print("  1. Review questions.json")
+    console.print("  2. Create intent/answers.yaml with your answers")
+    console.print("  3. Run: ops-translate intent interview-apply")
+
+
+@intent_app.command(name="interview-apply")
+def interview_apply():
+    """Apply interview answers to derive decisions and update classifications."""
+    from ops_translate.intent.classify import (
+        ClassifiedComponent,
+        MigrationPath,
+        TranslatabilityLevel,
+    )
+    from ops_translate.intent.interview import apply_answers, save_decisions
+
+    workspace = Workspace(Path.cwd())
+    if not workspace.config_file.exists():
+        console.print("[red]Error: Not in a workspace.[/red]")
+        raise typer.Exit(1)
+
+    console.print("[bold blue]Applying interview answers...[/bold blue]")
+
+    # Check for answers file
+    answers_file = workspace.root / "intent/answers.yaml"
+    if not answers_file.exists():
+        console.print(f"[red]Error: {answers_file} not found.[/red]")
+        console.print("Create intent/answers.yaml with your answers first.")
+        raise typer.Exit(1)
+
+    # Load components from gaps.json
+    gaps_file = workspace.root / "intent/gaps.json"
+    if not gaps_file.exists():
+        console.print("[red]Error: gaps.json not found.[/red]")
+        raise typer.Exit(1)
+
+    with open(gaps_file) as f:
+        gaps_data = json.load(f)
+
+    components = []
+    for comp_data in gaps_data.get("components", []):
+        # Normalize evidence to string (handle both string and list from gaps.json)
+        evidence_raw = comp_data.get("evidence")
+        if evidence_raw:
+            evidence = "\n".join(evidence_raw) if isinstance(evidence_raw, list) else evidence_raw
+        else:
+            evidence = None
+
+        components.append(
+            ClassifiedComponent(
+                name=comp_data["name"],
+                component_type=comp_data["component_type"],
+                level=TranslatabilityLevel(comp_data["level"]),
+                reason=comp_data.get("reason", ""),
+                openshift_equivalent=comp_data.get("openshift_equivalent", ""),
+                migration_path=MigrationPath(comp_data["migration_path"]),
+                location=comp_data.get("location", "unknown"),
+                recommendations=comp_data.get("recommendations", []),
+                evidence=evidence,
+            )
+        )
+
+    # Apply answers and derive decisions
+    decisions = apply_answers(answers_file, components)
+
+    # Save decisions
+    decisions_file = workspace.root / "intent/decisions.yaml"
+    save_decisions(decisions, decisions_file)
+
+    # Count decisions
+    decision_count = len(decisions.get("decisions", {}))
+
+    console.print(f"[green]✓ Derived {decision_count} decisions[/green]")
+    console.print(
+        f"[green]✓ Decisions written to {decisions_file.relative_to(workspace.root)}[/green]"
+    )
+    console.print()
+    console.print("[bold]Classification changes:[/bold]")
+
+    # Show summary of changes
+    for location, decision in decisions.get("decisions", {}).items():
+        new_classification = decision.get("classification", "UNKNOWN")
+        reason = decision.get("reason", "")
+        console.print(f"  • {location}: → {new_classification}")
+        console.print(f"    {reason}")
+
+    console.print()
+    console.print("[bold blue]Regenerating gap reports with updated classifications...[/bold blue]")
+
+    # Regenerate gap reports (will auto-apply decisions.yaml)
+    from ops_translate.intent.gaps import generate_gap_reports
+
+    # Write updated gap reports - generate_gap_reports will auto-apply decisions
+    generate_gap_reports(components, workspace.root / "intent", workflow_name=workspace.root.name)
+
+    console.print("[green]✓ Gap reports updated with decision-based classifications[/green]")
+    console.print()
+    console.print("[bold]Next steps:[/bold]")
+    console.print("  1. Review updated intent/gaps.md and intent/gaps.json")
+    console.print("  2. Re-run: ops-translate report (to see updated HTML report)")
+    console.print("  3. Generate artifacts: ops-translate generate --profile <profile>")
+
+
 @map_app.command()
 def preview(target: str = typer.Option(..., "--target", help="Target platform (openshift)")):
     """Generate mapping preview showing source → target equivalents."""
