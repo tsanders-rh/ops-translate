@@ -120,7 +120,7 @@ class ApprovalClassifier(BaseClassifier):
         Returns:
             List of classified approval components
         """
-        components = []
+        components: list[ClassifiedComponent] = []
 
         governance = intent.get("governance", {})
         approval_config = governance.get("approval")
