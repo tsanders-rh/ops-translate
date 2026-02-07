@@ -66,11 +66,11 @@
                         <div class="card-label">Partial Translation</div>
                     </div>
                 </div>
-                <div class="card card-blocked" data-filter="BLOCKED" title="Components that cannot be automatically translated and require manual implementation">
-                    <div class="card-icon">🚫</div>
+                <div class="card card-blocked" data-filter="BLOCKED" title="Components that require architectural design decisions and expert-guided implementation">
+                    <div class="card-icon">📐</div>
                     <div class="card-content">
                         <div class="card-number">{{ summary.counts.BLOCKED }}</div>
-                        <div class="card-label">Blocked</div>
+                        <div class="card-label">Design Required</div>
                     </div>
                 </div>
                 <div class="card card-manual" data-filter="MANUAL" title="Components with complex custom logic requiring specialist review and implementation">
@@ -88,7 +88,7 @@
                 {% if summary.overall_assessment == "FULLY_TRANSLATABLE" %}
                 <span class="badge badge-success">Fully Translatable</span>
                 {% elif summary.overall_assessment == "HAS_BLOCKING_ISSUES" %}
-                <span class="badge badge-error">Has Blocking Issues</span>
+                <span class="badge badge-warning">Requires Design Decisions</span>
                 {% elif summary.overall_assessment == "MOSTLY_MANUAL" %}
                 <span class="badge badge-error">Mostly Manual</span>
                 {% else %}
@@ -121,22 +121,22 @@
             <!-- Next Steps Callout -->
             {% if summary.has_blocking_issues and gaps and gaps.components %}
             <div class="next-steps-callout">
-                <h3>🚧 Blocking Issue Identified</h3>
+                <h3>📐 Design Decisions Required</h3>
                 {% for component in gaps.components %}
                     {% if component.level == "BLOCKED" %}
                     <div class="blocking-item">
-                        <p class="blocking-component"><strong>{{ component.name }}</strong> has no direct OpenShift equivalent.</p>
+                        <p class="blocking-component"><strong>{{ component.name }}</strong> requires architectural design.</p>
                         <p class="blocking-guidance">
                             {% if component.recommendations and component.recommendations|length > 0 %}
                             {{ component.recommendations[0] }}
                             {% else %}
-                            Migration will require custom implementation or architectural review.
+                            Migration will require custom implementation with expert guidance.
                             {% endif %}
                         </p>
                     </div>
                     {% endif %}
                 {% endfor %}
-                <p class="callout-footer">This prevents full automation but the problem is solvable with specialist input.</p>
+                <p class="callout-footer">These components require design work but are solvable with expert-guided implementation.</p>
             </div>
             {% endif %}
         </div>
@@ -371,7 +371,7 @@
                     {% set _ = location_to_source.update({base_name: source.name}) %}
                 {% endfor %}
 
-                {# Sort components by file, then by severity (BLOCKED → MANUAL → PARTIAL → SUPPORTED) #}
+                {# Sort components by file, then by severity (DESIGN REQUIRED → MANUAL → PARTIAL → SUPPORTED) #}
                 {% set severity_order = {'BLOCKED': 0, 'MANUAL': 1, 'PARTIAL': 2, 'SUPPORTED': 3} %}
                 {% set sorted_components = gaps.components | sort(attribute='location') %}
                 {% set sorted_components = sorted_components | sort(attribute='level', case_sensitive=False) %}
