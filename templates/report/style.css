@@ -1128,38 +1128,48 @@ pre code {
 .recommendation-filters {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-lg);
-    padding: var(--spacing-md);
-    background: white;
-    border-radius: var(--radius-md);
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+    padding: var(--spacing-lg);
+    background: linear-gradient(to right, #f8f9fa, #ffffff);
+    border: 2px solid #e1e8ed;
+    border-radius: 8px;
     flex-wrap: wrap;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .filter-label {
-    font-weight: 600;
-    color: var(--text-primary);
+    font-weight: 700;
+    color: var(--rh-dark);
+    font-size: 1rem;
+    margin-right: var(--spacing-sm);
 }
 
 .rec-filter-btn {
-    padding: var(--spacing-xs) var(--spacing-md);
-    border: 2px solid var(--border-color);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border: 2px solid var(--rh-gray-light);
     background: white;
-    border-radius: var(--radius-md);
+    border-radius: 6px;
     cursor: pointer;
     font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--rh-gray-dark);
     transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .rec-filter-btn:hover {
-    border-color: var(--color-primary);
-    background: var(--bg-secondary);
+    border-color: var(--rh-blue);
+    background: #f0f9ff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 102, 204, 0.15);
 }
 
 .rec-filter-btn.active {
-    background: var(--color-primary);
+    background: linear-gradient(135deg, var(--rh-blue) 0%, #0052a3 100%);
     color: white;
-    border-color: var(--color-primary);
+    border-color: var(--rh-blue);
+    box-shadow: 0 3px 8px rgba(0, 102, 204, 0.3);
 }
 
 /* Recommendations list */
@@ -1627,13 +1637,20 @@ pre code {
     transform: rotate(90deg);
 }
 
+.expand-hint-wrapper {
+    text-align: right;
+    margin-top: -8px;
+    margin-bottom: var(--spacing-md);
+}
+
 .expand-hint {
     font-size: 0.85rem;
     color: var(--rh-gray);
     font-weight: normal;
+    font-style: italic;
 }
 
-.layer-3-collapsible[open] .expand-hint {
+.layer-3-collapsible[open] .expand-hint-wrapper {
     display: none;
 }
 
@@ -1641,7 +1658,7 @@ pre code {
     background-color: #f9fafb;
 }
 
-.layer-3-collapsible summary:hover .expand-hint {
+.layer-3-collapsible:not([open]):hover .expand-hint {
     color: var(--rh-gray-dark);
 }
 

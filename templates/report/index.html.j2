@@ -130,7 +130,7 @@
                     <div class="card-icon">🎯</div>
                     <div class="card-content">
                         <div class="card-number">{{ summary.counts.BLOCKED }}</div>
-                        <div class="card-label">Expert-Guided<br><span class="card-sublabel">(Security & Governance Patterns)</span></div>
+                        <div class="card-label">Expert-Guided</div>
                     </div>
                 </div>
                 <div class="card card-manual" data-filter="MANUAL" title="Components with complex custom logic requiring specialist review and implementation">
@@ -512,8 +512,10 @@
             <details class="layer-3-collapsible">
                 <summary>
                     <h2>Intent Overview</h2>
-                    <span class="expand-hint">Click to expand detailed workflow information</span>
                 </summary>
+                <div class="expand-hint-wrapper">
+                    <span class="expand-hint">Click to expand detailed workflow information</span>
+                </div>
             <div class="intent-content">
                 {% if intent.intent %}
                 <!-- Workflow Info -->
@@ -864,8 +866,10 @@
             <details class="layer-3-collapsible">
                 <summary>
                     <h2>Generated Artifacts</h2>
-                    <span class="expand-hint">Click to expand artifact details</span>
                 </summary>
+                <div class="expand-hint-wrapper">
+                    <span class="expand-hint">Click to expand artifact details</span>
+                </div>
 
             {% if artifacts.kubevirt %}
             <div class="artifact-group">
