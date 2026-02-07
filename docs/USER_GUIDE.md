@@ -748,6 +748,8 @@ ops-translate report
 
 **When to use**: After `intent extract` and BEFORE `generate` to review migration complexity, gaps, and expert recommendations.
 
+**Preview**: See a [sample report](../../examples/sample-report/) generated from real-world examples.
+
 #### What the Report Shows
 
 The HTML report provides a comprehensive migration analysis organized in **3 progressive disclosure layers**:

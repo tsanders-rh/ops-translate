@@ -1,0 +1,3393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translation Report - sample-workspace</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="report-header">
+        <div class="container">
+            <div class="header-content">
+                <h1>ops-translate</h1>
+                <div class="header-meta">
+                    <span class="workspace-name">sample-workspace</span>
+                    <span class="separator">|</span>
+                    <span class="profile-name">Profile: default</span>
+                    <span class="separator">|</span>
+                    <span class="timestamp">2026-02-07T08:46:01</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Executive Summary -->
+    
+    <section class="executive-summary-section">
+        <div class="container">
+            <div class="executive-summary">
+                <div class="executive-icon">📋</div>
+                <p class="executive-text">This workflow can be migrated with partial automation; NSX Security Groups requires custom design.</p>
+            </div>
+
+            <!-- Export Actions -->
+            <div class="export-actions">
+                <button id="export-pdf" class="export-btn export-pdf">
+                    <span class="export-icon">📄</span>
+                    <span>Export as PDF</span>
+                </button>
+                <button id="export-csv" class="export-btn export-csv">
+                    <span class="export-icon">📊</span>
+                    <span>Export Migration Tasks (CSV)</span>
+                </button>
+            </div>
+        </div>
+    </section>
+    
+
+    <!-- Real-World Migration Story -->
+    <section class="migration-story-section">
+        <div class="container">
+            <div class="migration-story">
+                <div class="story-header">
+                    <span class="story-label">PROVEN APPROACH</span>
+                    <h2>Automating the Safe 70–80%, Guiding You Through the Rest</h2>
+                </div>
+                <div class="story-content">
+                    <p class="story-intro">
+                        We analyzed <strong>sample-workspace</strong> — including your most complex workflows with NSX firewall rules, approval gates, and custom orchestration.
+                    </p>
+                    <div class="story-results">
+                        <div class="story-stat">
+                            <div class="stat-number">23</div>
+                            <div class="stat-label">Components<br>Auto-Translated</div>
+                        </div>
+                        <div class="story-stat">
+                            <div class="stat-number">7</div>
+                            <div class="stat-label">Require<br>Light Review</div>
+                        </div>
+                        <div class="story-stat stat-highlight">
+                            <div class="stat-number">1</div>
+                            <div class="stat-label">Expert Patterns<br>Available</div>
+                        </div>
+                    </div>
+                    <p class="story-conclusion">
+                        This is not a research project. <strong>ops-translate</strong> provides production-grade automation for standard patterns and battle-tested guidance for complex scenarios—reducing migration risk and accelerating time-to-value.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How to Read This Report -->
+    <section class="reading-guide-section">
+        <div class="container">
+            <div class="reading-guide">
+                <h3>📖 How to Read This Report</h3>
+                <div class="guide-grid">
+                    <div class="guide-item">
+                        <div class="guide-icon">👔</div>
+                        <h4>Executives</h4>
+                        <p>Executive Summary → Migration Story → Target Architecture</p>
+                    </div>
+                    <div class="guide-item">
+                        <div class="guide-icon">⚙️</div>
+                        <h4>Platform Teams</h4>
+                        <p>Architecture Snapshot → Expert Recommendations → Implementation Details</p>
+                    </div>
+                    <div class="guide-item">
+                        <div class="guide-icon">🔒</div>
+                        <h4>NetOps / SecOps</h4>
+                        <p>NSX Migration Findings → Expert-Guided Security & Governance Patterns</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- At a Glance Summary Cards -->
+    <section class="summary-section">
+        <div class="container">
+            <h2>Translation Status</h2>
+            <div class="summary-cards">
+                <div class="card card-supported" data-filter="SUPPORTED" title="Components that can be fully automatically translated to OpenShift-native equivalents">
+                    <div class="card-icon">✅</div>
+                    <div class="card-content">
+                        <div class="card-number">23</div>
+                        <div class="card-label">Supported</div>
+                    </div>
+                </div>
+                <div class="card card-partial" data-filter="PARTIAL" title="Core intent detected, but target platform mapping requires manual decisions">
+                    <div class="card-icon">⚠️</div>
+                    <div class="card-content">
+                        <div class="card-number">7</div>
+                        <div class="card-label">Partial Translation</div>
+                    </div>
+                </div>
+                <div class="card card-blocked" data-filter="BLOCKED" title="Components solved with production-grade patterns and expert guidance">
+                    <div class="card-icon">🎯</div>
+                    <div class="card-content">
+                        <div class="card-number">1</div>
+                        <div class="card-label">Expert-Guided</div>
+                    </div>
+                </div>
+                <div class="card card-manual" data-filter="MANUAL" title="Components with complex custom logic requiring specialist review and implementation">
+                    <div class="card-icon">🔧</div>
+                    <div class="card-content">
+                        <div class="card-number">0</div>
+                        <div class="card-label">Custom</div>
+                    </div>
+                </div>
+            </div>
+
+            
+            <div class="overall-assessment">
+                <strong>Overall Assessment:</strong>
+                
+                <span class="badge badge-warning">Expert Patterns Available</span>
+                
+            </div>
+            
+
+            <!-- Migration Paths Quick Reference -->
+            
+            <div class="migration-paths-quick">
+                <h4>Migration Paths Used in This Report</h4>
+                <div class="paths-grid">
+                    <div class="path-item">
+                        <span class="badge badge-path-a">PATH A</span>
+                        <span class="path-desc">Native OpenShift replacement</span>
+                    </div>
+                    <div class="path-item">
+                        <span class="badge badge-path-b">PATH B</span>
+                        <span class="path-desc">Hybrid approach (keep existing)</span>
+                    </div>
+                    <div class="path-item">
+                        <span class="badge badge-path-c">PATH C</span>
+                        <span class="path-desc">Custom specialist implementation</span>
+                    </div>
+                </div>
+            </div>
+            
+
+            <!-- Expert Patterns Callout -->
+            
+            <div class="next-steps-callout">
+                <h3>🎯 Expert-Guided Migration (Production-Grade Patterns Available)</h3>
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                    <div class="blocking-item">
+                        <p class="blocking-component"><strong>NSX Security Groups</strong> is solved with proven migration patterns.</p>
+                        <p class="blocking-guidance">
+                            
+                            Security groups have no direct OpenShift equivalent
+                            
+                        </p>
+                    </div>
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                <p class="callout-footer">These components use proven patterns from successful customer migrations—not guesswork.</p>
+            </div>
+            
+        </div>
+    </section>
+
+    <!-- Target Architecture Snapshot -->
+    <section class="target-architecture-section">
+        <div class="container">
+            <h2>Target Architecture Snapshot</h2>
+            <p class="architecture-intro">Your workflows will migrate to a modern, cloud-native architecture on OpenShift. Here's where each component lands:</p>
+
+            <div class="architecture-grid">
+                <!-- OpenShift Virtualization -->
+                <div class="architecture-card arch-virt">
+                    <div class="arch-icon">🚀</div>
+                    <h3>OpenShift Virtualization</h3>
+                    <p class="arch-description">VM workloads run on OpenShift using KubeVirt</p>
+                    <ul class="arch-components">
+                        <li>VM Provisioning → <code>VirtualMachine</code> CRDs</li>
+                        <li>Compute/Memory → Kubernetes resource requests</li>
+                        <li>Lifecycle Operations → <code>virtctl</code> commands</li>
+                        <li>Metadata → Labels & Annotations</li>
+                    </ul>
+                    <div class="arch-badge badge-success">23 components auto-translate</div>
+                </div>
+
+                <!-- Cloud-Native Networking -->
+                <div class="architecture-card arch-network">
+                    <div class="arch-icon">🌐</div>
+                    <h3>Cloud-Native Networking</h3>
+                    <p class="arch-description">NSX features map to Kubernetes primitives</p>
+                    <ul class="arch-components">
+                        <li>NSX Firewall → NetworkPolicy</li>
+                        <li>Security Groups → Pod Label Selectors</li>
+                        <li>Load Balancer → Service (type: LoadBalancer)</li>
+                        <li>Multi-Network → Multus CNI</li>
+                    </ul>
+                    <div class="arch-badge badge-partial">7 components need configuration</div>
+                </div>
+
+                <!-- Expert-Guided Patterns -->
+                <div class="architecture-card arch-expert">
+                    <div class="arch-icon">🎯</div>
+                    <h3>Expert-Guided Patterns</h3>
+                    <p class="arch-description">Production-grade patterns for complex scenarios</p>
+                    <ul class="arch-components">
+                        <li>Approval Workflows → Ansible Automation Platform</li>
+                        <li>Custom Orchestration → Ansible Playbooks</li>
+                        <li>Complex Logic → Refactored Automation</li>
+                        <li>vRO Plugins → OpenShift-native integrations</li>
+                    </ul>
+                    <div class="arch-badge badge-warning">1 components use proven patterns</div>
+                </div>
+            </div>
+
+            <!-- AAP Integration Note -->
+            <div class="aap-integration-note">
+                <p><strong>🔧 Supported Automation Stack:</strong> Expert-guided patterns are delivered as Ansible roles and workflows, aligning with Red Hat's supported automation stack (Ansible Automation Platform). This ensures production-grade support, not DIY scripting.</p>
+            </div>
+
+            <!-- Migration Journey -->
+            <div class="migration-journey">
+                <h3>Migration Journey: Virt-First Approach</h3>
+                <div class="journey-phases">
+                    <div class="journey-phase">
+                        <div class="phase-number">1</div>
+                        <div class="phase-content">
+                            <h4>VMware → OpenShift Virtualization</h4>
+                            <p>Migrate VMs to OpenShift with minimal risk. VMs run in KubeVirt with familiar operations.</p>
+                            <span class="phase-badge">Risk Reduction</span>
+                        </div>
+                    </div>
+                    <div class="journey-arrow">→</div>
+                    <div class="journey-phase">
+                        <div class="phase-number">2</div>
+                        <div class="phase-content">
+                            <h4>Selective Container-Native Refactor</h4>
+                            <p>Optionally refactor workloads to containers when business value justifies it.</p>
+                            <span class="phase-badge">Value-Driven</span>
+                        </div>
+                    </div>
+                </div>
+                <p class="journey-note"><strong>Key Point:</strong> This is not "rebuilding VMware" — it's a pragmatic path that reduces operational cost immediately while enabling future modernization.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- LAYER 2: ARCHITECTURE IMPACT SUMMARY                             -->
+    <!-- High-level design decisions, consolidated gaps, expert guidance  -->
+    <!-- ================================================================ -->
+
+    <!-- Expert Recommendations -->
+    
+    <section class="recommendations-section layer-2">
+        <div class="container">
+            <h2>Expert-Guided Implementation Recommendations</h2>
+
+            <div class="recommendations-intro">
+                <p><strong>Actionable guidance for components requiring manual work.</strong> These expert recommendations provide step-by-step implementation guidance for workflow components that cannot be safely auto-migrated.</p>
+                <p class="recommendations-note">⚠️ <strong>Important:</strong> These are recommendations, not drop-in replacements. Each recommendation requires review, testing, and validation before production use.</p>
+            </div>
+
+            <!-- Group recommendations by owner team -->
+            
+            
+                
+                
+                    
+                
+                
+            
+                
+                
+                    
+                
+                
+            
+                
+                
+                    
+                
+                
+            
+
+            <!-- Team ownership tabs/filter -->
+            <div class="recommendation-filters">
+                <span class="filter-label">Filter by team:</span>
+                <button class="rec-filter-btn active" data-team="all">All Teams (3)</button>
+                
+                <button class="rec-filter-btn" data-team="NetOps">NetOps (1)</button>
+                
+                <button class="rec-filter-btn" data-team="Platform Team">Platform Team (1)</button>
+                
+                <button class="rec-filter-btn" data-team="SecOps">SecOps (1)</button>
+                
+            </div>
+
+            <!-- Recommendations list -->
+            <div class="recommendations-list">
+                
+                <div class="recommendation-card" data-team="Platform Team">
+                    <div class="recommendation-header">
+                        <h3>Approval Workflow</h3>
+                        <div class="recommendation-badges">
+                            <span class="badge badge-owner">Platform Team</span>
+                            <span class="badge badge-component-type">approval_workflow</span>
+                        </div>
+                    </div>
+
+                    <div class="recommendation-body">
+                        <!-- Why not auto-translatable -->
+                        <div class="recommendation-section">
+                            <h4>Why Not Auto-Translatable</h4>
+                            <p>Approval workflows involve human decision-making, organizational processes, and external system integrations that cannot be automatically translated. Each organization has different approval requirements, SLAs, and escalation procedures that require process redesign.</p>
+                        </div>
+
+                        <!-- Recommended approach -->
+                        <div class="recommendation-section">
+                            <h4>Recommended Ansible Approach</h4>
+                            <p>Implement simple approval using Ansible Automation Platform workflow templates with approval nodes, or use manual intervention tasks with `pause` module for basic approval gates.</p>
+                        </div>
+
+                        <!-- OpenShift primitives -->
+                        
+                        <div class="recommendation-section">
+                            <h4>OpenShift/Kubernetes Primitives</h4>
+                            <ul class="primitives-list">
+                                
+                                <li><code>Ansible Automation Platform Workflow Templates</code></li>
+                                
+                                <li><code>AAP Approval Nodes</code></li>
+                                
+                                <li><code>External ticketing integration (ServiceNow/Jira)</code></li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        <!-- Implementation steps (collapsible) -->
+                        
+                        <details class="recommendation-details">
+                            <summary><h4>Implementation Steps</h4></summary>
+                            <ol class="implementation-steps">
+                                
+                                <li>Identify approval requirements and decision criteria</li>
+                                
+                                <li>Create AAP workflow template with approval node</li>
+                                
+                                <li>Configure approval notification (email, webhook, etc.)</li>
+                                
+                                <li>Implement fallback logic for approval timeout</li>
+                                
+                                <li>Test approval and rejection scenarios</li>
+                                
+                            </ol>
+                        </details>
+                        
+
+                        <!-- Required inputs (collapsible) -->
+                        
+                        <details class="recommendation-details">
+                            <summary><h4>Required Inputs</h4></summary>
+                            <dl class="required-inputs">
+                                
+                                <dt><code>approval_criteria</code></dt>
+                                <dd>Decision criteria for approval (e.g., environment, cost)</dd>
+                                
+                                <dt><code>approvers</code></dt>
+                                <dd>List of approver roles or email addresses</dd>
+                                
+                                <dt><code>timeout_minutes</code></dt>
+                                <dd>Approval timeout before auto-rejection or escalation</dd>
+                                
+                                <dt><code>notification_channels</code></dt>
+                                <dd>How to notify approvers (email, Slack, etc.)</dd>
+                                
+                            </dl>
+                        </details>
+                        
+
+                        <!-- Testing guidance (collapsible) -->
+                        
+                        <details class="recommendation-details">
+                            <summary><h4>Testing & Validation</h4></summary>
+                            <p>Test approval workflow with various scenarios: immediate approval, immediate rejection, timeout, and (if applicable) escalation. Verify notifications are sent correctly. Validate that rejected requests do not proceed with provisioning.</p>
+                        </details>
+                        
+
+                        <!-- References -->
+                        
+                        <div class="recommendation-section">
+                            <h4>References</h4>
+                            <ul class="references-list">
+                                
+                                <li><a href="https://docs.ansible.com/automation-controller/latest/html/userguide/workflow_templates.html" target="_blank" rel="noopener noreferrer">https://docs.ansible.com/automation-controller/latest/html/userguide/workflow_templates.html</a></li>
+                                
+                                <li><a href="https://docs.ansible.com/automation-controller/latest/html/userguide/workflow_templates.html#approval-nodes" target="_blank" rel="noopener noreferrer">https://docs.ansible.com/automation-controller/latest/html/userguide/workflow_templates.html#approval-nodes</a></li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        <!-- Role stub info -->
+                        
+                        <div class="recommendation-footer">
+                            <span class="role-stub-info">📁 Role stub will be generated at: <code>output/ansible/roles/custom_approval_workflow/</code></span>
+                            <p class="role-stub-note">Run <code>ops-translate generate --format ansible --profile &lt;profile&gt;</code> to create the role stub with implementation guidance.</p>
+                        </div>
+                        
+                    </div>
+                </div>
+                
+                <div class="recommendation-card" data-team="SecOps">
+                    <div class="recommendation-header">
+                        <h3>NSX Security Groups</h3>
+                        <div class="recommendation-badges">
+                            <span class="badge badge-owner">SecOps</span>
+                            <span class="badge badge-component-type">nsx_security_group</span>
+                        </div>
+                    </div>
+
+                    <div class="recommendation-body">
+                        <!-- Why not auto-translatable -->
+                        <div class="recommendation-section">
+                            <h4>Why Not Auto-Translatable</h4>
+                            <p>NSX Security Groups support dynamic membership based on VM tags, network properties, and complex criteria. Kubernetes uses label selectors which are fundamentally different. Auto-translation cannot safely map dynamic NSX group membership to static label selectors without NetOps/SecOps review.</p>
+                        </div>
+
+                        <!-- Recommended approach -->
+                        <div class="recommendation-section">
+                            <h4>Recommended Ansible Approach</h4>
+                            <p>Define a Kubernetes label taxonomy that represents security zones and application tiers. Use Ansible to apply labels to workloads based on the NSX group membership criteria. Reference labels in NetworkPolicy selectors.</p>
+                        </div>
+
+                        <!-- OpenShift primitives -->
+                        
+                        <div class="recommendation-section">
+                            <h4>OpenShift/Kubernetes Primitives</h4>
+                            <ul class="primitives-list">
+                                
+                                <li><code>Pod Labels</code></li>
+                                
+                                <li><code>Namespace Labels</code></li>
+                                
+                                <li><code>NetworkPolicy podSelector/namespaceSelector</code></li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        <!-- Implementation steps (collapsible) -->
+                        
+                        <details class="recommendation-details">
+                            <summary><h4>Implementation Steps</h4></summary>
+                            <ol class="implementation-steps">
+                                
+                                <li>Document NSX security group membership rules and criteria</li>
+                                
+                                <li>Design Kubernetes label taxonomy (e.g., security.zone, app.tier)</li>
+                                
+                                <li>Map NSX group membership to label assignments</li>
+                                
+                                <li>Create Ansible tasks to label namespaces and workloads</li>
+                                
+                                <li>Update NetworkPolicy to reference label selectors</li>
+                                
+                                <li>Require NetOps/SecOps sign-off on label taxonomy and policy mapping</li>
+                                
+                            </ol>
+                        </details>
+                        
+
+                        <!-- Required inputs (collapsible) -->
+                        
+                        <details class="recommendation-details">
+                            <summary><h4>Required Inputs</h4></summary>
+                            <dl class="required-inputs">
+                                
+                                <dt><code>security_groups</code></dt>
+                                <dd>List of NSX security groups with membership rules</dd>
+                                
+                                <dt><code>label_taxonomy</code></dt>
+                                <dd>Proposed Kubernetes label schema</dd>
+                                
+                                <dt><code>workload_inventory</code></dt>
+                                <dd>List of workloads and their security requirements</dd>
+                                
+                            </dl>
+                        </details>
+                        
+
+                        <!-- Testing guidance (collapsible) -->
+                        
+                        <details class="recommendation-details">
+                            <summary><h4>Testing & Validation</h4></summary>
+                            <p>Validate label assignments match intended security group membership. Test NetworkPolicy enforcement with labeled pods. Review with SecOps to ensure security boundaries are maintained. Document any gaps in enforcement compared to NSX.</p>
+                        </details>
+                        
+
+                        <!-- References -->
+                        
+                        <div class="recommendation-section">
+                            <h4>References</h4>
+                            <ul class="references-list">
+                                
+                                <li><a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/" target="_blank" rel="noopener noreferrer">https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/</a></li>
+                                
+                                <li><a href="https://docs.openshift.com/container-platform/latest/networking/network_policy/about-network-policy.html" target="_blank" rel="noopener noreferrer">https://docs.openshift.com/container-platform/latest/networking/network_policy/about-network-policy.html</a></li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        <!-- Role stub info -->
+                        
+                        <div class="recommendation-footer">
+                            <span class="role-stub-info">📁 Role stub will be generated at: <code>output/ansible/roles/custom_nsx_security_groups/</code></span>
+                            <p class="role-stub-note">Run <code>ops-translate generate --format ansible --profile &lt;profile&gt;</code> to create the role stub with implementation guidance.</p>
+                        </div>
+                        
+                    </div>
+                </div>
+                
+                <div class="recommendation-card" data-team="NetOps">
+                    <div class="recommendation-header">
+                        <h3>NSX Distributed Firewall</h3>
+                        <div class="recommendation-badges">
+                            <span class="badge badge-owner">NetOps</span>
+                            <span class="badge badge-component-type">nsx_firewall</span>
+                        </div>
+                    </div>
+
+                    <div class="recommendation-body">
+                        <!-- Why not auto-translatable -->
+                        <div class="recommendation-section">
+                            <h4>Why Not Auto-Translatable</h4>
+                            <p>NSX Distributed Firewall provides L7 filtering, stateful inspection, and micro-segmentation features that cannot be directly mapped to Kubernetes NetworkPolicy. Auto-translation would lose critical security enforcement and create a false sense of equivalence.</p>
+                        </div>
+
+                        <!-- Recommended approach -->
+                        <div class="recommendation-section">
+                            <h4>Recommended Ansible Approach</h4>
+                            <p>Use `kubernetes.core.k8s` module to create NetworkPolicy resources with an allow-list approach. For advanced requirements, consider Calico GlobalNetworkPolicy or OpenShift Egress Firewall.</p>
+                        </div>
+
+                        <!-- OpenShift primitives -->
+                        
+                        <div class="recommendation-section">
+                            <h4>OpenShift/Kubernetes Primitives</h4>
+                            <ul class="primitives-list">
+                                
+                                <li><code>NetworkPolicy (Kubernetes native)</code></li>
+                                
+                                <li><code>EgressFirewall (OpenShift)</code></li>
+                                
+                                <li><code>GlobalNetworkPolicy (Calico)</code></li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        <!-- Implementation steps (collapsible) -->
+                        
+                        <details class="recommendation-details">
+                            <summary><h4>Implementation Steps</h4></summary>
+                            <ol class="implementation-steps">
+                                
+                                <li>Analyze NSX firewall rules to extract source/destination patterns</li>
+                                
+                                <li>Define Kubernetes label taxonomy for pod selectors</li>
+                                
+                                <li>Create NetworkPolicy manifests with allow-list ingress/egress rules</li>
+                                
+                                <li>Document unsupported features (L7, stateful inspection) for NetOps review</li>
+                                
+                                <li>Test policies in dev environment with realistic traffic patterns</li>
+                                
+                                <li>Implement monitoring for policy violations and denied connections</li>
+                                
+                            </ol>
+                        </details>
+                        
+
+                        <!-- Required inputs (collapsible) -->
+                        
+                        <details class="recommendation-details">
+                            <summary><h4>Required Inputs</h4></summary>
+                            <dl class="required-inputs">
+                                
+                                <dt><code>firewall_rules</code></dt>
+                                <dd>List of NSX firewall rules with source/dest/port/protocol</dd>
+                                
+                                <dt><code>namespace</code></dt>
+                                <dd>Target namespace for NetworkPolicy</dd>
+                                
+                                <dt><code>pod_labels</code></dt>
+                                <dd>Label selectors for affected pods</dd>
+                                
+                            </dl>
+                        </details>
+                        
+
+                        <!-- Testing guidance (collapsible) -->
+                        
+                        <details class="recommendation-details">
+                            <summary><h4>Testing & Validation</h4></summary>
+                            <p>Test with pod-to-pod traffic in dev cluster. Verify both allowed and denied traffic. Use `kubectl exec` to test connectivity between pods. Monitor CNI logs for policy enforcement. Compare behavior against NSX firewall logs to identify gaps.</p>
+                        </details>
+                        
+
+                        <!-- References -->
+                        
+                        <div class="recommendation-section">
+                            <h4>References</h4>
+                            <ul class="references-list">
+                                
+                                <li><a href="https://docs.openshift.com/container-platform/latest/networking/network_policy/about-network-policy.html" target="_blank" rel="noopener noreferrer">https://docs.openshift.com/container-platform/latest/networking/network_policy/about-network-policy.html</a></li>
+                                
+                                <li><a href="https://kubernetes.io/docs/concepts/services-networking/network-policies/" target="_blank" rel="noopener noreferrer">https://kubernetes.io/docs/concepts/services-networking/network-policies/</a></li>
+                                
+                                <li><a href="https://docs.tigera.io/calico/latest/network-policy/" target="_blank" rel="noopener noreferrer">https://docs.tigera.io/calico/latest/network-policy/</a></li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        <!-- Role stub info -->
+                        
+                        <div class="recommendation-footer">
+                            <span class="role-stub-info">📁 Role stub will be generated at: <code>output/ansible/roles/custom_nsx_firewall_migration/</code></span>
+                            <p class="role-stub-note">Run <code>ops-translate generate --format ansible --profile &lt;profile&gt;</code> to create the role stub with implementation guidance.</p>
+                        </div>
+                        
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </section>
+    
+
+    <!-- Consolidated Supported Patterns -->
+    
+    <section class="supported-patterns-section layer-2">
+        <div class="container">
+            <h2>Standard Supported Patterns</h2>
+
+            <div class="supported-patterns-intro">
+                <p>The following patterns are fully supported with automatic translation to OpenShift-native equivalents. These are omitted from detailed findings below for brevity.</p>
+            </div>
+
+            <div class="supported-patterns-list">
+                
+                <div class="supported-pattern-card">
+                    <div class="pattern-header">
+                        <span class="pattern-icon">✅</span>
+                        <h3>Vm Creation</h3>
+                        <span class="pattern-count">8 instances</span>
+                    </div>
+                    <div class="pattern-body">
+                        <p class="pattern-description">
+                            Found across 8 files
+                            
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="supported-pattern-card">
+                    <div class="pattern-header">
+                        <span class="pattern-icon">✅</span>
+                        <h3>Day2 Ops</h3>
+                        <span class="pattern-count">7 instances</span>
+                    </div>
+                    <div class="pattern-body">
+                        <p class="pattern-description">
+                            Found across 7 files
+                            
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="supported-pattern-card">
+                    <div class="pattern-header">
+                        <span class="pattern-icon">✅</span>
+                        <h3>Compute Allocation</h3>
+                        <span class="pattern-count">4 instances</span>
+                    </div>
+                    <div class="pattern-body">
+                        <p class="pattern-description">
+                            Found across 4 files
+                            
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="supported-pattern-card">
+                    <div class="pattern-header">
+                        <span class="pattern-icon">✅</span>
+                        <h3>Metadata</h3>
+                        <span class="pattern-count">3 instances</span>
+                    </div>
+                    <div class="pattern-body">
+                        <p class="pattern-description">
+                            Found across 3 files
+                            
+                            (Deploy-DatabaseVM, provision-vm-with-approval, provision-vm-with-nsx-firewall)
+                            
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="supported-pattern-card">
+                    <div class="pattern-header">
+                        <span class="pattern-icon">✅</span>
+                        <h3>Simple Networking</h3>
+                        <span class="pattern-count">1 instance</span>
+                    </div>
+                    <div class="pattern-body">
+                        <p class="pattern-description">
+                            Found across 1 file
+                            
+                            (provision-vm-with-approval)
+                            
+                        </p>
+                    </div>
+                </div>
+                
+            </div>
+
+            <div class="supported-patterns-note">
+                <p><strong>Note:</strong> These supported patterns are automatically translatable and do not require manual intervention. They are excluded from the detailed gap analysis below to reduce report length.</p>
+            </div>
+        </div>
+    </section>
+    
+
+    <!-- ================================================================ -->
+    <!-- LAYER 3: IMPLEMENTATION DETAILS                                  -->
+    <!-- File-by-file analysis, raw intent, detailed artifacts            -->
+    <!-- ================================================================ -->
+
+    <!-- Workflow Inventory -->
+    
+    <section class="inventory-section layer-3">
+        <div class="container">
+            <h2>Source Files</h2>
+            <table class="inventory-table">
+                <thead>
+                    <tr>
+                        <th>File Name</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+                    <tr>
+                        <td class="file-name">Provision-WebTier.ps1</td>
+                        <td>
+                            
+                            <span class="badge badge-powercli">PowerCLI</span>
+                            
+                        </td>
+                        <td>
+                            
+                            <span class="status-needs_review">⚠ Needs Review</span>
+                            
+                        </td>
+                        <td>
+                            
+                            <a href="#file-Provision-WebTier-ps1" class="action-link">View Findings</a>
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td class="file-name">New-StandardVM.ps1</td>
+                        <td>
+                            
+                            <span class="badge badge-powercli">PowerCLI</span>
+                            
+                        </td>
+                        <td>
+                            
+                            <span class="status-needs_review">⚠ Needs Review</span>
+                            
+                        </td>
+                        <td>
+                            
+                            <a href="#file-New-StandardVM-ps1" class="action-link">View Findings</a>
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td class="file-name">Manage-VMSnapshots.ps1</td>
+                        <td>
+                            
+                            <span class="badge badge-powercli">PowerCLI</span>
+                            
+                        </td>
+                        <td>
+                            
+                            <span class="status-supported">✅ Supported</span>
+                            
+                        </td>
+                        <td>
+                            
+                            <a href="#file-Manage-VMSnapshots-ps1" class="action-link">View Findings</a>
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td class="file-name">Deploy-DatabaseVM.ps1</td>
+                        <td>
+                            
+                            <span class="badge badge-powercli">PowerCLI</span>
+                            
+                        </td>
+                        <td>
+                            
+                            <span class="status-needs_review">⚠ Needs Review</span>
+                            
+                        </td>
+                        <td>
+                            
+                            <a href="#file-Deploy-DatabaseVM-ps1" class="action-link">View Findings</a>
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td class="file-name">provision-vm-with-approval.workflow.xml</td>
+                        <td>
+                            
+                            <span class="badge badge-vrealize">vRealize</span>
+                            
+                        </td>
+                        <td>
+                            
+                            <span class="status-needs_review">⚠ Needs Review</span>
+                            
+                        </td>
+                        <td>
+                            
+                            <a href="#file-provision-vm-with-approval-workflow-xml" class="action-link">View Findings</a>
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td class="file-name">old-db-provisioning-DO-NOT-MODIFY.workflow.xml</td>
+                        <td>
+                            
+                            <span class="badge badge-vrealize">vRealize</span>
+                            
+                        </td>
+                        <td>
+                            
+                            <span class="status-supported">✅ Supported</span>
+                            
+                        </td>
+                        <td>
+                            
+                            <a href="#file-old-db-provisioning-DO-NOT-MODIFY-workflow-xml" class="action-link">View Findings</a>
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td class="file-name">provision-vm-with-nsx-firewall.workflow.xml</td>
+                        <td>
+                            
+                            <span class="badge badge-vrealize">vRealize</span>
+                            
+                        </td>
+                        <td>
+                            
+                            <span class="status-blocked">⛔ Blocked</span>
+                            
+                        </td>
+                        <td>
+                            
+                            <a href="#file-provision-vm-with-nsx-firewall-workflow-xml" class="action-link">View Findings</a>
+                            
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td class="file-name">provision-web-app-with-nsx-lb.workflow.xml</td>
+                        <td>
+                            
+                            <span class="badge badge-vrealize">vRealize</span>
+                            
+                        </td>
+                        <td>
+                            
+                            <span class="status-needs_review">⚠ Needs Review</span>
+                            
+                        </td>
+                        <td>
+                            
+                            <a href="#file-provision-web-app-with-nsx-lb-workflow-xml" class="action-link">View Findings</a>
+                            
+                        </td>
+                    </tr>
+                    
+                </tbody>
+            </table>
+        </div>
+    </section>
+    
+
+    <!-- Intent Overview -->
+    
+    <section class="intent-section layer-3">
+        <div class="container">
+            <details class="layer-3-collapsible">
+                <summary>
+                    <h2>Intent Overview</h2>
+                </summary>
+                <div class="expand-hint-wrapper">
+                    <span class="expand-hint">Click to expand detailed workflow information</span>
+                </div>
+            <div class="intent-content">
+                
+                <!-- Workflow Info -->
+                
+                <div class="intent-block">
+                    <h3>Workflow</h3>
+                    <p><strong>Name:</strong> old_db_provisioning_v3_working</p>
+                    
+                    <p><strong>Workload Type:</strong> virtual_machine</p>
+                    
+                    
+                    <div class="workflow-description">
+                        <h4>Description</h4>
+                        <p>Provisions database virtual machines on vSphere with fixed configuration.
+Creates VMs with 8 vCPUs and 16GB memory on VLAN_200 network, targeting
+environment-specific clusters (production or development).
+</p>
+                    </div>
+                    
+                </div>
+                
+
+                <!-- Inputs -->
+                
+                <div class="intent-block">
+                    <h3>Inputs</h3>
+                    <ul>
+                        
+                        <li>
+                            <code>dbname</code>
+                            (string)
+                            
+                            <span class="badge badge-required">required</span>
+                            
+                            
+                        </li>
+                        
+                        <li>
+                            <code>env</code>
+                            (enum)
+                            
+                            <span class="badge badge-required">required</span>
+                            
+                            
+                            - values: prod, dev
+                            
+                        </li>
+                        
+                        <li>
+                            <code>mem</code>
+                            (string)
+                            
+                            
+                        </li>
+                        
+                    </ul>
+                </div>
+                
+
+                <!-- Compute -->
+                
+
+                <!-- Networking -->
+                
+
+                <!-- Storage -->
+                
+
+                <!-- Governance -->
+                
+
+                <!-- Show YAML -->
+                <details class="yaml-toggle">
+                    <summary>Show Raw YAML</summary>
+                    <pre><code>{
+  "assumptions": [
+    "Memory parameter (mem) is accepted as input but hardcoded to 16GB in implementation - documented in workflow comments as intentional override",
+    "vCenter endpoint hardcoded to 10.50.20.100 due to dynamic lookup issues noted in 2018",
+    "Post-provisioning steps are manual and not automated - workflow logs reminders only",
+    "Day 2 operations not implemented in this workflow based on comments indicating external Ansible automation"
+  ],
+  "intent": {
+    "day2_operations": {
+      "supported": []
+    },
+    "decision_points": [
+      {
+        "branches": {
+          "dev": {
+            "cluster": "Test_Cluster_02",
+            "flag": false
+          },
+          "prod": {
+            "cluster": "PROD_DB_Cluster",
+            "flag": true
+          }
+        },
+        "condition": "env == \"prod\"",
+        "name": "environment_placement"
+      }
+    ],
+    "description": "Provisions database virtual machines on vSphere with fixed configuration.\nCreates VMs with 8 vCPUs and 16GB memory on VLAN_200 network, targeting\nenvironment-specific clusters (production or development).\n",
+    "inputs": {
+      "dbname": {
+        "description": "Database name (no spaces)",
+        "required": true,
+        "type": "string"
+      },
+      "env": {
+        "description": "Target environment (lowercase only)",
+        "required": true,
+        "type": "enum",
+        "values": [
+          "prod",
+          "dev"
+        ]
+      },
+      "mem": {
+        "description": "Memory GB parameter (ignored - always 16GB)",
+        "required": false,
+        "type": "string"
+      }
+    },
+    "integrations": [
+      {
+        "endpoint": "10.50.20.100",
+        "operations": [
+          "vm_creation",
+          "cluster_placement",
+          "network_configuration"
+        ],
+        "type": "vsphere"
+      }
+    ],
+    "outputs": {
+      "result": {
+        "description": "Provisioning result message",
+        "type": "string"
+      }
+    },
+    "post_provisioning": {
+      "manual_steps": [
+        "Add to backup schedule",
+        "Configure monitoring",
+        "Email DBA team",
+        "Update CMDB"
+      ]
+    },
+    "resource_allocation": {
+      "compute": {
+        "cpu_count": 8,
+        "guest_os": "rhel7_64Guest",
+        "memory_mb": 16384
+      },
+      "network": {
+        "adapters": [
+          {
+            "name": "VLAN_200",
+            "type": "VcVirtualE1000"
+          }
+        ]
+      },
+      "placement": {
+        "dev": {
+          "cluster": "Test_Cluster_02",
+          "network": "VLAN_200",
+          "vcenter": "10.50.20.100"
+        },
+        "prod": {
+          "cluster": "PROD_DB_Cluster",
+          "network": "VLAN_200",
+          "vcenter": "10.50.20.100"
+        }
+      }
+    },
+    "workflow_name": "old_db_provisioning_v3_working",
+    "workload_type": "virtual_machine"
+  },
+  "schema_version": 1,
+  "sources": [
+    {
+      "file": "old_DB_provisioning_v3_WORKING.workflow.xml",
+      "type": "vrealize"
+    }
+  ]
+}</code></pre>
+                </details>
+                
+            </div>
+            </details>
+        </div>
+    </section>
+    
+
+    <!-- Gaps & Migration Paths -->
+    
+    <section class="gaps-section layer-3">
+        <div class="container">
+            <h2>Gaps & Migration Guidance</h2>
+
+            <!-- Filter Indicator -->
+            <div id="filter-indicator" class="filter-indicator hidden">
+                <span class="filter-text">Filtering by: <strong id="filter-name"></strong></span>
+                <button id="clear-filter" class="clear-filter-btn">Clear Filter ✕</button>
+            </div>
+
+            
+            <div class="alert alert-error">
+                <strong>⚠️ Action Required:</strong> This workflow contains components that cannot be automatically translated. Manual implementation or architectural changes will be required.
+            </div>
+            
+
+            <!-- Migration Path Legend -->
+            <div class="migration-legend">
+                <h3>Migration Paths</h3>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <span class="badge badge-path-a">PATH A</span>
+                        <span class="legend-description">OpenShift-native replacement available - can be automatically translated</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="badge badge-path-b">PATH B</span>
+                        <span class="legend-description">Hybrid approach - keep existing system temporarily while planning migration</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="badge badge-path-c">PATH C</span>
+                        <span class="legend-description">Custom specialist implementation required - significant effort needed</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Show/Hide Supported Toggle -->
+            <div class="supported-toggle-container">
+                <button id="toggle-supported" class="toggle-supported-btn">
+                    <span class="toggle-icon">▶</span>
+                    <span class="toggle-text">Show Supported Patterns</span>
+                    <span class="supported-count">(23 hidden)</span>
+                </button>
+                <p class="toggle-note">Supported patterns are hidden by default. See "Standard Supported Patterns" section above for summary.</p>
+            </div>
+
+            <!-- Component List -->
+            <div class="gaps-list">
+                
+                
+                
+                    
+                    
+                
+                    
+                    
+                
+                    
+                    
+                
+                    
+                    
+                
+                    
+                    
+                
+                    
+                    
+                
+                    
+                    
+                
+                    
+                    
+                
+
+                
+                
+                
+                
+
+                
+                
+                
+                    
+                    
+                        
+                    
+                    
+                
+                    
+                    
+                    
+                
+                    
+                    
+                    
+                
+                    
+                    
+                    
+                
+                    
+                    
+                    
+                
+                    
+                    
+                    
+                
+                    
+                    
+                        
+                    
+                    
+                
+                    
+                    
+                        
+                    
+                    
+                
+                    
+                    
+                    
+                
+                    
+                    
+                    
+                
+                    
+                    
+                    
+                
+                    
+                    
+                    
+                
+                    
+                    
+                    
+                
+                    
+                    
+                        
+                    
+                    
+                
+                    
+                    
+                    
+                
+                    
+                    
+                    
+                
+                    
+                    
+                    
+                
+                    
+                    
+                    
+                
+                    
+                    
+                        
+                    
+                    
+                
+                    
+                    
+                    
+                
+                    
+                    
+                    
+                
+                    
+                    
+                        
+                    
+                    
+                
+                    
+                    
+                    
+                
+                    
+                    
+                    
+                
+                    
+                    
+                    
+                
+                    
+                    
+                        
+                    
+                    
+                
+                    
+                    
+                    
+                
+                    
+                    
+                        
+                    
+                    
+                
+                    
+                    
+                    
+                
+                    
+                    
+                    
+                
+                    
+                    
+                    
+                
+
+                
+                
+                    
+
+                    
+                    
+                    <div id="file-Deploy-DatabaseVM-ps1" class="file-anchor"></div>
+
+                    
+                    <div class="file-section-header">
+                        <div class="file-icon">📄</div>
+                        <h3>Deploy-DatabaseVM.ps1</h3>
+                        
+                        <span class="badge badge-powercli">POWERCLI</span>
+                    </div>
+
+                    
+                    <div class="gap-item gap-partial" data-level="PARTIAL">
+                    <div class="gap-header">
+                        <h3>
+                            Multi-NIC Networking
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-partial">PARTIAL</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> multi_nic</p>
+                        
+                        <p><strong>Location:</strong> <code>Deploy-DatabaseVM</code></p>
+                        
+                        <p><strong>Reason:</strong> Multiple network interfaces require Multus CNI configuration</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> NetworkAttachmentDefinition (Multus)</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Create NetworkAttachmentDefinition for each network</li>
+                                
+                                <li>Configure Multus CNI plugin if not already installed</li>
+                                
+                                <li>Update VM spec to reference NADs</li>
+                                
+                                <li>Test network connectivity between pods</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                    <div class="gap-item gap-supported supported-hidden" data-level="SUPPORTED">
+                    <div class="gap-header">
+                        <h3>
+                            VM Provisioning
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-supported">SUPPORTED</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> vm_creation</p>
+                        
+                        <p><strong>Location:</strong> <code>Deploy-DatabaseVM</code></p>
+                        
+                        <p><strong>Reason:</strong> VM creation maps directly to KubeVirt VirtualMachine resource</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> VirtualMachine (KubeVirt)</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Generate KubeVirt VirtualMachine manifest</li>
+                                
+                                <li>Map inputs to VM spec fields</li>
+                                
+                                <li>Configure default pod networking</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                    <div class="gap-item gap-supported supported-hidden" data-level="SUPPORTED">
+                    <div class="gap-header">
+                        <h3>
+                            VM Lifecycle Operations
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-supported">SUPPORTED</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> day2_ops</p>
+                        
+                        <p><strong>Location:</strong> <code>Deploy-DatabaseVM</code></p>
+                        
+                        <p><strong>Reason:</strong> Start/stop/restart operations supported via VirtualMachine spec</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> VirtualMachine running field</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Map start/stop to spec.running: true/false</li>
+                                
+                                <li>Use virtctl for CLI operations</li>
+                                
+                                <li>Consider using Ansible for automation</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                    <div class="gap-item gap-supported supported-hidden" data-level="SUPPORTED">
+                    <div class="gap-header">
+                        <h3>
+                            Tags and Metadata
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-supported">SUPPORTED</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> metadata</p>
+                        
+                        <p><strong>Location:</strong> <code>Deploy-DatabaseVM</code></p>
+                        
+                        <p><strong>Reason:</strong> Tags and custom attributes map to Kubernetes labels</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> metadata.labels</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Map vSphere tags to Kubernetes labels</li>
+                                
+                                <li>Convert custom attributes to annotations</li>
+                                
+                                <li>Follow label naming conventions (kubernetes.io/*)</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                
+                
+                    
+
+                    
+                    
+                    <div id="file-Manage-VMSnapshots-ps1" class="file-anchor"></div>
+
+                    
+                    <div class="file-section-header">
+                        <div class="file-icon">📄</div>
+                        <h3>Manage-VMSnapshots.ps1</h3>
+                        
+                        <span class="badge badge-powercli">POWERCLI</span>
+                    </div>
+
+                    
+                    <div class="gap-item gap-supported supported-hidden" data-level="SUPPORTED">
+                    <div class="gap-header">
+                        <h3>
+                            VM Provisioning
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-supported">SUPPORTED</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> vm_creation</p>
+                        
+                        <p><strong>Location:</strong> <code>Manage-VMSnapshots</code></p>
+                        
+                        <p><strong>Reason:</strong> VM creation maps directly to KubeVirt VirtualMachine resource</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> VirtualMachine (KubeVirt)</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Generate KubeVirt VirtualMachine manifest</li>
+                                
+                                <li>Map inputs to VM spec fields</li>
+                                
+                                <li>Configure default pod networking</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                    <div class="gap-item gap-supported supported-hidden" data-level="SUPPORTED">
+                    <div class="gap-header">
+                        <h3>
+                            VM Lifecycle Operations
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-supported">SUPPORTED</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> day2_ops</p>
+                        
+                        <p><strong>Location:</strong> <code>Manage-VMSnapshots</code></p>
+                        
+                        <p><strong>Reason:</strong> Start/stop/restart operations supported via VirtualMachine spec</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> VirtualMachine running field</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Map start/stop to spec.running: true/false</li>
+                                
+                                <li>Use virtctl for CLI operations</li>
+                                
+                                <li>Consider using Ansible for automation</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                
+                
+                    
+
+                    
+                    
+                    <div id="file-New-StandardVM-ps1" class="file-anchor"></div>
+
+                    
+                    <div class="file-section-header">
+                        <div class="file-icon">📄</div>
+                        <h3>New-StandardVM.ps1</h3>
+                        
+                        <span class="badge badge-powercli">POWERCLI</span>
+                    </div>
+
+                    
+                    <div class="gap-item gap-partial" data-level="PARTIAL">
+                    <div class="gap-header">
+                        <h3>
+                            Multi-NIC Networking
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-partial">PARTIAL</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> multi_nic</p>
+                        
+                        <p><strong>Location:</strong> <code>New-StandardVM</code></p>
+                        
+                        <p><strong>Reason:</strong> Multiple network interfaces require Multus CNI configuration</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> NetworkAttachmentDefinition (Multus)</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Create NetworkAttachmentDefinition for each network</li>
+                                
+                                <li>Configure Multus CNI plugin if not already installed</li>
+                                
+                                <li>Update VM spec to reference NADs</li>
+                                
+                                <li>Test network connectivity between pods</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                    <div class="gap-item gap-supported supported-hidden" data-level="SUPPORTED">
+                    <div class="gap-header">
+                        <h3>
+                            VM Provisioning
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-supported">SUPPORTED</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> vm_creation</p>
+                        
+                        <p><strong>Location:</strong> <code>New-StandardVM</code></p>
+                        
+                        <p><strong>Reason:</strong> VM creation maps directly to KubeVirt VirtualMachine resource</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> VirtualMachine (KubeVirt)</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Generate KubeVirt VirtualMachine manifest</li>
+                                
+                                <li>Map inputs to VM spec fields</li>
+                                
+                                <li>Configure default pod networking</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                    <div class="gap-item gap-supported supported-hidden" data-level="SUPPORTED">
+                    <div class="gap-header">
+                        <h3>
+                            Compute Resources
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-supported">SUPPORTED</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> compute_allocation</p>
+                        
+                        <p><strong>Location:</strong> <code>New-StandardVM</code></p>
+                        
+                        <p><strong>Reason:</strong> CPU and memory allocation fully supported in KubeVirt</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> spec.template.spec.domain.resources</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Map CPU cores to spec.template.spec.domain.cpu.cores</li>
+                                
+                                <li>Map memory to spec.template.spec.domain.resources.requests.memory</li>
+                                
+                                <li>Consider setting resource limits for production</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                    <div class="gap-item gap-supported supported-hidden" data-level="SUPPORTED">
+                    <div class="gap-header">
+                        <h3>
+                            VM Lifecycle Operations
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-supported">SUPPORTED</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> day2_ops</p>
+                        
+                        <p><strong>Location:</strong> <code>New-StandardVM</code></p>
+                        
+                        <p><strong>Reason:</strong> Start/stop/restart operations supported via VirtualMachine spec</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> VirtualMachine running field</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Map start/stop to spec.running: true/false</li>
+                                
+                                <li>Use virtctl for CLI operations</li>
+                                
+                                <li>Consider using Ansible for automation</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                
+                
+                    
+
+                    
+                    
+                    <div id="file-Provision-WebTier-ps1" class="file-anchor"></div>
+
+                    
+                    <div class="file-section-header">
+                        <div class="file-icon">📄</div>
+                        <h3>Provision-WebTier.ps1</h3>
+                        
+                        <span class="badge badge-powercli">POWERCLI</span>
+                    </div>
+
+                    
+                    <div class="gap-item gap-partial" data-level="PARTIAL">
+                    <div class="gap-header">
+                        <h3>
+                            Multi-NIC Networking
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-partial">PARTIAL</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> multi_nic</p>
+                        
+                        <p><strong>Location:</strong> <code>Provision-WebTier</code></p>
+                        
+                        <p><strong>Reason:</strong> Multiple network interfaces require Multus CNI configuration</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> NetworkAttachmentDefinition (Multus)</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Create NetworkAttachmentDefinition for each network</li>
+                                
+                                <li>Configure Multus CNI plugin if not already installed</li>
+                                
+                                <li>Update VM spec to reference NADs</li>
+                                
+                                <li>Test network connectivity between pods</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                    <div class="gap-item gap-supported supported-hidden" data-level="SUPPORTED">
+                    <div class="gap-header">
+                        <h3>
+                            VM Provisioning
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-supported">SUPPORTED</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> vm_creation</p>
+                        
+                        <p><strong>Location:</strong> <code>Provision-WebTier</code></p>
+                        
+                        <p><strong>Reason:</strong> VM creation maps directly to KubeVirt VirtualMachine resource</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> VirtualMachine (KubeVirt)</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Generate KubeVirt VirtualMachine manifest</li>
+                                
+                                <li>Map inputs to VM spec fields</li>
+                                
+                                <li>Configure default pod networking</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                    <div class="gap-item gap-supported supported-hidden" data-level="SUPPORTED">
+                    <div class="gap-header">
+                        <h3>
+                            VM Lifecycle Operations
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-supported">SUPPORTED</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> day2_ops</p>
+                        
+                        <p><strong>Location:</strong> <code>Provision-WebTier</code></p>
+                        
+                        <p><strong>Reason:</strong> Start/stop/restart operations supported via VirtualMachine spec</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> VirtualMachine running field</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Map start/stop to spec.running: true/false</li>
+                                
+                                <li>Use virtctl for CLI operations</li>
+                                
+                                <li>Consider using Ansible for automation</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                
+                
+                    
+
+                    
+                    
+                    <div id="file-old-db-provisioning-DO-NOT-MODIFY-workflow-xml" class="file-anchor"></div>
+
+                    
+                    <div class="file-section-header">
+                        <div class="file-icon">📄</div>
+                        <h3>old-db-provisioning-DO-NOT-MODIFY.workflow.xml</h3>
+                        
+                        <span class="badge badge-vrealize">VREALIZE</span>
+                    </div>
+
+                    
+                    <div class="gap-item gap-supported supported-hidden" data-level="SUPPORTED">
+                    <div class="gap-header">
+                        <h3>
+                            VM Provisioning
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-supported">SUPPORTED</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> vm_creation</p>
+                        
+                        <p><strong>Location:</strong> <code>old-db-provisioning-DO-NOT-MODIFY</code></p>
+                        
+                        <p><strong>Reason:</strong> VM creation maps directly to KubeVirt VirtualMachine resource</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> VirtualMachine (KubeVirt)</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Generate KubeVirt VirtualMachine manifest</li>
+                                
+                                <li>Map workflow inputs to VM spec fields</li>
+                                
+                                <li>Configure default pod networking</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                
+                
+                    
+
+                    
+                    
+                    <div id="file-provision-vm-with-approval-workflow-xml" class="file-anchor"></div>
+
+                    
+                    <div class="file-section-header">
+                        <div class="file-icon">📄</div>
+                        <h3>provision-vm-with-approval.workflow.xml</h3>
+                        
+                        <span class="badge badge-vrealize">VREALIZE</span>
+                    </div>
+
+                    
+                    <div class="gap-item gap-partial" data-level="PARTIAL">
+                    <div class="gap-header">
+                        <h3>
+                            Approval Workflow
+                            
+                            
+                            <span class="vrealize-indicator" title="vRealize Approval Workflow">⚙️ Approval</span>
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-partial">PARTIAL</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> approval</p>
+                        
+                        <p><strong>Location:</strong> <code>provision-vm-with-approval</code></p>
+                        
+                        <p><strong>Reason:</strong> Approval logic requires custom integration with existing approval systems</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> Custom operator or external approval system</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-b">PATH B</span>
+                            <span class="path-description">Hybrid approach - keep existing temporarily</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Integrate with existing approval system (ServiceNow, Jira, etc.)</li>
+                                
+                                <li>Consider using Kubernetes admission controllers</li>
+                                
+                                <li>May require custom operator development</li>
+                                
+                                <li>Document approval requirements in runbook</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                    <div class="gap-item gap-supported supported-hidden" data-level="SUPPORTED">
+                    <div class="gap-header">
+                        <h3>
+                            VM Provisioning
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-supported">SUPPORTED</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> vm_creation</p>
+                        
+                        <p><strong>Location:</strong> <code>provision-vm-with-approval</code></p>
+                        
+                        <p><strong>Reason:</strong> VM creation maps directly to KubeVirt VirtualMachine resource</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> VirtualMachine (KubeVirt)</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Generate KubeVirt VirtualMachine manifest</li>
+                                
+                                <li>Map workflow inputs to VM spec fields</li>
+                                
+                                <li>Configure default pod networking</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                    <div class="gap-item gap-supported supported-hidden" data-level="SUPPORTED">
+                    <div class="gap-header">
+                        <h3>
+                            Compute Resources
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-supported">SUPPORTED</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> compute_allocation</p>
+                        
+                        <p><strong>Location:</strong> <code>provision-vm-with-approval</code></p>
+                        
+                        <p><strong>Reason:</strong> CPU and memory allocation fully supported in KubeVirt</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> spec.template.spec.domain.resources</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Map CPU cores to spec.template.spec.domain.cpu.cores</li>
+                                
+                                <li>Map memory to spec.template.spec.domain.resources.requests.memory</li>
+                                
+                                <li>Consider setting resource limits for production</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                    <div class="gap-item gap-supported supported-hidden" data-level="SUPPORTED">
+                    <div class="gap-header">
+                        <h3>
+                            Basic Networking
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-supported">SUPPORTED</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> simple_networking</p>
+                        
+                        <p><strong>Location:</strong> <code>provision-vm-with-approval</code></p>
+                        
+                        <p><strong>Reason:</strong> Single network interface supported via default pod network</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> Default pod network (OVN-Kubernetes)</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>VM will use cluster&#39;s default pod network</li>
+                                
+                                <li>No additional NetworkAttachmentDefinition needed</li>
+                                
+                                <li>Consider using Service for external access</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                    <div class="gap-item gap-supported supported-hidden" data-level="SUPPORTED">
+                    <div class="gap-header">
+                        <h3>
+                            VM Lifecycle Operations
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-supported">SUPPORTED</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> day2_ops</p>
+                        
+                        <p><strong>Location:</strong> <code>provision-vm-with-approval</code></p>
+                        
+                        <p><strong>Reason:</strong> Start/stop/restart operations supported via VirtualMachine spec</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> VirtualMachine running field</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Map start/stop to spec.running: true/false</li>
+                                
+                                <li>Use virtctl for CLI operations</li>
+                                
+                                <li>Consider using Ansible for automation</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                    <div class="gap-item gap-supported supported-hidden" data-level="SUPPORTED">
+                    <div class="gap-header">
+                        <h3>
+                            Tags and Metadata
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-supported">SUPPORTED</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> metadata</p>
+                        
+                        <p><strong>Location:</strong> <code>provision-vm-with-approval</code></p>
+                        
+                        <p><strong>Reason:</strong> Tags and custom attributes map to Kubernetes labels</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> metadata.labels</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Map vSphere tags to Kubernetes labels</li>
+                                
+                                <li>Convert custom attributes to annotations</li>
+                                
+                                <li>Follow label naming conventions (kubernetes.io/*)</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                
+                
+                    
+
+                    
+                    
+                    <div id="file-provision-vm-with-nsx-firewall-workflow-xml" class="file-anchor"></div>
+
+                    
+                    <div class="file-section-header">
+                        <div class="file-icon">📄</div>
+                        <h3>provision-vm-with-nsx-firewall.workflow.xml</h3>
+                        
+                        <span class="badge badge-vrealize">VREALIZE</span>
+                    </div>
+
+                    
+                    <div class="gap-item gap-blocked" data-level="BLOCKED">
+                    <div class="gap-header">
+                        <h3>
+                            NSX Security Groups
+                            
+                            
+                            
+                            
+                            
+                            <span class="vrealize-indicator vrealize-indicator-nsx" title="NSX-T Component">🔒 NSX-T</span>
+                            
+                        </h3>
+                        <span class="badge badge-blocked">BLOCKED</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> nsx_security_groups</p>
+                        
+                        <p><strong>Location:</strong> <code>provision-vm-with-nsx-firewall</code></p>
+                        
+                        <p><strong>Reason:</strong> Security Groups cannot be automatically translated - no direct OpenShift equivalent</p>
+
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-c">PATH C</span>
+                            <span class="path-description">Custom specialist implementation required</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Security groups have no direct OpenShift equivalent</li>
+                                
+                                <li>Option 1: Model as pod selectors in NetworkPolicy</li>
+                                
+                                <li>Option 2: Use labels to group pods logically</li>
+                                
+                                <li>Option 3: Keep NSX for security groups (hybrid)</li>
+                                
+                                <li>Requires specialist review of security requirements</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                    <div class="gap-item gap-partial" data-level="PARTIAL">
+                    <div class="gap-header">
+                        <h3>
+                            NSX Distributed Firewall
+                            
+                            
+                            
+                            
+                            
+                            <span class="vrealize-indicator vrealize-indicator-nsx" title="NSX-T Component">🔒 NSX-T</span>
+                            
+                        </h3>
+                        <span class="badge badge-partial">PARTIAL</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> nsx_firewall_rules</p>
+                        
+                        <p><strong>Location:</strong> <code>provision-vm-with-nsx-firewall</code></p>
+                        
+                        <p><strong>Reason:</strong> Firewall Rules can be partially translated to NetworkPolicy with manual configuration</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> NetworkPolicy</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Convert firewall rules to NetworkPolicy manifests</li>
+                                
+                                <li>Note: NetworkPolicy is L3/L4 only (no L7 filtering)</li>
+                                
+                                <li>Consider using Calico for advanced features</li>
+                                
+                                <li>Test egress/ingress rules in dev environment</li>
+                                
+                                <li>Document any unsupported rule types</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                    <div class="gap-item gap-supported supported-hidden" data-level="SUPPORTED">
+                    <div class="gap-header">
+                        <h3>
+                            VM Provisioning
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-supported">SUPPORTED</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> vm_creation</p>
+                        
+                        <p><strong>Location:</strong> <code>provision-vm-with-nsx-firewall</code></p>
+                        
+                        <p><strong>Reason:</strong> VM creation maps directly to KubeVirt VirtualMachine resource</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> VirtualMachine (KubeVirt)</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Generate KubeVirt VirtualMachine manifest</li>
+                                
+                                <li>Map workflow inputs to VM spec fields</li>
+                                
+                                <li>Configure default pod networking</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                    <div class="gap-item gap-supported supported-hidden" data-level="SUPPORTED">
+                    <div class="gap-header">
+                        <h3>
+                            Compute Resources
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-supported">SUPPORTED</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> compute_allocation</p>
+                        
+                        <p><strong>Location:</strong> <code>provision-vm-with-nsx-firewall</code></p>
+                        
+                        <p><strong>Reason:</strong> CPU and memory allocation fully supported in KubeVirt</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> spec.template.spec.domain.resources</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Map CPU cores to spec.template.spec.domain.cpu.cores</li>
+                                
+                                <li>Map memory to spec.template.spec.domain.resources.requests.memory</li>
+                                
+                                <li>Consider setting resource limits for production</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                    <div class="gap-item gap-supported supported-hidden" data-level="SUPPORTED">
+                    <div class="gap-header">
+                        <h3>
+                            VM Lifecycle Operations
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-supported">SUPPORTED</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> day2_ops</p>
+                        
+                        <p><strong>Location:</strong> <code>provision-vm-with-nsx-firewall</code></p>
+                        
+                        <p><strong>Reason:</strong> Start/stop/restart operations supported via VirtualMachine spec</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> VirtualMachine running field</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Map start/stop to spec.running: true/false</li>
+                                
+                                <li>Use virtctl for CLI operations</li>
+                                
+                                <li>Consider using Ansible for automation</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                    <div class="gap-item gap-supported supported-hidden" data-level="SUPPORTED">
+                    <div class="gap-header">
+                        <h3>
+                            Tags and Metadata
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-supported">SUPPORTED</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> metadata</p>
+                        
+                        <p><strong>Location:</strong> <code>provision-vm-with-nsx-firewall</code></p>
+                        
+                        <p><strong>Reason:</strong> Tags and custom attributes map to Kubernetes labels</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> metadata.labels</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Map vSphere tags to Kubernetes labels</li>
+                                
+                                <li>Convert custom attributes to annotations</li>
+                                
+                                <li>Follow label naming conventions (kubernetes.io/*)</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                
+                
+                    
+
+                    
+                    
+                    <div id="file-provision-web-app-with-nsx-lb-workflow-xml" class="file-anchor"></div>
+
+                    
+                    <div class="file-section-header">
+                        <div class="file-icon">📄</div>
+                        <h3>provision-web-app-with-nsx-lb.workflow.xml</h3>
+                        
+                        <span class="badge badge-vrealize">VREALIZE</span>
+                    </div>
+
+                    
+                    <div class="gap-item gap-partial" data-level="PARTIAL">
+                    <div class="gap-header">
+                        <h3>
+                            NSX Overlay Segments
+                            
+                            
+                            
+                            
+                            
+                            <span class="vrealize-indicator vrealize-indicator-nsx" title="NSX-T Component">🔒 NSX-T</span>
+                            
+                        </h3>
+                        <span class="badge badge-partial">PARTIAL</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> nsx_segments</p>
+                        
+                        <p><strong>Location:</strong> <code>provision-web-app-with-nsx-lb</code></p>
+                        
+                        <p><strong>Reason:</strong> Segments can be partially translated to NetworkAttachmentDefinition (Multus CNI) with manual configuration</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> NetworkAttachmentDefinition (Multus CNI)</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Create NetworkAttachmentDefinition for each segment</li>
+                                
+                                <li>Configure Multus CNI plugin</li>
+                                
+                                <li>Update pod specs to reference NAD</li>
+                                
+                                <li>Map VLAN/overlay IDs to bridge/macvlan config</li>
+                                
+                                <li>Test pod-to-pod networking</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                    <div class="gap-item gap-partial" data-level="PARTIAL">
+                    <div class="gap-header">
+                        <h3>
+                            NSX Load Balancer
+                            
+                            
+                            
+                            
+                            
+                            <span class="vrealize-indicator vrealize-indicator-nsx" title="NSX-T Component">🔒 NSX-T</span>
+                            
+                        </h3>
+                        <span class="badge badge-partial">PARTIAL</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> nsx_load_balancers</p>
+                        
+                        <p><strong>Location:</strong> <code>provision-web-app-with-nsx-lb</code></p>
+                        
+                        <p><strong>Reason:</strong> Load Balancers can be partially translated to OpenShift Router / Ingress with manual configuration</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> OpenShift Router / Ingress</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Map NSX load balancer to OpenShift Route/Ingress</li>
+                                
+                                <li>Note: Limited to HTTP/HTTPS traffic</li>
+                                
+                                <li>For TCP/UDP: Use MetalLB or external load balancer</li>
+                                
+                                <li>Configure health checks as readiness probes</li>
+                                
+                                <li>Test failover and session persistence</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                    <div class="gap-item gap-supported supported-hidden" data-level="SUPPORTED">
+                    <div class="gap-header">
+                        <h3>
+                            VM Provisioning
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-supported">SUPPORTED</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> vm_creation</p>
+                        
+                        <p><strong>Location:</strong> <code>provision-web-app-with-nsx-lb</code></p>
+                        
+                        <p><strong>Reason:</strong> VM creation maps directly to KubeVirt VirtualMachine resource</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> VirtualMachine (KubeVirt)</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Generate KubeVirt VirtualMachine manifest</li>
+                                
+                                <li>Map workflow inputs to VM spec fields</li>
+                                
+                                <li>Configure default pod networking</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                    <div class="gap-item gap-supported supported-hidden" data-level="SUPPORTED">
+                    <div class="gap-header">
+                        <h3>
+                            Compute Resources
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-supported">SUPPORTED</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> compute_allocation</p>
+                        
+                        <p><strong>Location:</strong> <code>provision-web-app-with-nsx-lb</code></p>
+                        
+                        <p><strong>Reason:</strong> CPU and memory allocation fully supported in KubeVirt</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> spec.template.spec.domain.resources</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Map CPU cores to spec.template.spec.domain.cpu.cores</li>
+                                
+                                <li>Map memory to spec.template.spec.domain.resources.requests.memory</li>
+                                
+                                <li>Consider setting resource limits for production</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                    <div class="gap-item gap-supported supported-hidden" data-level="SUPPORTED">
+                    <div class="gap-header">
+                        <h3>
+                            VM Lifecycle Operations
+                            
+                            
+                            
+                            
+                            
+                        </h3>
+                        <span class="badge badge-supported">SUPPORTED</span>
+                    </div>
+                    <div class="gap-body">
+                        <p><strong>Type:</strong> day2_ops</p>
+                        
+                        <p><strong>Location:</strong> <code>provision-web-app-with-nsx-lb</code></p>
+                        
+                        <p><strong>Reason:</strong> Start/stop/restart operations supported via VirtualMachine spec</p>
+
+                        
+                        <p><strong>OpenShift Equivalent:</strong> VirtualMachine running field</p>
+                        
+
+                        
+                        <p><strong>Migration Path:</strong>
+                            
+                            <span class="badge badge-path-a">PATH A</span>
+                            <span class="path-description">OpenShift-native replacement available</span>
+                            
+                        </p>
+                        
+
+                        
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                
+                                <li>Map start/stop to spec.running: true/false</li>
+                                
+                                <li>Use virtctl for CLI operations</li>
+                                
+                                <li>Consider using Ansible for automation</li>
+                                
+                            </ul>
+                        </div>
+                        
+
+                        
+                    </div>
+                </div>
+                
+                
+                
+                
+            </div>
+        </div>
+    </section>
+    
+
+    <!-- Hybrid Retention Section -->
+    
+    
+    
+        
+    
+        
+    
+        
+    
+        
+            
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+    
+    <section class="hybrid-section layer-3">
+        <div class="container">
+            <h2>What Stays in VMware / NSX (Hybrid Approach)</h2>
+
+            <div class="hybrid-intro">
+                <p><strong>Hybrid architectures are a valid migration strategy.</strong> The following components can remain in your existing VMware/NSX environment while you migrate workloads to OpenShift.</p>
+            </div>
+
+            <div class="hybrid-list">
+                
+                <div class="hybrid-item">
+                    <div class="hybrid-header">
+                        <h3>Approval Workflow</h3>
+                        <span class="badge badge-path-b">PATH B</span>
+                    </div>
+                    <p class="hybrid-reason">Approval logic requires custom integration with existing approval systems</p>
+                    
+                    <div class="hybrid-guidance">
+                        <strong>Hybrid Integration:</strong>
+                        <ul>
+                            
+                            <li>Integrate with existing approval system (ServiceNow, Jira, etc.)</li>
+                            
+                            <li>Consider using Kubernetes admission controllers</li>
+                            
+                            <li>May require custom operator development</li>
+                            
+                        </ul>
+                    </div>
+                    
+                </div>
+                
+            </div>
+
+            <div class="hybrid-footer">
+                <p>💡 <strong>Why Hybrid?</strong> Retaining proven infrastructure reduces migration risk and allows incremental modernization. You can evaluate OpenShift-native alternatives on your timeline.</p>
+            </div>
+        </div>
+    </section>
+    
+    
+
+    <!-- Generated Artifacts -->
+    
+    <section class="artifacts-section layer-3">
+        <div class="container">
+            <h2>Generated Artifacts</h2>
+            <div class="alert alert-info">
+                No artifacts generated yet. Run <code>ops-translate generate --profile default</code> to generate KubeVirt and Ansible artifacts.
+            </div>
+        </div>
+    </section>
+    
+
+    <!-- Assumptions -->
+    
+    <section class="appendix-section layer-3">
+        <div class="container">
+            <details class="appendix-content">
+                <summary><h2>Assumptions</h2></summary>
+                <div class="markdown-content">
+                    <h1>Assumptions and Inferences</h1>
+<h2>Provision-WebTier.ps1</h2>
+<ul>
+<li>Day 2 operations (start, stop, reconfigure) inferred from VM lifecycle capabilities but only start is explicitly implemented in script</li>
+</ul>
+<h2>New-StandardVM.ps1</h2>
+<ul>
+<li>Intent extracted via LLM</li>
+</ul>
+<h2>Manage-VMSnapshots.ps1</h2>
+<ul>
+<li>Intent extracted via LLM</li>
+</ul>
+<h2>Deploy-DatabaseVM.ps1</h2>
+<ul>
+<li>Intent extracted via LLM</li>
+</ul>
+<h2>provision-vm-with-approval.workflow.xml</h2>
+<ul>
+<li>Approval mechanism simulated in workflow with auto-approval for demo purposes - production implementation would integrate with external ticketing system (ServiceNow/Jira)</li>
+<li>vCenter cluster selection simplified to first available cluster - production implementation would select by name or tag</li>
+<li>Network adapter type set to VMXNET3 in workflow implementation</li>
+</ul>
+<h2>old-db-provisioning-DO-NOT-MODIFY.workflow.xml</h2>
+<ul>
+<li>Memory parameter (mem) is accepted as input but hardcoded to 16GB in implementation - documented in workflow comments as intentional override</li>
+<li>vCenter endpoint hardcoded to 10.50.20.100 due to dynamic lookup issues noted in 2018</li>
+<li>Post-provisioning steps are manual and not automated - workflow logs reminders only</li>
+<li>Day 2 operations not implemented in this workflow based on comments indicating external Ansible automation</li>
+</ul>
+<h2>provision-vm-with-nsx-firewall.workflow.xml</h2>
+<ul>
+<li>Intent extracted via LLM</li>
+</ul>
+<h2>provision-web-app-with-nsx-lb.workflow.xml</h2>
+<ul>
+<li>VM IP addresses are simulated in workflow logic rather than obtained from actual DHCP/network assignment</li>
+<li>vSphere cluster and resource pool selection uses first available cluster from inventory</li>
+<li>NSX Transport Zone and Tier-1 Gateway paths are hard-coded to default values</li>
+</ul>
+                </div>
+            </details>
+        </div>
+    </section>
+    
+
+    <!-- Conflicts -->
+    
+
+    <!-- Footer -->
+    <footer class="report-footer">
+        <div class="container">
+            <p>Generated by <strong>ops-translate</strong> at 2026-02-07T08:46:01</p>
+            <p class="disclaimer">This report is read-only and for review purposes. No changes will be applied automatically.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Pass gaps data to JavaScript for CSV export
+        window.reportData = {
+            workspace: "sample-workspace",
+            timestamp: "2026-02-07T08:46:01",
+            gaps: {"components": [{"component_type": "vm_creation", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-approval", "migration_path": "PATH_A", "name": "VM Provisioning", "openshift_equivalent": "VirtualMachine (KubeVirt)", "reason": "VM creation maps directly to KubeVirt VirtualMachine resource", "recommendations": ["Generate KubeVirt VirtualMachine manifest", "Map workflow inputs to VM spec fields", "Configure default pod networking"]}, {"component_type": "compute_allocation", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-approval", "migration_path": "PATH_A", "name": "Compute Resources", "openshift_equivalent": "spec.template.spec.domain.resources", "reason": "CPU and memory allocation fully supported in KubeVirt", "recommendations": ["Map CPU cores to spec.template.spec.domain.cpu.cores", "Map memory to spec.template.spec.domain.resources.requests.memory", "Consider setting resource limits for production"]}, {"component_type": "simple_networking", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-approval", "migration_path": "PATH_A", "name": "Basic Networking", "openshift_equivalent": "Default pod network (OVN-Kubernetes)", "reason": "Single network interface supported via default pod network", "recommendations": ["VM will use cluster\u0027s default pod network", "No additional NetworkAttachmentDefinition needed", "Consider using Service for external access"]}, {"component_type": "approval", "evidence": null, "level": "PARTIAL", "location": "provision-vm-with-approval", "migration_path": "PATH_B", "name": "Approval Workflow", "openshift_equivalent": "Custom operator or external approval system", "reason": "Approval logic requires custom integration with existing approval systems", "recommendations": ["Integrate with existing approval system (ServiceNow, Jira, etc.)", "Consider using Kubernetes admission controllers", "May require custom operator development", "Document approval requirements in runbook"]}, {"component_type": "day2_ops", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-approval", "migration_path": "PATH_A", "name": "VM Lifecycle Operations", "openshift_equivalent": "VirtualMachine running field", "reason": "Start/stop/restart operations supported via VirtualMachine spec", "recommendations": ["Map start/stop to spec.running: true/false", "Use virtctl for CLI operations", "Consider using Ansible for automation"]}, {"component_type": "metadata", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-approval", "migration_path": "PATH_A", "name": "Tags and Metadata", "openshift_equivalent": "metadata.labels", "reason": "Tags and custom attributes map to Kubernetes labels", "recommendations": ["Map vSphere tags to Kubernetes labels", "Convert custom attributes to annotations", "Follow label naming conventions (kubernetes.io/*)"]}, {"component_type": "vm_creation", "evidence": null, "level": "SUPPORTED", "location": "old-db-provisioning-DO-NOT-MODIFY", "migration_path": "PATH_A", "name": "VM Provisioning", "openshift_equivalent": "VirtualMachine (KubeVirt)", "reason": "VM creation maps directly to KubeVirt VirtualMachine resource", "recommendations": ["Generate KubeVirt VirtualMachine manifest", "Map workflow inputs to VM spec fields", "Configure default pod networking"]}, {"component_type": "vm_creation", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-nsx-firewall", "migration_path": "PATH_A", "name": "VM Provisioning", "openshift_equivalent": "VirtualMachine (KubeVirt)", "reason": "VM creation maps directly to KubeVirt VirtualMachine resource", "recommendations": ["Generate KubeVirt VirtualMachine manifest", "Map workflow inputs to VM spec fields", "Configure default pod networking"]}, {"component_type": "compute_allocation", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-nsx-firewall", "migration_path": "PATH_A", "name": "Compute Resources", "openshift_equivalent": "spec.template.spec.domain.resources", "reason": "CPU and memory allocation fully supported in KubeVirt", "recommendations": ["Map CPU cores to spec.template.spec.domain.cpu.cores", "Map memory to spec.template.spec.domain.resources.requests.memory", "Consider setting resource limits for production"]}, {"component_type": "day2_ops", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-nsx-firewall", "migration_path": "PATH_A", "name": "VM Lifecycle Operations", "openshift_equivalent": "VirtualMachine running field", "reason": "Start/stop/restart operations supported via VirtualMachine spec", "recommendations": ["Map start/stop to spec.running: true/false", "Use virtctl for CLI operations", "Consider using Ansible for automation"]}, {"component_type": "metadata", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-nsx-firewall", "migration_path": "PATH_A", "name": "Tags and Metadata", "openshift_equivalent": "metadata.labels", "reason": "Tags and custom attributes map to Kubernetes labels", "recommendations": ["Map vSphere tags to Kubernetes labels", "Convert custom attributes to annotations", "Follow label naming conventions (kubernetes.io/*)"]}, {"component_type": "nsx_security_groups", "evidence": null, "level": "BLOCKED", "location": "provision-vm-with-nsx-firewall", "migration_path": "PATH_C", "name": "NSX Security Groups", "openshift_equivalent": null, "reason": "Security Groups cannot be automatically translated - no direct OpenShift equivalent", "recommendations": ["Security groups have no direct OpenShift equivalent", "Option 1: Model as pod selectors in NetworkPolicy", "Option 2: Use labels to group pods logically", "Option 3: Keep NSX for security groups (hybrid)", "Requires specialist review of security requirements"]}, {"component_type": "nsx_firewall_rules", "evidence": null, "level": "PARTIAL", "location": "provision-vm-with-nsx-firewall", "migration_path": "PATH_A", "name": "NSX Distributed Firewall", "openshift_equivalent": "NetworkPolicy", "reason": "Firewall Rules can be partially translated to NetworkPolicy with manual configuration", "recommendations": ["Convert firewall rules to NetworkPolicy manifests", "Note: NetworkPolicy is L3/L4 only (no L7 filtering)", "Consider using Calico for advanced features", "Test egress/ingress rules in dev environment", "Document any unsupported rule types"]}, {"component_type": "vm_creation", "evidence": null, "level": "SUPPORTED", "location": "provision-web-app-with-nsx-lb", "migration_path": "PATH_A", "name": "VM Provisioning", "openshift_equivalent": "VirtualMachine (KubeVirt)", "reason": "VM creation maps directly to KubeVirt VirtualMachine resource", "recommendations": ["Generate KubeVirt VirtualMachine manifest", "Map workflow inputs to VM spec fields", "Configure default pod networking"]}, {"component_type": "compute_allocation", "evidence": null, "level": "SUPPORTED", "location": "provision-web-app-with-nsx-lb", "migration_path": "PATH_A", "name": "Compute Resources", "openshift_equivalent": "spec.template.spec.domain.resources", "reason": "CPU and memory allocation fully supported in KubeVirt", "recommendations": ["Map CPU cores to spec.template.spec.domain.cpu.cores", "Map memory to spec.template.spec.domain.resources.requests.memory", "Consider setting resource limits for production"]}, {"component_type": "day2_ops", "evidence": null, "level": "SUPPORTED", "location": "provision-web-app-with-nsx-lb", "migration_path": "PATH_A", "name": "VM Lifecycle Operations", "openshift_equivalent": "VirtualMachine running field", "reason": "Start/stop/restart operations supported via VirtualMachine spec", "recommendations": ["Map start/stop to spec.running: true/false", "Use virtctl for CLI operations", "Consider using Ansible for automation"]}, {"component_type": "nsx_segments", "evidence": null, "level": "PARTIAL", "location": "provision-web-app-with-nsx-lb", "migration_path": "PATH_A", "name": "NSX Overlay Segments", "openshift_equivalent": "NetworkAttachmentDefinition (Multus CNI)", "reason": "Segments can be partially translated to NetworkAttachmentDefinition (Multus CNI) with manual configuration", "recommendations": ["Create NetworkAttachmentDefinition for each segment", "Configure Multus CNI plugin", "Update pod specs to reference NAD", "Map VLAN/overlay IDs to bridge/macvlan config", "Test pod-to-pod networking"]}, {"component_type": "nsx_load_balancers", "evidence": null, "level": "PARTIAL", "location": "provision-web-app-with-nsx-lb", "migration_path": "PATH_A", "name": "NSX Load Balancer", "openshift_equivalent": "OpenShift Router / Ingress", "reason": "Load Balancers can be partially translated to OpenShift Router / Ingress with manual configuration", "recommendations": ["Map NSX load balancer to OpenShift Route/Ingress", "Note: Limited to HTTP/HTTPS traffic", "For TCP/UDP: Use MetalLB or external load balancer", "Configure health checks as readiness probes", "Test failover and session persistence"]}, {"component_type": "vm_creation", "evidence": null, "level": "SUPPORTED", "location": "Provision-WebTier", "migration_path": "PATH_A", "name": "VM Provisioning", "openshift_equivalent": "VirtualMachine (KubeVirt)", "reason": "VM creation maps directly to KubeVirt VirtualMachine resource", "recommendations": ["Generate KubeVirt VirtualMachine manifest", "Map inputs to VM spec fields", "Configure default pod networking"]}, {"component_type": "multi_nic", "evidence": null, "level": "PARTIAL", "location": "Provision-WebTier", "migration_path": "PATH_A", "name": "Multi-NIC Networking", "openshift_equivalent": "NetworkAttachmentDefinition (Multus)", "reason": "Multiple network interfaces require Multus CNI configuration", "recommendations": ["Create NetworkAttachmentDefinition for each network", "Configure Multus CNI plugin if not already installed", "Update VM spec to reference NADs", "Test network connectivity between pods"]}, {"component_type": "day2_ops", "evidence": null, "level": "SUPPORTED", "location": "Provision-WebTier", "migration_path": "PATH_A", "name": "VM Lifecycle Operations", "openshift_equivalent": "VirtualMachine running field", "reason": "Start/stop/restart operations supported via VirtualMachine spec", "recommendations": ["Map start/stop to spec.running: true/false", "Use virtctl for CLI operations", "Consider using Ansible for automation"]}, {"component_type": "vm_creation", "evidence": null, "level": "SUPPORTED", "location": "New-StandardVM", "migration_path": "PATH_A", "name": "VM Provisioning", "openshift_equivalent": "VirtualMachine (KubeVirt)", "reason": "VM creation maps directly to KubeVirt VirtualMachine resource", "recommendations": ["Generate KubeVirt VirtualMachine manifest", "Map inputs to VM spec fields", "Configure default pod networking"]}, {"component_type": "compute_allocation", "evidence": null, "level": "SUPPORTED", "location": "New-StandardVM", "migration_path": "PATH_A", "name": "Compute Resources", "openshift_equivalent": "spec.template.spec.domain.resources", "reason": "CPU and memory allocation fully supported in KubeVirt", "recommendations": ["Map CPU cores to spec.template.spec.domain.cpu.cores", "Map memory to spec.template.spec.domain.resources.requests.memory", "Consider setting resource limits for production"]}, {"component_type": "multi_nic", "evidence": null, "level": "PARTIAL", "location": "New-StandardVM", "migration_path": "PATH_A", "name": "Multi-NIC Networking", "openshift_equivalent": "NetworkAttachmentDefinition (Multus)", "reason": "Multiple network interfaces require Multus CNI configuration", "recommendations": ["Create NetworkAttachmentDefinition for each network", "Configure Multus CNI plugin if not already installed", "Update VM spec to reference NADs", "Test network connectivity between pods"]}, {"component_type": "day2_ops", "evidence": null, "level": "SUPPORTED", "location": "New-StandardVM", "migration_path": "PATH_A", "name": "VM Lifecycle Operations", "openshift_equivalent": "VirtualMachine running field", "reason": "Start/stop/restart operations supported via VirtualMachine spec", "recommendations": ["Map start/stop to spec.running: true/false", "Use virtctl for CLI operations", "Consider using Ansible for automation"]}, {"component_type": "vm_creation", "evidence": null, "level": "SUPPORTED", "location": "Manage-VMSnapshots", "migration_path": "PATH_A", "name": "VM Provisioning", "openshift_equivalent": "VirtualMachine (KubeVirt)", "reason": "VM creation maps directly to KubeVirt VirtualMachine resource", "recommendations": ["Generate KubeVirt VirtualMachine manifest", "Map inputs to VM spec fields", "Configure default pod networking"]}, {"component_type": "day2_ops", "evidence": null, "level": "SUPPORTED", "location": "Manage-VMSnapshots", "migration_path": "PATH_A", "name": "VM Lifecycle Operations", "openshift_equivalent": "VirtualMachine running field", "reason": "Start/stop/restart operations supported via VirtualMachine spec", "recommendations": ["Map start/stop to spec.running: true/false", "Use virtctl for CLI operations", "Consider using Ansible for automation"]}, {"component_type": "vm_creation", "evidence": null, "level": "SUPPORTED", "location": "Deploy-DatabaseVM", "migration_path": "PATH_A", "name": "VM Provisioning", "openshift_equivalent": "VirtualMachine (KubeVirt)", "reason": "VM creation maps directly to KubeVirt VirtualMachine resource", "recommendations": ["Generate KubeVirt VirtualMachine manifest", "Map inputs to VM spec fields", "Configure default pod networking"]}, {"component_type": "multi_nic", "evidence": null, "level": "PARTIAL", "location": "Deploy-DatabaseVM", "migration_path": "PATH_A", "name": "Multi-NIC Networking", "openshift_equivalent": "NetworkAttachmentDefinition (Multus)", "reason": "Multiple network interfaces require Multus CNI configuration", "recommendations": ["Create NetworkAttachmentDefinition for each network", "Configure Multus CNI plugin if not already installed", "Update VM spec to reference NADs", "Test network connectivity between pods"]}, {"component_type": "day2_ops", "evidence": null, "level": "SUPPORTED", "location": "Deploy-DatabaseVM", "migration_path": "PATH_A", "name": "VM Lifecycle Operations", "openshift_equivalent": "VirtualMachine running field", "reason": "Start/stop/restart operations supported via VirtualMachine spec", "recommendations": ["Map start/stop to spec.running: true/false", "Use virtctl for CLI operations", "Consider using Ansible for automation"]}, {"component_type": "metadata", "evidence": null, "level": "SUPPORTED", "location": "Deploy-DatabaseVM", "migration_path": "PATH_A", "name": "Tags and Metadata", "openshift_equivalent": "metadata.labels", "reason": "Tags and custom attributes map to Kubernetes labels", "recommendations": ["Map vSphere tags to Kubernetes labels", "Convert custom attributes to annotations", "Follow label naming conventions (kubernetes.io/*)"]}], "migration_guidance": {"has_blocking_issues": true, "overall_assessment": "HAS_BLOCKING_ISSUES", "recommended_paths": ["PATH_A", "PATH_B", "PATH_C"], "requires_manual_work": true}, "summary": {"counts": {"BLOCKED": 1, "MANUAL": 0, "PARTIAL": 7, "SUPPORTED": 23}, "has_blocking_issues": true, "migration_paths": {"NONE": 0, "PATH_A": 29, "PATH_B": 1, "PATH_C": 1}, "overall_assessment": "HAS_BLOCKING_ISSUES", "requires_manual_work": true, "total_components": 31}, "workflow_name": "PowerCLI and vRealize"}
+        };
+    </script>
+    <script src="assets/app.js"></script>
+</body>
+</html>

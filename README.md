@@ -60,6 +60,8 @@ ops-translate generate --profile lab --format argocd    # ArgoCD
 tree output/
 ```
 
+**Preview the report**: See a [sample HTML report](examples/sample-report/) generated from real-world examples to understand what ops-translate produces.
+
 See [examples/](examples/) for more sample PowerCLI scripts and vRealize workflows.
 
 ### Using Your Own Scripts

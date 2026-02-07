@@ -6,6 +6,15 @@ This directory contains example PowerCLI scripts and vRealize workflows to help 
 
 ```
 examples/
+├── sample-report/         # Sample HTML report from real-world examples
+│   ├── index.html                     # Interactive migration readiness report
+│   ├── assets/                        # CSS and JavaScript
+│   └── README.md                      # How the report was generated
+│
+├── virt-first-realworld/  # Real-world migration scenario
+│   ├── powercli/                      # Production-grade PowerCLI scripts
+│   └── vrealize/                      # Complex vRealize workflows
+│
 ├── powercli/              # PowerCLI script examples
 │   ├── simple-vm.ps1                  # Basic VM provisioning
 │   ├── environment-aware.ps1          # Environment branching (dev/prod)
@@ -19,6 +28,24 @@ examples/
     ├── provision.workflow.xml                 # Full governance workflow
     └── with-approval.workflow.xml             # Approval and governance
 ```
+
+## Sample Report
+
+**[View Sample Report →](sample-report/)**
+
+A complete migration readiness report generated from the [virt-first-realworld](virt-first-realworld/) examples, showcasing:
+
+- **Interactive HTML report** with progressive disclosure (Executive → Architecture → Implementation)
+- **31 classified components** analyzed across 8 source files
+- **Expert recommendations** organized by team (Platform, Network, Security)
+- **Gap analysis** with migration paths and OpenShift equivalents
+- **Live filters, collapsible sections, and export features**
+
+This demonstrates what ops-translate produces when analyzing real-world PowerCLI scripts and vRealize workflows.
+
+[See how it was generated →](sample-report/README.md)
+
+---
 
 ## PowerCLI Examples
 
