@@ -142,6 +142,143 @@
         </div>
     </section>
 
+    <!-- ================================================================ -->
+    <!-- LAYER 2: ARCHITECTURE IMPACT SUMMARY                             -->
+    <!-- High-level design decisions, consolidated gaps, expert guidance  -->
+    <!-- ================================================================ -->
+
+    <!-- Expert Recommendations -->
+    {% if recommendations and recommendations.recommendations %}
+    <section class="recommendations-section layer-2">
+        <div class="container">
+            <h2>Expert-Guided Implementation Recommendations</h2>
+
+            <div class="recommendations-intro">
+                <p><strong>Actionable guidance for components requiring manual work.</strong> These expert recommendations provide step-by-step implementation guidance for workflow components that cannot be safely auto-migrated.</p>
+                <p class="recommendations-note">⚠️ <strong>Important:</strong> These are recommendations, not drop-in replacements. Each recommendation requires review, testing, and validation before production use.</p>
+            </div>
+
+            <!-- Group recommendations by owner team -->
+            {% set rec_by_owner = {} %}
+            {% for rec in recommendations.recommendations %}
+                {% set owner = rec.owner %}
+                {% if owner not in rec_by_owner %}
+                    {% set _ = rec_by_owner.update({owner: []}) %}
+                {% endif %}
+                {% set _ = rec_by_owner[owner].append(rec) %}
+            {% endfor %}
+
+            <!-- Team ownership tabs/filter -->
+            <div class="recommendation-filters">
+                <span class="filter-label">Filter by team:</span>
+                <button class="rec-filter-btn active" data-team="all">All Teams ({{ recommendations.recommendations | length }})</button>
+                {% for owner, recs in rec_by_owner.items() | sort %}
+                <button class="rec-filter-btn" data-team="{{ owner }}">{{ owner }} ({{ recs | length }})</button>
+                {% endfor %}
+            </div>
+
+            <!-- Recommendations list -->
+            <div class="recommendations-list">
+                {% for rec in recommendations.recommendations %}
+                <div class="recommendation-card" data-team="{{ rec.owner }}">
+                    <div class="recommendation-header">
+                        <h3>{{ rec.component_name }}</h3>
+                        <div class="recommendation-badges">
+                            <span class="badge badge-owner">{{ rec.owner }}</span>
+                            <span class="badge badge-component-type">{{ rec.component_type }}</span>
+                        </div>
+                    </div>
+
+                    <div class="recommendation-body">
+                        <!-- Why not auto-translatable -->
+                        <div class="recommendation-section">
+                            <h4>Why Not Auto-Translatable</h4>
+                            <p>{{ rec.reason_not_auto_translatable }}</p>
+                        </div>
+
+                        <!-- Recommended approach -->
+                        <div class="recommendation-section">
+                            <h4>Recommended Ansible Approach</h4>
+                            <p>{{ rec.ansible_approach }}</p>
+                        </div>
+
+                        <!-- OpenShift primitives -->
+                        {% if rec.openshift_primitives %}
+                        <div class="recommendation-section">
+                            <h4>OpenShift/Kubernetes Primitives</h4>
+                            <ul class="primitives-list">
+                                {% for primitive in rec.openshift_primitives %}
+                                <li><code>{{ primitive }}</code></li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+
+                        <!-- Implementation steps (collapsible) -->
+                        {% if rec.implementation_steps %}
+                        <details class="recommendation-details">
+                            <summary><h4>Implementation Steps</h4></summary>
+                            <ol class="implementation-steps">
+                                {% for step in rec.implementation_steps %}
+                                <li>{{ step }}</li>
+                                {% endfor %}
+                            </ol>
+                        </details>
+                        {% endif %}
+
+                        <!-- Required inputs (collapsible) -->
+                        {% if rec.required_inputs %}
+                        <details class="recommendation-details">
+                            <summary><h4>Required Inputs</h4></summary>
+                            <dl class="required-inputs">
+                                {% for var_name, description in rec.required_inputs.items() %}
+                                <dt><code>{{ var_name }}</code></dt>
+                                <dd>{{ description }}</dd>
+                                {% endfor %}
+                            </dl>
+                        </details>
+                        {% endif %}
+
+                        <!-- Testing guidance (collapsible) -->
+                        {% if rec.testing_guidance %}
+                        <details class="recommendation-details">
+                            <summary><h4>Testing & Validation</h4></summary>
+                            <p>{{ rec.testing_guidance }}</p>
+                        </details>
+                        {% endif %}
+
+                        <!-- References -->
+                        {% if rec.references %}
+                        <div class="recommendation-section">
+                            <h4>References</h4>
+                            <ul class="references-list">
+                                {% for reference in rec.references %}
+                                <li><a href="{{ reference }}" target="_blank" rel="noopener noreferrer">{{ reference }}</a></li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+
+                        <!-- Role stub info -->
+                        {% if rec.ansible_role_stub %}
+                        <div class="recommendation-footer">
+                            <span class="role-stub-info">📁 Role stub will be generated at: <code>output/ansible/roles/{{ rec.ansible_role_stub }}/</code></span>
+                            <p class="role-stub-note">Run <code>ops-translate generate --format ansible --profile &lt;profile&gt;</code> to create the role stub with implementation guidance.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- ================================================================ -->
+    <!-- LAYER 3: IMPLEMENTATION DETAILS                                  -->
+    <!-- File-by-file analysis, raw intent, detailed artifacts            -->
+    <!-- ================================================================ -->
+
     <!-- Workflow Inventory -->
     {% if sources %}
     <section class="inventory-section">
@@ -524,133 +661,6 @@
         </div>
     </section>
     {% endif %}
-    {% endif %}
-
-    <!-- Expert Recommendations -->
-    {% if recommendations and recommendations.recommendations %}
-    <section class="recommendations-section">
-        <div class="container">
-            <h2>Expert-Guided Implementation Recommendations</h2>
-
-            <div class="recommendations-intro">
-                <p><strong>Actionable guidance for components requiring manual work.</strong> These expert recommendations provide step-by-step implementation guidance for workflow components that cannot be safely auto-migrated.</p>
-                <p class="recommendations-note">⚠️ <strong>Important:</strong> These are recommendations, not drop-in replacements. Each recommendation requires review, testing, and validation before production use.</p>
-            </div>
-
-            <!-- Group recommendations by owner team -->
-            {% set rec_by_owner = {} %}
-            {% for rec in recommendations.recommendations %}
-                {% set owner = rec.owner %}
-                {% if owner not in rec_by_owner %}
-                    {% set _ = rec_by_owner.update({owner: []}) %}
-                {% endif %}
-                {% set _ = rec_by_owner[owner].append(rec) %}
-            {% endfor %}
-
-            <!-- Team ownership tabs/filter -->
-            <div class="recommendation-filters">
-                <span class="filter-label">Filter by team:</span>
-                <button class="rec-filter-btn active" data-team="all">All Teams ({{ recommendations.recommendations | length }})</button>
-                {% for owner, recs in rec_by_owner.items() | sort %}
-                <button class="rec-filter-btn" data-team="{{ owner }}">{{ owner }} ({{ recs | length }})</button>
-                {% endfor %}
-            </div>
-
-            <!-- Recommendations list -->
-            <div class="recommendations-list">
-                {% for rec in recommendations.recommendations %}
-                <div class="recommendation-card" data-team="{{ rec.owner }}">
-                    <div class="recommendation-header">
-                        <h3>{{ rec.component_name }}</h3>
-                        <div class="recommendation-badges">
-                            <span class="badge badge-owner">{{ rec.owner }}</span>
-                            <span class="badge badge-component-type">{{ rec.component_type }}</span>
-                        </div>
-                    </div>
-
-                    <div class="recommendation-body">
-                        <!-- Why not auto-translatable -->
-                        <div class="recommendation-section">
-                            <h4>Why Not Auto-Translatable</h4>
-                            <p>{{ rec.reason_not_auto_translatable }}</p>
-                        </div>
-
-                        <!-- Recommended approach -->
-                        <div class="recommendation-section">
-                            <h4>Recommended Ansible Approach</h4>
-                            <p>{{ rec.ansible_approach }}</p>
-                        </div>
-
-                        <!-- OpenShift primitives -->
-                        {% if rec.openshift_primitives %}
-                        <div class="recommendation-section">
-                            <h4>OpenShift/Kubernetes Primitives</h4>
-                            <ul class="primitives-list">
-                                {% for primitive in rec.openshift_primitives %}
-                                <li><code>{{ primitive }}</code></li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                        {% endif %}
-
-                        <!-- Implementation steps (collapsible) -->
-                        {% if rec.implementation_steps %}
-                        <details class="recommendation-details">
-                            <summary><h4>Implementation Steps</h4></summary>
-                            <ol class="implementation-steps">
-                                {% for step in rec.implementation_steps %}
-                                <li>{{ step }}</li>
-                                {% endfor %}
-                            </ol>
-                        </details>
-                        {% endif %}
-
-                        <!-- Required inputs (collapsible) -->
-                        {% if rec.required_inputs %}
-                        <details class="recommendation-details">
-                            <summary><h4>Required Inputs</h4></summary>
-                            <dl class="required-inputs">
-                                {% for var_name, description in rec.required_inputs.items() %}
-                                <dt><code>{{ var_name }}</code></dt>
-                                <dd>{{ description }}</dd>
-                                {% endfor %}
-                            </dl>
-                        </details>
-                        {% endif %}
-
-                        <!-- Testing guidance (collapsible) -->
-                        {% if rec.testing_guidance %}
-                        <details class="recommendation-details">
-                            <summary><h4>Testing & Validation</h4></summary>
-                            <p>{{ rec.testing_guidance }}</p>
-                        </details>
-                        {% endif %}
-
-                        <!-- References -->
-                        {% if rec.references %}
-                        <div class="recommendation-section">
-                            <h4>References</h4>
-                            <ul class="references-list">
-                                {% for reference in rec.references %}
-                                <li><a href="{{ reference }}" target="_blank" rel="noopener noreferrer">{{ reference }}</a></li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                        {% endif %}
-
-                        <!-- Role stub info -->
-                        {% if rec.ansible_role_stub %}
-                        <div class="recommendation-footer">
-                            <span class="role-stub-info">📁 Role stub will be generated at: <code>output/ansible/roles/{{ rec.ansible_role_stub }}/</code></span>
-                            <p class="role-stub-note">Run <code>ops-translate generate --format ansible --profile &lt;profile&gt;</code> to create the role stub with implementation guidance.</p>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </section>
     {% endif %}
 
     <!-- Generated Artifacts -->
