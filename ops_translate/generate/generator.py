@@ -191,10 +191,11 @@ def generate_with_templates(workspace: Workspace, profile: str, output_format: s
     # Load config and intent
     config = workspace.load_config()
     intent_file = workspace.root / "intent/intent.yaml"
+    gaps_file = workspace.root / "intent/gaps.json"
 
-    if not intent_file.exists():
-        console.print("[red]Error: intent/intent.yaml not found. Run 'intent merge' first.[/red]")
-        return
+    # Check if we can work with gaps.json instead of merged intent
+    has_merged_intent = intent_file.exists()
+    has_gaps_data = gaps_file.exists()
 
     # For YAML format, check if custom templates exist
     loader = TemplateLoader(workspace.root)
@@ -202,6 +203,7 @@ def generate_with_templates(workspace: Workspace, profile: str, output_format: s
 
     if output_format == "yaml" and not has_custom_templates:
         # Use direct generation to support gap analysis (only if no custom templates)
+        # This path works without merged intent.yaml if gaps.json exists
         try:
             ansible.generate(workspace, profile, use_ai=False)
             kubevirt.generate(workspace, profile, use_ai=False)
@@ -211,6 +213,12 @@ def generate_with_templates(workspace: Workspace, profile: str, output_format: s
             console.print("[green]✓ README: output/README.md[/green]")
         except Exception as e:
             console.print(f"[red]Error generating artifacts: {e}[/red]")
+        return
+
+    # For other formats, we need merged intent.yaml
+    if not has_merged_intent:
+        console.print("[red]Error: intent/intent.yaml not found. Run 'intent merge' first.[/red]")
+        console.print("[dim]Tip: For YAML format, you can skip merge if gaps.json exists[/dim]")
         return
 
     intent_data = yaml.safe_load(intent_file.read_text())
