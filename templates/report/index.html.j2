@@ -274,6 +274,43 @@
     </section>
     {% endif %}
 
+    <!-- Consolidated Supported Patterns -->
+    {% if consolidated_supported and consolidated_supported|length > 0 %}
+    <section class="supported-patterns-section layer-2">
+        <div class="container">
+            <h2>Standard Supported Patterns</h2>
+
+            <div class="supported-patterns-intro">
+                <p>The following patterns are fully supported with automatic translation to OpenShift-native equivalents. These are omitted from detailed findings below for brevity.</p>
+            </div>
+
+            <div class="supported-patterns-list">
+                {% for pattern in consolidated_supported %}
+                <div class="supported-pattern-card">
+                    <div class="pattern-header">
+                        <span class="pattern-icon">✅</span>
+                        <h3>{{ pattern.display_name }}</h3>
+                        <span class="pattern-count">{{ pattern.count }} instance{{ 's' if pattern.count > 1 else '' }}</span>
+                    </div>
+                    <div class="pattern-body">
+                        <p class="pattern-description">
+                            Found across {{ pattern.files|length }} file{{ 's' if pattern.files|length > 1 else '' }}
+                            {% if pattern.files|length <= 3 %}
+                            ({{ pattern.files|join(', ') }})
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="supported-patterns-note">
+                <p><strong>Note:</strong> These supported patterns are automatically translatable and do not require manual intervention. They are excluded from the detailed gap analysis below to reduce report length.</p>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
     <!-- ================================================================ -->
     <!-- LAYER 3: IMPLEMENTATION DETAILS                                  -->
     <!-- File-by-file analysis, raw intent, detailed artifacts            -->
@@ -499,6 +536,16 @@
                 </div>
             </div>
 
+            <!-- Show/Hide Supported Toggle -->
+            <div class="supported-toggle-container">
+                <button id="toggle-supported" class="toggle-supported-btn">
+                    <span class="toggle-icon">▶</span>
+                    <span class="toggle-text">Show Supported Patterns</span>
+                    <span class="supported-count">({{ gaps.components | selectattr('level', 'equalto', 'SUPPORTED') | list | length }} hidden)</span>
+                </button>
+                <p class="toggle-note">Supported patterns are hidden by default. See "Standard Supported Patterns" section above for summary.</p>
+            </div>
+
             <!-- Component List -->
             <div class="gaps-list">
                 {# Create mapping from base filename to full source filename #}
@@ -540,7 +587,7 @@
                     </div>
 
                     {% for component in sorted_file_components | sort(attribute='level') %}
-                    <div class="gap-item gap-{{ component.level.lower() }}" data-level="{{ component.level }}">
+                    <div class="gap-item gap-{{ component.level.lower() }}{% if component.level == 'SUPPORTED' %} supported-hidden{% endif %}" data-level="{{ component.level }}">
                     <div class="gap-header">
                         <h3>
                             {{ component.name }}

@@ -148,7 +148,77 @@ def build_report_context(workspace: Workspace, profile: str | None = None) -> di
     # Generate executive summary
     context["executive_summary"] = _generate_executive_summary(context["summary"], context["gaps"])
 
+    # Consolidate SUPPORTED patterns to reduce repetition
+    if context["gaps"]:
+        context["consolidated_supported"] = _consolidate_supported_patterns(context["gaps"])
+    else:
+        context["consolidated_supported"] = []
+
     return context
+
+
+def _consolidate_supported_patterns(gaps_data: dict[str, Any]) -> list[dict[str, Any]]:
+    """
+    Consolidate SUPPORTED components by type to reduce repetition.
+
+    Groups SUPPORTED components by component_type and counts occurrences.
+    This allows the report to show "Standard VM provisioning patterns are
+    supported across all workflows" instead of listing each instance.
+
+    Args:
+        gaps_data: Gaps data with components
+
+    Returns:
+        List of consolidated pattern dicts with:
+        - component_type: The type of pattern (e.g., "vm_provisioning")
+        - count: Number of occurrences
+        - files: List of source files containing this pattern
+        - example_name: Name of first component as example
+
+    Example:
+        >>> gaps = {"components": [
+        ...     {"name": "Provision VM", "component_type": "vm_provisioning", "level": "SUPPORTED", "location": "provision"},
+        ...     {"name": "VM Memory", "component_type": "vm_provisioning", "level": "SUPPORTED", "location": "configure"}
+        ... ]}
+        >>> result = _consolidate_supported_patterns(gaps)
+        >>> result[0]["count"]
+        2
+    """
+    from collections import defaultdict
+
+    components = gaps_data.get("components", [])
+
+    # Group SUPPORTED components by type
+    supported_by_type: dict[str, list[dict[str, Any]]] = defaultdict(list)
+
+    for component in components:
+        if component.get("level") == "SUPPORTED":
+            component_type = component.get("component_type", "unknown")
+            supported_by_type[component_type].append(component)
+
+    # Build consolidated list
+    consolidated = []
+    for component_type, components_list in supported_by_type.items():
+        # Collect unique source files
+        files = list(set(comp.get("location", "unknown") for comp in components_list))
+
+        # Format component type for display (replace underscores, capitalize)
+        display_name = component_type.replace("_", " ").title()
+
+        consolidated.append(
+            {
+                "component_type": component_type,
+                "display_name": display_name,
+                "count": len(components_list),
+                "files": sorted(files),
+                "example_name": components_list[0].get("name", "Unknown"),
+            }
+        )
+
+    # Sort by count (most common first)
+    consolidated.sort(key=lambda x: x["count"], reverse=True)
+
+    return consolidated
 
 
 def _generate_executive_summary(summary: dict[str, Any], gaps_data: dict[str, Any] | None) -> str:

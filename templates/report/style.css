@@ -1432,3 +1432,157 @@ pre code {
     color: #ffffff;
     font-weight: 600;
 }
+
+/* ================================================================ */
+/* Consolidated Supported Patterns Section                         */
+/* ================================================================ */
+
+.supported-patterns-section {
+    margin-top: var(--spacing-xl);
+}
+
+.supported-patterns-intro {
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-md);
+    background-color: #f0f9ff;
+    border-left: 4px solid var(--color-supported);
+    border-radius: 4px;
+}
+
+.supported-patterns-intro p {
+    margin: 0;
+    color: var(--rh-gray-dark);
+}
+
+.supported-patterns-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.supported-pattern-card {
+    background: white;
+    border: 1px solid var(--rh-gray-light);
+    border-left: 4px solid var(--color-supported);
+    border-radius: 4px;
+    padding: var(--spacing-md);
+    transition: box-shadow 0.2s ease;
+}
+
+.supported-pattern-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.pattern-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+}
+
+.pattern-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.pattern-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--rh-gray-dark);
+    flex-grow: 1;
+}
+
+.pattern-count {
+    font-size: 0.85rem;
+    color: var(--rh-gray);
+    background-color: #f5f5f5;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+}
+
+.pattern-body {
+    margin-top: var(--spacing-xs);
+}
+
+.pattern-description {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--rh-gray);
+}
+
+.supported-patterns-note {
+    padding: var(--spacing-md);
+    background-color: #fffbeb;
+    border-left: 4px solid var(--color-partial);
+    border-radius: 4px;
+}
+
+.supported-patterns-note p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--rh-gray-dark);
+}
+
+/* ================================================================ */
+/* Show/Hide Supported Toggle                                      */
+/* ================================================================ */
+
+.supported-toggle-container {
+    margin: var(--spacing-lg) 0;
+    padding: var(--spacing-md);
+    background-color: #f9fafb;
+    border: 1px solid var(--rh-gray-light);
+    border-radius: 4px;
+}
+
+.toggle-supported-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background-color: white;
+    border: 1px solid var(--rh-gray-light);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--rh-gray-dark);
+    transition: all 0.2s ease;
+}
+
+.toggle-supported-btn:hover {
+    background-color: #f5f5f5;
+    border-color: var(--rh-gray);
+}
+
+.toggle-icon {
+    transition: transform 0.2s ease;
+    font-size: 0.8rem;
+}
+
+.toggle-supported-btn.active .toggle-icon {
+    transform: rotate(90deg);
+}
+
+.supported-count {
+    font-size: 0.85rem;
+    color: var(--rh-gray);
+    font-weight: normal;
+}
+
+.toggle-note {
+    margin: var(--spacing-xs) 0 0 0;
+    font-size: 0.85rem;
+    color: var(--rh-gray);
+}
+
+/* Hide SUPPORTED items by default */
+.gap-item.supported-hidden {
+    display: none;
+}
+
+.gap-item.supported-hidden.show-supported {
+    display: block;
+}

@@ -19,6 +19,7 @@
         setupClearFilterButton();
         setupViewFindingsLinks();
         setupExportButtons();
+        setupSupportedToggle();
     }
 
     /**
@@ -252,6 +253,45 @@
                     }
                 });
             });
+        });
+    }
+
+    /**
+     * Setup toggle for showing/hiding SUPPORTED patterns
+     */
+    function setupSupportedToggle() {
+        const toggleBtn = document.getElementById('toggle-supported');
+        if (!toggleBtn) {
+            return;  // No toggle button on this page
+        }
+
+        const supportedItems = document.querySelectorAll('.gap-item.supported-hidden');
+        const toggleText = toggleBtn.querySelector('.toggle-text');
+        const supportedCount = toggleBtn.querySelector('.supported-count');
+
+        let isShowing = false;
+
+        toggleBtn.addEventListener('click', function() {
+            isShowing = !isShowing;
+
+            supportedItems.forEach(item => {
+                if (isShowing) {
+                    item.classList.add('show-supported');
+                } else {
+                    item.classList.remove('show-supported');
+                }
+            });
+
+            // Update button text and icon
+            if (isShowing) {
+                toggleText.textContent = 'Hide Supported Patterns';
+                toggleBtn.classList.add('active');
+                supportedCount.textContent = `(${supportedItems.length} shown)`;
+            } else {
+                toggleText.textContent = 'Show Supported Patterns';
+                toggleBtn.classList.remove('active');
+                supportedCount.textContent = `(${supportedItems.length} hidden)`;
+            }
         });
     }
 
