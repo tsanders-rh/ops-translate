@@ -139,7 +139,8 @@ class Vro_pluginsClassifier(BaseClassifier):
         if vro_integrations:
             # Check if these are standard or custom
             is_custom = any(
-                i.get("type") == "custom_action" or "custom" in str(i.get("plugin_name", "")).lower()
+                i.get("type") == "custom_action"
+                or "custom" in str(i.get("plugin_name", "")).lower()
                 for i in vro_integrations
             )
 

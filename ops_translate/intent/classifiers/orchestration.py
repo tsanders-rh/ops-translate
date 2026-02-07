@@ -228,9 +228,9 @@ class OrchestrationClassifier(BaseClassifier):
         if control_flow:
             has_loops = control_flow.get("loops") or "loop" in str(control_flow).lower()
             has_conditions = control_flow.get("conditions") or "if" in str(control_flow).lower()
-            has_subworkflows = control_flow.get("sub_workflows") or "call" in str(
-                control_flow
-            ).lower()
+            has_subworkflows = (
+                control_flow.get("sub_workflows") or "call" in str(control_flow).lower()
+            )
 
             # High: multiple complexity features
             if sum([has_loops, has_conditions, has_subworkflows]) >= 2:
