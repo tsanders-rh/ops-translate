@@ -237,7 +237,7 @@ class TestGenerateHTMLReport:
         assert "summary-cards" in content
         assert "Supported" in content
         assert "Partial Translation" in content
-        assert "Blocked" in content
+        assert "Expert-Guided" in content
         assert "Custom" in content
 
     def test_report_shows_intent_when_available(self, workspace_with_intent):
