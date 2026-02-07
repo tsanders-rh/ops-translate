@@ -334,7 +334,11 @@ def interview_generate():
         gaps_data = json.load(f)
 
     # Get classified components
-    from ops_translate.intent.classify import ClassifiedComponent, MigrationPath, TranslatabilityLevel
+    from ops_translate.intent.classify import (
+        ClassifiedComponent,
+        MigrationPath,
+        TranslatabilityLevel,
+    )
 
     components = []
     for comp_data in gaps_data.get("components", []):
@@ -360,9 +364,7 @@ def interview_generate():
 
     if question_count == 0:
         console.print("[yellow]No interview questions needed.[/yellow]")
-        console.print(
-            "All components are either SUPPORTED or don't have question generators yet."
-        )
+        console.print("All components are either SUPPORTED or don't have question generators yet.")
         return
 
     # Save to file
@@ -370,7 +372,9 @@ def interview_generate():
     save_questions(questions, output_file)
 
     console.print(f"[green]✓ Generated {question_count} questions[/green]")
-    console.print(f"[green]✓ Questions written to {output_file.relative_to(workspace.root)}[/green]")
+    console.print(
+        f"[green]✓ Questions written to {output_file.relative_to(workspace.root)}[/green]"
+    )
     console.print()
     console.print("[bold]Next steps:[/bold]")
     console.print("  1. Review questions.json")
@@ -381,7 +385,11 @@ def interview_generate():
 @intent_app.command(name="interview-apply")
 def interview_apply():
     """Apply interview answers to derive decisions and update classifications."""
-    from ops_translate.intent.classify import ClassifiedComponent, MigrationPath, TranslatabilityLevel
+    from ops_translate.intent.classify import (
+        ClassifiedComponent,
+        MigrationPath,
+        TranslatabilityLevel,
+    )
     from ops_translate.intent.interview import apply_answers, save_decisions
 
     workspace = Workspace(Path.cwd())
@@ -434,7 +442,9 @@ def interview_apply():
     decision_count = len(decisions.get("decisions", {}))
 
     console.print(f"[green]✓ Derived {decision_count} decisions[/green]")
-    console.print(f"[green]✓ Decisions written to {decisions_file.relative_to(workspace.root)}[/green]")
+    console.print(
+        f"[green]✓ Decisions written to {decisions_file.relative_to(workspace.root)}[/green]"
+    )
     console.print()
     console.print("[bold]Classification changes:[/bold]")
 
@@ -452,9 +462,7 @@ def interview_apply():
     from ops_translate.intent.gaps import generate_gap_reports
 
     # Write updated gap reports - generate_gap_reports will auto-apply decisions
-    generate_gap_reports(
-        components, workspace.root / "intent", workflow_name=workspace.root.name
-    )
+    generate_gap_reports(components, workspace.root / "intent", workflow_name=workspace.root.name)
 
     console.print("[green]✓ Gap reports updated with decision-based classifications[/green]")
     console.print()

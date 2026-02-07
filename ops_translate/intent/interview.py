@@ -89,7 +89,9 @@ def _generate_component_questions(component: ClassifiedComponent) -> list[dict[s
     # Route to component-specific question generators
     if "nsx" in component.component_type.lower() and "firewall" in component.component_type.lower():
         questions.extend(_nsx_firewall_questions(component))
-    elif "nsx" in component.component_type.lower() and "segment" in component.component_type.lower():
+    elif (
+        "nsx" in component.component_type.lower() and "segment" in component.component_type.lower()
+    ):
         questions.extend(_nsx_segment_questions(component))
     elif "approval" in component.component_type.lower():
         questions.extend(_approval_questions(component))
@@ -407,7 +409,9 @@ def _derive_component_decisions(
     # Route to component-specific decision logic
     if "nsx" in component.component_type.lower() and "firewall" in component.component_type.lower():
         return _nsx_firewall_decisions(component, answers)
-    elif "nsx" in component.component_type.lower() and "segment" in component.component_type.lower():
+    elif (
+        "nsx" in component.component_type.lower() and "segment" in component.component_type.lower()
+    ):
         return _nsx_segment_decisions(component, answers)
     elif "approval" in component.component_type.lower():
         return _approval_decisions(component, answers)
@@ -686,7 +690,9 @@ def apply_decisions_to_components(
                 new_reason = decision.get("reason", component.reason)
 
                 # Add decision-based notes to recommendations
-                new_recommendations = list(component.recommendations) if component.recommendations else []
+                new_recommendations = (
+                    list(component.recommendations) if component.recommendations else []
+                )
                 if decision.get("warnings"):
                     new_recommendations.insert(0, "⚠️ Decision-based warnings:")
                     for warning in decision["warnings"]:
@@ -699,9 +705,7 @@ def apply_decisions_to_components(
 
                 # Add decision metadata to evidence
                 new_evidence = list(component.evidence) if component.evidence else []
-                new_evidence.append(
-                    f"Decision applied: {new_classification} (from user answers)"
-                )
+                new_evidence.append(f"Decision applied: {new_classification} (from user answers)")
 
                 updated_component = ClassifiedComponent(
                     name=component.name,
