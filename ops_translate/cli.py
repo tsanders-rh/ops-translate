@@ -312,7 +312,6 @@ def edit(file: str = typer.Option(None, "--file", help="Specific intent file to 
 @intent_app.command(name="interview-generate")
 def interview_generate():
     """Generate targeted interview questions for PARTIAL/EXPERT-GUIDED components."""
-    from ops_translate.intent.classify import classify_components
     from ops_translate.intent.interview import generate_questions, save_questions
 
     workspace = Workspace(Path.cwd())
