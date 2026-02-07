@@ -18,6 +18,36 @@ from ops_translate.intent.classify import (
 )
 
 
+def safe_str_lower(value: Any, default: str = "") -> str:
+    """
+    Safely convert a value to lowercase string.
+
+    Handles cases where LLM output may contain non-string types (dict, list, None).
+    This defensive helper prevents AttributeError on .lower() calls.
+
+    Args:
+        value: Value to convert (may be str, dict, list, None, etc.)
+        default: Default value if conversion fails
+
+    Returns:
+        Lowercase string or default if conversion not possible
+
+    Examples:
+        >>> safe_str_lower("VM Network")
+        'vm network'
+        >>> safe_str_lower({"name": "network"})
+        ''
+        >>> safe_str_lower(None)
+        ''
+    """
+    if isinstance(value, str):
+        return value.lower()
+    if value is None:
+        return default
+    # For dict, list, or other types, return default
+    return default
+
+
 class VrealizeClassifier(BaseClassifier):
     """
     Classifier for vRealize Orchestrator workflows detected in extracted intent.
@@ -406,7 +436,8 @@ class VrealizeClassifier(BaseClassifier):
         Returns:
             True if this is a basic single network
         """
-        network_name = network.get("name", "").lower()
+        # Use safe_str_lower to handle non-string values from LLM output
+        network_name = safe_str_lower(network.get("name", ""))
         # Simple networks: "vm network", "default", or similar
         return (
             network_name in ("vm network", "default", "pod network", "profile-based")

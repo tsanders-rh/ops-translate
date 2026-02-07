@@ -262,6 +262,9 @@ def classify_components(
     If no classifiers are provided, auto-discovers all available classifier plugins
     from the classifiers directory.
 
+    Classification is best-effort: If a classifier fails, it logs a warning and
+    continues with other classifiers. This ensures gap reporting always succeeds.
+
     Args:
         analysis: Analysis results containing detected components
         classifiers: Optional list of classifier instances (defaults to auto-discovery)
@@ -277,6 +280,10 @@ def classify_components(
         >>> blocking = [c for c in components if c.is_blocking]
         >>> print(f"Found {len(blocking)} blocking components")
     """
+    import logging
+
+    logger = logging.getLogger(__name__)
+
     if classifiers is None:
         # Auto-discover all available classifiers
         classifiers = discover_classifiers()
@@ -291,8 +298,38 @@ def classify_components(
 
     # Apply each classifier (only if it can classify this analysis)
     for classifier in classifiers:
-        if classifier.can_classify(analysis):
-            classified.extend(classifier.classify(analysis))
+        try:
+            if classifier.can_classify(analysis):
+                components = classifier.classify(analysis)
+                classified.extend(components)
+                logger.debug(
+                    f"Classifier '{classifier.name}' classified {len(components)} components"
+                )
+        except Exception as e:
+            # Classification should never prevent gap reporting
+            # Log the error and continue with other classifiers
+            location = analysis.get("location", "unknown")
+            logger.warning(
+                f"Classification failed for '{classifier.name}' at {location}: {e}. "
+                f"Continuing with other classifiers."
+            )
+
+            # Create a fallback MANUAL component to indicate classification failure
+            fallback = ClassifiedComponent(
+                name="Classification Error",
+                component_type="classification_error",
+                level=TranslatabilityLevel.MANUAL,
+                reason=f"Classifier '{classifier.name}' encountered an error: {str(e)}",
+                openshift_equivalent=None,
+                migration_path=MigrationPath.PATH_C,
+                location=location,
+                recommendations=[
+                    "Review source file for unusual structures or formatting",
+                    "Check logs for detailed error information",
+                    "Consider manual review of this workflow",
+                ],
+            )
+            classified.append(fallback)
 
     # Sort by severity (worst first), then by name
     classified.sort(key=lambda c: (c.level.severity, c.name), reverse=True)
