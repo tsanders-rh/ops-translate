@@ -341,6 +341,15 @@ def interview_generate():
 
     components = []
     for comp_data in gaps_data.get("components", []):
+        # Normalize evidence to string (handle both string and list from gaps.json)
+        evidence_raw = comp_data.get("evidence")
+        if evidence_raw:
+            evidence = (
+                "\n".join(evidence_raw) if isinstance(evidence_raw, list) else evidence_raw
+            )
+        else:
+            evidence = None
+
         components.append(
             ClassifiedComponent(
                 name=comp_data["name"],
@@ -351,7 +360,7 @@ def interview_generate():
                 migration_path=MigrationPath(comp_data["migration_path"]),
                 location=comp_data.get("location", "unknown"),
                 recommendations=comp_data.get("recommendations", []),
-                evidence=comp_data.get("evidence", []),
+                evidence=evidence,
             )
         )
 
@@ -416,6 +425,15 @@ def interview_apply():
 
     components = []
     for comp_data in gaps_data.get("components", []):
+        # Normalize evidence to string (handle both string and list from gaps.json)
+        evidence_raw = comp_data.get("evidence")
+        if evidence_raw:
+            evidence = (
+                "\n".join(evidence_raw) if isinstance(evidence_raw, list) else evidence_raw
+            )
+        else:
+            evidence = None
+
         components.append(
             ClassifiedComponent(
                 name=comp_data["name"],
@@ -426,7 +444,7 @@ def interview_apply():
                 migration_path=MigrationPath(comp_data["migration_path"]),
                 location=comp_data.get("location", "unknown"),
                 recommendations=comp_data.get("recommendations", []),
-                evidence=comp_data.get("evidence", []),
+                evidence=evidence,
             )
         )
 

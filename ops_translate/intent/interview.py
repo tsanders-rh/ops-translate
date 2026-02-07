@@ -704,9 +704,15 @@ def apply_decisions_to_components(
                         new_recommendations.append(f"  - {step}")
 
                 # Add decision metadata to evidence
-                new_evidence_list = (
-                    component.evidence.split("\n") if component.evidence else []
-                )
+                if component.evidence:
+                    # Handle both string and list (for backward compatibility)
+                    if isinstance(component.evidence, str):
+                        new_evidence_list = component.evidence.split("\n")
+                    else:
+                        # Already a list (from older gaps.json)
+                        new_evidence_list = list(component.evidence)
+                else:
+                    new_evidence_list = []
                 new_evidence_list.append(f"Decision applied: {new_classification} (from user answers)")
                 new_evidence = "\n".join(new_evidence_list)
 
