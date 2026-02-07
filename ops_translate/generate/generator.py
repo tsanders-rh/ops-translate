@@ -17,6 +17,39 @@ console = Console()
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 
 
+def _generate_role_stubs_from_gaps(workspace: Workspace):
+    """
+    Generate role stubs for MANUAL/BLOCKED components from gap analysis.
+
+    This is called after AI generation to add role stubs that AI can't create.
+    """
+    import json
+    from pathlib import Path
+    from typing import Any, cast
+
+    from ops_translate.generate.ansible import (
+        _create_manual_role_stub,
+        _load_gaps_data,
+        _load_recommendations_data,
+    )
+
+    output_dir = workspace.root / "output/ansible"
+
+    # Load gap analysis and recommendations data
+    gaps_data = _load_gaps_data(workspace)
+    recommendations_data = _load_recommendations_data(workspace)
+
+    if not gaps_data:
+        return
+
+    # Generate role stubs for MANUAL/BLOCKED components
+    for component in gaps_data.get("components", []):
+        if component.get("level") in ["BLOCKED", "MANUAL"]:
+            _create_manual_role_stub(output_dir, component, workspace, recommendations_data)
+            comp_name = component.get("name", "unknown")
+            console.print(f"[dim]  Generated role stub for: {comp_name}[/dim]")
+
+
 def generate_all(
     workspace: Workspace,
     profile: str,
@@ -104,6 +137,9 @@ default_storage_class: {profile_config["default_storage_class"]}"""
                 "Falling back to templates.[/yellow]"
             )
             generate_with_templates(workspace, profile, output_format)
+        else:
+            # After AI generation, also generate role stubs for MANUAL/BLOCKED components
+            _generate_role_stubs_from_gaps(workspace)
 
     except Exception as e:
         console.print(f"[red]Error calling LLM: {e}[/red]")
