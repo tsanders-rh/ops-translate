@@ -367,7 +367,11 @@
     {% if intent %}
     <section class="intent-section layer-3">
         <div class="container">
-            <h2>Intent Overview</h2>
+            <details class="layer-3-collapsible">
+                <summary>
+                    <h2>Intent Overview</h2>
+                    <span class="expand-hint">Click to expand detailed workflow information</span>
+                </summary>
             <div class="intent-content">
                 {% if intent.intent %}
                 <!-- Workflow Info -->
@@ -478,6 +482,7 @@
                 </details>
                 {% endif %}
             </div>
+            </details>
         </div>
     </section>
     {% else %}
@@ -714,7 +719,11 @@
     {% if artifacts.kubevirt or artifacts.ansible %}
     <section class="artifacts-section layer-3">
         <div class="container">
-            <h2>Generated Artifacts</h2>
+            <details class="layer-3-collapsible">
+                <summary>
+                    <h2>Generated Artifacts</h2>
+                    <span class="expand-hint">Click to expand artifact details</span>
+                </summary>
 
             {% if artifacts.kubevirt %}
             <div class="artifact-group">
@@ -762,6 +771,7 @@
                     <li>Test functionality before promoting to production</li>
                 </ul>
             </div>
+            </details>
         </div>
     </section>
     {% else %}

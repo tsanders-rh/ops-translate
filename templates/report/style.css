@@ -1586,3 +1586,61 @@ pre code {
 .gap-item.supported-hidden.show-supported {
     display: block;
 }
+
+/* ================================================================ */
+/* Layer 3 Collapsible Sections                                    */
+/* ================================================================ */
+
+.layer-3-collapsible {
+    border: none;
+    margin: 0;
+}
+
+.layer-3-collapsible summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md) 0;
+    border-bottom: 2px solid var(--rh-gray-light);
+}
+
+.layer-3-collapsible summary::-webkit-details-marker {
+    display: none;
+}
+
+.layer-3-collapsible summary h2 {
+    margin: 0;
+    flex-grow: 1;
+}
+
+.layer-3-collapsible summary::before {
+    content: "▶";
+    font-size: 0.9rem;
+    color: var(--rh-gray);
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.layer-3-collapsible[open] summary::before {
+    transform: rotate(90deg);
+}
+
+.expand-hint {
+    font-size: 0.85rem;
+    color: var(--rh-gray);
+    font-weight: normal;
+}
+
+.layer-3-collapsible[open] .expand-hint {
+    display: none;
+}
+
+.layer-3-collapsible summary:hover {
+    background-color: #f9fafb;
+}
+
+.layer-3-collapsible summary:hover .expand-hint {
+    color: var(--rh-gray-dark);
+}
