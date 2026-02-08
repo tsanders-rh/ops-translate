@@ -373,7 +373,7 @@ def apply_answers(
     answers = answers_data.get("answers", {})
 
     # Derive decisions using deterministic rules
-    decisions = {
+    decisions: dict[str, Any] = {
         "schema_version": 1,
         "derived_at": datetime.utcnow().isoformat() + "Z",
         "decisions": {},
