@@ -1,18 +1,21 @@
 # ops-translate Demo Script
 
-> **Duration**: ~5-7 minutes
-> **Goal**: Showcase the complete migration workflow from PowerCLI to OpenShift Virtualization
+> **Duration**: ~4-5 minutes
+> **Goal**: Showcase the complete multi-source merge workflow
 
 ## Demo Overview
 
-This demo shows how ops-translate extracts operational intent from VMware automation and generates production-ready Kubernetes and Ansible artifacts in multiple formats.
+This demo shows how ops-translate merges **multiple automation sources** into a **unified workflow** and generates production-ready artifacts.
 
 **What we'll demonstrate:**
-1. Import a PowerCLI script
-2. Extract operational intent (with AI)
-3. Validate with enhanced dry-run
-4. Generate artifacts in multiple formats (YAML, GitOps, ArgoCD)
-5. Customize templates for organizational standards
+1. Import 3 sources (2 PowerCLI scripts + 1 vRealize workflow)
+2. Extract operational intent from each source (with AI)
+3. Review gap analysis
+4. Merge into single unified workflow
+5. Validate with dry-run
+6. Generate KubeVirt and Ansible artifacts
+
+**Key Feature**: Multi-source merge combines dev provisioning, prod provisioning, and approval workflow into one unified automation.
 
 ---
 
@@ -26,7 +29,7 @@ pip install -r requirements.txt
 pip install -e .
 
 # Clean slate
-rm -rf demo-workspace custom-workspace 2>/dev/null
+rm -rf demo-workspace 2>/dev/null
 
 # Set up LLM provider (use mock for demo to avoid costs)
 export OPS_TRANSLATE_LLM_API_KEY="demo-key"
@@ -34,17 +37,17 @@ export OPS_TRANSLATE_LLM_API_KEY="demo-key"
 
 ---
 
-## Scene 1: Introduction (30 seconds)
+## Scene 1: Introduction (20 seconds)
 
 **Narration:**
-> "ops-translate is an AI-assisted CLI tool that migrates VMware automation to OpenShift Virtualization. Instead of manually rewriting PowerCLI scripts and vRealize workflows, ops-translate extracts operational intent and generates production-ready artifacts. Let's see it in action."
+> "ops-translate is an AI-assisted CLI tool that migrates VMware automation to OpenShift Virtualization. Today we'll show how it merges multiple automation sources into a single unified workflow. Let's see it in action."
 
 ---
 
 ## Scene 2: Initialize & Import (45 seconds)
 
 **Narration:**
-> "First, we'll initialize a workspace and import an existing PowerCLI script that provisions VMs with environment-based configuration."
+> "First, we'll initialize a workspace and import three separate automation sources: dev provisioning, prod provisioning, and an approval workflow."
 
 **Commands:**
 ```bash
@@ -55,197 +58,172 @@ cd demo-workspace
 # Show what was created
 tree -L 2
 
-# Import a PowerCLI script with environment branching
+# Import dev provisioning script
 ops-translate import --source powercli \
-  --file ../examples/powercli/environment-aware.ps1
+  --file ../examples/merge-scenario/dev-provision.ps1
+
+# Import prod provisioning script
+ops-translate import --source powercli \
+  --file ../examples/merge-scenario/prod-provision.ps1
+
+# Import approval workflow
+ops-translate import --source vrealize \
+  --file ../examples/merge-scenario/approval.workflow.xml
 ```
 
-**Show:** Directory structure and successful import message with SHA256 hash.
+**Show:** Directory structure showing 3 imported files in `input/powercli/` and `input/vrealize/`
+
+**Narration:**
+> "We now have three sources: simple dev provisioning, governed prod provisioning, and vRealize approval routing."
 
 ---
 
 ## Scene 3: Summarize (No AI) (30 seconds)
 
 **Narration:**
-> "Before using AI, let's see what ops-translate can detect without any LLM calls using static analysis."
+> "Before using AI, let's see what static analysis can detect across all three sources."
 
 **Commands:**
 ```bash
-# Analyze the script structure
+# Analyze all sources without AI
 ops-translate summarize
 
 # Show what was detected
 cat intent/summary.md
 ```
 
-**Show:** Summary detecting parameters, environment branching (dev/prod), tags, network/storage profiles.
+**Show:** Summary detecting parameters, environment branching, approval requirements across all sources.
 
 ---
 
 ## Scene 4: Extract Intent (45 seconds)
 
 **Narration:**
-> "Now let's extract the normalized operational intent. This creates a platform-agnostic specification of what the automation does."
+> "Now let's extract normalized operational intent from each source. This creates three platform-agnostic intent files."
 
 **Commands:**
 ```bash
 # Extract operational intent using AI
 ops-translate intent extract
 
-# Show the extracted intent
-cat intent/powercli.intent.yaml
-```
+# Show one of the intent files
+cat intent/dev-provision.intent.yaml
 
-**Show:** The intent YAML with:
-- Workflow name
-- Input definitions with types
-- Environment branching logic
-- Network/storage profile selection
-- Metadata tags
-
----
-
-## Scene 5: Enhanced Dry-Run Validation (60 seconds)
-
-**Narration:**
-> "One of our newest features is enhanced dry-run validation. This performs comprehensive pre-flight checks before generating artifacts."
-
-**Commands:**
-```bash
-# Run enhanced validation
-ops-translate dry-run
-```
-
-**Show:** The validation output:
-- ✓ Schema validation passed
-- ✓ Resource consistency checks
-- Execution plan (7 steps)
-- Review items
-- Status: SAFE TO PROCEED
-
-**Narration:**
-> "Notice it validates schema, checks resource consistency, and even generates an execution plan showing exactly what will happen. Issues are categorized as BLOCKING, REVIEW, or SAFE."
-
----
-
-## Scene 6: Generate Multiple Formats (90 seconds)
-
-**Narration:**
-> "ops-translate can generate artifacts in multiple formats for different deployment strategies. Let's start with standard YAML."
-
-### YAML Format
-**Commands:**
-```bash
-# Generate standard YAML
-ops-translate generate --profile lab --format yaml
-
-# Show what was created
-tree output/
-cat output/kubevirt/vm.yaml
-```
-
-**Show:** KubeVirt VirtualMachine manifest and Ansible playbook structure.
-
-### Kustomize/GitOps Format
-**Narration:**
-> "For GitOps workflows, we can generate a complete Kustomize structure with environment-specific overlays."
-
-**Commands:**
-```bash
-# Generate Kustomize structure
-ops-translate generate --profile lab --format kustomize
-
-# Show the GitOps structure
-tree output/
-cat output/base/kustomization.yaml
-cat output/overlays/dev/kustomization.yaml
-cat output/overlays/prod/kustomization.yaml
-```
-
-**Show:** Base + overlays structure. Highlight how prod overlay has 8Gi memory while dev has 2Gi.
-
-**Narration:**
-> "Notice how each environment overlay automatically adjusts resources: dev gets 2Gi and 1 CPU, staging gets 4Gi and 2 CPUs, prod gets 8Gi and 4 CPUs. You can deploy with kubectl apply -k output/overlays/prod"
-
-### ArgoCD Format
-**Narration:**
-> "For full GitOps automation with ArgoCD, we can generate Application manifests with environment-specific sync policies."
-
-**Commands:**
-```bash
-# Generate ArgoCD Applications
-ops-translate generate --profile lab --format argocd
-
-# Show ArgoCD structure
-tree output/argocd/
-cat output/argocd/dev-application.yaml
-cat output/argocd/prod-application.yaml
+# List all intent files
+ls -1 intent/*.intent.yaml
 ```
 
 **Show:**
-- dev-application.yaml with automated sync, prune, and self-heal
-- prod-application.yaml with manual sync for safety
+- One intent YAML showing structure
+- Three .intent.yaml files created (one per source)
 
 **Narration:**
-> "Dev environment has automated sync with self-heal enabled, while production requires manual approval. This follows GitOps best practices."
+> "Notice we have three separate intent files. Now we'll merge them into one unified workflow."
 
 ---
 
-## Scene 7: Template Customization (60 seconds)
+## Scene 5: Review Gap Analysis (30 seconds)
 
 **Narration:**
-> "Organizations often need to customize generated artifacts to match their standards. Let's see how template customization works."
+> "The extraction also performed gap analysis to identify components needing manual work."
 
 **Commands:**
 ```bash
-# Start fresh with custom templates
-cd ..
-rm -rf custom-workspace
-
-# Initialize with templates
-ops-translate init custom-workspace --with-templates
-cd custom-workspace
-
-# Show the template structure
-tree templates/
-
-# Edit a template (show opening in editor)
-cat templates/kubevirt/vm.yaml.j2
+# View gap analysis (if exists)
+cat intent/gaps.md | head -40
 ```
 
-**Show:** The Jinja2 template with:
-- Template variables: `{{ intent.workflow_name }}`
-- Conditional logic: `{% if intent.metadata %}`
-- Organizational customization points
-
-**Narration:**
-> "The --with-templates flag copies all default templates into your workspace. You can edit these Jinja2 templates to add organization-specific labels, annotations, resource limits, or custom Ansible tasks. When you run generate, your custom templates are used automatically."
+**Show:** Gap analysis report with translatability classifications.
 
 ---
 
-## Scene 8: Wrap-up (30 seconds)
+## Scene 6: Merge Intent (60 seconds)
 
 **Narration:**
-> "In just a few minutes, we've taken a PowerCLI script and generated production-ready Kubernetes manifests, Ansible playbooks, Kustomize overlays, and ArgoCD Applications. ops-translate handles the translation work so you can focus on validating the migration strategy."
+> "This is the key feature: merging three intent files into one unified workflow that handles both dev and prod environments."
 
 **Commands:**
 ```bash
-# Show all generated formats side-by-side
-ls -R output/
+# Merge all intent files
+ops-translate intent merge --force
+
+# Show the merged result
+cat intent/intent.yaml
 ```
 
-**Show:** Complete output directory structure.
+**Show:** Merged intent.yaml highlighting:
+- Unified inputs (combined from all sources)
+- Governance rules (approval required for prod)
+- Environment profiles (dev and prod)
+- Union of all operations
 
 **Narration:**
-> "ops-translate is open source under Apache 2.0 license. Check out the GitHub repo for examples, documentation, and to try it yourself. Thanks for watching!"
+> "Notice the merged workflow includes approval requirements from vRealize, resource constraints from both dev and prod, and unified metadata. One workflow, multiple environments."
+
+---
+
+## Scene 7: Dry-Run Validation (30 seconds)
+
+**Narration:**
+> "Before generating, let's validate the merged intent with dry-run checks."
+
+**Commands:**
+```bash
+# Validate merged intent
+ops-translate dry-run
+```
+
+**Show:** Validation output showing schema checks and execution plan.
+
+---
+
+## Scene 8: Generate Artifacts (45 seconds)
+
+**Narration:**
+> "Now we'll generate production-ready KubeVirt and Ansible artifacts from our merged workflow."
+
+**Commands:**
+```bash
+# Generate YAML artifacts
+ops-translate generate --profile lab --format yaml
+
+# Show generated structure
+tree output/
+
+# View KubeVirt manifest
+cat output/kubevirt/vm.yaml | head -30
+
+# View Ansible playbook
+cat output/ansible/site.yml | head -20
+```
+
+**Show:**
+- Complete output directory structure
+- KubeVirt VirtualMachine manifest
+- Ansible playbook with environment-aware logic
+
+---
+
+## Scene 9: Wrap-up (30 seconds)
+
+**Narration:**
+> "In just a few minutes, we've merged three separate automation sources into one unified workflow and generated production-ready artifacts for OpenShift Virtualization."
 
 **On-screen text:**
 ```
+✓ Merged 3 sources:
+  • dev-provision.ps1 → Quick dev provisioning
+  • prod-provision.ps1 → Governed prod provisioning
+  • approval.workflow.xml → vRealize approval routing
+  ↓
+  Single unified workflow handling both environments
+
 GitHub: github.com/tsanders-rh/ops-translate
-Documentation: README.md
-Examples: examples/
 License: Apache-2.0
 ```
+
+**Narration:**
+> "ops-translate is open source. Check out the GitHub repo for more examples and documentation. Thanks for watching!"
 
 ---
 
@@ -253,54 +231,57 @@ License: Apache-2.0
 
 ### Recording Settings
 - **Resolution**: 1920x1080 or 1280x720
-- **Terminal**: Use a clean theme (e.g., Solarized Dark, Dracula)
+- **Terminal**: Clean theme (Solarized Dark, Dracula)
 - **Font size**: 14-16pt for readability
 - **Terminal width**: 100-120 columns
-- **Speed**: Use `asciinema` or similar to record and speed up where needed
+- **Speed**: Use `asciinema` or similar to record
 
 ### Pre-recording Checklist
 - [ ] Clean terminal history (`history -c`)
-- [ ] Set up aliases for commonly used commands
-- [ ] Have example files ready
 - [ ] Test all commands work end-to-end
 - [ ] Mock LLM configured to avoid API costs
-- [ ] Tree command installed (`brew install tree` / `apt-get install tree`)
-
-### Editing Notes
-- Add text overlays for key concepts
-- Highlight important output (arrows/boxes)
-- Speed up long command outputs (2x)
-- Add music/intro/outro
-- Include GitHub link at the end
+- [ ] Tree command installed (`brew install tree`)
+- [ ] Example files present in `examples/merge-scenario/`
 
 ### Alternative: Automated Demo Script
+
 Use the provided `demo.sh` script to automate the demo:
 
 ```bash
-./demo.sh --speed normal    # Run at normal speed
-./demo.sh --speed fast      # Speed up delays
-./demo.sh --record          # Record with asciinema
+./demo.sh              # Run with normal delays
+./demo.sh --fast       # Run with minimal delays
+./demo.sh --no-cleanup # Keep workspace after demo
 ```
+
+The script automatically runs all commands and provides narration.
 
 ---
 
 ## Key Messages to Emphasize
 
-1. **Safe by Design**: All operations are read-only, no live system access
-2. **Transparent**: Every assumption logged, full visibility
-3. **Flexible**: Multiple output formats for different workflows
-4. **Customizable**: Template system for organizational standards
-5. **Validated**: Enhanced dry-run catches issues before deployment
-6. **Production-Ready**: Generates artifacts following best practices
+1. **Multi-Source Merge**: Combine separate dev, prod, and approval automation into one unified workflow
+2. **Safe by Design**: Read-only operations, no live system access
+3. **Transparent**: Every step shows what's happening
+4. **AI for Intent Only**: Extraction uses AI, everything else is deterministic
+5. **Gap Analysis**: Know what needs manual work upfront
+6. **Production-Ready**: Generates complete KubeVirt + Ansible artifacts
+
+---
+
+## What Makes This Demo Compelling
+
+✅ **Real-world scenario**: Organizations actually have separate dev/prod automation
+✅ **Shows the merge value**: Demonstrates why merging makes sense
+✅ **Complete workflow**: Import → Extract → Merge → Validate → Generate
+✅ **Tangible output**: Real KubeVirt and Ansible artifacts
 
 ---
 
 ## Common Demo Pitfalls to Avoid
 
-- ❌ Don't show errors or retries
-- ❌ Don't read long YAML files line-by-line
-- ❌ Don't explain every single option
-- ❌ Don't go too fast through important parts
-- ✅ DO highlight the unique features (dry-run, multiple formats, templates)
-- ✅ DO show real, working output
-- ✅ DO emphasize the time savings
+- ❌ Don't skip explaining WHY we're merging (show the value)
+- ❌ Don't read entire YAML files (show key sections only)
+- ❌ Don't go too fast through the merge step (it's the key feature)
+- ✅ DO highlight unified inputs and governance in merged intent
+- ✅ DO show that 3 files → 1 unified workflow
+- ✅ DO emphasize production-ready output
