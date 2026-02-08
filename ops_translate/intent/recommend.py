@@ -823,7 +823,8 @@ class RecommendationEngine:
             testing_guidance=(
                 "Test email delivery to actual recipients. Verify formatting and dynamic "
                 "content rendering. Test with failure scenarios to ensure error handling. "
-                "Validate notification timing and triggers. Check spam filters don't block messages."
+                "Validate notification timing and triggers. Check spam filters don't block "
+                "messages."
             ),
             owner=OwnerRole.APPOPS,
             references=[
@@ -893,7 +894,8 @@ class RecommendationEngine:
             testing_guidance=(
                 "Test database connectivity and authentication. Validate queries return expected "
                 "results. Test idempotency by running tasks multiple times. Verify transaction "
-                "rollback on errors. Test with edge cases and invalid data. Monitor for SQL injection vulnerabilities."
+                "rollback on errors. Test with edge cases and invalid data. Monitor for SQL "
+                "injection vulnerabilities."
             ),
             owner=OwnerRole.APPOPS,
             references=[

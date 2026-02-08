@@ -5,7 +5,7 @@ Parses workflow XML exports to detect inputs, decisions, approvals, etc.
 
 from pathlib import Path
 
-import defusedxml.ElementTree as ET
+from defusedxml import ElementTree
 
 
 def summarize(xml_file: Path) -> str:
@@ -15,9 +15,9 @@ def summarize(xml_file: Path) -> str:
     Returns a markdown-formatted summary string.
     """
     try:
-        tree = ET.parse(xml_file)
+        tree = ElementTree.parse(xml_file)
         root = tree.getroot()
-    except ET.ParseError:
+    except ElementTree.ParseError:
         return "**Error:** Unable to parse XML"
 
     summary = []
