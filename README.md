@@ -34,7 +34,8 @@ cd ops-translate
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install the package
+# Install dependencies and package
+pip install -r requirements.txt
 pip install -e .
 
 # Initialize workspace
@@ -538,11 +539,14 @@ cd ops-translate
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install in development mode (recommended)
-pip install -e .
+# Install dependencies
+pip install -r requirements.txt
 
-# Or install normally
-pip install .
+# For development (includes testing/linting tools)
+pip install -r requirements-dev.txt
+
+# Install the package in editable mode
+pip install -e .
 ```
 
 **Requirements:**
@@ -619,8 +623,12 @@ cd ops-translate
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install with dev dependencies
-pip install -e ".[dev]"
+# Install dependencies
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+
+# Install in editable mode
+pip install -e .
 ```
 
 ### Running Tests

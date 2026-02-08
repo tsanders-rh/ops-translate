@@ -19,8 +19,14 @@ This demo shows how ops-translate extracts operational intent from VMware automa
 ## Setup (Before Recording)
 
 ```bash
+# First-time setup (if not already done)
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+pip install -e .
+
 # Clean slate
-rm -rf demo-workspace 2>/dev/null
+rm -rf demo-workspace custom-workspace 2>/dev/null
 
 # Set up LLM provider (use mock for demo to avoid costs)
 export OPS_TRANSLATE_LLM_API_KEY="demo-key"

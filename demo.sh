@@ -3,6 +3,10 @@
 # ops-translate Demo Script
 # Automated demo that showcases all major features
 #
+# Prerequisites:
+#   pip install -r requirements.txt
+#   pip install -e .
+#
 # Usage:
 #   ./demo.sh                 # Run with normal delays
 #   ./demo.sh --fast          # Run with minimal delays
@@ -126,7 +130,9 @@ clear
 print_header "ops-translate Demo"
 echo -e "${BOLD}AI-assisted migration from VMware automation to OpenShift Virtualization${NC}"
 echo ""
-print_narration "This demo shows the complete workflow: Import → Extract → Validate → Generate"
+print_narration "This demo shows the complete workflow:"
+echo -e "  ${CYAN}Initialize → Import → Summarize → Extract → Review → Merge → Validate → Generate${NC}"
+echo ""
 wait_medium
 
 # ============================================================================
@@ -203,16 +209,39 @@ run_command "cat intent/environment-aware.intent.yaml | head -40"
 press_enter
 
 # ============================================================================
-# Scene 4: Enhanced Dry-Run
+# Scene 4: Review Gap Analysis
 # ============================================================================
-print_header "Scene 4: Enhanced Dry-Run Validation"
-print_narration "First, merge all intent files into a single intent.yaml"
+print_header "Scene 4: Gap Analysis Review"
+print_narration "View detected gaps and migration guidance"
+wait_short
+
+if [ -f "intent/gaps.md" ]; then
+    print_narration "Gap analysis report (shows what needs manual work):"
+    run_command "cat intent/gaps.md | head -40"
+else
+    print_narration "No gap analysis generated (mock provider or no complex components)"
+fi
+press_enter
+
+# ============================================================================
+# Scene 5: Merge Intent
+# ============================================================================
+print_header "Scene 5: Merge Intent Files"
+print_narration "Combine all intent files into single intent.yaml"
 wait_short
 
 run_command "$OPS_CMD intent merge --force"
 wait_short
 
-print_narration "NEW FEATURE: Comprehensive pre-flight validation"
+print_narration "View the merged intent:"
+run_command "cat intent/intent.yaml | head -30"
+press_enter
+
+# ============================================================================
+# Scene 6: Dry-Run Validation
+# ============================================================================
+print_header "Scene 6: Dry-Run Validation"
+print_narration "Validate intent structure before generating artifacts"
 wait_short
 
 run_command "$OPS_CMD dry-run || true"
@@ -220,9 +249,9 @@ echo ""
 press_enter
 
 # ============================================================================
-# Scene 5: Generate YAML Format
+# Scene 7: Generate YAML Format
 # ============================================================================
-print_header "Scene 5: Generate Standard YAML"
+print_header "Scene 7: Generate Standard YAML"
 print_narration "Generate KubeVirt and Ansible artifacts"
 wait_short
 
@@ -243,9 +272,9 @@ run_command "cat output/kubevirt/vm.yaml | head -30"
 press_enter
 
 # ============================================================================
-# Scene 6: Generate Kustomize/GitOps Format
+# Scene 8: Generate Kustomize/GitOps Format
 # ============================================================================
-print_header "Scene 6: Generate GitOps with Kustomize"
+print_header "Scene 8: Generate GitOps with Kustomize"
 print_narration "NEW FEATURE: Multi-environment GitOps structure"
 wait_short
 
@@ -274,9 +303,9 @@ run_command "cat output/overlays/prod/kustomization.yaml | grep -A5 'patches:'"
 press_enter
 
 # ============================================================================
-# Scene 7: Generate ArgoCD Format
+# Scene 9: Generate ArgoCD Format
 # ============================================================================
-print_header "Scene 7: Generate ArgoCD Applications"
+print_header "Scene 9: Generate ArgoCD Applications"
 print_narration "NEW FEATURE: Full GitOps with ArgoCD"
 wait_short
 
@@ -301,9 +330,9 @@ run_command "cat output/argocd/prod-application.yaml | grep -A10 'syncPolicy:'"
 press_enter
 
 # ============================================================================
-# Scene 8: Template Customization
+# Scene 10: Template Customization
 # ============================================================================
-print_header "Scene 8: Template Customization"
+print_header "Scene 10: Template Customization"
 print_narration "NEW FEATURE: Initialize with editable templates"
 wait_short
 
@@ -330,16 +359,26 @@ press_enter
 # ============================================================================
 print_header "Demo Complete!"
 echo ""
-echo -e "${BOLD}${GREEN}✓ Imported PowerCLI script${NC}"
-echo -e "${BOLD}${GREEN}✓ Extracted operational intent${NC}"
-echo -e "${BOLD}${GREEN}✓ Validated with enhanced dry-run${NC}"
-echo -e "${BOLD}${GREEN}✓ Generated YAML, Kustomize, and ArgoCD formats${NC}"
-echo -e "${BOLD}${GREEN}✓ Showed template customization${NC}"
+echo -e "${BOLD}${CYAN}Complete Workflow Demonstrated:${NC}"
+echo -e "${BOLD}${GREEN}✓ 1. Initialize${NC} workspace with organized structure"
+echo -e "${BOLD}${GREEN}✓ 2. Import${NC} PowerCLI script into workspace"
+echo -e "${BOLD}${GREEN}✓ 3. Summarize${NC} with static analysis (no AI)"
+echo -e "${BOLD}${GREEN}✓ 4. Extract${NC} operational intent using AI"
+echo -e "${BOLD}${GREEN}✓ 5. Review${NC} gap analysis for migration guidance"
+echo -e "${BOLD}${GREEN}✓ 6. Merge${NC} intent files into unified YAML"
+echo -e "${BOLD}${GREEN}✓ 7. Validate${NC} with enhanced dry-run checks"
+echo -e "${BOLD}${GREEN}✓ 8. Generate${NC} artifacts in multiple formats:"
+echo -e "    • Standard YAML (KubeVirt + Ansible)"
+echo -e "    • Kustomize (GitOps with overlays)"
+echo -e "    • ArgoCD (Application manifests)"
+echo -e "${BOLD}${GREEN}✓ 9. Customize${NC} with editable templates"
 echo ""
 echo -e "${CYAN}${BOLD}Key Takeaways:${NC}"
-echo -e "  • ${BOLD}Safe by design${NC} - Read-only operations"
-echo -e "  • ${BOLD}Multiple formats${NC} - YAML, JSON, Kustomize, ArgoCD"
-echo -e "  • ${BOLD}Validated output${NC} - Enhanced dry-run validation"
+echo -e "  • ${BOLD}Safe by design${NC} - Read-only operations, no live access"
+echo -e "  • ${BOLD}Transparent${NC} - Every step shows what's happening"
+echo -e "  • ${BOLD}AI only for intent${NC} - Everything else is template-based"
+echo -e "  • ${BOLD}Multiple formats${NC} - YAML, Kustomize, ArgoCD ready"
+echo -e "  • ${BOLD}Gap analysis${NC} - Know what needs manual work upfront"
 echo -e "  • ${BOLD}Customizable${NC} - Template system for org standards"
 echo ""
 echo -e "${MAGENTA}GitHub:${NC} github.com/tsanders-rh/ops-translate"
