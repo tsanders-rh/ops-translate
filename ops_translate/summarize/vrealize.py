@@ -20,10 +20,15 @@ def summarize(xml_file: Path) -> str:
     except ElementTree.ParseError:
         return "**Error:** Unable to parse XML"
 
+    if root is None:
+        return "**Error:** Empty XML document"
+
     summary = []
 
     # Extract workflow display name
-    display_name = root.findtext(".//display-name") or root.findtext(".//displayName")
+    display_name = root.findtext(".//display-name")
+    if not display_name:
+        display_name = root.findtext(".//displayName")
     if display_name:
         summary.append(f"**Workflow:** {display_name}")
 
