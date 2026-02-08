@@ -3,8 +3,9 @@ vRealize Orchestrator workflow summarizer (no AI).
 Parses workflow XML exports to detect inputs, decisions, approvals, etc.
 """
 
-import xml.etree.ElementTree as ET
 from pathlib import Path
+
+from defusedxml import ElementTree
 
 
 def summarize(xml_file: Path) -> str:
@@ -14,9 +15,9 @@ def summarize(xml_file: Path) -> str:
     Returns a markdown-formatted summary string.
     """
     try:
-        tree = ET.parse(xml_file)
+        tree = ElementTree.parse(xml_file)
         root = tree.getroot()
-    except ET.ParseError:
+    except ElementTree.ParseError:
         return "**Error:** Unable to parse XML"
 
     summary = []

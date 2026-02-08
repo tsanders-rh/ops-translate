@@ -19,7 +19,7 @@ from ops_translate.intent.classify import (
 )
 
 
-class Vro_pluginsClassifier(BaseClassifier):
+class VroPluginsClassifier(BaseClassifier):
     """
     Classifier for vRO/vRA-specific platform integrations.
 
@@ -43,7 +43,7 @@ class Vro_pluginsClassifier(BaseClassifier):
     - Scriptable tasks → PARTIAL (refactor to Ansible tasks)
 
     Example:
-        >>> classifier = Vro_pluginsClassifier()
+        >>> classifier = VroPluginsClassifier()
         >>> components = classifier.classify_from_intent(intent_data)
     """
 

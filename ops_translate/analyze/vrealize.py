@@ -216,7 +216,13 @@ def analyze_vrealize_workflow(workflow_file: Path) -> dict[str, Any]:
 
     try:
         # Parse XML with lxml (supports line number tracking via sourceline)
-        tree = etree.parse(str(workflow_file))
+        # Use secure parser to prevent XXE attacks
+        parser = etree.XMLParser(
+            resolve_entities=False,  # Disable entity resolution
+            no_network=True,  # Disable network access
+            huge_tree=False,  # Disable huge tree support
+        )
+        tree = etree.parse(str(workflow_file), parser)
         root = tree.getroot()
 
         # Extract namespace if present for proper XPath queries

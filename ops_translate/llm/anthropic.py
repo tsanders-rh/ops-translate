@@ -19,14 +19,24 @@ class AnthropicProvider(LLMProvider):
         self._initialize_client()
 
     def _initialize_client(self):
-        """Initialize Anthropic client if API key is available."""
+        """
+        Initialize Anthropic client if API key is available.
+
+        Security Note: API keys are read from environment variables and passed
+        to the Anthropic SDK. For production use, store API keys in secure
+        secret managers (e.g., AWS Secrets Manager, HashiCorp Vault, OS keychain)
+        rather than environment variables.
+        """
         # Try configured env var first, fall back to standard ANTHROPIC_API_KEY
         api_key = os.environ.get(self.api_key_env) or os.environ.get("ANTHROPIC_API_KEY")
         if api_key:
             try:
                 from anthropic import Anthropic
 
+                # API key is passed to SDK and will be stored by the client for subsequent requests
                 self.client = Anthropic(api_key=api_key)
+                # Clear local reference (though the SDK retains it)
+                del api_key
             except ImportError:
                 raise ImportError(
                     "anthropic package not installed. Install with: pip install anthropic"
@@ -109,6 +119,4 @@ class AnthropicProvider(LLMProvider):
 
     def is_available(self) -> bool:
         """Check if Anthropic provider is available."""
-        # Try configured env var first, fall back to standard ANTHROPIC_API_KEY
-        api_key = os.environ.get(self.api_key_env) or os.environ.get("ANTHROPIC_API_KEY")
-        return api_key is not None and self.client is not None
+        return self.client is not None

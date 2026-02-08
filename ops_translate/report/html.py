@@ -6,6 +6,7 @@ artifacts for human review before deployment.
 """
 
 import json
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Any, cast
@@ -15,6 +16,8 @@ import yaml
 from jinja2 import Environment, FileSystemLoader
 
 from ops_translate.workspace import Workspace
+
+logger = logging.getLogger(__name__)
 
 # Get project root to find templates
 PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -464,7 +467,8 @@ def _load_gaps_data(workspace: Workspace) -> dict[str, Any] | None:
 
     try:
         return cast(dict[str, Any], json.loads(gaps_file.read_text()))
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        logger.warning(f"Failed to parse {gaps_file}: {e}")
         return None
 
 
@@ -481,7 +485,8 @@ def _load_recommendations_data(workspace: Workspace) -> dict[str, Any] | None:
 
     try:
         return cast(dict[str, Any], json.loads(recommendations_file.read_text()))
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        logger.warning(f"Failed to parse {recommendations_file}: {e}")
         return None
 
 
@@ -497,10 +502,9 @@ def _load_decisions_data(workspace: Workspace) -> dict[str, Any] | None:
         return None
 
     try:
-        import yaml
-
         return cast(dict[str, Any], yaml.safe_load(decisions_file.read_text()))
-    except yaml.YAMLError:
+    except yaml.YAMLError as e:
+        logger.warning(f"Failed to parse {decisions_file}: {e}")
         return None
 
 
@@ -517,7 +521,11 @@ def _load_questions_data(workspace: Workspace) -> dict[str, Any] | None:
 
     try:
         return cast(dict[str, Any], json.loads(questions_file.read_text()))
-    except (json.JSONDecodeError, OSError):
+    except json.JSONDecodeError as e:
+        logger.warning(f"Failed to parse {questions_file}: {e}")
+        return None
+    except OSError as e:
+        logger.warning(f"Failed to read {questions_file}: {e}")
         return None
 
 

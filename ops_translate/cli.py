@@ -157,6 +157,9 @@ def import_cmd(
     input_dir = workspace.root / "input" / source
     dest_path = input_dir / source_path.name
 
+    # Ensure input directory exists before copying
+    ensure_dir(input_dir)
+
     console.print(f"[bold blue]Importing {source} file:[/bold blue] {source_path.name}")
     shutil.copy2(source_path, dest_path)
 

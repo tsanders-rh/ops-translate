@@ -33,6 +33,7 @@ dependencies = [
     "rich>=13.0.0",
     "lxml>=4.9.0",
     "markdown>=3.5.0",
+    "defusedxml>=0.7.0",
 ]
 
 [project.optional-dependencies]
@@ -60,6 +61,9 @@ Issues = "https://github.com/tsanders-rh/ops-translate/issues"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["ops_translate*"]
+
+[tool.setuptools.package-data]
+"*" = ["schema/*.json"]
 
 [tool.black]
 line-length = 100

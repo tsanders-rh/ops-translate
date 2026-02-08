@@ -32,7 +32,11 @@ def _load_schema(schema_name: str) -> dict:
     if schema_name not in _SCHEMA_CACHE:
         schema_file = PROJECT_ROOT / f"schema/{schema_name}.schema.json"
         if not schema_file.exists():
-            raise FileNotFoundError(f"Schema file not found: {schema_file}")
+            raise FileNotFoundError(
+                f"Schema file not found: {schema_file}\n"
+                f"This indicates an incomplete installation. Please reinstall ops-translate:\n"
+                f"  pip install --force-reinstall ops-translate"
+            )
         _SCHEMA_CACHE[schema_name] = json.loads(schema_file.read_text())
     return _SCHEMA_CACHE[schema_name]
 
