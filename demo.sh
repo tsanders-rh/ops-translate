@@ -117,7 +117,7 @@ cleanup() {
     if [ "$NO_CLEANUP" = false ]; then
         echo -e "${YELLOW}Cleaning up demo workspace...${NC}"
         cd ..
-        rm -rf demo-workspace custom-workspace 2>/dev/null || true
+        rm -rf demo-workspace 2>/dev/null || true
     fi
 }
 
@@ -139,7 +139,7 @@ wait_medium
 # Scene 1: Initialize & Import
 # ============================================================================
 print_header "Scene 1: Initialize & Import"
-print_narration "Initialize workspace and import a PowerCLI script"
+print_narration "Initialize workspace and import multiple automation sources"
 wait_short
 
 run_command "$OPS_CMD init demo-workspace"
@@ -155,24 +155,34 @@ else
 fi
 press_enter
 
-print_narration "Import an environment-aware PowerCLI script"
+print_narration "Import dev provisioning script"
 wait_short
-run_command "$OPS_CMD import --source powercli --file ../examples/powercli/environment-aware.ps1"
+run_command "$OPS_CMD import --source powercli --file ../examples/merge-scenario/dev-provision.ps1"
+wait_short
+
+print_narration "Import prod provisioning script"
+wait_short
+run_command "$OPS_CMD import --source powercli --file ../examples/merge-scenario/prod-provision.ps1"
+wait_short
+
+print_narration "Import approval workflow"
+wait_short
+run_command "$OPS_CMD import --source vrealize --file ../examples/merge-scenario/approval.workflow.xml"
 press_enter
 
 # ============================================================================
 # Scene 2: Summarize (No AI)
 # ============================================================================
 print_header "Scene 2: Static Analysis Summary"
-print_narration "First, analyze the script WITHOUT AI to detect structure"
+print_narration "Analyze all sources WITHOUT AI to detect structure"
 wait_short
 
 run_command "$OPS_CMD summarize"
 wait_medium
 
-print_narration "See what was detected:"
+print_narration "See what was detected across all sources:"
 wait_short
-run_command "cat intent/summary.md | head -30"
+run_command "cat intent/summary.md | head -40"
 press_enter
 
 # ============================================================================
@@ -203,9 +213,13 @@ EOF
 run_command "$OPS_CMD intent extract"
 wait_medium
 
-print_narration "View the extracted intent YAML:"
+print_narration "View one of the extracted intent files:"
 wait_short
-run_command "cat intent/environment-aware.intent.yaml | head -40"
+run_command "cat intent/dev-provision.intent.yaml | head -30"
+wait_short
+
+print_narration "Three intent files created (one per source):"
+run_command "ls -1 intent/*.intent.yaml"
 press_enter
 
 # ============================================================================
@@ -227,14 +241,17 @@ press_enter
 # Scene 5: Merge Intent
 # ============================================================================
 print_header "Scene 5: Merge Intent Files"
-print_narration "Combine all intent files into single intent.yaml"
+print_narration "Merge 3 intent files into single unified workflow"
 wait_short
 
 run_command "$OPS_CMD intent merge --force"
 wait_short
 
-print_narration "View the merged intent:"
-run_command "cat intent/intent.yaml | head -30"
+print_narration "View the merged intent (combines dev, prod, and approval):"
+run_command "cat intent/intent.yaml | head -40"
+wait_short
+
+print_narration "Notice: unified inputs, governance rules, and environment profiles"
 press_enter
 
 # ============================================================================
@@ -249,10 +266,10 @@ echo ""
 press_enter
 
 # ============================================================================
-# Scene 7: Generate YAML Format
+# Scene 7: Generate Artifacts
 # ============================================================================
-print_header "Scene 7: Generate Standard YAML"
-print_narration "Generate KubeVirt and Ansible artifacts"
+print_header "Scene 7: Generate Artifacts"
+print_narration "Generate KubeVirt manifests and Ansible playbooks"
 wait_short
 
 run_command "$OPS_CMD generate --profile lab --format yaml"
@@ -269,89 +286,10 @@ wait_short
 
 print_narration "KubeVirt VirtualMachine manifest:"
 run_command "cat output/kubevirt/vm.yaml | head -30"
-press_enter
-
-# ============================================================================
-# Scene 8: Generate Kustomize/GitOps Format
-# ============================================================================
-print_header "Scene 8: Generate GitOps with Kustomize"
-print_narration "NEW FEATURE: Multi-environment GitOps structure"
 wait_short
 
-run_command "$OPS_CMD generate --profile lab --format kustomize"
-wait_medium
-
-print_narration "Kustomize structure with base + environment overlays:"
-if command -v tree &> /dev/null; then
-    run_command "tree output/"
-else
-    run_command "ls -R output/"
-    echo ""
-fi
-wait_short
-
-print_narration "Base kustomization:"
-run_command "cat output/base/kustomization.yaml"
-wait_short
-
-print_narration "Dev overlay (2Gi memory, 1 CPU):"
-run_command "cat output/overlays/dev/kustomization.yaml"
-wait_short
-
-print_narration "Prod overlay (8Gi memory, 4 CPUs):"
-run_command "cat output/overlays/prod/kustomization.yaml | grep -A5 'patches:'"
-press_enter
-
-# ============================================================================
-# Scene 9: Generate ArgoCD Format
-# ============================================================================
-print_header "Scene 9: Generate ArgoCD Applications"
-print_narration "NEW FEATURE: Full GitOps with ArgoCD"
-wait_short
-
-run_command "$OPS_CMD generate --profile lab --format argocd"
-wait_medium
-
-print_narration "ArgoCD Application manifests:"
-if command -v tree &> /dev/null; then
-    run_command "tree output/argocd/"
-else
-    run_command "ls -R output/argocd/"
-    echo ""
-fi
-wait_short
-
-print_narration "Dev application (automated sync with self-heal):"
-run_command "cat output/argocd/dev-application.yaml | grep -A10 'syncPolicy:'"
-wait_short
-
-print_narration "Prod application (manual sync for safety):"
-run_command "cat output/argocd/prod-application.yaml | grep -A10 'syncPolicy:'"
-press_enter
-
-# ============================================================================
-# Scene 10: Template Customization
-# ============================================================================
-print_header "Scene 10: Template Customization"
-print_narration "NEW FEATURE: Initialize with editable templates"
-wait_short
-
-run_command "cd .."
-run_command "$OPS_CMD init custom-workspace --with-templates"
-run_command "cd custom-workspace"
-wait_medium
-
-print_narration "Template structure for customization:"
-if command -v tree &> /dev/null; then
-    run_command "tree templates/"
-else
-    run_command "ls -R templates/"
-    echo ""
-fi
-wait_short
-
-print_narration "KubeVirt template showing Jinja2 variables:"
-run_command "cat templates/kubevirt/vm.yaml.j2 | head -20"
+print_narration "Ansible playbook with environment-aware tasks:"
+run_command "cat output/ansible/site.yml | head -20"
 press_enter
 
 # ============================================================================
@@ -361,33 +299,33 @@ print_header "Demo Complete!"
 echo ""
 echo -e "${BOLD}${CYAN}Complete Workflow Demonstrated:${NC}"
 echo -e "${BOLD}${GREEN}✓ 1. Initialize${NC} workspace with organized structure"
-echo -e "${BOLD}${GREEN}✓ 2. Import${NC} PowerCLI script into workspace"
+echo -e "${BOLD}${GREEN}✓ 2. Import${NC} multiple sources (PowerCLI + vRealize)"
 echo -e "${BOLD}${GREEN}✓ 3. Summarize${NC} with static analysis (no AI)"
-echo -e "${BOLD}${GREEN}✓ 4. Extract${NC} operational intent using AI"
+echo -e "${BOLD}${GREEN}✓ 4. Extract${NC} operational intent using AI (creates 3 intent files)"
 echo -e "${BOLD}${GREEN}✓ 5. Review${NC} gap analysis for migration guidance"
-echo -e "${BOLD}${GREEN}✓ 6. Merge${NC} intent files into unified YAML"
+echo -e "${BOLD}${GREEN}✓ 6. Merge${NC} 3 intent files into unified workflow"
 echo -e "${BOLD}${GREEN}✓ 7. Validate${NC} with enhanced dry-run checks"
-echo -e "${BOLD}${GREEN}✓ 8. Generate${NC} artifacts in multiple formats:"
-echo -e "    • Standard YAML (KubeVirt + Ansible)"
-echo -e "    • Kustomize (GitOps with overlays)"
-echo -e "    • ArgoCD (Application manifests)"
-echo -e "${BOLD}${GREEN}✓ 9. Customize${NC} with editable templates"
+echo -e "${BOLD}${GREEN}✓ 8. Generate${NC} KubeVirt + Ansible artifacts"
 echo ""
 echo -e "${CYAN}${BOLD}Key Takeaways:${NC}"
+echo -e "  • ${BOLD}Multi-source merge${NC} - Combine dev, prod, approval into one workflow"
 echo -e "  • ${BOLD}Safe by design${NC} - Read-only operations, no live access"
 echo -e "  • ${BOLD}Transparent${NC} - Every step shows what's happening"
 echo -e "  • ${BOLD}AI only for intent${NC} - Everything else is template-based"
-echo -e "  • ${BOLD}Multiple formats${NC} - YAML, Kustomize, ArgoCD ready"
 echo -e "  • ${BOLD}Gap analysis${NC} - Know what needs manual work upfront"
-echo -e "  • ${BOLD}Customizable${NC} - Template system for org standards"
+echo ""
+echo -e "${CYAN}${BOLD}What was merged:${NC}"
+echo -e "  • dev-provision.ps1 - Quick provisioning for developers"
+echo -e "  • prod-provision.ps1 - Governed provisioning with strict requirements"
+echo -e "  • approval.workflow.xml - vRealize approval routing"
+echo -e "  → Single unified workflow handling both environments"
 echo ""
 echo -e "${MAGENTA}GitHub:${NC} github.com/tsanders-rh/ops-translate"
 echo -e "${MAGENTA}License:${NC} Apache-2.0"
 echo ""
 
 if [ "$NO_CLEANUP" = true ]; then
-    echo -e "${YELLOW}Demo workspaces left intact for exploration:${NC}"
+    echo -e "${YELLOW}Demo workspace left intact for exploration:${NC}"
     echo "  - demo-workspace/"
-    echo "  - custom-workspace/"
     echo ""
 fi
