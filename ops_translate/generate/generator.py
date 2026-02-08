@@ -191,7 +191,6 @@ def generate_with_templates(workspace: Workspace, profile: str, output_format: s
     # Load config and intent
     config = workspace.load_config()
     intent_file = workspace.root / "intent/intent.yaml"
-    gaps_file = workspace.root / "intent/gaps.json"
 
     # Check if we can work with gaps.json instead of merged intent
     has_merged_intent = intent_file.exists()
