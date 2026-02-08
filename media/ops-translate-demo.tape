@@ -15,6 +15,7 @@ Set Theme "Dracula"
 Set TypingSpeed 50ms
 
 # --- Title card ---
+Hide
 Type "echo ''"
 Enter
 Type "echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'"
@@ -27,6 +28,7 @@ Type "echo '━━━━━━━━━━━━━━━━━━━━━━�
 Enter
 Type "echo ''"
 Enter
+Show
 Sleep 2s
 
 # --- Clean start ---
@@ -39,8 +41,10 @@ Type "clear"
 Enter
 
 # --- Scene 1: Initialize & Import ---
+Hide
 Type "echo '━━━ Scene 1: Initialize & Import ━━━'"
 Enter
+Show
 Sleep 1s
 
 Type "ops-translate init demo-workspace"
@@ -51,10 +55,12 @@ Type "cd demo-workspace"
 Enter
 Sleep 500ms
 
+Hide
 Type "echo ''"
 Enter
 Type "echo '📦 Importing 3 sources...'"
 Enter
+Show
 Sleep 1s
 
 Type "ops-translate import --source powercli --file ../examples/merge-scenario/dev-provision.ps1"
@@ -69,27 +75,33 @@ Type "ops-translate import --source vrealize --file ../examples/merge-scenario/a
 Enter
 Sleep 1.5s
 
+Hide
 Type "echo ''"
 Enter
 Type "echo '✓ Imported: dev-provision, prod-provision, approval workflow'"
 Enter
+Show
 Sleep 2s
 Type "clear"
 Enter
 
 # --- Scene 2: Summarize (No AI) ---
+Hide
 Type "echo '━━━ Scene 2: Static Analysis (No AI) ━━━'"
 Enter
+Show
 Sleep 1s
 
 Type "ops-translate summarize"
 Enter
 Sleep 2s
 
+Hide
 Type "echo ''"
 Enter
 Type "echo '📊 Viewing summary...'"
 Enter
+Show
 Sleep 1s
 Type "cat intent/summary.md | head -40"
 Enter
@@ -98,8 +110,10 @@ Type "clear"
 Enter
 
 # --- Scene 3: Extract Intent (AI) ---
+Hide
 Type "echo '━━━ Scene 3: Extract Intent (AI) ━━━'"
 Enter
+Show
 Sleep 1s
 
 Type "# Configure mock provider (no API key needed)"
@@ -132,19 +146,23 @@ Type "ops-translate intent extract"
 Enter
 Sleep 2.5s
 
+Hide
 Type "echo ''"
 Enter
 Type "echo '📄 Created 3 intent files...'"
 Enter
+Show
 Sleep 1s
 Type "ls -1 intent/*.intent.yaml"
 Enter
 Sleep 2s
 
+Hide
 Type "echo ''"
 Enter
 Type "echo '📖 Viewing one intent file...'"
 Enter
+Show
 Sleep 1s
 Type "cat intent/dev-provision.intent.yaml | head -30"
 Enter
@@ -153,8 +171,10 @@ Type "clear"
 Enter
 
 # --- Scene 4: Gap Analysis ---
+Hide
 Type "echo '━━━ Scene 4: Gap Analysis ━━━'"
 Enter
+Show
 Sleep 1s
 
 Type "# Check for gap analysis"
@@ -166,34 +186,42 @@ Type "clear"
 Enter
 
 # --- Scene 5: Merge Intent ---
+Hide
 Type "echo '━━━ Scene 5: Merge 3 Files → 1 Unified Workflow ━━━'"
 Enter
+Show
 Sleep 1s
 
 Type "ops-translate intent merge --force"
 Enter
 Sleep 1.5s
 
+Hide
 Type "echo ''"
 Enter
 Type "echo '🔀 Merged intent (combines dev + prod + approval)...'"
 Enter
+Show
 Sleep 1s
 Type "cat intent/intent.yaml | head -40"
 Enter
 Sleep 3.5s
 
+Hide
 Type "echo ''"
 Enter
 Type "echo '✓ Notice: unified inputs, governance rules, environment profiles'"
 Enter
+Show
 Sleep 2s
 Type "clear"
 Enter
 
 # --- Scene 6: Dry-Run Validation ---
+Hide
 Type "echo '━━━ Scene 6: Dry-Run Validation ━━━'"
 Enter
+Show
 Sleep 1s
 
 Type "ops-translate dry-run || true"
@@ -203,36 +231,44 @@ Type "clear"
 Enter
 
 # --- Scene 7: Generate Artifacts ---
+Hide
 Type "echo '━━━ Scene 7: Generate KubeVirt + Ansible ━━━'"
 Enter
+Show
 Sleep 1s
 
 Type "ops-translate generate --profile lab --format yaml"
 Enter
 Sleep 2.5s
 
+Hide
 Type "echo ''"
 Enter
 Type "echo '📁 Generated structure...'"
 Enter
+Show
 Sleep 1s
 Type "tree output/ || ls -R output/"
 Enter
 Sleep 2.5s
 
+Hide
 Type "echo ''"
 Enter
 Type "echo '📄 KubeVirt manifest...'"
 Enter
+Show
 Sleep 1s
 Type "cat output/kubevirt/vm.yaml | head -30"
 Enter
 Sleep 3s
 
+Hide
 Type "echo ''"
 Enter
 Type "echo '📄 Ansible playbook...'"
 Enter
+Show
 Sleep 1s
 Type "cat output/ansible/site.yml | head -20"
 Enter
@@ -241,6 +277,7 @@ Type "clear"
 Enter
 
 # --- Wrap-up ---
+Hide
 Type "echo ''"
 Enter
 Type "echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'"
@@ -271,4 +308,5 @@ Type "echo 'License: Apache-2.0'"
 Enter
 Type "echo ''"
 Enter
+Show
 Sleep 3s
