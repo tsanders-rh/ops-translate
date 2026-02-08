@@ -2,6 +2,8 @@
 
 This guide explains how to create the ops-translate demo video using VHS (Video Handwriting Synthesizer).
 
+**Demo Focus:** Multi-source merge workflow combining dev provisioning, prod provisioning, and approval workflow into a unified automation.
+
 ## Directory Structure
 
 ```
@@ -33,13 +35,9 @@ pip install -e .
 which ops-translate
 ```
 
-### 3. Optional: OpenShift Cluster Access
+### 3. Mock LLM Provider (No API Key Needed)
 
-For the final `oc apply` steps to succeed:
-- CRC running locally, or
-- Connection to an OpenShift cluster
-
-If you don't have access, the demo will still work (those commands use `|| true` to prevent failures).
+The tape is configured to use the mock LLM provider, so no API key is required. The demo will work completely offline.
 
 ## Recording the Demo
 
@@ -56,7 +54,16 @@ This will:
 2. Record the terminal output
 3. Generate `media/ops-translate-demo.mp4`
 
-**Duration:** ~5 minutes (as scripted)
+**Duration:** ~4-5 minutes (as scripted)
+
+**What's demonstrated:**
+- Import 3 sources (dev-provision.ps1, prod-provision.ps1, approval.workflow.xml)
+- Static analysis without AI
+- Intent extraction (creates 3 intent files)
+- Gap analysis review
+- Merge 3 intent files → 1 unified workflow
+- Dry-run validation
+- Generate KubeVirt + Ansible artifacts
 
 ### Customizing the Recording
 
@@ -81,22 +88,19 @@ You can extract portions of the tape into separate files for testing:
 vhs test-import.tape
 ```
 
-## Interview Answers
+## Demo Workflow
 
-The tape includes pre-filled answers for the `ops-translate interview` command:
+The tape follows this sequence:
 
-```tape
-Type "manual"         # Approval handling
-Enter
-Type "integration"    # REST/API purpose
-Enter
-Type "map-to-ovn-kubernetes"  # Network model
-Enter
-Type "platform-team"  # Ownership
-Enter
-```
+1. **Initialize & Import** - Create workspace and import 3 sources
+2. **Summarize** - Static analysis without AI
+3. **Extract Intent** - AI extraction creating 3 intent files
+4. **Gap Analysis** - Review translatability classifications
+5. **Merge Intent** - Combine 3 files into unified workflow
+6. **Dry-Run Validation** - Validate merged intent
+7. **Generate Artifacts** - Create KubeVirt and Ansible outputs
 
-**Adjust these** to match your actual interview prompts if they change.
+Each scene is clearly labeled in the terminal output.
 
 ## Post-Production
 

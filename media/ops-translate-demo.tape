@@ -1,151 +1,274 @@
-# ops-translate — 5-Minute Demo (Terminal)
+# ops-translate — Multi-Source Merge Demo (Terminal)
 # Location: media/ops-translate-demo.tape
 # Run from repo root: vhs media/ops-translate-demo.tape
 #
 # Assumptions:
 # - You run this from the ops-translate repository root
 # - `ops-translate` is on PATH (or run `pip install -e .` first)
-# - Optional: `oc` logged into your CRC cluster if you want the dry-run step to succeed.
+# - Mock LLM provider configured (no API key needed)
 
 Output media/ops-translate-demo.mp4
 Set Width 1280
 Set Height 720
 Set FontSize 18
 Set Theme "Dracula"
-Set TypingSpeed 75ms
+Set TypingSpeed 50ms
 
-# --- Title card (simple, terminal-only) ---
+# --- Title card ---
 Type "echo ''"
 Enter
-Type "echo 'ops-translate — 5-Minute Demo'"
+Type "echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'"
 Enter
-Type "echo 'VMware automation → OpenShift Virtualization (trust-first)'"
+Type "echo '  ops-translate — Multi-Source Merge Demo'"
+Enter
+Type "echo '  VMware automation → OpenShift Virtualization'"
+Enter
+Type "echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'"
 Enter
 Type "echo ''"
 Enter
-Sleep 1200ms
+Sleep 2s
 
 # --- Clean start ---
-Type "rm -rf demo output || true"
+Type "# Clean slate"
+Enter
+Type "rm -rf demo-workspace || true"
+Enter
+Sleep 500ms
+Type "clear"
+Enter
+
+# --- Scene 1: Initialize & Import ---
+Type "echo '━━━ Scene 1: Initialize & Import ━━━'"
+Enter
+Sleep 1s
+
+Type "ops-translate init demo-workspace"
+Enter
+Sleep 1.5s
+
+Type "cd demo-workspace"
 Enter
 Sleep 500ms
 
-# 1) Init + import
-Type "ops-translate init demo"
+Type "echo ''"
 Enter
-Sleep 1200ms
-
-Type "cd demo"
+Type "echo '📦 Importing 3 sources...'"
 Enter
-Sleep 500ms
+Sleep 1s
 
-Type "ops-translate import --source powercli --file ../examples/powercli/provision-vm.ps1"
+Type "ops-translate import --source powercli --file ../examples/merge-scenario/dev-provision.ps1"
 Enter
-Sleep 1400ms
+Sleep 1.2s
 
-Type "ops-translate import --source vrealize --file ../examples/vrealize/with-approval.workflow.xml"
+Type "ops-translate import --source powercli --file ../examples/merge-scenario/prod-provision.ps1"
 Enter
-Sleep 1600ms
+Sleep 1.2s
 
-# 2) Deterministic summary (no AI)
+Type "ops-translate import --source vrealize --file ../examples/merge-scenario/approval.workflow.xml"
+Enter
+Sleep 1.5s
+
+Type "echo ''"
+Enter
+Type "echo '✓ Imported: dev-provision, prod-provision, approval workflow'"
+Enter
+Sleep 2s
+Type "clear"
+Enter
+
+# --- Scene 2: Summarize (No AI) ---
+Type "echo '━━━ Scene 2: Static Analysis (No AI) ━━━'"
+Enter
+Sleep 1s
+
 Type "ops-translate summarize"
 Enter
-Sleep 1400ms
+Sleep 2s
 
-Type "cat intent/summary.md"
+Type "echo ''"
 Enter
-Sleep 2400ms
+Type "echo '📊 Viewing summary...'"
+Enter
+Sleep 1s
+Type "cat intent/summary.md | head -40"
+Enter
+Sleep 3s
+Type "clear"
+Enter
 
-# 3) Intent extraction (AI used once)
+# --- Scene 3: Extract Intent (AI) ---
+Type "echo '━━━ Scene 3: Extract Intent (AI) ━━━'"
+Enter
+Sleep 1s
+
+Type "# Configure mock provider (no API key needed)"
+Enter
+Type "cat > ops-translate.yaml << 'EOF'"
+Enter
+Type "llm:"
+Enter
+Type "  provider: mock"
+Enter
+Type "  model: mock-model"
+Enter
+Type ""
+Enter
+Type "profiles:"
+Enter
+Type "  lab:"
+Enter
+Type "    default_namespace: virt-lab"
+Enter
+Type "    default_network: lab-network"
+Enter
+Type "    default_storage_class: nfs"
+Enter
+Type "EOF"
+Enter
+Sleep 1s
+
 Type "ops-translate intent extract"
 Enter
-Sleep 1800ms
+Sleep 2.5s
 
-Type "cat intent/vrealize.intent.yaml"
-Enter
-Sleep 2400ms
-
-Type "cat intent/assumptions.md"
-Enter
-Sleep 2400ms
-
-# 4) Gap analysis & classification
-Type "ops-translate analyze"
-Enter
-Sleep 1800ms
-
-Type "cat intent/gaps.md"
-Enter
-Sleep 3200ms
-
-# 5) Human decision point (CLI)
-# NOTE: This assumes `ops-translate interview` is interactive.
-# We answer a few representative questions using Type+Enter.
-Type "ops-translate interview"
-Enter
-Sleep 1200ms
-
-# --- Interview answers (edit these prompts/answers to match your actual interview flow) ---
-# Approval handling
-Type "manual"
-Enter
-Sleep 700ms
-
-# REST/API purpose
-Type "integration"
-Enter
-Sleep 700ms
-
-# Network model / NSX equivalence tolerance
-Type "map-to-ovn-kubernetes"
-Enter
-Sleep 700ms
-
-# Ownership / approver group
-Type "platform-team"
-Enter
-Sleep 700ms
-
-Sleep 600ms
-
-# 6) Generate OpenShift artifacts (deterministic templates)
-Type "ops-translate generate --profile lab"
-Enter
-Sleep 2000ms
-
-Type "ls -la output/kubevirt"
-Enter
-Sleep 1600ms
-
-Type "ls -la output/ansible"
-Enter
-Sleep 1600ms
-
-Type "grep -R 'REVIEW REQUIRED' -n output/ansible || true"
-Enter
-Sleep 1800ms
-
-# 7) Show apply (dry-run first)
-# If oc isn't logged in / CRC isn't running, this may fail. We keep it non-fatal with `|| true`.
-Type "oc apply -f output/kubevirt/ --dry-run=server || true"
-Enter
-Sleep 2000ms
-
-Type "oc apply -f output/kubevirt/ || true"
-Enter
-Sleep 1800ms
-
-# --- Close card ---
 Type "echo ''"
 Enter
-Type "echo 'Done.'"
+Type "echo '📄 Created 3 intent files...'"
+Enter
+Sleep 1s
+Type "ls -1 intent/*.intent.yaml"
+Enter
+Sleep 2s
+
+Type "echo ''"
+Enter
+Type "echo '📖 Viewing one intent file...'"
+Enter
+Sleep 1s
+Type "cat intent/dev-provision.intent.yaml | head -30"
+Enter
+Sleep 3s
+Type "clear"
+Enter
+
+# --- Scene 4: Gap Analysis ---
+Type "echo '━━━ Scene 4: Gap Analysis ━━━'"
+Enter
+Sleep 1s
+
+Type "# Check for gap analysis"
+Enter
+Type "if [ -f intent/gaps.md ]; then cat intent/gaps.md | head -40; else echo 'No gaps detected'; fi"
+Enter
+Sleep 3s
+Type "clear"
+Enter
+
+# --- Scene 5: Merge Intent ---
+Type "echo '━━━ Scene 5: Merge 3 Files → 1 Unified Workflow ━━━'"
+Enter
+Sleep 1s
+
+Type "ops-translate intent merge --force"
+Enter
+Sleep 1.5s
+
+Type "echo ''"
+Enter
+Type "echo '🔀 Merged intent (combines dev + prod + approval)...'"
+Enter
+Sleep 1s
+Type "cat intent/intent.yaml | head -40"
+Enter
+Sleep 3.5s
+
+Type "echo ''"
+Enter
+Type "echo '✓ Notice: unified inputs, governance rules, environment profiles'"
+Enter
+Sleep 2s
+Type "clear"
+Enter
+
+# --- Scene 6: Dry-Run Validation ---
+Type "echo '━━━ Scene 6: Dry-Run Validation ━━━'"
+Enter
+Sleep 1s
+
+Type "ops-translate dry-run || true"
+Enter
+Sleep 2.5s
+Type "clear"
+Enter
+
+# --- Scene 7: Generate Artifacts ---
+Type "echo '━━━ Scene 7: Generate KubeVirt + Ansible ━━━'"
+Enter
+Sleep 1s
+
+Type "ops-translate generate --profile lab --format yaml"
+Enter
+Sleep 2.5s
+
+Type "echo ''"
+Enter
+Type "echo '📁 Generated structure...'"
+Enter
+Sleep 1s
+Type "tree output/ || ls -R output/"
+Enter
+Sleep 2.5s
+
+Type "echo ''"
+Enter
+Type "echo '📄 KubeVirt manifest...'"
+Enter
+Sleep 1s
+Type "cat output/kubevirt/vm.yaml | head -30"
+Enter
+Sleep 3s
+
+Type "echo ''"
+Enter
+Type "echo '📄 Ansible playbook...'"
+Enter
+Sleep 1s
+Type "cat output/ansible/site.yml | head -20"
+Enter
+Sleep 3s
+Type "clear"
+Enter
+
+# --- Wrap-up ---
+Type "echo ''"
+Enter
+Type "echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'"
+Enter
+Type "echo '  ✓ Demo Complete!'"
+Enter
+Type "echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'"
 Enter
 Type "echo ''"
 Enter
-Type "echo 'One-sentence close:'"
+Type "echo 'Merged 3 sources into 1 unified workflow:'"
 Enter
-Type "echo 'We do not rebuild VMware automation—we translate its intent into OpenShift-native operations, safely and transparently.'"
+Type "echo '  • dev-provision.ps1 → Quick dev provisioning'"
+Enter
+Type "echo '  • prod-provision.ps1 → Governed prod provisioning'"
+Enter
+Type "echo '  • approval.workflow.xml → vRealize approval routing'"
+Enter
+Type "echo '  ↓'"
+Enter
+Type "echo '  Single workflow handling both environments'"
 Enter
 Type "echo ''"
 Enter
-Sleep 2200ms
+Type "echo 'GitHub: github.com/tsanders-rh/ops-translate'"
+Enter
+Type "echo 'License: Apache-2.0'"
+Enter
+Type "echo ''"
+Enter
+Sleep 3s
