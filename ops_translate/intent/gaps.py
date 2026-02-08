@@ -119,20 +119,30 @@ def _write_markdown_report(
         f.write(f"**Total Components Analyzed**: {summary['total_components']}\n\n")
         f.write("| Classification | Count |\n")
         f.write("|----------------|-------|\n")
+
+        # User-friendly labels
+        level_labels = {
+            "SUPPORTED": "Fully Supported",
+            "PARTIAL": "Partial Translation",
+            "BLOCKED": "Expert-Guided",
+            "MANUAL": "Custom Implementation",
+        }
+
         for level in ["SUPPORTED", "PARTIAL", "BLOCKED", "MANUAL"]:
             count = summary["counts"][level]
             emoji = TranslatabilityLevel[level].emoji
-            f.write(f"| {emoji} {level} | {count} |\n")
+            label = level_labels[level]
+            f.write(f"| {emoji} {label} | {count} |\n")
 
         f.write("\n")
 
         # High-level recommendations
         if summary["has_blocking_issues"]:
-            f.write("### ⚠️ Action Required\n\n")
+            f.write("### 🎯 Expert-Guided Migration Available\n\n")
             f.write(
-                "This workflow contains components that **cannot be automatically translated**. "
+                "This workflow contains components solved with **production-grade patterns from Red Hat experts**. "
             )
-            f.write("Manual implementation or architectural changes will be required.\n\n")
+            f.write("These proven migration patterns are available through Red Hat consulting and services.\n\n")
         elif summary["requires_manual_work"]:
             f.write("### ℹ️ Manual Configuration Needed\n\n")
             f.write("This workflow can be mostly automated, but some components require ")
@@ -165,6 +175,13 @@ def _write_markdown_report(
 
         # Group by severity level
         trans_level: TranslatabilityLevel
+        level_labels = {
+            TranslatabilityLevel.SUPPORTED: "Fully Supported",
+            TranslatabilityLevel.PARTIAL: "Partial Translation",
+            TranslatabilityLevel.BLOCKED: "Expert-Guided",
+            TranslatabilityLevel.MANUAL: "Custom Implementation",
+        }
+
         for trans_level in [
             TranslatabilityLevel.MANUAL,
             TranslatabilityLevel.BLOCKED,
@@ -175,7 +192,8 @@ def _write_markdown_report(
             if not level_components:
                 continue
 
-            f.write(f"### {trans_level.emoji} {trans_level.value} Components\n\n")
+            label = level_labels[trans_level]
+            f.write(f"### {trans_level.emoji} {label} Components\n\n")
 
             for comp in level_components:
                 f.write(f"#### {comp.name}\n\n")
@@ -210,11 +228,11 @@ def _write_markdown_report(
         # Footer with next steps
         f.write("## Next Steps\n\n")
         if summary["has_blocking_issues"]:
-            f.write("1. **Review BLOCKED and MANUAL components** with infrastructure specialists\n")
-            f.write("2. **Decide on migration path** (A/B/C) for each component\n")
-            f.write("3. **Create implementation plan** for manual components\n")
+            f.write("1. **Review Expert-Guided and Custom components** with infrastructure specialists\n")
+            f.write("2. **Consult Red Hat experts** for production-grade migration patterns\n")
+            f.write("3. **Decide on migration path** (A/B/C) for each component\n")
             f.write("4. **Run `ops-translate generate`** to create scaffolding with TODOs\n")
-            f.write("5. **Implement manual components** following generated TODO tasks\n")
+            f.write("5. **Implement custom components** following generated guidance and patterns\n")
         elif summary["requires_manual_work"]:
             f.write("1. **Run `ops-translate generate`** to create Ansible playbooks\n")
             f.write("2. **Review generated TODO tasks** for PARTIAL components\n")
@@ -289,16 +307,25 @@ def print_gap_summary(components: list[ClassifiedComponent]) -> None:
     table.add_column("Classification", style="dim")
     table.add_column("Count", justify="right")
 
+    # User-friendly labels
+    level_labels = {
+        "SUPPORTED": "Fully Supported",
+        "PARTIAL": "Partial Translation",
+        "BLOCKED": "Expert-Guided",
+        "MANUAL": "Custom Implementation",
+    }
+
     for level in ["SUPPORTED", "PARTIAL", "BLOCKED", "MANUAL"]:
         count = summary["counts"][level]
         emoji = TranslatabilityLevel[level].emoji
+        label = level_labels[level]
         color = {
             "SUPPORTED": "green",
             "PARTIAL": "yellow",
-            "BLOCKED": "red",
+            "BLOCKED": "cyan",  # Changed from red to cyan for expert-guided
             "MANUAL": "magenta",
         }[level]
-        table.add_row(f"{emoji} {level}", f"[{color}]{count}[/{color}]")
+        table.add_row(f"{emoji} {label}", f"[{color}]{count}[/{color}]")
 
     console.print(table)
 
@@ -319,7 +346,7 @@ def print_gap_summary(components: list[ClassifiedComponent]) -> None:
 
     if summary["has_blocking_issues"]:
         console.print(
-            "[yellow]⚠️ This workflow has blocking issues that require manual work.[/yellow]\n"
+            "[cyan]🎯 Production-grade migration patterns available from Red Hat experts.[/cyan]\n"
         )
         console.print("Review [cyan]intent/gaps.md[/cyan] for detailed recommendations.\n")
     elif summary["requires_manual_work"]:

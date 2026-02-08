@@ -18,8 +18,8 @@ class TranslatabilityLevel(Enum):
     Levels:
         SUPPORTED: Full automatic translation to OpenShift-native equivalent
         PARTIAL: Can translate with limitations or manual configuration needed
-        BLOCKED: Cannot translate automatically, requires manual implementation
-        MANUAL: Complex custom logic requiring specialist review and implementation
+        BLOCKED: Production-grade patterns available from Red Hat experts (expert-guided)
+        MANUAL: Complex custom logic requiring custom implementation
 
     Examples:
         >>> level = TranslatabilityLevel.SUPPORTED
@@ -44,8 +44,8 @@ class TranslatabilityLevel(Enum):
         return {
             "SUPPORTED": "✅",
             "PARTIAL": "⚠️",
-            "BLOCKED": "🚫",
-            "MANUAL": "👷",
+            "BLOCKED": "🎯",  # Expert-Guided (production-grade patterns available)
+            "MANUAL": "🔧",  # Custom Implementation
         }[self.value]
 
     @property
