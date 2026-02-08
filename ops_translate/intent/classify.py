@@ -185,6 +185,19 @@ def discover_classifiers() -> list:
     - classifiers/servicenow.py → ServicenowClassifier
     - classifiers/plugins.py → PluginsClassifier
 
+    The discovery process:
+    1. Scans ops_translate/intent/classifiers/ for .py files
+    2. Imports each module
+    3. Looks for a class named {ModuleName}Classifier
+    4. Validates the class is a BaseClassifier subclass
+    5. Instantiates and adds to the list
+
+    Error handling:
+    - ImportError: Module can't be imported (logged as error)
+    - AttributeError: Classifier class not found (logged as warning)
+    - Invalid BaseClassifier subclass: Logged as warning and skipped
+    - Instantiation failures: Logged as error and skipped
+
     Returns:
         List of classifier instances sorted by priority (highest first)
 
@@ -227,21 +240,40 @@ def discover_classifiers() -> list:
                 classifier_class = getattr(module, classifier_class_name, None)
 
             if classifier_class is not None:
+                # Validate that it's actually a BaseClassifier subclass
+                if not isinstance(classifier_class, type) or not issubclass(
+                    classifier_class, BaseClassifier
+                ):
+                    logger.warning(
+                        f"Classifier class {classifier_class_name} in {plugin_file.stem}.py "
+                        f"does not inherit from BaseClassifier"
+                    )
+                    continue
+
                 # Instantiate the classifier
-                classifier_instance = classifier_class()
-                classifiers.append(classifier_instance)
-                logger.debug(
-                    f"Discovered classifier: {classifier_instance.name} "
-                    f"(priority: {classifier_instance.priority})"
-                )
+                try:
+                    classifier_instance = classifier_class()
+                    classifiers.append(classifier_instance)
+                    logger.debug(
+                        f"Discovered classifier: {classifier_instance.name} "
+                        f"(priority: {classifier_instance.priority})"
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"Failed to instantiate {classifier_class_name} from {plugin_file}: {e}"
+                    )
             else:
                 logger.warning(
                     f"No classifier class found in {plugin_file.stem}.py "
                     f"(expected {plugin_file.stem.capitalize()}Classifier)"
                 )
 
+        except ImportError as e:
+            logger.error(f"Failed to import classifier module {plugin_file}: {e}")
+        except AttributeError as e:
+            logger.error(f"Classifier class not found in {plugin_file}: {e}")
         except Exception as e:
-            logger.error(f"Failed to load classifier from {plugin_file}: {e}")
+            logger.error(f"Unexpected error loading classifier from {plugin_file}: {e}")
 
     # Sort by priority (lower number = higher priority)
     classifiers.sort(key=lambda c: c.priority)
