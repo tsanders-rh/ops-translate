@@ -2,6 +2,7 @@
 Unified artifact generation using LLM or templates.
 """
 
+import logging
 import re
 from pathlib import Path
 
@@ -12,6 +13,7 @@ from ops_translate.util.files import ensure_dir, write_text
 from ops_translate.workspace import Workspace
 
 console = Console()
+logger = logging.getLogger(__name__)
 
 # Get project root to find prompts
 PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -219,7 +221,17 @@ def generate_with_templates(workspace: Workspace, profile: str, output_format: s
         console.print("[dim]Tip: For YAML format, you can skip merge if gaps.json exists[/dim]")
         return
 
-    intent_data = yaml.safe_load(intent_file.read_text())
+    try:
+        intent_data = yaml.safe_load(intent_file.read_text())
+        if intent_data is None:
+            console.print(f"[red]Error: {intent_file} is empty[/red]")
+            return
+    except yaml.YAMLError as e:
+        logger.error(f"Failed to parse {intent_file}: {e}")
+        console.print(f"[red]Error: Invalid YAML in {intent_file}[/red]")
+        console.print(f"[dim]{e}[/dim]")
+        return
+
     profile_config = config["profiles"][profile]
 
     # Initialize template loader

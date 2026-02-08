@@ -69,7 +69,11 @@ def retry_with_backoff(
                     delay *= backoff_factor
 
             # All retries exhausted
-            assert last_exception is not None  # Always set in the except block
+            if last_exception is None:
+                # This should never happen, but handle it gracefully
+                raise RuntimeError(
+                    f"Retry logic error: no exception captured after {max_attempts} attempts"
+                )
             raise RetryableError(last_exception, max_attempts, max_attempts)
 
         return wrapper

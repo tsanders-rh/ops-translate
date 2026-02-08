@@ -1,6 +1,9 @@
 """Configuration utility functions."""
 
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def get_llm_rate_limit_delay() -> float:
@@ -20,8 +23,8 @@ def get_llm_rate_limit_delay() -> float:
         if ws.config_file.exists():
             config = ws.load_config()
             return float(config.get("llm", {}).get("rate_limit_delay", 1.0))
-    except Exception:
-        # If anything goes wrong, use default
-        pass
+    except Exception as e:
+        # If anything goes wrong, log and use default
+        logger.debug(f"Could not load rate limit delay from config: {e}")
 
     return 1.0  # Default: 1 second between API calls

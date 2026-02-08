@@ -19,14 +19,24 @@ class OpenAIProvider(LLMProvider):
         self._initialize_client()
 
     def _initialize_client(self):
-        """Initialize OpenAI client if API key is available."""
+        """
+        Initialize OpenAI client if API key is available.
+
+        Security Note: API keys are read from environment variables and passed
+        to the OpenAI SDK. For production use, store API keys in secure
+        secret managers (e.g., AWS Secrets Manager, HashiCorp Vault, OS keychain)
+        rather than environment variables.
+        """
         # Try configured env var first, fall back to standard OPENAI_API_KEY
         api_key = os.environ.get(self.api_key_env) or os.environ.get("OPENAI_API_KEY")
         if api_key:
             try:
                 from openai import OpenAI
 
+                # API key is passed to SDK and will be stored by the client for subsequent requests
                 self.client = OpenAI(api_key=api_key)
+                # Clear local reference (though the SDK retains it)
+                del api_key
             except ImportError:
                 raise ImportError("openai package not installed. Install with: pip install openai")
 
@@ -107,6 +117,4 @@ class OpenAIProvider(LLMProvider):
 
     def is_available(self) -> bool:
         """Check if OpenAI provider is available."""
-        # Try configured env var first, fall back to standard OPENAI_API_KEY
-        api_key = os.environ.get(self.api_key_env) or os.environ.get("OPENAI_API_KEY")
-        return api_key is not None and self.client is not None
+        return self.client is not None

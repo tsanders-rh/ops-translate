@@ -3,12 +3,15 @@ Intent merging logic.
 Merges per-source intent files into a single intent.yaml.
 """
 
+import logging
 from pathlib import Path
 from typing import Any
 
 import yaml
 
 from ops_translate.workspace import Workspace
+
+logger = logging.getLogger(__name__)
 
 
 def merge_intents(workspace: Workspace) -> bool:
@@ -30,9 +33,19 @@ def merge_intents(workspace: Workspace) -> bool:
     intents = []
     all_sources = []
     for intent_file in intent_files:
-        intent_data = yaml.safe_load(intent_file.read_text())
-        intents.append({"file": intent_file.name, "data": intent_data})
-        all_sources.extend(intent_data.get("sources", []))
+        try:
+            intent_data = yaml.safe_load(intent_file.read_text())
+            if intent_data is None:
+                logger.warning(f"Skipping empty intent file: {intent_file.name}")
+                continue
+            intents.append({"file": intent_file.name, "data": intent_data})
+            all_sources.extend(intent_data.get("sources", []))
+        except yaml.YAMLError as e:
+            logger.error(f"Failed to parse {intent_file.name}: {e}")
+            raise ValueError(f"Invalid YAML in {intent_file.name}: {e}") from e
+        except OSError as e:
+            logger.error(f"Failed to read {intent_file.name}: {e}")
+            raise
 
     # Perform smart merge
     merged_intent = smart_merge(intents)
