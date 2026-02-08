@@ -84,8 +84,12 @@ class Workspace:
         """Validate config against JSON schema."""
         schema_file = PROJECT_ROOT / "schema/config.schema.json"
         if not schema_file.exists():
-            # Schema not found - warn but continue (backward compatibility)
-            return
+            # Schema file missing indicates installation/deployment issue
+            raise FileNotFoundError(
+                f"Configuration schema file not found: {schema_file}\n"
+                f"This indicates an incomplete installation. Please reinstall ops-translate:\n"
+                f"  pip install --force-reinstall ops-translate"
+            )
 
         schema = json.loads(schema_file.read_text())
         try:

@@ -3,8 +3,9 @@ vRealize Orchestrator workflow summarizer (no AI).
 Parses workflow XML exports to detect inputs, decisions, approvals, etc.
 """
 
-import xml.etree.ElementTree as ET
 from pathlib import Path
+
+import defusedxml.ElementTree as ET
 
 
 def summarize(xml_file: Path) -> str:
