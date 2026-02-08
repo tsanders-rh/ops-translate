@@ -479,6 +479,438 @@ class RecommendationEngine:
             ),
         )
 
+    @staticmethod
+    def generate_vm_template_recommendation(
+        component_name: str,
+        location: str | None = None,
+        evidence: str | None = None,
+    ) -> Recommendation:
+        """
+        Generate recommendation for VM template/customization operations.
+
+        Args:
+            component_name: Name of the template component
+            location: Source location (file:line)
+            evidence: Supporting evidence from source
+
+        Returns:
+            Structured recommendation for KubeVirt template migration
+        """
+        return Recommendation(
+            component_name=component_name,
+            component_type="vm_template",
+            reason_not_auto_translatable=(
+                "VM templates with custom guest customization, sysprep scripts, and "
+                "post-deployment configuration require manual review. Template "
+                "specifications, hardware versions, and customization logic must be "
+                "carefully mapped to KubeVirt/cloud-init equivalents."
+            ),
+            ansible_approach=(
+                "Create KubeVirt VirtualMachine templates with cloud-init for guest "
+                "customization. Use Ansible to manage template lifecycle and inject "
+                "runtime configuration. Convert sysprep/customization specs to cloud-init "
+                "user-data and meta-data."
+            ),
+            openshift_primitives=[
+                "VirtualMachine (KubeVirt)",
+                "VirtualMachineInstanceTemplate",
+                "ConfigMap (cloud-init data)",
+                "Secret (sensitive data)",
+            ],
+            implementation_steps=[
+                "Document VM template specifications (CPU, memory, disk, network)",
+                "Extract guest customization requirements (hostname, IP, scripts, etc.)",
+                "Convert customization specs to cloud-init format (user-data, meta-data)",
+                "Create KubeVirt VirtualMachine template with appropriate resources",
+                "Store cloud-init data in ConfigMap or Secret",
+                "Test template instantiation and guest customization in dev cluster",
+                "Validate post-boot configuration matches source template behavior",
+            ],
+            required_inputs={
+                "template_name": "Name of the VM template",
+                "vm_specs": "CPU, memory, disk size specifications",
+                "customization_spec": "Guest customization requirements (cloud-init format)",
+                "base_image": "Container disk image or DataVolume source",
+            },
+            testing_guidance=(
+                "Test VM creation from template. Verify cloud-init customization runs "
+                "correctly (check /var/log/cloud-init.log). Validate network configuration, "
+                "hostname, and any post-boot scripts. Compare final VM state against "
+                "source template expectations."
+            ),
+            owner=OwnerRole.PLATFORM,
+            references=[
+                "https://kubevirt.io/user-guide/virtual_machines/templates/",
+                "https://cloudinit.readthedocs.io/en/latest/",
+                "https://docs.openshift.com/container-platform/latest/virt/virtual_machines/creating_vms_custom/virt-creating-vms-from-templates.html",
+            ],
+            ansible_role_stub="custom_vm_template",
+            ansible_todo_task=(
+                "# TODO: Implement VM template migration to KubeVirt\n"
+                f"# Source: {location or 'unknown'}\n"
+                f"# Evidence: {evidence or 'See gap analysis report'}\n"
+                "# Review intent/recommendations.md for implementation guidance"
+            ),
+        )
+
+    @staticmethod
+    def generate_storage_recommendation(
+        component_name: str,
+        location: str | None = None,
+        evidence: str | None = None,
+    ) -> Recommendation:
+        """
+        Generate recommendation for storage/volume operations.
+
+        Args:
+            component_name: Name of the storage component
+            location: Source location (file:line)
+            evidence: Supporting evidence from source
+
+        Returns:
+            Structured recommendation for storage migration
+        """
+        return Recommendation(
+            component_name=component_name,
+            component_type="storage",
+            reason_not_auto_translatable=(
+                "Storage operations involve datastore selection, storage policies, and "
+                "provisioning logic that require platform-specific decisions. Storage "
+                "classes, access modes, and volume types must be mapped based on target "
+                "infrastructure capabilities."
+            ),
+            ansible_approach=(
+                "Use kubernetes.core.k8s module to create PersistentVolumeClaim resources "
+                "with appropriate storage class and access mode. For VM disks, use KubeVirt "
+                "DataVolume with CDI (Containerized Data Importer) for image conversion."
+            ),
+            openshift_primitives=[
+                "PersistentVolumeClaim",
+                "StorageClass",
+                "DataVolume (KubeVirt CDI)",
+                "VolumeSnapshot",
+            ],
+            implementation_steps=[
+                "Identify storage requirements (size, performance tier, access mode)",
+                "Map source datastore/storage policy to target storage class",
+                "Create PersistentVolumeClaim or DataVolume manifest",
+                "Configure appropriate access mode (ReadWriteOnce, ReadWriteMany)",
+                "Implement volume attachment to VirtualMachine or Pod",
+                "Plan data migration strategy if existing data needs transfer",
+                "Test provisioning and I/O performance in target environment",
+            ],
+            required_inputs={
+                "storage_size": "Required storage capacity (e.g., 100Gi)",
+                "storage_class": "Target storage class name",
+                "access_mode": "Volume access mode (ReadWriteOnce, ReadWriteMany, ReadOnlyMany)",
+                "volume_mode": "Filesystem or Block",
+            },
+            testing_guidance=(
+                "Test PVC creation and binding. Verify storage class provisions volume correctly. "
+                "Test volume attachment to VM/pod. Run I/O benchmarks to validate performance. "
+                "Test volume expansion if dynamic resizing is required."
+            ),
+            owner=OwnerRole.PLATFORM,
+            references=[
+                "https://docs.openshift.com/container-platform/latest/storage/understanding-persistent-storage.html",
+                "https://kubevirt.io/user-guide/virtual_machines/disks_and_volumes/",
+                "https://kubevirt.io/user-guide/operations/containerized_data_importer/",
+            ],
+            ansible_role_stub="custom_storage",
+            ansible_todo_task=(
+                "# TODO: Implement storage provisioning\n"
+                f"# Source: {location or 'unknown'}\n"
+                f"# Evidence: {evidence or 'See gap analysis report'}\n"
+                "# Review intent/recommendations.md for implementation guidance"
+            ),
+        )
+
+    @staticmethod
+    def generate_custom_plugin_recommendation(
+        component_name: str,
+        location: str | None = None,
+        evidence: str | None = None,
+    ) -> Recommendation:
+        """
+        Generate recommendation for custom plugins/actions.
+
+        Args:
+            component_name: Name of the custom plugin
+            location: Source location (file:line)
+            evidence: Supporting evidence from source
+
+        Returns:
+            Structured recommendation for custom logic migration
+        """
+        return Recommendation(
+            component_name=component_name,
+            component_type="custom_plugin",
+            reason_not_auto_translatable=(
+                "Custom plugins and actions contain organization-specific business logic "
+                "that cannot be automatically translated. Each plugin must be analyzed "
+                "individually to understand its purpose, dependencies, and integration points."
+            ),
+            ansible_approach=(
+                "Reimplement custom logic as Ansible modules, roles, or playbook tasks. "
+                "For complex logic, consider wrapping in a custom Python module or REST "
+                "API service that Ansible can invoke via uri or custom module."
+            ),
+            openshift_primitives=[
+                "Job (Kubernetes)",
+                "CronJob (scheduled tasks)",
+                "Custom Ansible modules",
+                "REST API integration",
+            ],
+            implementation_steps=[
+                "Document plugin purpose, inputs, outputs, and dependencies",
+                "Identify external systems or APIs the plugin interacts with",
+                "Extract core business logic and determine if reimplementation is needed",
+                "Design Ansible-native equivalent (task, role, module, or external service)",
+                "Implement and test logic in isolation",
+                "Integrate with workflow and validate end-to-end behavior",
+                "Document any behavioral differences or limitations",
+            ],
+            required_inputs={
+                "plugin_code": "Source code or pseudocode of plugin logic",
+                "dependencies": "External systems, APIs, or libraries required",
+                "inputs": "Plugin input parameters and types",
+                "outputs": "Expected outputs and side effects",
+            },
+            testing_guidance=(
+                "Test plugin logic with representative inputs. Validate outputs match "
+                "expected behavior. Test error handling and edge cases. Verify integration "
+                "with dependent systems. Compare behavior against original plugin."
+            ),
+            owner=OwnerRole.CUSTOM,
+            references=[
+                "https://docs.ansible.com/ansible/latest/dev_guide/developing_modules_general.html",
+                "https://kubernetes.io/docs/concepts/workloads/controllers/job/",
+            ],
+            ansible_role_stub="custom_plugin",
+            ansible_todo_task=(
+                "# TODO: Implement custom plugin logic\n"
+                f"# Source: {location or 'unknown'}\n"
+                f"# Evidence: {evidence or 'See gap analysis report'}\n"
+                "# This requires analysis of original plugin code\n"
+                "# Review intent/recommendations.md for implementation guidance"
+            ),
+        )
+
+    @staticmethod
+    def generate_credentials_recommendation(
+        component_name: str,
+        location: str | None = None,
+        evidence: str | None = None,
+    ) -> Recommendation:
+        """
+        Generate recommendation for credential/authentication operations.
+
+        Args:
+            component_name: Name of the credential component
+            location: Source location (file:line)
+            evidence: Supporting evidence from source
+
+        Returns:
+            Structured recommendation for credential migration
+        """
+        return Recommendation(
+            component_name=component_name,
+            component_type="credentials",
+            reason_not_auto_translatable=(
+                "Credential management involves sensitive data and organization-specific "
+                "security policies. Credentials must be migrated using secure methods "
+                "appropriate for the target platform (Secrets, external vaults, etc.)."
+            ),
+            ansible_approach=(
+                "Store credentials in Kubernetes Secrets or integrate with external secret "
+                "management (HashiCorp Vault, AWS Secrets Manager, etc.). Use Ansible Vault "
+                "for encrypting sensitive playbook variables. Rotate credentials post-migration."
+            ),
+            openshift_primitives=[
+                "Secret (Kubernetes)",
+                "ServiceAccount",
+                "External Secrets Operator",
+                "HashiCorp Vault integration",
+            ],
+            implementation_steps=[
+                "Identify all credential types (passwords, API keys, certificates, SSH keys)",
+                "Determine credential usage patterns and dependencies",
+                "Choose appropriate secret storage (Kubernetes Secret, external vault)",
+                "Migrate credentials using secure transfer method (no plaintext storage)",
+                "Update application/workflow to reference new secret storage",
+                "Implement credential rotation policy",
+                "Test authentication with new credential storage",
+                "Revoke/rotate old credentials after successful migration",
+            ],
+            required_inputs={
+                "credential_types": "Types of credentials (password, API key, certificate, etc.)",
+                "secret_names": "Kubernetes Secret names for each credential",
+                "access_scope": "Which services/pods need access to each credential",
+            },
+            testing_guidance=(
+                "Test that applications can retrieve credentials from Secrets. Verify proper "
+                "RBAC prevents unauthorized access. Test credential rotation procedure. "
+                "Validate authentication works with migrated credentials. Confirm old credentials "
+                "are revoked and no longer work."
+            ),
+            owner=OwnerRole.SECOPS,
+            references=[
+                "https://kubernetes.io/docs/concepts/configuration/secret/",
+                "https://docs.openshift.com/container-platform/latest/nodes/pods/nodes-pods-secrets.html",
+                "https://www.vaultproject.io/docs/platform/k8s",
+                "https://external-secrets.io/",
+            ],
+            ansible_role_stub="custom_credentials",
+            ansible_todo_task=(
+                "# TODO: Migrate credentials securely\n"
+                f"# Source: {location or 'unknown'}\n"
+                f"# Evidence: {evidence or 'See gap analysis report'}\n"
+                "# SECURITY: Never commit plaintext credentials\n"
+                "# Review intent/recommendations.md for implementation guidance"
+            ),
+        )
+
+    @staticmethod
+    def generate_notification_recommendation(
+        component_name: str,
+        location: str | None = None,
+        evidence: str | None = None,
+    ) -> Recommendation:
+        """
+        Generate recommendation for email/notification operations.
+
+        Args:
+            component_name: Name of the notification component
+            location: Source location (file:line)
+            evidence: Supporting evidence from source
+
+        Returns:
+            Structured recommendation for notification migration
+        """
+        return Recommendation(
+            component_name=component_name,
+            component_type="notification",
+            reason_not_auto_translatable=(
+                "Notification logic involves SMTP configuration, email templates, and "
+                "organization-specific notification channels. Email sending requires "
+                "integration with mail servers or notification services."
+            ),
+            ansible_approach=(
+                "Use ansible.builtin.mail module for simple email notifications, or integrate "
+                "with notification services (Slack, PagerDuty, Teams). For complex templates, "
+                "use Jinja2 templates and REST API integrations."
+            ),
+            openshift_primitives=[
+                "Job (for async notifications)",
+                "Webhook integrations",
+                "External notification services",
+            ],
+            implementation_steps=[
+                "Identify notification triggers and recipients",
+                "Document notification content and templates",
+                "Configure SMTP relay or notification service credentials",
+                "Implement Ansible mail task or webhook integration",
+                "Create notification templates with dynamic content",
+                "Test notification delivery and formatting",
+                "Implement error handling for notification failures",
+            ],
+            required_inputs={
+                "smtp_host": "SMTP server hostname (if using email)",
+                "recipients": "Notification recipients (email addresses, channels)",
+                "subject_template": "Subject line template",
+                "body_template": "Message body template",
+            },
+            testing_guidance=(
+                "Test email delivery to actual recipients. Verify formatting and dynamic "
+                "content rendering. Test with failure scenarios to ensure error handling. "
+                "Validate notification timing and triggers. Check spam filters don't block messages."
+            ),
+            owner=OwnerRole.APPOPS,
+            references=[
+                "https://docs.ansible.com/ansible/latest/collections/community/general/mail_module.html",
+                "https://docs.ansible.com/ansible/latest/collections/ansible/builtin/uri_module.html",
+            ],
+            ansible_role_stub="custom_notifications",
+            ansible_todo_task=(
+                "# TODO: Implement notification integration\n"
+                f"# Source: {location or 'unknown'}\n"
+                f"# Evidence: {evidence or 'See gap analysis report'}\n"
+                "# Review intent/recommendations.md for implementation guidance"
+            ),
+        )
+
+    @staticmethod
+    def generate_database_recommendation(
+        component_name: str,
+        location: str | None = None,
+        evidence: str | None = None,
+    ) -> Recommendation:
+        """
+        Generate recommendation for database operations.
+
+        Args:
+            component_name: Name of the database component
+            location: Source location (file:line)
+            evidence: Supporting evidence from source
+
+        Returns:
+            Structured recommendation for database integration
+        """
+        return Recommendation(
+            component_name=component_name,
+            component_type="database",
+            reason_not_auto_translatable=(
+                "Database operations require connection details, schema knowledge, and "
+                "query logic specific to the database type. SQL queries, schema changes, "
+                "and data manipulation must be reviewed for correctness and security."
+            ),
+            ansible_approach=(
+                "Use Ansible database modules (postgresql, mysql, mongodb, etc.) for schema "
+                "and data operations. Store connection details in Secrets. Use transactions "
+                "and error handling for data integrity."
+            ),
+            openshift_primitives=[
+                "Secret (database credentials)",
+                "Service (database endpoint)",
+                "StatefulSet (if hosting database in cluster)",
+            ],
+            implementation_steps=[
+                "Document database type, connection details, and required operations",
+                "Store database credentials in Kubernetes Secret",
+                "Implement Ansible tasks using appropriate database module",
+                "Add idempotency checks (verify before insert/update)",
+                "Implement transaction handling and rollback logic",
+                "Test with representative data in dev environment",
+                "Validate data integrity and query performance",
+            ],
+            required_inputs={
+                "db_type": "Database type (postgresql, mysql, mongodb, etc.)",
+                "db_host": "Database hostname or service name",
+                "db_name": "Database name",
+                "db_credentials": "Secret containing username/password",
+                "operations": "List of database operations (query, insert, update, delete)",
+            },
+            testing_guidance=(
+                "Test database connectivity and authentication. Validate queries return expected "
+                "results. Test idempotency by running tasks multiple times. Verify transaction "
+                "rollback on errors. Test with edge cases and invalid data. Monitor for SQL injection vulnerabilities."
+            ),
+            owner=OwnerRole.APPOPS,
+            references=[
+                "https://docs.ansible.com/ansible/latest/collections/community/postgresql/",
+                "https://docs.ansible.com/ansible/latest/collections/community/mysql/",
+                "https://docs.ansible.com/ansible/latest/collections/community/mongodb/",
+            ],
+            ansible_role_stub="custom_database",
+            ansible_todo_task=(
+                "# TODO: Implement database integration\n"
+                f"# Source: {location or 'unknown'}\n"
+                f"# Evidence: {evidence or 'See gap analysis report'}\n"
+                "# SECURITY: Use parameterized queries to prevent SQL injection\n"
+                "# Review intent/recommendations.md for implementation guidance"
+            ),
+        )
+
 
 def generate_recommendations_from_components(
     components: list,
@@ -545,6 +977,75 @@ def generate_recommendations_from_components(
         # REST API calls
         elif "rest" in component.component_type or "api" in component.component_type:
             rec = RecommendationEngine.generate_rest_api_recommendation(
+                component_name=component.name,
+                location=component.location,
+                evidence=component.evidence,
+            )
+
+        # VM templates
+        elif "template" in component.component_type or "customization" in component.component_type:
+            rec = RecommendationEngine.generate_vm_template_recommendation(
+                component_name=component.name,
+                location=component.location,
+                evidence=component.evidence,
+            )
+
+        # Storage operations
+        elif (
+            "storage" in component.component_type
+            or "datastore" in component.component_type
+            or "disk" in component.component_type
+            or "volume" in component.component_type
+        ):
+            rec = RecommendationEngine.generate_storage_recommendation(
+                component_name=component.name,
+                location=component.location,
+                evidence=component.evidence,
+            )
+
+        # Custom plugins/actions
+        elif (
+            "plugin" in component.component_type
+            or "custom_action" in component.component_type
+            or "script" in component.component_type
+        ):
+            rec = RecommendationEngine.generate_custom_plugin_recommendation(
+                component_name=component.name,
+                location=component.location,
+                evidence=component.evidence,
+            )
+
+        # Credentials/authentication
+        elif (
+            "credential" in component.component_type
+            or "auth" in component.component_type
+            or "secret" in component.component_type
+        ):
+            rec = RecommendationEngine.generate_credentials_recommendation(
+                component_name=component.name,
+                location=component.location,
+                evidence=component.evidence,
+            )
+
+        # Email/notifications
+        elif (
+            "email" in component.component_type
+            or "notification" in component.component_type
+            or "mail" in component.component_type
+        ):
+            rec = RecommendationEngine.generate_notification_recommendation(
+                component_name=component.name,
+                location=component.location,
+                evidence=component.evidence,
+            )
+
+        # Database operations
+        elif (
+            "database" in component.component_type
+            or "db" in component.component_type
+            or "sql" in component.component_type
+        ):
+            rec = RecommendationEngine.generate_database_recommendation(
                 component_name=component.name,
                 location=component.location,
                 evidence=component.evidence,
