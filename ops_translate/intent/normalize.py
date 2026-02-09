@@ -41,6 +41,21 @@ def normalize_intent_schema(intent_data: dict[str, Any]) -> dict[str, Any]:
             if isinstance(param_def, dict) and param_def.get("type") == "number":
                 param_def["type"] = "integer"
 
+    # Normalize profiles (incomplete conditional → simple string/object)
+    if "profiles" in intent and isinstance(intent["profiles"], dict):
+        profiles = intent["profiles"]
+        for profile_key, profile_value in list(profiles.items()):
+            # If profile value is a dict with only 'value' (no 'when'), flatten to simple string
+            if isinstance(profile_value, dict) and "value" in profile_value and "when" not in profile_value:
+                # Convert {value: "foo"} to just "foo"
+                profiles[profile_key] = profile_value["value"]
+            # If profile value is a plain dict without 'value' or 'when', it's invalid
+            # Remove it to avoid schema errors (LLM mistake - profiles should be simple strings or conditionals)
+            elif isinstance(profile_value, dict) and "value" not in profile_value and "when" not in profile_value:
+                # This is likely a malformed profile - log and remove it
+                # E.g., compute: {resource_pool: "Prod-Pool"} should be compute_resource_pool: "Prod-Pool"
+                del profiles[profile_key]
+
     # Normalize metadata tags (dict → array)
     if "metadata" in intent and isinstance(intent["metadata"], dict):
         metadata = intent["metadata"]
