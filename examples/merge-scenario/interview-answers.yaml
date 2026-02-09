@@ -1,0 +1,27 @@
+# Pre-created interview answers for demo
+# In production, VMware SMEs would create this file based on their environment knowledge
+
+answers:
+  - id: network_selection_logic
+    question: "How does your VMware environment select networks for VMs?"
+    answer: "Based on environment variable (dev/prod)"
+    details: "Simple mapping: dev environment uses dev-network, prod environment uses prod-network-vlan100"
+    confidence: high
+
+  - id: approval_routing
+    question: "How are approval requests routed in your environment?"
+    answer: "Email-based approval to ops team"
+    details: "All production VM requests send email to ops-manager@example.com for manual approval"
+    confidence: high
+
+  - id: resource_pool_selection
+    question: "How are resource pools selected for different environments?"
+    answer: "Fixed mapping per environment"
+    details: "Dev VMs → Dev-Pool, Prod VMs → Prod-Pool with guaranteed resources"
+    confidence: high
+
+  - id: storage_selection
+    question: "What storage tier selection logic is used?"
+    answer: "Environment-based tiering"
+    details: "Dev uses NFS storage (dev-nfs-storage), Prod uses SAN storage (storage-gold)"
+    confidence: high

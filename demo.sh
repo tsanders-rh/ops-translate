@@ -110,6 +110,7 @@ press_enter() {
     else
         wait_short
     fi
+    clear
 }
 
 # Cleanup function
@@ -129,11 +130,13 @@ clear
 
 print_header "ops-translate Demo"
 echo -e "${BOLD}AI-assisted migration from VMware automation to OpenShift Virtualization${NC}"
+echo -e "${BOLD}https://github.com/tsanders-rh/ops-translate"
 echo ""
 print_narration "This demo shows the complete workflow:"
 echo -e "  ${CYAN}Initialize → Import → Summarize → Extract → Review → Merge → Validate → Generate${NC}"
 echo ""
-wait_medium
+
+press_enter
 
 # ============================================================================
 # Scene 1: Initialize & Import
@@ -235,6 +238,55 @@ if [ -f "intent/gaps.md" ]; then
 else
     print_narration "No gap analysis generated (mock provider or no complex components)"
 fi
+press_enter
+
+# ============================================================================
+# Scene 4.5: Interactive Interview (Optional)
+# ============================================================================
+print_header "Scene 4.5: Interactive Interview"
+print_narration "Generate targeted questions for PARTIAL/EXPERT-GUIDED components"
+wait_short
+
+# Check if there are any components requiring interview
+if [ -f "intent/gaps.json" ] && grep -q "PARTIAL\|BLOCKED" intent/gaps.json; then
+    print_narration "Generating interview questions for ambiguous components:"
+    run_command "$OPS_CMD intent interview-generate"
+    wait_short
+
+    if [ -f "intent/interview.yaml" ]; then
+        print_narration "Interview questions generated. Example questions:"
+        run_command "cat intent/interview.yaml | head -30"
+        wait_medium
+
+        print_narration "In a real workflow, you would:"
+        echo "  1. Review intent/interview.yaml"
+        echo "  2. Answer questions based on your VMware environment knowledge"
+        echo "  3. Save answers to intent/interview-answers.yaml"
+        echo ""
+        wait_short
+
+        # For demo purposes, check if pre-created answers exist
+        if [ -f "../examples/merge-scenario/interview-answers.yaml" ]; then
+            print_narration "Using pre-created answers for demo:"
+            run_command "cp ../examples/merge-scenario/interview-answers.yaml intent/"
+            wait_short
+
+            print_narration "Applying interview answers to update classifications:"
+            run_command "$OPS_CMD intent interview-apply"
+            wait_medium
+
+            print_narration "Updated gap analysis (classifications improved):"
+            run_command "cat intent/gaps.md | head -40"
+            wait_short
+        else
+            print_narration "Skipping interview application (no answers provided for demo)"
+            echo "  To use in production: ops-translate intent interview-apply"
+        fi
+    fi
+else
+    print_narration "No PARTIAL/EXPERT-GUIDED components detected - skipping interview"
+fi
+
 press_enter
 
 # ============================================================================

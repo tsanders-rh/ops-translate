@@ -11,9 +11,10 @@ This demo shows how ops-translate merges **multiple automation sources** into a 
 1. Import 3 sources (2 PowerCLI scripts + 1 vRealize workflow)
 2. Extract operational intent from each source (with AI)
 3. Review gap analysis
-4. Merge into single unified workflow
-5. Validate with dry-run
-6. Generate KubeVirt and Ansible artifacts
+4. Interactive interview for PARTIAL/EXPERT-GUIDED components (optional)
+5. Merge into single unified workflow
+6. Validate with dry-run
+7. Generate KubeVirt and Ansible artifacts
 
 **Key Feature**: Multi-source merge combines dev provisioning, prod provisioning, and approval workflow into one unified automation.
 
@@ -134,6 +135,46 @@ cat intent/gaps.md | head -40
 ```
 
 **Show:** Gap analysis report with translatability classifications.
+
+---
+
+## Scene 5.5: Interactive Interview (Optional - 60 seconds)
+
+**Narration:**
+> "For components classified as PARTIAL or EXPERT-GUIDED, we can use the interactive interview to capture human expertise and improve translatability."
+
+**Commands:**
+```bash
+# Generate targeted questions for ambiguous components
+ops-translate intent interview-generate
+
+# View the generated interview questions
+cat intent/interview.yaml | head -30
+```
+
+**Show:** Interview questions targeting specific VMware components that need clarification.
+
+**Narration:**
+> "In a real workflow, VMware subject matter experts would review these questions and provide answers based on their environment knowledge. For this demo, we'll use pre-created answers."
+
+**Commands:**
+```bash
+# Copy pre-created answers (in production, SMEs would create this)
+cp ../examples/merge-scenario/interview-answers.yaml intent/
+
+# Apply the answers to update classifications
+ops-translate intent interview-apply
+
+# View updated gap analysis with improved classifications
+cat intent/gaps.md | head -40
+```
+
+**Show:** Updated gap analysis with components promoted from PARTIAL → SUPPORTED or EXPERT-GUIDED → PARTIAL.
+
+**Narration:**
+> "Notice how human expertise improved the translatability classifications. This human-in-the-loop approach captures institutional knowledge and increases automation success."
+
+**Note:** This scene is optional and only runs if PARTIAL or EXPERT-GUIDED components are detected. Skip if using mock LLM or if all components are already SUPPORTED.
 
 ---
 
