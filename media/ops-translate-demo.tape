@@ -1,5 +1,5 @@
-# ops-translate — Multi-Source Merge Demo
-# Professional VHS demo
+# ops-translate — Demo
+# Professional VHS demo (clean shell, deterministic, no continuation prompts)
 # Run from repo root: vhs media/ops-translate-demo.tape
 
 Output media/ops-translate-demo.mp4
@@ -8,307 +8,210 @@ Set Height 720
 Set FontSize 18
 Set Theme "Dracula"
 Set TypingSpeed 50ms
+Set Shell bash
 
-# === Title card (using cat heredoc - clean output) ===
+# === Clean shell setup ===
 Hide
-Type "cat << 'EOF'"
+Type "reset"
 Enter
-Type ""
+Sleep 600ms
+Type "export PS1='$ '"
 Enter
-Type "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-Enter
-Type "  ops-translate — Multi-Source Merge Demo"
-Enter
-Type "  VMware automation → OpenShift Virtualization"
-Enter
-Type "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-Enter
-Type ""
-Enter
-Type "EOF"
-Enter
-Show
-Sleep 3s
-
+Sleep 300ms
 # Clean workspace
+Type "rm -rf demo-workspace || true"
+Enter
+Sleep 500ms
+Type "clear"
+Enter
+Sleep 300ms
+Show
+
+# === Title card ===
+Type "#━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+Enter
+Type "#"
+Enter
+Type "# ops-translate Demo"
+Enter
+Type "#"
+Enter
+Type "# VMware automation to OpenShift Virtualization"
+Enter
+Type "#"
+Enter
+Type "#━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+Enter
+Sleep 2s
 Hide
-Type "rm -rf demo-workspace 2>/dev/null || true && clear"
+Type "clear"
 Enter
 Show
+Sleep 500ms
 
 # === Scene 1: Initialize & Import ===
-Hide
-Type "cat << 'EOF'"
-Enter
-Type ""
-Enter
-Type "━━━ Scene 1: Initialize & Import ━━━"
-Enter
-Type ""
-Enter
-Type "EOF"
-Enter
-Show
-Sleep 1s
+Type "#━━━ Scene 1: Initialize & Import ━━━"
+Enter 2
+Sleep 900ms
 
 Type "ops-translate init demo-workspace"
-Enter
+Enter 2
 Sleep 1.5s
 
 Type "cd demo-workspace"
-Enter
-Sleep 500ms
+Enter 2
+Sleep 600ms
 
 Type "ops-translate import --source powercli --file ../examples/merge-scenario/dev-provision.ps1"
-Enter
-Sleep 1s
+Enter 2
+Sleep 1.2s
 
 Type "ops-translate import --source powercli --file ../examples/merge-scenario/prod-provision.ps1"
-Enter
-Sleep 1s
+Enter 2
+Sleep 1.2s
 
 Type "ops-translate import --source vrealize --file ../examples/merge-scenario/approval.workflow.xml"
-Enter
-Sleep 2s
+Enter 2
+Sleep 1.6s
 
+Type "# ✓ Imported: dev-provision, prod-provision, approval workflow"
+Enter
+Sleep 1.8s
 Hide
 Type "clear"
 Enter
 Show
 
 # === Scene 2: Static Analysis (No AI) ===
-Hide
-Type "cat << 'EOF'"
-Enter
-Type ""
-Enter
-Type "━━━ Scene 2: Static Analysis (No AI) ━━━"
-Enter
-Type ""
-Enter
-Type "EOF"
-Enter
-Show
-Sleep 1s
+Type "#━━━ Scene 2: Static Analysis (No AI) ━━━"
+Enter 2
+Sleep 900ms
 
 Type "ops-translate summarize"
-Enter
+Enter 2
 Sleep 2s
+
+Type "# 📊 Viewing summary..."
+Enter 2
+Sleep 600ms
 
 Type "cat intent/summary.md | head -40"
 Enter
 Sleep 3s
-
 Hide
 Type "clear"
 Enter
 Show
 
 # === Scene 3: Extract Intent (AI) ===
-Hide
-Type "cat << 'EOF'"
-Enter
-Type ""
-Enter
-Type "━━━ Scene 3: Extract Intent (AI) ━━━"
-Enter
-Type ""
-Enter
-Type "EOF"
-Enter
-Show
-Sleep 1s
+Type "# ━━━ Scene 3: Extract Intent (AI) ━━━"
+Enter 2
+Sleep 900ms
 
-Type "# Configure mock provider (no API key needed)"
-Enter
-Type "cat > ops-translate.yaml << 'EOF'"
-Enter
-Type "llm:"
-Enter
-Type "  provider: mock"
-Enter
-Type "  model: mock-model"
-Enter
-Type ""
-Enter
-Type "profiles:"
-Enter
-Type "  lab:"
-Enter
-Type "    default_namespace: virt-lab"
-Enter
-Type "    default_network: lab-network"
-Enter
-Type "    default_storage_class: nfs"
-Enter
-Type "EOF"
-Enter
-Sleep 1s
+Type "cp ../examples/merge-scenario/ops-translate.yaml ."
+Enter 2
+Type "cat ops-translate.yaml"
+Enter 2
 
 Type "ops-translate intent extract"
-Enter
-Sleep 2.5s
+Enter 2
+Sleep 2.8s
 
-Type "ls -1 intent/*.intent.yaml"
+Type "# 🧠 Viewing extracted intent..."
 Enter
-Sleep 1.5s
+Sleep 600ms
 
-Type "cat intent/dev-provision.intent.yaml | head -30"
+Type "cat intent/intent.md | head -45"
 Enter
 Sleep 3s
-
-Hide
 Type "clear"
 Enter
-Show
 
 # === Scene 4: Gap Analysis ===
-Hide
-Type "cat << 'EOF'"
+Type "# ━━━ Scene 4: Gap Analysis ━━━"
 Enter
-Type ""
-Enter
-Type "━━━ Scene 4: Gap Analysis ━━━"
-Enter
-Type ""
-Enter
-Type "EOF"
-Enter
-Show
-Sleep 1s
+Sleep 900ms
 
 Type "if [ -f intent/gaps.md ]; then cat intent/gaps.md | head -40; else echo 'No gaps detected'; fi"
 Enter
 Sleep 3s
-
-Hide
 Type "clear"
 Enter
-Show
 
 # === Scene 5: Merge 3 Files → 1 Unified Workflow ===
-Hide
-Type "cat << 'EOF'"
-Enter
-Type ""
-Enter
-Type "━━━ Scene 5: Merge 3 Files → 1 Unified Workflow ━━━"
-Enter
-Type ""
-Enter
-Type "EOF"
-Enter
-Show
-Sleep 1s
+Type "# ━━━ Scene 5: Merge 3 Files → 1 Unified Workflow ━━━"
+Enter 2
+Sleep 900ms
 
 Type "ops-translate intent merge --force"
-Enter
-Sleep 1.5s
+Enter 2
+Sleep 2.2s
 
-Type "cat intent/intent.yaml | head -40"
-Enter
-Sleep 3.5s
+Type "# 🔀 Viewing merged workflow plan..."
+Enter 2
+Sleep 600ms
 
-Hide
+Type "cat output/merged/merged-plan.md | head -60"
+Enter
+Sleep 3s
 Type "clear"
 Enter
-Show
 
 # === Scene 6: Dry-Run Validation ===
-Hide
-Type "cat << 'EOF'"
-Enter
-Type ""
-Enter
-Type "━━━ Scene 6: Dry-Run Validation ━━━"
-Enter
-Type ""
-Enter
-Type "EOF"
-Enter
-Show
-Sleep 1s
+Type "# ━━━ Scene 6: Dry-Run Validation ━━━"
+Enter 2
+Sleep 900ms
 
 Type "ops-translate dry-run || true"
 Enter
-Sleep 2.5s
-
-Hide
+Sleep 2.6s
 Type "clear"
 Enter
-Show
 
 # === Scene 7: Generate KubeVirt + Ansible ===
-Hide
-Type "cat << 'EOF'"
-Enter
-Type ""
-Enter
-Type "━━━ Scene 7: Generate KubeVirt + Ansible ━━━"
-Enter
-Type ""
-Enter
-Type "EOF"
-Enter
-Show
-Sleep 1s
+Type "# ━━━ Scene 7: Generate KubeVirt + Ansible ━━━"
+Enter 2
+Sleep 900ms
 
 Type "ops-translate generate --profile lab --format yaml"
-Enter
-Sleep 2.5s
+Enter 2
+Sleep 2.2s
 
-Type "tree output/ || ls -R output/"
-Enter
-Sleep 2s
+Type "# 📄 KubeVirt VM spec..."
+Enter 2
+Sleep 600ms
 
 Type "cat output/kubevirt/vm.yaml | head -30"
-Enter
-Sleep 2.5s
+Enter 2
+Sleep 3s
+
+Type "# 📄 Ansible playbook..."
+Enter 2
+Sleep 600ms
 
 Type "cat output/ansible/site.yml | head -20"
 Enter
 Sleep 3s
-
-Hide
 Type "clear"
 Enter
-Show
 
 # === Wrap-up ===
-Hide
-Type "cat << 'EOF'"
+Type "# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 Enter
-Type ""
+Type "#  Outcome:"
 Enter
-Type "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+Type "#  • dev-provision.ps1 → Fast lab provisioning"
 Enter
-Type "  ✓ Demo Complete!"
+Type "#  • prod-provision.ps1 → Governed prod provisioning"
 Enter
-Type "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+Type "#  • approval.workflow.xml → vRealize approval routing"
+Enter 2
+Type "#   Single workflow handling both environments"
 Enter
-Type ""
+Type "# GitHub: github.com/tsanders-rh/ops-translate"
 Enter
-Type "Merged 3 sources into 1 unified workflow:"
+Type "# License: Apache-2.0"
 Enter
-Type "  • dev-provision.ps1 → Quick dev provisioning"
+Type "# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 Enter
-Type "  • prod-provision.ps1 → Governed prod provisioning"
-Enter
-Type "  • approval.workflow.xml → vRealize approval routing"
-Enter
-Type "  ↓"
-Enter
-Type "  Single workflow handling both environments"
-Enter
-Type ""
-Enter
-Type "GitHub: github.com/tsanders-rh/ops-translate"
-Enter
-Type "License: Apache-2.0"
-Enter
-Type ""
-Enter
-Type "EOF"
-Enter
-Show
 Sleep 3s
