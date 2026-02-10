@@ -221,7 +221,9 @@ def summarize():
             summary_lines.append("## PowerCLI Scripts\n")
             for ps_file in ps_files:
                 file_count += 1
-                progress.update(task, description=f"Analyzing {ps_file.name} ({file_count}/{total_files})")
+                progress.update(
+                    task, description=f"Analyzing {ps_file.name} ({file_count}/{total_files})"
+                )
                 summary = powercli.summarize(ps_file)
                 summary_lines.append(f"### {ps_file.name}\n")
                 summary_lines.append(summary + "\n")
@@ -232,7 +234,9 @@ def summarize():
             summary_lines.append("## vRealize Workflows\n")
             for xml_file in xml_files:
                 file_count += 1
-                progress.update(task, description=f"Analyzing {xml_file.name} ({file_count}/{total_files})")
+                progress.update(
+                    task, description=f"Analyzing {xml_file.name} ({file_count}/{total_files})"
+                )
                 summary = vrealize.summarize(xml_file)
                 summary_lines.append(f"### {xml_file.name}\n")
                 summary_lines.append(summary + "\n")

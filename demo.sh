@@ -273,7 +273,7 @@ if [ -f "intent/gaps.json" ] && grep -q "PARTIAL\|BLOCKED" intent/gaps.json; the
 
             print_narration "Applying interview answers to update classifications:"
             run_command "$OPS_CMD intent interview-apply"
-            wait_medium
+            press_enter
 
             print_narration "Updated gap analysis (classifications improved):"
             run_command "cat intent/gaps.md | head -40"
@@ -334,15 +334,19 @@ else
     run_command "ls -R output/"
     echo ""
 fi
-wait_short
+press_enter
 
 print_narration "KubeVirt VirtualMachine manifest:"
 run_command "cat output/kubevirt/vm.yaml | head -30"
-wait_short
-
-print_narration "Ansible playbook with environment-aware tasks:"
-run_command "cat output/ansible/site.yml | head -20"
 press_enter
+
+print_narration "Ansible playbook structure:"
+run_command "cat output/ansible/site.yml"
+press_enter
+
+  print_narration "Ansible tasks with gap analysis TODOs:"
+  run_command "cat output/ansible/roles/provision_vm/tasks/main.yml | head -40"
+  press_enter
 
 # ============================================================================
 # Wrap-up

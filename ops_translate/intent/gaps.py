@@ -142,7 +142,9 @@ def _write_markdown_report(
             f.write(
                 "This workflow contains components solved with **production-grade patterns from Red Hat experts**. "
             )
-            f.write("These proven migration patterns are available through Red Hat consulting and services.\n\n")
+            f.write(
+                "These proven migration patterns are available through Red Hat consulting and services.\n\n"
+            )
         elif summary["requires_manual_work"]:
             f.write("### ℹ️ Manual Configuration Needed\n\n")
             f.write("This workflow can be mostly automated, but some components require ")
@@ -228,11 +230,15 @@ def _write_markdown_report(
         # Footer with next steps
         f.write("## Next Steps\n\n")
         if summary["has_blocking_issues"]:
-            f.write("1. **Review Expert-Guided and Custom components** with infrastructure specialists\n")
+            f.write(
+                "1. **Review Expert-Guided and Custom components** with infrastructure specialists\n"
+            )
             f.write("2. **Consult Red Hat experts** for production-grade migration patterns\n")
             f.write("3. **Decide on migration path** (A/B/C) for each component\n")
             f.write("4. **Run `ops-translate generate`** to create scaffolding with TODOs\n")
-            f.write("5. **Implement custom components** following generated guidance and patterns\n")
+            f.write(
+                "5. **Implement custom components** following generated guidance and patterns\n"
+            )
         elif summary["requires_manual_work"]:
             f.write("1. **Run `ops-translate generate`** to create Ansible playbooks\n")
             f.write("2. **Review generated TODO tasks** for PARTIAL components\n")
