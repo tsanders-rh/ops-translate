@@ -64,7 +64,7 @@ class TestImport:
             )
 
             assert result.exit_code == 0
-            assert "Imported to input/powercli/test.ps1" in result.stdout
+            assert "✓ Imported 1 file(s) to input/powercli/" in result.stdout
             assert (workspace / "input" / "powercli" / "test.ps1").exists()
         finally:
             os.chdir(original_dir)
@@ -157,6 +157,262 @@ class TestImport:
         # Check for new error message format
         assert "workspace" in result.stdout.lower()
         assert "init" in result.stdout
+
+    def test_import_powercli_directory(self, tmp_path):
+        """Test importing multiple PowerCLI scripts from directory."""
+        # Setup workspace
+        workspace = tmp_path / "workspace"
+        runner.invoke(app, ["init", str(workspace)])
+
+        # Create directory with multiple PowerCLI scripts
+        scripts_dir = tmp_path / "scripts"
+        scripts_dir.mkdir()
+        (scripts_dir / "create_vm.ps1").write_text("New-VM -Name test")
+        (scripts_dir / "delete_vm.ps1").write_text("Remove-VM -Name test")
+        (scripts_dir / "modify_vm.ps1").write_text("Set-VM -Name test")
+
+        # Change to workspace directory
+        import os
+
+        original_dir = os.getcwd()
+        try:
+            os.chdir(workspace)
+
+            result = runner.invoke(
+                app,
+                ["import", "--source", "powercli", "--file", str(scripts_dir)],
+            )
+
+            assert result.exit_code == 0
+            assert "Importing 3 powercli files" in result.stdout
+            assert (workspace / "input" / "powercli" / "create_vm.ps1").exists()
+            assert (workspace / "input" / "powercli" / "delete_vm.ps1").exists()
+            assert (workspace / "input" / "powercli" / "modify_vm.ps1").exists()
+        finally:
+            os.chdir(original_dir)
+
+    def test_import_vrealize_directory(self, tmp_path):
+        """Test importing multiple vRealize workflows from directory."""
+        # Setup workspace
+        workspace = tmp_path / "workspace"
+        runner.invoke(app, ["init", str(workspace)])
+
+        # Create directory with multiple workflows
+        workflows_dir = tmp_path / "workflows"
+        workflows_dir.mkdir()
+        (workflows_dir / "workflow1.xml").write_text(
+            "<?xml version='1.0'?><workflow name='w1'></workflow>"
+        )
+        (workflows_dir / "workflow2.xml").write_text(
+            "<?xml version='1.0'?><workflow name='w2'></workflow>"
+        )
+
+        import os
+
+        original_dir = os.getcwd()
+        try:
+            os.chdir(workspace)
+
+            result = runner.invoke(
+                app,
+                ["import", "--source", "vrealize", "--file", str(workflows_dir)],
+            )
+
+            assert result.exit_code == 0
+            assert "Importing 2 vrealize files" in result.stdout
+            assert (workspace / "input" / "vrealize" / "workflow1.xml").exists()
+            assert (workspace / "input" / "vrealize" / "workflow2.xml").exists()
+        finally:
+            os.chdir(original_dir)
+
+    def test_import_directory_empty(self, tmp_path):
+        """Test importing from empty directory."""
+        workspace = tmp_path / "workspace"
+        runner.invoke(app, ["init", str(workspace)])
+
+        # Create empty directory
+        empty_dir = tmp_path / "empty"
+        empty_dir.mkdir()
+
+        import os
+
+        original_dir = os.getcwd()
+        try:
+            os.chdir(workspace)
+
+            result = runner.invoke(
+                app,
+                ["import", "--source", "powercli", "--file", str(empty_dir)],
+            )
+
+            assert result.exit_code == 0
+            assert "No *.ps1 files found" in result.stdout
+        finally:
+            os.chdir(original_dir)
+
+    def test_import_directory_with_duplicates(self, tmp_path):
+        """Test importing directory with already imported files."""
+        workspace = tmp_path / "workspace"
+        runner.invoke(app, ["init", str(workspace)])
+
+        # Create directory with scripts
+        scripts_dir = tmp_path / "scripts"
+        scripts_dir.mkdir()
+        (scripts_dir / "test.ps1").write_text("New-VM -Name test")
+
+        import os
+
+        original_dir = os.getcwd()
+        try:
+            os.chdir(workspace)
+
+            # Import once
+            result1 = runner.invoke(
+                app,
+                ["import", "--source", "powercli", "--file", str(scripts_dir)],
+            )
+            assert result1.exit_code == 0
+
+            # Import again - should skip
+            result2 = runner.invoke(
+                app,
+                ["import", "--source", "powercli", "--file", str(scripts_dir)],
+            )
+            assert result2.exit_code == 0
+            assert "already imported, skipping" in result2.stdout
+        finally:
+            os.chdir(original_dir)
+
+    def test_import_directory_mixed_files(self, tmp_path):
+        """Test importing directory with mixed file types."""
+        workspace = tmp_path / "workspace"
+        runner.invoke(app, ["init", str(workspace)])
+
+        # Create directory with mixed files
+        mixed_dir = tmp_path / "mixed"
+        mixed_dir.mkdir()
+        (mixed_dir / "script.ps1").write_text("New-VM")
+        (mixed_dir / "readme.txt").write_text("Documentation")
+        (mixed_dir / "config.xml").write_text("<config/>")
+
+        import os
+
+        original_dir = os.getcwd()
+        try:
+            os.chdir(workspace)
+
+            # Import with powercli source - should only get .ps1
+            result = runner.invoke(
+                app,
+                ["import", "--source", "powercli", "--file", str(mixed_dir)],
+            )
+
+            assert result.exit_code == 0
+            assert "Importing powercli file: script.ps1" in result.stdout
+            assert (workspace / "input" / "powercli" / "script.ps1").exists()
+            assert not (workspace / "input" / "powercli" / "readme.txt").exists()
+            assert not (workspace / "input" / "powercli" / "config.xml").exists()
+        finally:
+            os.chdir(original_dir)
+
+    def test_import_auto_detect_powercli_file(self, tmp_path):
+        """Test auto-detecting PowerCLI file without --source."""
+        workspace = tmp_path / "workspace"
+        runner.invoke(app, ["init", str(workspace)])
+
+        # Create test script
+        test_script = tmp_path / "test.ps1"
+        test_script.write_text("New-VM -Name test")
+
+        import os
+
+        original_dir = os.getcwd()
+        try:
+            os.chdir(workspace)
+
+            result = runner.invoke(app, ["import", "--file", str(test_script)])
+
+            assert result.exit_code == 0
+            assert "✓ Imported 1 file(s) to input/powercli/" in result.stdout
+            assert (workspace / "input" / "powercli" / "test.ps1").exists()
+        finally:
+            os.chdir(original_dir)
+
+    def test_import_auto_detect_vrealize_file(self, tmp_path):
+        """Test auto-detecting vRealize file without --source."""
+        workspace = tmp_path / "workspace"
+        runner.invoke(app, ["init", str(workspace)])
+
+        # Create test workflow
+        test_workflow = tmp_path / "workflow.xml"
+        test_workflow.write_text("<?xml version='1.0'?><workflow></workflow>")
+
+        import os
+
+        original_dir = os.getcwd()
+        try:
+            os.chdir(workspace)
+
+            result = runner.invoke(app, ["import", "--file", str(test_workflow)])
+
+            assert result.exit_code == 0
+            assert (workspace / "input" / "vrealize" / "workflow.xml").exists()
+        finally:
+            os.chdir(original_dir)
+
+    def test_import_auto_detect_mixed_directory(self, tmp_path):
+        """Test auto-detecting both PowerCLI and vRealize files from directory."""
+        workspace = tmp_path / "workspace"
+        runner.invoke(app, ["init", str(workspace)])
+
+        # Create directory with both types
+        mixed_dir = tmp_path / "mixed"
+        mixed_dir.mkdir()
+        (mixed_dir / "script1.ps1").write_text("New-VM")
+        (mixed_dir / "script2.ps1").write_text("Remove-VM")
+        (mixed_dir / "workflow1.xml").write_text("<workflow/>")
+        (mixed_dir / "readme.txt").write_text("Documentation")
+
+        import os
+
+        original_dir = os.getcwd()
+        try:
+            os.chdir(workspace)
+
+            result = runner.invoke(app, ["import", "--file", str(mixed_dir)])
+
+            assert result.exit_code == 0
+            assert "Auto-detecting" in result.stdout
+            assert "PowerCLI scripts (2 files)" in result.stdout
+            assert "vRealize workflows (1 files)" in result.stdout
+            assert (workspace / "input" / "powercli" / "script1.ps1").exists()
+            assert (workspace / "input" / "powercli" / "script2.ps1").exists()
+            assert (workspace / "input" / "vrealize" / "workflow1.xml").exists()
+            assert not (workspace / "input" / "powercli" / "readme.txt").exists()
+        finally:
+            os.chdir(original_dir)
+
+    def test_import_auto_detect_unsupported_file(self, tmp_path):
+        """Test auto-detecting file with unsupported extension."""
+        workspace = tmp_path / "workspace"
+        runner.invoke(app, ["init", str(workspace)])
+
+        # Create file with unsupported extension
+        test_file = tmp_path / "test.txt"
+        test_file.write_text("test content")
+
+        import os
+
+        original_dir = os.getcwd()
+        try:
+            os.chdir(workspace)
+
+            result = runner.invoke(app, ["import", "--file", str(test_file)])
+
+            assert result.exit_code == 1
+            assert "Cannot auto-detect file type" in result.stdout
+        finally:
+            os.chdir(original_dir)
 
 
 class TestSummarize:

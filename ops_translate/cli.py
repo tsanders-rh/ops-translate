@@ -119,49 +119,192 @@ def init(
 @app.command(name="import")
 @handle_errors
 def import_cmd(
-    source: str = typer.Option(..., "--source", help="Source type (powercli|vrealize)"),
-    file: str = typer.Option(..., "--file", help="Path to file to import"),
+    source: str | None = typer.Option(
+        None, "--source", help="Source type (powercli|vrealize), auto-detected if omitted"
+    ),
+    file: str = typer.Option(..., "--file", help="Path to file or directory to import"),
 ):
-    """Import a PowerCLI script or vRealize workflow."""
-    # Validate source type
-    if source not in ["powercli", "vrealize"]:
+    """Import PowerCLI scripts or vRealize workflows from a file or directory.
+
+    If --source is omitted, file types are auto-detected based on extension:
+    - *.ps1 files are imported as powercli
+    - *.xml files are imported as vrealize
+    """
+    # Validate source type if provided
+    if source and source not in ["powercli", "vrealize"]:
         raise InvalidSourceTypeError(source)
 
-    # Check file exists and validate
+    # Check path exists
     source_path = Path(file)
     if not source_path.exists():
         raise OpsFileNotFoundError(str(source_path))
-
-    # Validate it's a file, not a directory
-    if not source_path.is_file():
-        raise OpsFileNotFoundError(f"{source_path} is not a file")
-
-    # Check file size to prevent DoS
-    file_size = source_path.stat().st_size
-    if file_size > MAX_IMPORT_FILE_SIZE:
-        raise ValueError(
-            f"File too large: {file_size:,} bytes. "
-            f"Maximum allowed: {MAX_IMPORT_FILE_SIZE:,} bytes (50 MB)"
-        )
-
-    # Check file is readable
-    if not os.access(source_path, os.R_OK):
-        raise PermissionError(f"Cannot read file: {source_path}")
 
     # Ensure we're in a workspace
     workspace = Workspace(Path.cwd())
     if not workspace.config_file.exists():
         raise WorkspaceNotFoundError()
 
+    # Auto-detect mode: import both PowerCLI and vRealize files
+    if source is None:
+        if source_path.is_file():
+            # Detect source type from file extension
+            if source_path.suffix == ".ps1":
+                source = "powercli"
+            elif source_path.suffix == ".xml":
+                source = "vrealize"
+            else:
+                console.print(
+                    f"[yellow]Cannot auto-detect file type for {source_path.name}[/yellow]"
+                )
+                console.print(
+                    "Use --source to specify type explicitly (powercli or vrealize)"
+                )
+                raise typer.Exit(1)
+        else:
+            # Directory: import both types
+            _import_directory_auto(source_path, workspace)
+            return
+
+    # Single source type import (explicit or auto-detected)
+    _import_single_source(source, source_path, workspace)
+
+
+def _import_directory_auto(source_path: Path, workspace: Workspace):
+    """Import both PowerCLI and vRealize files from a directory."""
+    # Find all PowerCLI and vRealize files
+    ps1_files = list(source_path.glob("*.ps1"))
+    xml_files = list(source_path.glob("*.xml"))
+
+    total_files = len(ps1_files) + len(xml_files)
+
+    if total_files == 0:
+        console.print(
+            f"No PowerCLI (*.ps1) or vRealize (*.xml) files found in {source_path.name}",
+            style="yellow",
+        )
+        return
+
+    console.print(
+        f"[bold blue]Auto-detecting and importing files from {source_path.name}[/bold blue]"
+    )
+
+    # Import PowerCLI files
+    if ps1_files:
+        console.print(f"\n[dim]PowerCLI scripts ({len(ps1_files)} files):[/dim]")
+        for ps1_file in ps1_files:
+            _import_file(ps1_file, "powercli", workspace)
+
+    # Import vRealize files
+    if xml_files:
+        console.print(f"\n[dim]vRealize workflows ({len(xml_files)} files):[/dim]")
+        for xml_file in xml_files:
+            _import_file(xml_file, "vrealize", workspace)
+
+    # Summary
+    console.print()
+    console.print(f"[green]✓ Imported {total_files} file(s) total[/green]")
+    if ps1_files:
+        console.print(f"[green]  • {len(ps1_files)} PowerCLI script(s)[/green]")
+    if xml_files:
+        console.print(f"[green]  • {len(xml_files)} vRealize workflow(s)[/green]")
+
+
+def _import_single_source(source: str, source_path: Path, workspace: Workspace):
+    """Import files for a single source type."""
+    # Determine file pattern based on source type
+    file_pattern = "*.ps1" if source == "powercli" else "*.xml"
+
+    # Get list of files to import
+    files_to_import = []
+    if source_path.is_file():
+        files_to_import = [source_path]
+    elif source_path.is_dir():
+        # Find all matching files in directory
+        files_to_import = list(source_path.glob(file_pattern))
+        if not files_to_import:
+            # Disable markup to avoid issues with glob patterns like *.ps1
+            console.print(
+                f"No {file_pattern} files found in {source_path}", style="yellow"
+            )
+            return  # Not an error, just no files to import
+    else:
+        raise OpsFileNotFoundError(f"{source_path} is not a file or directory")
+
+    # Display import plan
+    if len(files_to_import) == 1:
+        console.print(
+            f"[bold blue]Importing {source} file:[/bold blue] "
+            f"{files_to_import[0].name}"
+        )
+    else:
+        console.print(
+            f"[bold blue]Importing {len(files_to_import)} {source} files "
+            f"from {source_path.name}[/bold blue]"
+        )
+
+    # Import each file
+    imported_files = []
+    for file_path in files_to_import:
+        result = _import_file(file_path, source, workspace)
+        if result:
+            imported_files.append(result)
+
+    # Print summary
+    console.print()
+    if imported_files:
+        console.print(
+            f"[green]✓ Imported {len(imported_files)} file(s) to "
+            f"input/{source}/[/green]"
+        )
+        if len(imported_files) == 1:
+            console.print(f"[green]✓ SHA256: {imported_files[0][2]}[/green]")
+    else:
+        console.print("[yellow]No new files imported[/yellow]")
+
+
+def _import_file(
+    file_path: Path, source: str, workspace: Workspace
+) -> tuple[str, Path, str] | None:
+    """
+    Import a single file to the workspace.
+
+    Returns:
+        Tuple of (filename, dest_path, file_hash) if imported, None if skipped
+    """
+    # Check file size to prevent DoS
+    file_size = file_path.stat().st_size
+    if file_size > MAX_IMPORT_FILE_SIZE:
+        console.print(
+            f"[yellow]⚠ Skipping {file_path.name}: File too large "
+            f"({file_size:,} bytes, max {MAX_IMPORT_FILE_SIZE:,})[/yellow]"
+        )
+        return None
+
+    # Check file is readable
+    if not os.access(file_path, os.R_OK):
+        console.print(
+            f"[yellow]⚠ Skipping {file_path.name}: Cannot read file[/yellow]"
+        )
+        return None
+
     # Copy file to input directory
     input_dir = workspace.root / "input" / source
-    dest_path = input_dir / source_path.name
+    dest_path = input_dir / file_path.name
 
     # Ensure input directory exists before copying
     ensure_dir(input_dir)
 
-    console.print(f"[bold blue]Importing {source} file:[/bold blue] {source_path.name}")
-    shutil.copy2(source_path, dest_path)
+    # Skip if file already exists with same content
+    if dest_path.exists():
+        existing_hash = sha256_file(dest_path)
+        new_hash = sha256_file(file_path)
+        if existing_hash == new_hash:
+            console.print(
+                f"[dim]  ✓ {file_path.name} (already imported, skipping)[/dim]"
+            )
+            return None
+
+    shutil.copy2(file_path, dest_path)
 
     # Compute hash and write metadata
     file_hash = sha256_file(dest_path)
@@ -172,18 +315,15 @@ def import_cmd(
     metadata = {
         "timestamp": timestamp,
         "source_type": source,
-        "original_file": str(source_path.absolute()),
+        "original_file": str(file_path.absolute()),
         "imported_file": str(dest_path.relative_to(workspace.root)),
         "sha256": file_hash,
     }
 
     write_text(run_dir / "import.json", json.dumps(metadata, indent=2))
 
-    console.print(f"[green]✓ Imported to {dest_path.relative_to(workspace.root)}[/green]")
-    console.print(f"[green]✓ SHA256: {file_hash}[/green]")
-    console.print(
-        f"[green]✓ Metadata saved to {run_dir.relative_to(workspace.root)}/import.json[/green]"
-    )
+    console.print(f"[green]  ✓ {file_path.name}[/green]")
+    return (file_path.name, dest_path, file_hash)
 
 
 @app.command()
