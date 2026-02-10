@@ -38,8 +38,8 @@ class TestTranslatabilityLevel:
         """Test emoji representations."""
         assert TranslatabilityLevel.SUPPORTED.emoji == "✅"
         assert TranslatabilityLevel.PARTIAL.emoji == "⚠️"
-        assert TranslatabilityLevel.BLOCKED.emoji == "🚫"
-        assert TranslatabilityLevel.MANUAL.emoji == "👷"
+        assert TranslatabilityLevel.BLOCKED.emoji == "🎯"  # Expert-Guided
+        assert TranslatabilityLevel.MANUAL.emoji == "🔧"  # Custom Implementation
 
     def test_severity_property(self):
         """Test severity scores for sorting."""

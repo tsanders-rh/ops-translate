@@ -159,12 +159,12 @@ class TestGenerateGapReports:
 
             md_content = (output_dir / "gaps.md").read_text()
 
-            # Should show action required section
-            assert "⚠️ Action Required" in md_content
-            assert "cannot be automatically translated" in md_content
+            # Should show expert-guided migration available section
+            assert "🎯 Expert-Guided Migration Available" in md_content
+            assert "production-grade patterns from Red Hat experts" in md_content
 
-            # Should show MANUAL components section
-            assert "👷 MANUAL Components" in md_content
+            # Should show Custom Implementation components section
+            assert "🔧 Custom Implementation Components" in md_content
 
     def test_markdown_report_partial_components(self):
         """Test Markdown report for workflows with only partial components."""
@@ -359,10 +359,10 @@ class TestGenerateGapReports:
 
             md_content = (output_dir / "gaps.md").read_text()
 
-            # Check for blocking-specific next steps
-            assert "Review BLOCKED and MANUAL components" in md_content
+            # Check for blocking-specific next steps (updated terminology)
+            assert "Review Expert-Guided and Custom components" in md_content
             assert "Decide on migration path" in md_content
-            assert "Create implementation plan" in md_content
+            assert "Consult Red Hat experts" in md_content
 
     def test_next_steps_for_partial_workflow(self):
         """Test Next Steps for workflows with only partial components."""
