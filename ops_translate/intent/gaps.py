@@ -140,10 +140,12 @@ def _write_markdown_report(
         if summary["has_blocking_issues"]:
             f.write("### 🎯 Expert-Guided Migration Available\n\n")
             f.write(
-                "This workflow contains components solved with **production-grade patterns from Red Hat experts**. "
+                "This workflow contains components solved with "
+                "**production-grade patterns from Red Hat experts**. "
             )
             f.write(
-                "These proven migration patterns are available through Red Hat consulting and services.\n\n"
+                "These proven migration patterns are available through "
+                "Red Hat consulting and services.\n\n"
             )
         elif summary["requires_manual_work"]:
             f.write("### ℹ️ Manual Configuration Needed\n\n")
@@ -231,7 +233,8 @@ def _write_markdown_report(
         f.write("## Next Steps\n\n")
         if summary["has_blocking_issues"]:
             f.write(
-                "1. **Review Expert-Guided and Custom components** with infrastructure specialists\n"
+                "1. **Review Expert-Guided and Custom components** "
+                "with infrastructure specialists\n"
             )
             f.write("2. **Consult Red Hat experts** for production-grade migration patterns\n")
             f.write("3. **Decide on migration path** (A/B/C) for each component\n")

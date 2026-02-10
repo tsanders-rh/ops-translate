@@ -5,9 +5,7 @@ Generates static HTML reports summarizing intent, gaps, assumptions, and generat
 artifacts for human review before deployment.
 """
 
-import json
 import logging
-from datetime import datetime
 from pathlib import Path
 from typing import Any, cast
 
@@ -15,6 +13,11 @@ import markdown
 import yaml
 from jinja2 import Environment, FileSystemLoader
 
+from ops_translate.report.loaders import (
+    ReportContextBuilder,
+    ReportDataLoader,
+    ReportFileLocator,
+)
 from ops_translate.workspace import Workspace
 
 logger = logging.getLogger(__name__)
@@ -80,6 +83,8 @@ def build_report_context(workspace: Workspace, profile: str | None = None) -> di
     Build data context for report template.
 
     Consolidates all workspace artifacts into a structured dict for rendering.
+    Now uses decoupled components (FileLocator, DataLoader, ContextBuilder) for
+    better testability and maintainability.
 
     Args:
         workspace: Workspace instance
@@ -110,80 +115,69 @@ def build_report_context(workspace: Workspace, profile: str | None = None) -> di
 
     profile_config = config.get("profiles", {}).get(profile, {})
 
-    # Load gaps data first (needed for source file status)
-    gaps_data = _load_gaps_data(workspace)
-    recommendations_data = _load_recommendations_data(workspace)
-    decisions_data = _load_decisions_data(workspace)
-    questions_data = _load_questions_data(workspace)
+    # Use new decoupled components for file loading
+    locator = ReportFileLocator(workspace)
+    loader = ReportDataLoader()
 
-    # Build context
-    context: dict[str, Any] = {
-        "workspace": {
-            "name": workspace.root.name,
-            "path": str(workspace.root),
-            "timestamp": datetime.now().isoformat(),
-        },
-        "profile": {
-            "name": profile,
-            "config": profile_config,
-        },
-        "sources": _load_source_files(workspace, gaps_data),
-        "intent": _load_intent_data(workspace),
-        "gaps": gaps_data,
-        "recommendations": recommendations_data,
-        "decisions": decisions_data,
-        "questions": questions_data,
-        "assumptions_md": _load_markdown_file(workspace.root / "intent/assumptions.md"),
-        "conflicts_md": _load_markdown_file(workspace.root / "intent/conflicts.md"),
-        "artifacts": _detect_generated_artifacts(workspace),
-        "summary": {},  # Will be populated from gaps/intent
-    }
+    # Load data files using new components
+    gaps_data = None
+    if gaps_file := locator.gaps_file():
+        gaps_data = loader.load_json(gaps_file)
 
-    # Build summary from gaps if available
-    if context["gaps"]:
-        context["summary"] = context["gaps"].get("summary", {})
-    else:
-        # Fallback summary if no gaps
-        context["summary"] = {
-            "total_components": 0,
-            "overall_assessment": "UNKNOWN",
-            "counts": {"SUPPORTED": 0, "PARTIAL": 0, "BLOCKED": 0, "MANUAL": 0},
-            "has_blocking_issues": False,
-            "requires_manual_work": False,
-        }
+    recommendations_data = None
+    if recs_file := locator.recommendations_file():
+        recommendations_data = loader.load_json(recs_file)
 
-    # Generate executive summary
-    context["executive_summary"] = _generate_executive_summary(context["summary"], context["gaps"])
+    decisions_data = None
+    if decisions_file := locator.decisions_file():
+        decisions_data = loader.load_yaml(decisions_file)
 
-    # Consolidate SUPPORTED patterns to reduce repetition
-    if context["gaps"]:
-        context["consolidated_supported"] = _consolidate_supported_patterns(context["gaps"])
-    else:
-        context["consolidated_supported"] = []
+    questions_data = None
+    if questions_file := locator.questions_file():
+        questions_data = loader.load_json(questions_file)
 
-    # Build questions lookup by component location
-    if questions_data and "questions" in questions_data:
-        questions_by_location: dict[str, list[dict[str, Any]]] = {}
-        for question in questions_data["questions"]:
-            location = question.get("location")  # Questions use "location" not "component_location"
-            if location:
-                if location not in questions_by_location:
-                    questions_by_location[location] = []
-                questions_by_location[location].append(question)
-        context["questions_by_location"] = questions_by_location
-    else:
-        context["questions_by_location"] = {}
+    # Load workspace-specific data (these still have custom logic)
+    intent_data = _load_intent_data(workspace)
+    sources = _load_source_files(workspace, gaps_data)
+    artifacts = _detect_generated_artifacts(workspace)
 
-    # Build recommendations lookup by component name
-    if recommendations_data and "recommendations" in recommendations_data:
-        recommendations_by_component: dict[str, dict[str, Any]] = {}
-        for rec in recommendations_data["recommendations"]:
-            component_name = rec.get("component_name")
-            if component_name:
-                recommendations_by_component[component_name] = rec
-        context["recommendations_by_component"] = recommendations_by_component
-    else:
-        context["recommendations_by_component"] = {}
+    # Load markdown files
+    assumptions_md = None
+    if assumptions_file := locator.assumptions_file():
+        assumptions_md = _load_markdown_file(assumptions_file)
+
+    conflicts_md = None
+    if conflicts_file := locator.conflicts_file():
+        conflicts_md = _load_markdown_file(conflicts_file)
+
+    # Generate executive summary and consolidate supported patterns
+    executive_summary = _generate_executive_summary(
+        gaps_data.get("summary", {}) if gaps_data else {}, gaps_data
+    )
+
+    consolidated_supported = []
+    if gaps_data:
+        consolidated_supported = _consolidate_supported_patterns(gaps_data)
+
+    # Use ContextBuilder to assemble final context
+    builder = ReportContextBuilder()
+    context = builder.build(
+        workspace_name=workspace.root.name,
+        workspace_path=str(workspace.root),
+        profile=profile,
+        profile_config=profile_config,
+        gaps_data=gaps_data,
+        recommendations_data=recommendations_data,
+        decisions_data=decisions_data,
+        questions_data=questions_data,
+        intent_data=intent_data,
+        sources=sources,
+        assumptions_md=assumptions_md,
+        conflicts_md=conflicts_md,
+        artifacts=artifacts,
+        executive_summary=executive_summary,
+        consolidated_supported=consolidated_supported,
+    )
 
     return context
 
@@ -452,81 +446,6 @@ def _load_intent_data(workspace: Workspace) -> dict[str, Any] | None:
                 continue
 
     return None
-
-
-def _load_gaps_data(workspace: Workspace) -> dict[str, Any] | None:
-    """
-    Load gaps.json data if available.
-
-    Returns:
-        Gaps data dict or None if not found
-    """
-    gaps_file = workspace.root / "intent/gaps.json"
-    if not gaps_file.exists():
-        return None
-
-    try:
-        return cast(dict[str, Any], json.loads(gaps_file.read_text()))
-    except json.JSONDecodeError as e:
-        logger.warning(f"Failed to parse {gaps_file}: {e}")
-        return None
-
-
-def _load_recommendations_data(workspace: Workspace) -> dict[str, Any] | None:
-    """
-    Load recommendations.json data if available.
-
-    Returns:
-        Recommendations data dict or None if not found
-    """
-    recommendations_file = workspace.root / "intent/recommendations.json"
-    if not recommendations_file.exists():
-        return None
-
-    try:
-        return cast(dict[str, Any], json.loads(recommendations_file.read_text()))
-    except json.JSONDecodeError as e:
-        logger.warning(f"Failed to parse {recommendations_file}: {e}")
-        return None
-
-
-def _load_decisions_data(workspace: Workspace) -> dict[str, Any] | None:
-    """
-    Load decisions.yaml data if available.
-
-    Returns:
-        Decisions data dict or None if not found
-    """
-    decisions_file = workspace.root / "intent/decisions.yaml"
-    if not decisions_file.exists():
-        return None
-
-    try:
-        return cast(dict[str, Any], yaml.safe_load(decisions_file.read_text()))
-    except yaml.YAMLError as e:
-        logger.warning(f"Failed to parse {decisions_file}: {e}")
-        return None
-
-
-def _load_questions_data(workspace: Workspace) -> dict[str, Any] | None:
-    """
-    Load questions.json data if available.
-
-    Returns:
-        Questions data dict or None if not found
-    """
-    questions_file = workspace.root / "intent/questions.json"
-    if not questions_file.exists():
-        return None
-
-    try:
-        return cast(dict[str, Any], json.loads(questions_file.read_text()))
-    except json.JSONDecodeError as e:
-        logger.warning(f"Failed to parse {questions_file}: {e}")
-        return None
-    except OSError as e:
-        logger.warning(f"Failed to read {questions_file}: {e}")
-        return None
 
 
 def _load_markdown_file(file_path: Path) -> str | None:

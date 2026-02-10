@@ -2,12 +2,12 @@
 Ansible playbook and role generation.
 """
 
-import json
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 import yaml
 
+from ops_translate.report.loaders import ReportDataLoader, ReportFileLocator
 from ops_translate.util.files import ensure_dir, write_text
 from ops_translate.workspace import Workspace
 
@@ -33,9 +33,17 @@ def generate(workspace: Workspace, profile: str, use_ai: bool = False):
     config = workspace.load_config()
     profile_config = config["profiles"][profile]
 
-    # Load gap analysis data if available
-    gaps_data = _load_gaps_data(workspace)
-    recommendations_data = _load_recommendations_data(workspace)
+    # Load gap analysis data if available (using decoupled components)
+    locator = ReportFileLocator(workspace)
+    loader = ReportDataLoader()
+
+    gaps_data = None
+    if gaps_file := locator.gaps_file():
+        gaps_data = loader.load_json(gaps_file)
+
+    recommendations_data = None
+    if recs_file := locator.recommendations_file():
+        recommendations_data = loader.load_json(recs_file)
 
     # Generate site.yml playbook
     playbook_content = generate_playbook(profile, gaps_data)
@@ -220,60 +228,6 @@ ansible-playbook ansible/site.yml -e vm_name=my-vm
 
 See `ansible/roles/provision_vm/defaults/main.yml` for configurable variables.
 """
-
-
-def _load_gaps_data(workspace: Workspace) -> dict[str, Any] | None:
-    """
-    Load gap analysis data from intent/gaps.json if it exists.
-
-    Args:
-        workspace: Workspace instance
-
-    Returns:
-        Gap analysis data dict, or None if gaps.json doesn't exist
-
-    Example:
-        >>> gaps = _load_gaps_data(workspace)
-        >>> if gaps:
-        ...     print(f"Found {len(gaps['components'])} gap components")
-    """
-    gaps_file = workspace.root / "intent/gaps.json"
-    if not gaps_file.exists():
-        return None
-
-    try:
-        with open(gaps_file) as f:
-            return cast(dict[str, Any], json.load(f))
-    except (OSError, json.JSONDecodeError):
-        # Gracefully handle corrupted/unreadable gaps file
-        return None
-
-
-def _load_recommendations_data(workspace: Workspace) -> dict[str, Any] | None:
-    """
-    Load recommendations data from intent/recommendations.json if it exists.
-
-    Args:
-        workspace: Workspace instance
-
-    Returns:
-        Recommendations data dict, or None if recommendations.json doesn't exist
-
-    Example:
-        >>> recs = _load_recommendations_data(workspace)
-        >>> if recs:
-        ...     print(f"Found {len(recs['recommendations'])} recommendations")
-    """
-    recs_file = workspace.root / "intent/recommendations.json"
-    if not recs_file.exists():
-        return None
-
-    try:
-        with open(recs_file) as f:
-            return cast(dict[str, Any], json.load(f))
-    except (OSError, json.JSONDecodeError):
-        # Gracefully handle corrupted/unreadable recommendations file
-        return None
 
 
 def _inject_gap_todos(
