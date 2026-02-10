@@ -1,0 +1,26 @@
+{
+  "name": "ops-translate",
+  "version": "0.1.0",
+  "description": "AI-assisted migration from VMware automation to OpenShift Virtualization",
+  "private": true,
+  "scripts": {
+    "test:playwright": "playwright test",
+    "test:playwright:headed": "playwright test --headed",
+    "test:playwright:ui": "playwright test --ui",
+    "test:playwright:demo": "playwright test --headed --project=chromium -g 'demo mode'",
+    "playwright:install": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "http-server": "^14.1.1"
+  },
+  "keywords": [
+    "vmware",
+    "openshift",
+    "kubevirt",
+    "migration",
+    "automation"
+  ],
+  "author": "Red Hat",
+  "license": "Apache-2.0"
+}
