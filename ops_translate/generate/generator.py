@@ -278,8 +278,19 @@ def generate_with_templates(workspace: Workspace, profile: str, output_format: s
         try:
             format_handler = get_format_handler(output_format, workspace.root)
             format_handler.write(content, profile, context)
+
+            # Print success messages based on format
+            if output_format == "json":
+                console.print("[green]✓ JSON manifests: output/json/[/green]")
+            elif output_format in ("kustomize", "gitops"):
+                console.print("[green]✓ Kustomize base: output/base/[/green]")
+                console.print("[green]✓ Overlays: output/overlays/{dev,staging,prod}/[/green]")
+            elif output_format == "argocd":
+                console.print("[green]✓ ArgoCD applications: output/argocd/[/green]")
+                console.print("[green]✓ Kustomize structure: output/base/ and output/overlays/[/green]")
         except Exception as e:
             console.print(f"[yellow]⚠ Could not apply format {output_format}: {e}[/yellow]")
+            return
 
     # Generate README
     generate_readme(workspace, profile, context)

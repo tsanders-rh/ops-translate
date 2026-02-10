@@ -721,24 +721,8 @@ def generate(
 
     from ops_translate.generate import generate_all
 
-    # Generate all artifacts
+    # Generate all artifacts (success messages printed by generator)
     generate_all(workspace, profile, use_ai=not no_ai, output_format=format)
-
-    # Show appropriate success messages based on format
-    if format == "json":
-        console.print("[green]✓ JSON manifests: output/json/[/green]")
-    elif format in ("kustomize", "gitops"):
-        console.print("[green]✓ Kustomize base: output/base/[/green]")
-        console.print("[green]✓ Overlays: output/overlays/{dev,staging,prod}/[/green]")
-    elif format == "argocd":
-        console.print("[green]✓ ArgoCD applications: output/argocd/[/green]")
-        console.print("[green]✓ Kustomize structure: output/base/ and output/overlays/[/green]")
-    else:  # yaml
-        console.print("[green]✓ KubeVirt manifest: output/kubevirt/vm.yaml[/green]")
-        console.print("[green]✓ Ansible playbook: output/ansible/site.yml[/green]")
-        console.print("[green]✓ Ansible role: output/ansible/roles/provision_vm/[/green]")
-
-    console.print("[green]✓ README: output/README.md[/green]")
 
 
 @app.command()
