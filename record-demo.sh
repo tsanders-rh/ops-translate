@@ -4,6 +4,7 @@
 #
 # Usage:
 #   ./record-demo.sh                    # Record demo mode test
+#   ./record-demo.sh --annotated        # Record with text overlays (recommended)
 #   ./record-demo.sh --all              # Record all tests
 #   ./record-demo.sh --codegen          # Interactive recording
 #
@@ -26,6 +27,10 @@ case "${1:-demo}" in
     --all)
         echo -e "${YELLOW}Recording all tests...${NC}"
         npx playwright test --config=playwright-demo.config.ts --headed
+        ;;
+    --annotated)
+        echo -e "${YELLOW}Recording annotated demo with text overlays...${NC}"
+        npx playwright test --config=playwright-demo.config.ts --headed tests/playwright/html-report-annotated.spec.ts
         ;;
     --codegen)
         echo -e "${YELLOW}Starting interactive recording...${NC}"
@@ -66,9 +71,14 @@ if [ -n "$LATEST_VIDEO" ]; then
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             MP4_VIDEO="${DEMO_VIDEO%.webm}.mp4"
-            echo -e "${YELLOW}Converting to MP4...${NC}"
-            ffmpeg -i "$DEMO_VIDEO" -c:v libx264 -preset slow -crf 22 -c:a aac -b:a 128k "$MP4_VIDEO" -y
+            echo -e "${YELLOW}Converting to MP4 (high quality)...${NC}"
+            # Use high quality settings: CRF 18 (visually lossless), slow preset
+            ffmpeg -i "$DEMO_VIDEO" -c:v libx264 -preset slow -crf 18 -c:a aac -b:a 192k "$MP4_VIDEO" -y
             echo -e "${GREEN}MP4 saved to:${NC} $MP4_VIDEO"
+
+            # Show comparison
+            MP4_SIZE=$(du -h "$MP4_VIDEO" | cut -f1)
+            echo -e "${BLUE}MP4 size:${NC} $MP4_SIZE"
         fi
     fi
 

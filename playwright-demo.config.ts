@@ -11,9 +11,12 @@ export default defineConfig({
   use: {
     baseURL: "http://127.0.0.1:4173",
     trace: "on",
-    video: "on", // Always record video for demos
+    video: {
+      mode: "on",
+      size: { width: 1920, height: 1080 }, // Force full HD video recording
+    },
     screenshot: "on",
-    viewport: { width: 1920, height: 1080 }, // Full HD for recordings
+    viewport: { width: 1920, height: 1080 }, // Full HD viewport
     // Slow down interactions for better visibility
     launchOptions: {
       slowMo: 500, // 500ms delay between actions
