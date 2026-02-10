@@ -85,3 +85,10 @@ demo-workspace/
 # Media files (generated videos)
 media/*.mp4
 media/*.m4a
+
+# Node.js / Playwright
+node_modules/
+package-lock.json
+playwright-report/
+test-results/
+.playwright/
