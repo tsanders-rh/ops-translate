@@ -2,9 +2,8 @@
 Ansible playbook and role generation.
 """
 
-import json
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 import yaml
 

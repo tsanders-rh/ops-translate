@@ -9,7 +9,6 @@ import json
 import tempfile
 from pathlib import Path
 
-import pytest
 import yaml
 
 from ops_translate.report.loaders import (
