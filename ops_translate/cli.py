@@ -214,24 +214,29 @@ def summarize():
     # Analyze with progress bar
     with track_progress("Analyzing files", total=total_files) as progress:
         task = progress.add_task("analyzing", total=total_files)
+        file_count = 0
 
         # Summarize PowerCLI files
         if ps_files:
             summary_lines.append("## PowerCLI Scripts\n")
             for ps_file in ps_files:
+                file_count += 1
+                progress.update(task, description=f"Analyzing {ps_file.name} ({file_count}/{total_files})")
                 summary = powercli.summarize(ps_file)
                 summary_lines.append(f"### {ps_file.name}\n")
                 summary_lines.append(summary + "\n")
-                progress.update(task, advance=1, description=f"Analyzed {ps_file.name}")
+                progress.update(task, advance=1)
 
         # Summarize vRealize files
         if xml_files:
             summary_lines.append("## vRealize Workflows\n")
             for xml_file in xml_files:
+                file_count += 1
+                progress.update(task, description=f"Analyzing {xml_file.name} ({file_count}/{total_files})")
                 summary = vrealize.summarize(xml_file)
                 summary_lines.append(f"### {xml_file.name}\n")
                 summary_lines.append(summary + "\n")
-                progress.update(task, advance=1, description=f"Analyzed {xml_file.name}")
+                progress.update(task, advance=1)
 
     # Write summary
     summary_file = workspace.root / "intent/summary.md"

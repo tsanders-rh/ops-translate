@@ -370,7 +370,13 @@ def apply_answers(
     with open(answers_file) as f:
         answers_data = cast(dict[str, Any], yaml.safe_load(f))
 
-    answers = answers_data.get("answers", {})
+    # Convert list of answer dicts to dict keyed by 'id' -> 'answer' value
+    answers_list = answers_data.get("answers", [])
+    answers = {
+        ans["id"]: ans.get("answer", "")
+        for ans in answers_list
+        if isinstance(ans, dict) and "id" in ans
+    }
 
     # Derive decisions using deterministic rules
     decisions: dict[str, Any] = {

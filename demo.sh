@@ -214,7 +214,7 @@ profiles:
 EOF
 
 run_command "$OPS_CMD intent extract"
-wait_medium
+press_enter
 
 print_narration "View one of the extracted intent files:"
 wait_short
@@ -251,24 +251,24 @@ wait_short
 if [ -f "intent/gaps.json" ] && grep -q "PARTIAL\|BLOCKED" intent/gaps.json; then
     print_narration "Generating interview questions for ambiguous components:"
     run_command "$OPS_CMD intent interview-generate"
-    wait_short
+    press_enter
 
-    if [ -f "intent/interview.yaml" ]; then
+    if [ -f "intent/questions.json" ]; then
         print_narration "Interview questions generated. Example questions:"
-        run_command "cat intent/interview.yaml | head -30"
+        run_command "cat intent/questions.json | head -30"
         wait_medium
 
         print_narration "In a real workflow, you would:"
-        echo "  1. Review intent/interview.yaml"
+        echo "  1. Review intent/questions.json"
         echo "  2. Answer questions based on your VMware environment knowledge"
-        echo "  3. Save answers to intent/interview-answers.yaml"
+        echo "  3. Save answers to intent/answers.yaml"
         echo ""
         wait_short
 
         # For demo purposes, check if pre-created answers exist
-        if [ -f "../examples/merge-scenario/interview-answers.yaml" ]; then
+        if [ -f "../examples/merge-scenario/answers.yaml" ]; then
             print_narration "Using pre-created answers for demo:"
-            run_command "cp ../examples/merge-scenario/interview-answers.yaml intent/"
+            run_command "cp ../examples/merge-scenario/answers.yaml intent/"
             wait_short
 
             print_narration "Applying interview answers to update classifications:"

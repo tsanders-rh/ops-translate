@@ -28,7 +28,7 @@ Sleep 300ms
 Show
 
 # === Title card ===
-Type "#━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+Type "#━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 Enter
 Type "#"
 Enter
@@ -36,11 +36,17 @@ Type "# ops-translate Demo"
 Enter
 Type "#"
 Enter
-Type "# VMware automation to OpenShift Virtualization"
+Type "# Bridging the gap between VMware automation and
+Enter
+Type "# cloud-native infrastructure."
 Enter
 Type "#"
 Enter
-Type "#━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+Type "# https://github.com/tsanders-rh/ops-translate"
+Enter
+Type "#"
+Enter
+Type "#━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 Enter
 Sleep 2s
 Hide
@@ -108,24 +114,27 @@ Type "# ━━━ Scene 3: Extract Intent (AI) ━━━"
 Enter 2
 Sleep 900ms
 
-Type "cp ../examples/merge-scenario/ops-translate.yaml ."
-Enter 2
 Type "cat ops-translate.yaml"
 Enter 2
 
 Type "ops-translate intent extract"
 Enter 2
-Sleep 2.8s
-
-Type "# 🧠 Viewing extracted intent..."
-Enter
-Sleep 600ms
-
-Type "cat intent/intent.md | head -45"
+Sleep 25s
+Type "# 🧠 View one of the extracted intent files..."
 Enter
 Sleep 3s
+Type "cat intent/dev-provision.intent.yaml | head -30"
+Enter 
+Sleep 10s
+Type "#Three intent files created (one per source):"
+Enter 2
+Type "ls -1 intent/*.intent.yaml"
+Enter
+Sleep 10s
+Hide
 Type "clear"
 Enter
+Show
 
 # === Scene 4: Gap Analysis ===
 Type "# ━━━ Scene 4: Gap Analysis ━━━"
@@ -135,8 +144,10 @@ Sleep 900ms
 Type "if [ -f intent/gaps.md ]; then cat intent/gaps.md | head -40; else echo 'No gaps detected'; fi"
 Enter
 Sleep 3s
+Hide
 Type "clear"
 Enter
+Show
 
 # === Scene 5: Merge 3 Files → 1 Unified Workflow ===
 Type "# ━━━ Scene 5: Merge 3 Files → 1 Unified Workflow ━━━"
@@ -147,15 +158,17 @@ Type "ops-translate intent merge --force"
 Enter 2
 Sleep 2.2s
 
-Type "# 🔀 Viewing merged workflow plan..."
+Type "# 🔀 View the merged intent (combines dev, prod, and approval)..."
 Enter 2
 Sleep 600ms
 
-Type "cat output/merged/merged-plan.md | head -60"
+Type "cat intent/intent.yaml | head -40"
 Enter
-Sleep 3s
+Sleep 5s
+Hide
 Type "clear"
 Enter
+Show
 
 # === Scene 6: Dry-Run Validation ===
 Type "# ━━━ Scene 6: Dry-Run Validation ━━━"
@@ -192,8 +205,10 @@ Sleep 600ms
 Type "cat output/ansible/site.yml | head -20"
 Enter
 Sleep 3s
+Hide
 Type "clear"
 Enter
+Show
 
 # === Wrap-up ===
 Type "# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

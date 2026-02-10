@@ -149,7 +149,7 @@ cat intent/gaps.md | head -40
 ops-translate intent interview-generate
 
 # View the generated interview questions
-cat intent/interview.yaml | head -30
+cat intent/questions.json | head -30
 ```
 
 **Show:** Interview questions targeting specific VMware components that need clarification.
