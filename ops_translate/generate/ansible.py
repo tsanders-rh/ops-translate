@@ -180,8 +180,7 @@ def generate_tasks(
                         ),
                     ],
                     "fail_msg": (
-                        "VM memory configuration doesn't match intent "
-                        "(expected {{ memory }})"
+                        "VM memory configuration doesn't match intent " "(expected {{ memory }})"
                     ),
                 },
             },
