@@ -4,8 +4,6 @@ Tests for vRealize workflow translation to Ansible.
 
 from pathlib import Path
 
-import pytest
-
 from ops_translate.translate.vrealize_workflow import (
     JavaScriptToAnsibleTranslator,
     WorkflowItem,
