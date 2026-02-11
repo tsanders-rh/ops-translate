@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow xmlns="http://vmware.com/vco/workflow" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://vmware.com/vco/workflow http://vmware.com/vco/workflow/Workflow-v4.xsd" version="0.4.0">
+  <display-name>VM Provisioning with Error Handling and Rollback</display-name>
+  <description>Example workflow demonstrating try/catch/finally translation to Ansible block/rescue/always</description>
+
+  <workflow-item name="item1" type="task" out-name="item2">
+    <display-name>Provision with Automatic Rollback</display-name>
+    <script encoded="false"><![CDATA[
+try {
+    // Provision resources in order
+    System.log("Starting VM provisioning for: " + vmName);
+
+    // Create VM
+    System.log("Creating VM");
+    var vm = createVM(vmName, cpuCount, memoryGB);
+    System.log("VM created: " + vm.id);
+
+    // Get IP address
+    System.log("Requesting IP address");
+    var ip = Infoblox.getNextAvailableIP(network);
+    System.log("Allocated IP: " + ip);
+
+    // Register DNS
+    System.log("Registering DNS");
+    Infoblox.createHostRecord(vmName + ".example.com", ip);
+    System.log("DNS registered");
+
+    // Create ServiceNow ticket
+    System.log("Creating ServiceNow change request");
+    var ticket = ServiceNow.createChangeRequest(
+        "Provision VM: " + vmName,
+        "Automated VM provisioning for " + environment,
+        "standard",
+        "low"
+    );
+    System.log("Change request created: " + ticket);
+
+    provisioningComplete = true;
+    System.log("Provisioning completed successfully");
+
+} catch (e) {
+    // Rollback in reverse order
+    System.error("Provisioning failed: " + e);
+    System.error("Starting rollback process");
+
+    // Close ServiceNow ticket if created
+    if (ticket) {
+        System.log("Closing ServiceNow ticket");
+        ServiceNow.updateIncident(ticket, "Provisioning failed - rolled back");
+    }
+
+    // Unregister DNS if created
+    if (ip) {
+        System.log("Removing DNS record");
+        Infoblox.deleteHostRecord(vmName + ".example.com");
+    }
+
+    // Release IP if allocated
+    if (ip) {
+        System.log("Releasing IP address");
+        releaseIPAddress(ip);
+    }
+
+    // Delete VM if created
+    if (vm) {
+        System.log("Deleting VM");
+        deleteVM(vm);
+    }
+
+    System.error("Rollback completed");
+
+    // Re-raise the error
+    throw e;
+
+} finally {
+    // Cleanup always runs
+    System.log("Cleanup: Releasing resource locks");
+    releaseResourceLock(vmName);
+
+    System.log("Cleanup: Removing temporary files");
+    cleanupTempFiles();
+
+    System.log("Cleanup completed");
+}
+    ]]></script>
+    <in-binding>
+      <bind name="vmName" type="string" export-name="vmName"/>
+      <bind name="cpuCount" type="number" export-name="cpuCount"/>
+      <bind name="memoryGB" type="number" export-name="memoryGB"/>
+      <bind name="network" type="string" export-name="network"/>
+      <bind name="environment" type="string" export-name="environment"/>
+    </in-binding>
+    <out-binding>
+      <bind name="provisioningComplete" type="boolean" export-name="provisioningComplete"/>
+    </out-binding>
+    <position x="100.0" y="50.0"/>
+  </workflow-item>
+
+  <workflow-item name="item2" type="task" out-name="item3">
+    <display-name>Validate Quotas (without error handling)</display-name>
+    <script encoded="false"><![CDATA[
+// This script doesn't use try/catch - should generate normal tasks
+System.log("Validating quotas");
+
+if (cpuCount > 16) {
+    throw "CPU quota exceeded. Maximum 16 cores allowed.";
+}
+
+if (memoryGB > 128) {
+    throw "Memory quota exceeded. Maximum 128 GB allowed.";
+}
+
+System.log("Quota validation passed");
+    ]]></script>
+    <in-binding>
+      <bind name="cpuCount" type="number" export-name="cpuCount"/>
+      <bind name="memoryGB" type="number" export-name="memoryGB"/>
+    </in-binding>
+    <out-binding/>
+    <position x="100.0" y="150.0"/>
+  </workflow-item>
+
+  <workflow-item name="item3" type="task" out-name="item4">
+    <display-name>Nested Error Handling</display-name>
+    <script encoded="false"><![CDATA[
+// Demonstrates nested try/catch
+System.log("Attempting primary provisioning method");
+
+try {
+    provisionViaPrimaryMethod();
+} catch (primaryError) {
+    System.log("Primary method failed, trying fallback");
+    try {
+        provisionViaFallback();
+    } catch (fallbackError) {
+        System.error("Both methods failed");
+        throw "All provisioning methods exhausted";
+    }
+} finally {
+    System.log("Provisioning attempt completed");
+}
+    ]]></script>
+    <in-binding/>
+    <out-binding/>
+    <position x="100.0" y="250.0"/>
+  </workflow-item>
+
+  <workflow-item name="item4" type="end">
+    <display-name>End</display-name>
+    <position x="100.0" y="350.0"/>
+  </workflow-item>
+
+</workflow>

@@ -220,6 +220,13 @@ class JavaScriptToAnsibleTranslator:
         Returns:
             List of Ansible task dictionaries
         """
+        # Check if script contains error handling (try/catch/finally)
+        error_handling = self._extract_error_handling(script)
+        if error_handling:
+            # Translate with block/rescue/always structure
+            return self._translate_error_handling(error_handling, item)
+
+        # Normal translation (no error handling)
         tasks = []
 
         # Detect and translate integration calls (trust-first, allowlist-based)
@@ -711,6 +718,191 @@ See: intent/recommendations.md for guidance
                 return obj
 
         return substitute_recursive(result)
+
+    def _extract_error_handling(self, script: str) -> dict[str, Any] | None:
+        """
+        Detect try/catch/finally blocks in JavaScript.
+
+        Args:
+            script: JavaScript code to analyze
+
+        Returns:
+            Dictionary with try_block, catch_var, catch_block, finally_block
+            or None if no error handling found
+        """
+        # Find the start of try block
+        try_match = re.search(r"\btry\s*\{", script)
+        if not try_match:
+            return None
+
+        # Extract blocks by counting braces
+        try_start = try_match.end()
+        try_block, try_end = self._extract_block_content(script, try_start)
+
+        # Look for catch block
+        catch_match = re.search(r"\bcatch\s*\((\w+)\)\s*\{", script[try_end:])
+        if not catch_match:
+            return None
+
+        catch_var = catch_match.group(1)
+        catch_start = try_end + catch_match.end()
+        catch_block, catch_end = self._extract_block_content(script, catch_start)
+
+        # Look for optional finally block
+        finally_match = re.search(r"\bfinally\s*\{", script[catch_end:])
+        finally_block = None
+        if finally_match:
+            finally_start = catch_end + finally_match.end()
+            finally_block, _ = self._extract_block_content(script, finally_start)
+
+        return {
+            "try_block": try_block.strip(),
+            "catch_var": catch_var,
+            "catch_block": catch_block.strip(),
+            "finally_block": finally_block.strip() if finally_block else None,
+        }
+
+    def _extract_block_content(self, script: str, start_pos: int) -> tuple[str, int]:
+        """
+        Extract the content of a brace-delimited block by counting braces.
+
+        Args:
+            script: Full script text
+            start_pos: Position right after the opening brace
+
+        Returns:
+            Tuple of (block_content, end_position)
+        """
+        brace_count = 1
+        pos = start_pos
+
+        while pos < len(script) and brace_count > 0:
+            char = script[pos]
+            if char == "{":
+                brace_count += 1
+            elif char == "}":
+                brace_count -= 1
+            pos += 1
+
+        # Extract content between braces
+        block_content = script[start_pos : pos - 1]
+        return block_content, pos
+
+    def _translate_error_handling(
+        self, error_handling: dict[str, Any], item: WorkflowItem
+    ) -> list[dict[str, Any]]:
+        """
+        Translate try/catch/finally to Ansible block/rescue/always.
+
+        Args:
+            error_handling: Parsed error handling structure from _extract_error_handling
+            item: WorkflowItem for context
+
+        Returns:
+            List containing a single block/rescue/always task structure
+        """
+        # Translate try block
+        try_tasks = self._translate_script_fragment(error_handling["try_block"], item)
+
+        # Generate rescue tasks from catch block
+        rescue_tasks = self._generate_rescue_tasks(
+            error_handling["catch_block"], error_handling["catch_var"], item
+        )
+
+        # Translate finally block if present
+        always_tasks = []
+        if error_handling["finally_block"]:
+            always_tasks = self._translate_script_fragment(error_handling["finally_block"], item)
+
+        # Build block/rescue/always structure
+        block_task = {
+            "name": f"Execute with error handling: {item.display_name}",
+            "block": try_tasks,
+        }
+
+        if rescue_tasks:
+            block_task["rescue"] = rescue_tasks
+
+        if always_tasks:
+            block_task["always"] = always_tasks
+
+        return [block_task]
+
+    def _translate_script_fragment(
+        self, script_fragment: str, item: WorkflowItem
+    ) -> list[dict[str, Any]]:
+        """
+        Translate a script fragment (without checking for error handling).
+
+        This is used to translate try/catch/finally block contents.
+
+        Args:
+            script_fragment: JavaScript code fragment
+            item: WorkflowItem for context
+
+        Returns:
+            List of Ansible task dictionaries
+        """
+        tasks = []
+
+        # Detect and translate integration calls
+        integration_tasks = self._detect_integration_calls(script_fragment, item)
+        tasks.extend(integration_tasks)
+
+        # Extract logging
+        log_tasks = self._extract_logging(script_fragment, item.display_name)
+        tasks.extend(log_tasks)
+
+        # Extract validations (but skip if this is a catch block with throw)
+        validation_tasks = self._extract_validations(script_fragment, item.display_name)
+        tasks.extend(validation_tasks)
+
+        # Extract assignments
+        assignment_tasks = self._extract_assignments(script_fragment, item.display_name)
+        tasks.extend(assignment_tasks)
+
+        return tasks
+
+    def _generate_rescue_tasks(
+        self, catch_block: str, catch_var: str, item: WorkflowItem
+    ) -> list[dict[str, Any]]:
+        """
+        Generate rescue tasks from catch block.
+
+        Args:
+            catch_block: JavaScript catch block code
+            catch_var: Name of exception variable (e.g., 'e' in catch(e))
+            item: WorkflowItem for context
+
+        Returns:
+            List of rescue tasks including rollback logic
+        """
+        rescue_tasks = []
+
+        # Add error logging task
+        rescue_tasks.append(
+            {
+                "name": "Log error",
+                "ansible.builtin.debug": {
+                    "msg": f"Error in {item.display_name}: {{{{ ansible_failed_result.msg }}}}"
+                },
+            }
+        )
+
+        # Translate catch block content (rollback logic)
+        catch_tasks = self._translate_script_fragment(catch_block, item)
+        rescue_tasks.extend(catch_tasks)
+
+        # Check if catch block re-raises the exception
+        if "throw" in catch_block:
+            rescue_tasks.append(
+                {
+                    "name": "Re-raise error after rollback",
+                    "ansible.builtin.fail": {"msg": "{{ ansible_failed_result.msg }}"},
+                }
+            )
+
+        return rescue_tasks
 
 
 def translate_workflow_to_ansible(workflow_file: Path) -> list[dict[str, Any]]:
