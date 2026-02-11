@@ -392,6 +392,67 @@ Status: SAFE TO PROCEED (with 2 review items)
 - 🟡 **REVIEW**: Should verify but not blocking
 - 🟢 **SAFE**: No issues found
 
+### vRealize Workflow Translation to Ansible
+
+ops-translate automatically translates vRealize Orchestrator workflow logic into executable Ansible tasks. Common workflow patterns are converted to native Ansible modules:
+
+**Supported Translations:**
+
+| vRealize Element | Ansible Equivalent | Example |
+|------------------|-------------------|---------|
+| JavaScript validation | `assert` tasks | `if (cpu > 16) throw "error"` → `assert: cpu <= 16` |
+| Variable assignments | `set_fact` tasks | `requiresApproval = (env === "prod")` → `set_fact: requiresApproval: "{{ env == 'prod' }}"` |
+| Approval interactions | `pause` tasks | Approval workflow item → Interactive pause prompt |
+| Email notifications | `mail` tasks | Email workflow item → `community.general.mail` |
+| System.log statements | `debug` tasks | `System.log("message")` → `debug: msg: "message"` |
+
+**Example vRealize Workflow:**
+```xml
+<workflow-item name="checkQuotas" type="task">
+  <script>
+    if (cpuCount > 16) {
+      throw "CPU quota exceeded. Maximum 16 cores allowed.";
+    }
+    requiresApproval = (environment === "prod");
+  </script>
+</workflow-item>
+```
+
+**Generated Ansible Tasks:**
+```yaml
+# Translated from vRealize workflow
+- name: Validate: CPU quota exceeded. Maximum 16 cores allowed.
+  ansible.builtin.assert:
+    that: cpuCount <= 16
+    fail_msg: "CPU quota exceeded. Maximum 16 cores allowed."
+
+- name: Set requiresApproval (from Check Governance)
+  ansible.builtin.set_fact:
+    requiresApproval: "{{ environment == 'prod' }}"
+
+- name: Request approval: Request Approval
+  ansible.builtin.pause:
+    prompt: |
+      VM Provisioning Request
+      VM: {{ vm_name }}
+
+      This request requires approval.
+      Approve? (yes/no)
+  register: approval_response
+  when: "{{ requiresApproval }}"
+```
+
+**How It Works:**
+1. Place vRealize workflow XML files in `input/vrealize/`
+2. Run `ops-translate generate --profile lab`
+3. Translated tasks are automatically prepended to Ansible playbook
+4. Tasks preserve workflow execution order and logic
+
+**Limitations:**
+- Complex JavaScript expressions may generate TODOs for manual review
+- External system integrations require manual implementation
+- Custom vRO plugins are not auto-translated (see gap analysis)
+
 ### Automatic Gap Analysis (vRealize Workflows)
 
 When extracting intent from vRealize workflows, ops-translate automatically analyzes them for translatability issues and provides migration guidance:
