@@ -179,7 +179,7 @@ def _write_markdown_report(
 
         # Group by severity level
         trans_level: TranslatabilityLevel
-        level_labels = {
+        level_labels: dict[TranslatabilityLevel, str] = {
             TranslatabilityLevel.SUPPORTED: "Fully Supported",
             TranslatabilityLevel.PARTIAL: "Partial Translation",
             TranslatabilityLevel.BLOCKED: "Expert-Guided",
