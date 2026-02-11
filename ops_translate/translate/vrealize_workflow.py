@@ -685,12 +685,13 @@ See: intent/recommendations.md for guidance
             Parameters with substitutions applied
         """
         import copy
+        from typing import cast
 
         # Deep copy params to avoid modifying the original
         result = copy.deepcopy(params)
 
         # Recursively substitute in nested dictionaries
-        def substitute_recursive(obj):
+        def substitute_recursive(obj: Any) -> Any:
             if isinstance(obj, dict):
                 return {k: substitute_recursive(v) for k, v in obj.items()}
             elif isinstance(obj, list):
@@ -717,7 +718,7 @@ See: intent/recommendations.md for guidance
             else:
                 return obj
 
-        return substitute_recursive(result)
+        return cast(dict[str, Any], substitute_recursive(result))
 
     def _extract_error_handling(self, script: str) -> dict[str, Any] | None:
         """
