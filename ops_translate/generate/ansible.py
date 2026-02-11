@@ -12,7 +12,9 @@ from ops_translate.util.files import ensure_dir, write_text
 from ops_translate.workspace import Workspace
 
 
-def generate(workspace: Workspace, profile: str, use_ai: bool = False):
+def generate(
+    workspace: Workspace, profile: str, use_ai: bool = False, assume_existing_vms: bool = False
+):
     """
     Generate Ansible playbook and role.
 
@@ -26,6 +28,12 @@ def generate(workspace: Workspace, profile: str, use_ai: bool = False):
     - Injects TODO tasks for PARTIAL/BLOCKED/MANUAL components
     - Creates role stubs for MANUAL components
     - Adds gap summary to playbook
+
+    Args:
+        workspace: Workspace instance
+        profile: Profile name
+        use_ai: Whether to use AI generation (currently unused)
+        assume_existing_vms: If True, generate validation tasks instead of VM creation
     """
     output_dir = workspace.root / "output/ansible"
     ensure_dir(output_dir)
@@ -54,7 +62,9 @@ def generate(workspace: Workspace, profile: str, use_ai: bool = False):
     ensure_dir(role_dir / "tasks")
     ensure_dir(role_dir / "defaults")
 
-    tasks_content = generate_tasks(profile_config, use_ai, gaps_data, recommendations_data)
+    tasks_content = generate_tasks(
+        profile_config, use_ai, gaps_data, recommendations_data, assume_existing_vms
+    )
     write_text(role_dir / "tasks/main.yml", tasks_content)
 
     defaults_content = generate_defaults(profile_config)
@@ -119,6 +129,7 @@ def generate_tasks(
     use_ai: bool,
     gaps_data: dict[str, Any] | None = None,
     recommendations_data: dict[str, Any] | None = None,
+    assume_existing_vms: bool = False,
 ) -> str:
     """
     Generate Ansible tasks.
@@ -126,33 +137,99 @@ def generate_tasks(
     If gaps_data is provided, injects TODO tasks for PARTIAL/BLOCKED/MANUAL
     components before the main provisioning tasks. If recommendations_data is
     provided, includes detailed implementation guidance in TODO comments.
+
+    If assume_existing_vms is True, generates validation tasks instead of VM creation.
     """
     namespace = profile_config["default_namespace"]
 
-    tasks: list[dict[str, Any]] = [
-        {
-            "name": "Create KubeVirt VirtualMachine",
-            "kubernetes.core.k8s": {
-                "state": "present",
-                "definition": "{{ lookup('file', 'kubevirt/vm.yaml') | from_yaml }}",
+    if assume_existing_vms:
+        # MTV mode: Validate existing VM instead of creating it
+        tasks: list[dict[str, Any]] = [
+            {
+                "_comment": "# MTV Mode: Validate existing VM (migrated by MTV)",
+                "name": "Verify VM exists",
+                "kubernetes.core.k8s_info": {
+                    "api_version": "kubevirt.io/v1",
+                    "kind": "VirtualMachine",
+                    "name": "{{ vm_name }}",
+                    "namespace": namespace,
+                },
+                "register": "vm_info",
+                "failed_when": "vm_info.resources | length == 0",
             },
-        },
-        {
-            "name": "Wait for VM to be ready",
-            "kubernetes.core.k8s_info": {
-                "api_version": "kubevirt.io/v1",
-                "kind": "VirtualMachine",
-                "name": "{{ vm_name }}",
-                "namespace": namespace,
+            {
+                "name": "Validate VM CPU configuration",
+                "ansible.builtin.assert": {
+                    "that": [
+                        "vm_info.resources | length > 0",
+                        "vm_info.resources[0].spec.template.spec.domain.cpu.cores == cpu_cores",
+                    ],
+                    "fail_msg": (
+                        "VM CPU configuration doesn't match intent "
+                        "(expected {{ cpu_cores }} cores)"
+                    ),
+                },
             },
-            "register": "vm_info",
-            "until": (
-                "vm_info.resources | length > 0 and vm_info.resources[0].status.ready is defined"
-            ),
-            "retries": 30,
-            "delay": 10,
-        },
-    ]
+            {
+                "name": "Validate VM memory configuration",
+                "ansible.builtin.assert": {
+                    "that": [
+                        (
+                            "vm_info.resources[0].spec.template.spec.domain."
+                            "resources.requests.memory == memory"
+                        ),
+                    ],
+                    "fail_msg": (
+                        "VM memory configuration doesn't match intent " "(expected {{ memory }})"
+                    ),
+                },
+            },
+            {
+                "name": "Apply operational labels to VM",
+                "kubernetes.core.k8s": {
+                    "api_version": "kubevirt.io/v1",
+                    "kind": "VirtualMachine",
+                    "name": "{{ vm_name }}",
+                    "namespace": namespace,
+                    "state": "patched",
+                    "definition": {
+                        "metadata": {
+                            "labels": {
+                                "managed-by": "ops-translate",
+                                "environment": "{{ environment | default('unknown') }}",
+                            }
+                        }
+                    },
+                },
+            },
+        ]
+    else:
+        # Greenfield mode: Create VM from YAML
+        tasks: list[dict[str, Any]] = [
+            {
+                "name": "Create KubeVirt VirtualMachine",
+                "kubernetes.core.k8s": {
+                    "state": "present",
+                    "definition": "{{ lookup('file', 'kubevirt/vm.yaml') | from_yaml }}",
+                },
+            },
+            {
+                "name": "Wait for VM to be ready",
+                "kubernetes.core.k8s_info": {
+                    "api_version": "kubevirt.io/v1",
+                    "kind": "VirtualMachine",
+                    "name": "{{ vm_name }}",
+                    "namespace": namespace,
+                },
+                "register": "vm_info",
+                "until": (
+                    "vm_info.resources | length > 0 and "
+                    "vm_info.resources[0].status.ready is defined"
+                ),
+                "retries": 30,
+                "delay": 10,
+            },
+        ]
 
     # Inject gap analysis TODOs if available
     if gaps_data:

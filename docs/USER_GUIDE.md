@@ -872,23 +872,30 @@ open output/report/index.html
 The interactive report shows translation status, expert recommendations, and migration paths to help you understand what will be automated vs. what needs manual work.
 
 ```bash
-ops-translate generate --profile <profile_name> [--no-ai]
+ops-translate generate --profile <profile_name> [--no-ai] [--assume-existing-vms]
 ```
 
 **Options**:
 - `--profile`: Target environment profile (lab, prod, etc.)
 - `--no-ai`: Use templates instead of AI for generation
+- `--assume-existing-vms`: MTV mode - assume VMs exist, generate validation/day-2 ops only
 
-**Output**:
+**Output** (greenfield mode):
 - `output/kubevirt/vm.yaml`
 - `output/ansible/site.yml`
 - `output/ansible/roles/provision_vm/tasks/main.yml`
 - `output/ansible/roles/provision_vm/defaults/main.yml`
 - `output/README.md`
 
+**Output** (MTV mode with `--assume-existing-vms`):
+- `output/ansible/site.yml` - Playbook with validation tasks
+- `output/ansible/roles/provision_vm/tasks/main.yml` - VM verification and labeling
+- `output/README.md`
+- **Note**: KubeVirt VM YAML is not generated in MTV mode
+
 **Examples**:
 ```bash
-# Generate for lab environment
+# Generate for lab environment (greenfield - creates VMs)
 ops-translate generate --profile lab
 
 # Generate for production
@@ -896,6 +903,35 @@ ops-translate generate --profile prod
 
 # Generate without AI (template-based)
 ops-translate generate --profile lab --no-ai
+
+# MTV mode - VMs already migrated, generate validation only
+ops-translate generate --profile lab --assume-existing-vms
+```
+
+**MTV (Migration Toolkit for Virtualization) Mode**:
+
+When using `--assume-existing-vms`, ops-translate assumes VMs have already been migrated to OpenShift Virtualization (e.g., via MTV) and generates Ansible playbooks that:
+
+1. **Verify VMs exist** - Use `kubernetes.core.k8s_info` to check VM presence
+2. **Validate configurations** - Assert CPU/memory match operational intent
+3. **Apply operational labels** - Patch VMs with managed-by and environment tags
+
+This is useful for post-migration scenarios where:
+- VMs were imported via Migration Toolkit for Virtualization
+- VMs already exist and need day-2 operations
+- You want to validate existing VMs against operational intent
+
+**Comparison**:
+
+| Mode | Flag | VM YAML | Ansible Tasks |
+|------|------|---------|---------------|
+| **Greenfield** | (default) | ✅ Generated | Create VM, wait for ready |
+| **MTV** | `--assume-existing-vms` | ❌ Skipped | Verify, validate, label |
+
+**Configure in workspace** (optional):
+```yaml
+# ops-translate.yaml
+assume_existing_vms: true  # Enable MTV mode by default
 ```
 
 **Gap Analysis Integration**:

@@ -53,6 +53,7 @@ def generate_all(
     profile: str,
     use_ai: bool = False,
     output_format: str = "yaml",
+    assume_existing_vms: bool = False,
 ):
     """
     Generate all artifacts (KubeVirt + Ansible) using AI or templates.
@@ -62,18 +63,30 @@ def generate_all(
         profile: Profile name (lab/prod)
         use_ai: If True, use LLM. If False, use templates.
         output_format: Output format (yaml, json, kustomize, argocd)
+        assume_existing_vms: If True, assume VMs exist (MTV mode) - skip VM YAML generation
     """
     if use_ai:
-        generate_with_ai(workspace, profile, output_format)
+        generate_with_ai(workspace, profile, output_format, assume_existing_vms)
     else:
-        generate_with_templates(workspace, profile, output_format)
+        generate_with_templates(workspace, profile, output_format, assume_existing_vms)
 
 
-def generate_with_ai(workspace: Workspace, profile: str, output_format: str = "yaml"):
+def generate_with_ai(
+    workspace: Workspace,
+    profile: str,
+    output_format: str = "yaml",
+    assume_existing_vms: bool = False,
+):
     """
     Generate artifacts using LLM.
 
     Reads intent/intent.yaml and calls LLM to generate all artifacts.
+
+    Args:
+        workspace: Workspace instance
+        profile: Profile name
+        output_format: Output format
+        assume_existing_vms: If True, skip VM YAML generation (MTV mode)
     """
     # Load config and initialize LLM
     config = workspace.load_config()
@@ -177,12 +190,23 @@ def parse_multifile_response(response: str) -> dict:
     return files
 
 
-def generate_with_templates(workspace: Workspace, profile: str, output_format: str = "yaml"):
+def generate_with_templates(
+    workspace: Workspace,
+    profile: str,
+    output_format: str = "yaml",
+    assume_existing_vms: bool = False,
+):
     """
     Generate artifacts using Jinja2 templates or direct generation.
 
     For standard YAML format, calls ansible.py and kubevirt.py directly to enable
     gap analysis integration. For other formats, uses Jinja2 templates.
+
+    Args:
+        workspace: Workspace instance
+        profile: Profile name
+        output_format: Output format
+        assume_existing_vms: If True, skip VM YAML generation (MTV mode)
     """
     import yaml
 
@@ -205,9 +229,14 @@ def generate_with_templates(workspace: Workspace, profile: str, output_format: s
         # Use direct generation to support gap analysis (only if no custom templates)
         # This path works without merged intent.yaml if gaps.json exists
         try:
-            ansible.generate(workspace, profile, use_ai=False)
-            kubevirt.generate(workspace, profile, use_ai=False)
-            console.print("[green]✓ KubeVirt manifest: output/kubevirt/vm.yaml[/green]")
+            ansible.generate(
+                workspace, profile, use_ai=False, assume_existing_vms=assume_existing_vms
+            )
+            if not assume_existing_vms:
+                kubevirt.generate(workspace, profile, use_ai=False)
+                console.print("[green]✓ KubeVirt manifest: output/kubevirt/vm.yaml[/green]")
+            else:
+                console.print("[dim]Skipping VM YAML generation (--assume-existing-vms)[/dim]")
             console.print("[green]✓ Ansible playbook: output/ansible/site.yml[/green]")
             console.print("[green]✓ Ansible role: output/ansible/roles/provision_vm/[/green]")
             console.print("[green]✓ README: output/README.md[/green]")
@@ -287,7 +316,9 @@ def generate_with_templates(workspace: Workspace, profile: str, output_format: s
                 console.print("[green]✓ Overlays: output/overlays/{dev,staging,prod}/[/green]")
             elif output_format == "argocd":
                 console.print("[green]✓ ArgoCD applications: output/argocd/[/green]")
-                console.print("[green]✓ Kustomize structure: output/base/ and output/overlays/[/green]")
+                console.print(
+                    "[green]✓ Kustomize structure: output/base/ and output/overlays/[/green]"
+                )
         except Exception as e:
             console.print(f"[yellow]⚠ Could not apply format {output_format}: {e}[/yellow]")
             return
