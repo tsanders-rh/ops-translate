@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dunes-policy xmlns="http://vmware.com/vco/policy" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <id>a8f3c2e1-4b5d-6789-0abc-def012345678</id>
+  <name>VM Lifecycle Event Policy</name>
+  <description>Reactive automation for VM lifecycle events - power on compliance checks and power off cleanup</description>
+  <version>1.0.0</version>
+
+  <!-- VM Powered On - Run Compliance Check -->
+  <event-subscription>
+    <id>sub1</id>
+    <name>VM Powered On - Compliance Check</name>
+    <description>Run compliance check when production VM is powered on</description>
+
+    <event-type>VmPoweredOnEvent</event-type>
+    <workflow-id>compliance-check-workflow</workflow-id>
+    <workflow-name>VM Compliance Check</workflow-name>
+
+    <conditions>
+      <condition>
+        <script><![CDATA[
+// Only trigger for production VMs
+event.vm.runtime.host.parent.name == "Production-Cluster" &&
+event.vm.config.hardware.numCPU > 4
+        ]]></script>
+      </condition>
+    </conditions>
+
+    <bindings>
+      <binding>
+        <name>vmName</name>
+        <value>event.vm.name</value>
+      </binding>
+      <binding>
+        <name>vmId</name>
+        <value>event.vm.id</value>
+      </binding>
+      <binding>
+        <name>cluster</name>
+        <value>event.vm.runtime.host.parent.name</value>
+      </binding>
+      <binding>
+        <name>poweredOnTime</name>
+        <value>event.createdTime</value>
+      </binding>
+    </bindings>
+  </event-subscription>
+
+  <!-- VM Powered Off - Run Cleanup -->
+  <event-subscription>
+    <id>sub2</id>
+    <name>VM Powered Off - Cleanup</name>
+    <description>Run cleanup tasks when VM is powered off</description>
+
+    <event-type>VmPoweredOffEvent</event-type>
+    <workflow-id>vm-cleanup-workflow</workflow-id>
+    <workflow-name>VM Cleanup</workflow-name>
+
+    <conditions>
+      <condition>
+        <script><![CDATA[
+// Run cleanup for all VMs
+true
+        ]]></script>
+      </condition>
+    </conditions>
+
+    <bindings>
+      <binding>
+        <name>vmName</name>
+        <value>event.vm.name</value>
+      </binding>
+      <binding>
+        <name>vmId</name>
+        <value>event.vm.id</value>
+      </binding>
+    </bindings>
+  </event-subscription>
+
+  <!-- VM Created - Register in CMDB -->
+  <event-subscription>
+    <id>sub3</id>
+    <name>VM Created - CMDB Registration</name>
+    <description>Register newly created VMs in ServiceNow CMDB</description>
+
+    <event-type>VmCreatedEvent</event-type>
+    <workflow-id>cmdb-register-vm</workflow-id>
+    <workflow-name>Register VM in CMDB</workflow-name>
+
+    <conditions>
+      <condition>
+        <script><![CDATA[
+// Register all VMs except templates
+!event.vm.config.template
+        ]]></script>
+      </condition>
+    </conditions>
+
+    <bindings>
+      <binding>
+        <name>vmName</name>
+        <value>event.vm.name</value>
+      </binding>
+      <binding>
+        <name>vmId</name>
+        <value>event.vm.id</value>
+      </binding>
+      <binding>
+        <name>template</name>
+        <value>event.template.name</value>
+      </binding>
+      <binding>
+        <name>createdTime</name>
+        <value>event.createdTime</value>
+      </binding>
+    </bindings>
+  </event-subscription>
+
+  <!-- Alarm Status Changed - Create Incident -->
+  <event-subscription>
+    <id>sub4</id>
+    <name>Critical Alarm - Create Incident</name>
+    <description>Create ServiceNow incident for critical alarms</description>
+
+    <event-type>AlarmStatusChangedEvent</event-type>
+    <workflow-id>create-incident-from-alarm</workflow-id>
+    <workflow-name>Create Incident from Alarm</workflow-name>
+
+    <conditions>
+      <condition>
+        <script><![CDATA[
+// Only critical alarms
+event.to == "red" &&
+event.alarm.name != "Test Alarm"
+        ]]></script>
+      </condition>
+    </conditions>
+
+    <bindings>
+      <binding>
+        <name>alarmName</name>
+        <value>event.alarm.name</value>
+      </binding>
+      <binding>
+        <name>entityName</name>
+        <value>event.entity.name</value>
+      </binding>
+      <binding>
+        <name>alarmStatus</name>
+        <value>event.to</value>
+      </binding>
+    </bindings>
+  </event-subscription>
+
+</dunes-policy>
