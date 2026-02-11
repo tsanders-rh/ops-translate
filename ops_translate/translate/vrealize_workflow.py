@@ -533,7 +533,7 @@ Approve? (yes/no)
                     # Build regex pattern for this specific call
                     # Matches: ObjectName.methodName(...) but not System.log, Math.*, etc.
                     # Use DOTALL to match arguments that span multiple lines
-                    pattern = rf'\b{re.escape(obj_name)}\.{re.escape(method)}\s*\((.*?)\)'
+                    pattern = rf"\b{re.escape(obj_name)}\.{re.escape(method)}\s*\((.*?)\)"
 
                     for match in re.finditer(pattern, script, re.DOTALL):
                         args = match.group(1)
@@ -621,8 +621,7 @@ Approve? (yes/no)
             profile_keys_str = "\n      ".join(requires_profile)
             task = {
                 "name": f"DECISION REQUIRED - {task_name}",
-                "ansible.builtin.fail": {
-                    "msg": f"""Integration detected: {integration}
+                "ansible.builtin.fail": {"msg": f"""Integration detected: {integration}
 Missing required profile configuration:
       {profile_keys_str}
 
@@ -634,8 +633,7 @@ Action required:
 3. Re-run translation
 
 See: intent/recommendations.md for guidance
-"""
-                },
+"""},
                 "tags": ["decision_required", "integration", integration],
             }
         else:
@@ -669,9 +667,7 @@ See: intent/recommendations.md for guidance
         args = [arg.strip() for arg in args_str.split(",")]
         return args
 
-    def _substitute_params(
-        self, params: dict[str, Any], args: list[str]
-    ) -> dict[str, Any]:
+    def _substitute_params(self, params: dict[str, Any], args: list[str]) -> dict[str, Any]:
         """
         Substitute {arg0}, {arg1}, etc. in parameter template.
 
