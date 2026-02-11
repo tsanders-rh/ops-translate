@@ -6,6 +6,7 @@ into executable Ansible tasks.
 """
 
 import re
+import yaml
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -181,7 +182,32 @@ class JavaScriptToAnsibleTranslator:
     - Logging → debug
     - Approval interactions → pause
     - Email notifications → mail
+    - Integration calls → Ansible modules/adapters (mapping-driven)
     """
+
+    def __init__(self):
+        """Initialize translator and load integration mappings."""
+        self.integration_mappings = self._load_integration_mappings()
+
+    def _load_integration_mappings(self) -> dict[str, Any]:
+        """
+        Load vRO integration mappings from YAML file.
+
+        Returns:
+            Dictionary of integration mappings, or empty dict if file not found
+        """
+        mappings_file = Path(__file__).parent / "vro_integration_mappings.yaml"
+        if not mappings_file.exists():
+            return {}
+
+        try:
+            with open(mappings_file, "r") as f:
+                mappings = yaml.safe_load(f)
+                return mappings if mappings else {}
+        except Exception as e:
+            # Log warning but don't fail - just skip integration detection
+            print(f"Warning: Failed to load integration mappings: {e}")
+            return {}
 
     def translate_script(self, script: str, item: WorkflowItem) -> list[dict[str, Any]]:
         """
@@ -195,6 +221,10 @@ class JavaScriptToAnsibleTranslator:
             List of Ansible task dictionaries
         """
         tasks = []
+
+        # Detect and translate integration calls (trust-first, allowlist-based)
+        integration_tasks = self._detect_integration_calls(script, item)
+        tasks.extend(integration_tasks)
 
         # Remove System.log statements and replace with debug tasks
         log_tasks = self._extract_logging(script, item.display_name)
@@ -464,6 +494,228 @@ Approve? (yes/no)
 
         # Fallback: wrap in not
         return f"not ({condition})"
+
+    def _detect_integration_calls(self, script: str, item: WorkflowItem) -> list[dict[str, Any]]:
+        """
+        Detect vRO integration calls and translate to Ansible tasks.
+
+        Uses allowlist-based matching from integration mappings. Only matches
+        when we have high confidence (explicit mapping exists).
+
+        DOES NOT match common JS patterns like:
+        - System.log(...)
+        - Math.*
+        - vm.powerOffVM_Task()
+
+        Args:
+            script: JavaScript code to analyze
+            item: WorkflowItem for context
+
+        Returns:
+            List of Ansible task dictionaries (modules or adapter stubs)
+        """
+        if not self.integration_mappings:
+            return []
+
+        tasks = []
+        detected_integrations = []
+
+        # Build allowlist of object.method patterns from mappings
+        for integration_name, methods in self.integration_mappings.items():
+            for method_name, mapping in methods.items():
+                match_config = mapping.get("match", {})
+
+                # Pattern 1: Explicit object.method matching
+                if "object" in match_config and "method" in match_config:
+                    obj_name = match_config["object"]
+                    method = match_config["method"]
+
+                    # Build regex pattern for this specific call
+                    # Matches: ObjectName.methodName(...) but not System.log, Math.*, etc.
+                    # Use DOTALL to match arguments that span multiple lines
+                    pattern = rf'\b{re.escape(obj_name)}\.{re.escape(method)}\s*\((.*?)\)'
+
+                    for match in re.finditer(pattern, script, re.DOTALL):
+                        args = match.group(1)
+                        detected_integrations.append(
+                            {
+                                "integration": integration_name,
+                                "method": method_name,
+                                "mapping": mapping,
+                                "args": args,
+                                "evidence": match.group(0),
+                            }
+                        )
+
+                # Pattern 2: Contains patterns (e.g., RESTHost, RESTRequest)
+                elif "contains_any" in match_config:
+                    patterns = match_config["contains_any"]
+                    for pattern in patterns:
+                        if pattern in script:
+                            # Extract the full statement for evidence
+                            # Look for the line containing the pattern
+                            lines = script.split("\n")
+                            evidence_lines = [line for line in lines if pattern in line]
+                            evidence = evidence_lines[0] if evidence_lines else pattern
+
+                            detected_integrations.append(
+                                {
+                                    "integration": integration_name,
+                                    "method": method_name,
+                                    "mapping": mapping,
+                                    "args": "",  # Contains-based matches don't extract args
+                                    "evidence": evidence,
+                                }
+                            )
+                            break  # Only match once per method
+
+        # Generate tasks for detected integrations
+        for detection in detected_integrations:
+            task = self._generate_integration_task(detection, item)
+            tasks.append(task)
+
+        return tasks
+
+    def _generate_integration_task(
+        self, detection: dict[str, Any], item: WorkflowItem
+    ) -> dict[str, Any]:
+        """
+        Generate Ansible task for detected integration call.
+
+        Generates either:
+        1. A fully mapped Ansible module task
+        2. A DECISION REQUIRED stub if profile keys are missing
+
+        Args:
+            detection: Detected integration info with mapping
+            item: WorkflowItem for context
+
+        Returns:
+            Ansible task dictionary
+        """
+        integration = detection["integration"]
+        method = detection["method"]
+        mapping = detection["mapping"]
+        args = detection["args"]
+        evidence = detection["evidence"]
+
+        ansible_config = mapping.get("ansible", {})
+        module = ansible_config.get("module")
+        params = ansible_config.get("params", {})
+        register = ansible_config.get("register")
+        requires_profile = mapping.get("requires_profile", [])
+        severity = mapping.get("severity", "PARTIAL")
+
+        # Parse arguments (simple arg0, arg1, arg2 substitution for v1)
+        parsed_args = self._parse_args(args)
+
+        # Substitute {arg0}, {arg1}, etc. in params
+        substituted_params = self._substitute_params(params, parsed_args)
+
+        # Build the task
+        task_name = f"{integration.capitalize()}: {method.replace('_', ' ').title()}"
+
+        # Check if this requires profile configuration
+        if requires_profile:
+            # Generate DECISION REQUIRED stub
+            profile_keys_str = "\n      ".join(requires_profile)
+            task = {
+                "name": f"DECISION REQUIRED - {task_name}",
+                "ansible.builtin.fail": {
+                    "msg": f"""Integration detected: {integration}
+Missing required profile configuration:
+      {profile_keys_str}
+
+Evidence: {item.display_name} - {evidence.strip()}
+
+Action required:
+1. Configure profile keys in profile.yml
+2. Implement adapter stub if needed
+3. Re-run translation
+
+See: intent/recommendations.md for guidance
+"""
+                },
+                "tags": ["decision_required", "integration", integration],
+            }
+        else:
+            # Generate fully mapped task
+            task = {
+                "name": task_name,
+                module: substituted_params,
+            }
+
+            if register:
+                task["register"] = register
+
+        return task
+
+    def _parse_args(self, args_str: str) -> list[str]:
+        """
+        Parse JavaScript function arguments.
+
+        Simple v1 implementation: split by comma, strip whitespace.
+
+        Args:
+            args_str: Argument string from function call
+
+        Returns:
+            List of argument strings
+        """
+        if not args_str.strip():
+            return []
+
+        # Simple comma split (doesn't handle nested calls, but good enough for v1)
+        args = [arg.strip() for arg in args_str.split(",")]
+        return args
+
+    def _substitute_params(
+        self, params: dict[str, Any], args: list[str]
+    ) -> dict[str, Any]:
+        """
+        Substitute {arg0}, {arg1}, etc. in parameter template.
+
+        Args:
+            params: Parameter template from mapping
+            args: Parsed argument values
+
+        Returns:
+            Parameters with substitutions applied
+        """
+        import copy
+
+        # Deep copy params to avoid modifying the original
+        result = copy.deepcopy(params)
+
+        # Recursively substitute in nested dictionaries
+        def substitute_recursive(obj):
+            if isinstance(obj, dict):
+                return {k: substitute_recursive(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [substitute_recursive(item) for item in obj]
+            elif isinstance(obj, str):
+                # Substitute {argN} with actual values
+                for i, arg in enumerate(args):
+                    placeholder = f"{{arg{i}}}"
+                    if placeholder in obj:
+                        # Clean up the argument value
+                        arg_clean = arg.strip().strip('"').strip("'")
+                        obj = obj.replace(placeholder, arg_clean)
+
+                # Substitute {url}, {method}, etc. with Jinja2 variables
+                jinja_vars = ["url", "method", "headers", "body"]
+                for var in jinja_vars:
+                    placeholder = f"{{{var}}}"
+                    if placeholder == obj:  # Exact match
+                        return f"{{{{ {var} }}}}"
+                    elif placeholder in obj:  # Partial match
+                        obj = obj.replace(placeholder, f"{{{{ {var} }}}}")
+
+                return obj
+            else:
+                return obj
+
+        return substitute_recursive(result)
 
 
 def translate_workflow_to_ansible(workflow_file: Path) -> list[dict[str, Any]]:
