@@ -5,8 +5,6 @@ Validates the trust-first, mapping-driven approach to translating
 vRO integration calls (ServiceNow, REST, etc.) to Ansible modules.
 """
 
-from pathlib import Path
-
 from ops_translate.translate.vrealize_workflow import (
     JavaScriptToAnsibleTranslator,
     WorkflowItem,

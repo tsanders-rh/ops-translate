@@ -6,11 +6,11 @@ into executable Ansible tasks.
 """
 
 import re
-import yaml
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import yaml
 from lxml import etree
 
 
@@ -201,7 +201,7 @@ class JavaScriptToAnsibleTranslator:
             return {}
 
         try:
-            with open(mappings_file, "r") as f:
+            with open(mappings_file) as f:
                 mappings = yaml.safe_load(f)
                 return mappings if mappings else {}
         except Exception as e:
@@ -604,7 +604,6 @@ Approve? (yes/no)
         params = ansible_config.get("params", {})
         register = ansible_config.get("register")
         requires_profile = mapping.get("requires_profile", [])
-        severity = mapping.get("severity", "PARTIAL")
 
         # Parse arguments (simple arg0, arg1, arg2 substitution for v1)
         parsed_args = self._parse_args(args)
