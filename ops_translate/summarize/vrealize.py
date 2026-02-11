@@ -5,7 +5,7 @@ Parses workflow XML exports to detect inputs, decisions, approvals, etc.
 
 from pathlib import Path
 
-from defusedxml import ElementTree
+from defusedxml import ElementTree  # type: ignore[import-untyped]
 
 
 def summarize(xml_file: Path) -> str:
