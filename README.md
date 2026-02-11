@@ -57,6 +57,9 @@ ops-translate generate --profile lab                    # YAML (default)
 ops-translate generate --profile lab --format kustomize # GitOps
 ops-translate generate --profile lab --format argocd    # ArgoCD
 
+# OR if VMs were already migrated via MTV, generate validation playbooks
+ops-translate generate --profile lab --assume-existing-vms
+
 # Review generated files
 tree output/
 ```
@@ -155,6 +158,7 @@ PowerCLI/vRealize  ──[LLM]──>  intent.yaml  ──[Templates]──>  An
 - **Translatability assessment** - Classifies components as SUPPORTED, PARTIAL, EXPERT-GUIDED, or CUSTOM
 - **Migration path guidance** - Provides specific recommendations with production-grade patterns
 - **Smart Ansible scaffolding** - Generates TODO tasks and role stubs for manual work
+- **MTV (Migration Toolkit for Virtualization) support** - Generate validation playbooks for already-migrated VMs
 - Detect conflicts during intent merge (different approval requirements, network mappings, etc.)
 - Generate KubeVirt VirtualMachine manifests
 - Generate Ansible roles with proper structure and defaults
@@ -279,6 +283,70 @@ When you run `generate`, ops-translate automatically uses your custom templates 
 - Maintain consistency across migrations
 - Encode organizational best practices
 - No need to post-process generated artifacts
+
+### MTV (Migration Toolkit for Virtualization) Mode
+
+When VMs have already been migrated to OpenShift Virtualization using MTV, ops-translate can generate validation and day-2 operations playbooks instead of VM creation manifests:
+
+```bash
+# Generate validation playbooks for already-migrated VMs
+ops-translate generate --profile lab --assume-existing-vms
+```
+
+**What changes in MTV mode:**
+
+| Aspect | Greenfield Mode | MTV Mode |
+|--------|----------------|----------|
+| **VM YAML** | ✅ Generated (`output/kubevirt/vm.yaml`) | ❌ Skipped |
+| **Ansible Tasks** | Create VM, wait for ready | Verify exists, validate config, apply labels |
+| **Use Case** | New VM deployments | Post-migration validation |
+
+**Generated Ansible tasks in MTV mode:**
+
+1. **Verify VM exists** - Fails if VM not found
+   ```yaml
+   - name: Verify VM exists
+     kubernetes.core.k8s_info:
+       api_version: kubevirt.io/v1
+       kind: VirtualMachine
+       name: "{{ vm_name }}"
+       namespace: virt-lab
+     register: vm_info
+     failed_when: vm_info.resources | length == 0
+   ```
+
+2. **Validate configurations** - Assert CPU/memory match intent
+   ```yaml
+   - name: Validate VM CPU configuration
+     ansible.builtin.assert:
+       that:
+         - vm_info.resources[0].spec.template.spec.domain.cpu.cores == cpu_cores
+       fail_msg: "CPU doesn't match intent"
+   ```
+
+3. **Apply operational labels** - Tag VMs with managed-by, environment
+   ```yaml
+   - name: Apply operational labels to VM
+     kubernetes.core.k8s:
+       state: patched
+       definition:
+         metadata:
+           labels:
+             managed-by: ops-translate
+             environment: "{{ environment }}"
+   ```
+
+**Configure as default** (optional):
+```yaml
+# ops-translate.yaml
+assume_existing_vms: true  # Always use MTV mode
+```
+
+**When to use MTV mode:**
+- VMs were migrated using Migration Toolkit for Virtualization
+- VMs already exist and need governance applied
+- You want to validate existing VMs against operational intent
+- Post-migration day-2 operations
 
 ### Enhanced Dry-Run Validation
 
