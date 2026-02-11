@@ -11,6 +11,14 @@ from ops_translate.report.loaders import ReportDataLoader, ReportFileLocator
 from ops_translate.util.files import ensure_dir, write_text
 from ops_translate.workspace import Workspace
 
+# Import vRealize workflow translator
+try:
+    from ops_translate.translate.vrealize_workflow import translate_workflow_to_ansible
+
+    VREALIZE_TRANSLATION_AVAILABLE = True
+except ImportError:
+    VREALIZE_TRANSLATION_AVAILABLE = False
+
 
 def generate(
     workspace: Workspace, profile: str, use_ai: bool = False, assume_existing_vms: bool = False
@@ -63,7 +71,7 @@ def generate(
     ensure_dir(role_dir / "defaults")
 
     tasks_content = generate_tasks(
-        profile_config, use_ai, gaps_data, recommendations_data, assume_existing_vms
+        workspace, profile_config, use_ai, gaps_data, recommendations_data, assume_existing_vms
     )
     write_text(role_dir / "tasks/main.yml", tasks_content)
 
@@ -125,6 +133,7 @@ def generate_playbook(profile: str, gaps_data: dict[str, Any] | None = None) -> 
 
 
 def generate_tasks(
+    workspace: Workspace,
     profile_config: dict,
     use_ai: bool,
     gaps_data: dict[str, Any] | None = None,
@@ -230,6 +239,16 @@ def generate_tasks(
                 "delay": 10,
             },
         ]
+
+    # Inject vRealize workflow translated tasks if available
+    vrealize_tasks = _get_vrealize_translated_tasks(workspace)
+    if vrealize_tasks:
+        # Prepend workflow tasks before VM provisioning
+        tasks = [
+            {"_comment": "# Translated from vRealize workflow"},
+            *vrealize_tasks,
+            {"_comment": "\n# VM Provisioning"},
+        ] + tasks
 
     # Inject gap analysis TODOs if available
     if gaps_data:
@@ -709,3 +728,45 @@ component_type: "{component_type}"
         defaults_content += "# See README.md for guidance\n"
 
     write_text(role_dir / "defaults/main.yml", defaults_content)
+
+
+def _get_vrealize_translated_tasks(workspace: Workspace) -> list[dict[str, Any]]:
+    """
+    Get translated Ansible tasks from vRealize workflows if available.
+
+    Args:
+        workspace: Workspace instance
+
+    Returns:
+        List of Ansible task dictionaries, or empty list if no workflows found
+    """
+    if not VREALIZE_TRANSLATION_AVAILABLE:
+        return []
+
+    # Look for vRealize workflow files in input/vrealize/
+    vrealize_dir = workspace.root / "input/vrealize"
+    if not vrealize_dir.exists():
+        return []
+
+    workflow_files = list(vrealize_dir.glob("*.xml"))
+    if not workflow_files:
+        return []
+
+    # Translate all workflows and combine tasks
+    all_tasks = []
+    for workflow_file in workflow_files:
+        try:
+            tasks = translate_workflow_to_ansible(workflow_file)
+            if tasks:
+                # Add comment separator between workflows
+                if all_tasks:
+                    all_tasks.append({"_comment": f"\n# From: {workflow_file.name}"})
+                else:
+                    all_tasks.append({"_comment": f"# From: {workflow_file.name}"})
+                all_tasks.extend(tasks)
+        except Exception as e:
+            # Log error but don't fail - just skip this workflow
+            print(f"Warning: Failed to translate {workflow_file.name}: {e}")
+            continue
+
+    return all_tasks

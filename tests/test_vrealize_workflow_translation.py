@@ -195,6 +195,60 @@ if (memoryGB > 128) {
         result = translator._js_to_jinja("false")
         assert result == "False"
 
+    def test_translate_approval_interaction(self):
+        """Test translating approval interaction to pause task."""
+        translator = JavaScriptToAnsibleTranslator()
+        item = WorkflowItem(
+            name="item3",
+            item_type="task",
+            display_name="Request Approval",
+            script='System.log("Requesting approval");',
+            in_bindings=[
+                {"name": "vmName", "type": "string", "export_name": "vmName"},
+                {"name": "requiresApproval", "type": "boolean", "export_name": "requiresApproval"},
+            ],
+            out_bindings=[],
+            out_name=None,
+        )
+
+        task = translator.translate_approval_interaction(item)
+
+        # Should be a pause task
+        assert "ansible.builtin.pause" in task
+        assert "prompt" in task["ansible.builtin.pause"]
+        assert "register" in task
+        assert task["register"] == "approval_response"
+
+        # Should have when clause based on requiresApproval
+        assert "when" in task
+        assert "requiresApproval" in task["when"]
+
+    def test_translate_email_notification(self):
+        """Test translating email notification to mail task."""
+        translator = JavaScriptToAnsibleTranslator()
+        item = WorkflowItem(
+            name="item7",
+            item_type="task",
+            display_name="Notify Owner",
+            script='System.log("Sending notification");',
+            in_bindings=[
+                {"name": "ownerEmail", "type": "string", "export_name": "ownerEmail"},
+                {"name": "vmName", "type": "string", "export_name": "vmName"},
+            ],
+            out_bindings=[],
+            out_name=None,
+        )
+
+        task = translator.translate_email_notification(item)
+
+        # Should be a mail task
+        assert "community.general.mail" in task
+        mail_config = task["community.general.mail"]
+        assert "to" in mail_config
+        assert "ownerEmail" in mail_config["to"]
+        assert "subject" in mail_config
+        assert "body" in mail_config
+
 
 class TestWorkflowTranslation:
     """Integration tests for full workflow translation."""

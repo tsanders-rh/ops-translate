@@ -177,6 +177,8 @@ class JavaScriptToAnsibleTranslator:
     - Conditionals (if/else) → set_fact + when
     - Validation (throw) → assert
     - Logging → debug
+    - Approval interactions → pause
+    - Email notifications → mail
     """
 
     def translate_script(self, script: str, item: WorkflowItem) -> list[dict[str, Any]]:
@@ -205,6 +207,89 @@ class JavaScriptToAnsibleTranslator:
         tasks.extend(assignment_tasks)
 
         return tasks
+
+    def translate_approval_interaction(self, item: WorkflowItem) -> dict[str, Any]:
+        """
+        Translate approval interaction workflow item to pause task.
+
+        Args:
+            item: WorkflowItem of type 'interaction' or 'task' with approval script
+
+        Returns:
+            Ansible pause task dictionary
+        """
+        # Extract VM info from bindings
+        vm_name_var = "vm_name"
+        for binding in item.in_bindings:
+            if "vm" in binding["name"].lower() and "name" in binding["name"].lower():
+                vm_name_var = binding["name"]
+                break
+
+        # Check if approval is conditional (from script or previous logic)
+        prompt_text = f"""
+VM Provisioning Request
+VM: {{{{ {vm_name_var} }}}}
+
+This request requires approval.
+Approve? (yes/no)
+""".strip()
+
+        task = {
+            "name": f"Request approval: {item.display_name}",
+            "ansible.builtin.pause": {"prompt": prompt_text},
+            "register": "approval_response",
+        }
+
+        # If this approval is conditional, add when clause
+        # (This would be determined from workflow context - for now we check bindings)
+        for binding in item.in_bindings:
+            if "approval" in binding["name"].lower() and "require" in binding["name"].lower():
+                task["when"] = f"{{{{ {binding['export_name']} }}}}"
+                break
+
+        return task
+
+    def translate_email_notification(
+        self, item: WorkflowItem, recipient_var: str = "owner_email", subject: str | None = None
+    ) -> dict[str, Any]:
+        """
+        Translate email notification to mail task.
+
+        Args:
+            item: WorkflowItem containing email logic
+            recipient_var: Variable name containing recipient email
+            subject: Email subject (extracted from script if not provided)
+
+        Returns:
+            Ansible mail task dictionary
+        """
+        # Try to extract subject from script
+        if not subject and item.script:
+            # Look for subject in script
+            subject_match = re.search(r'subject["\s:]+([^"]+)', item.script, re.IGNORECASE)
+            if subject_match:
+                subject = subject_match.group(1).strip()
+            else:
+                subject = f"Notification: {item.display_name}"
+
+        # Try to find recipient from bindings
+        for binding in item.in_bindings:
+            if "email" in binding["name"].lower() or "owner" in binding["name"].lower():
+                recipient_var = binding["export_name"]
+                break
+
+        task = {
+            "name": f"Send notification: {item.display_name}",
+            "community.general.mail": {
+                "host": "{{ smtp_host | default('localhost') }}",
+                "port": "{{ smtp_port | default(25) }}",
+                "to": f"{{{{ {recipient_var} }}}}",
+                "subject": subject or f"Notification from {item.display_name}",
+                "body": f"Your request has been processed.\n\nWorkflow: {item.display_name}",
+            },
+        }
+
+        return task
 
     def _extract_logging(self, script: str, display_name: str) -> list[dict[str, Any]]:
         """Extract System.log statements and convert to debug tasks."""
@@ -403,7 +488,16 @@ def translate_workflow_to_ansible(workflow_file: Path) -> list[dict[str, Any]]:
     # Translate each item
     all_tasks = []
     for item in items:
-        if item.script:
+        # Check for approval workflow items
+        if _is_approval_item(item):
+            task = translator.translate_approval_interaction(item)
+            all_tasks.append(task)
+        # Check for email notification items
+        elif _is_email_item(item):
+            task = translator.translate_email_notification(item)
+            all_tasks.append(task)
+        # Regular script-based items
+        elif item.script:
             tasks = translator.translate_script(item.script, item)
             all_tasks.extend(tasks)
         elif item.item_type == "decision":
@@ -412,3 +506,47 @@ def translate_workflow_to_ansible(workflow_file: Path) -> list[dict[str, Any]]:
             pass  # Handled by when: clauses on subsequent tasks
 
     return all_tasks
+
+
+def _is_approval_item(item: WorkflowItem) -> bool:
+    """Check if workflow item represents an approval interaction."""
+    if item.item_type == "interaction":
+        return True
+
+    # Check for approval keywords in display name or script
+    if item.display_name and "approval" in item.display_name.lower():
+        return True
+
+    if item.script and "approval" in item.script.lower():
+        # Look for patterns like "request approval" or "approvalDecision"
+        approval_patterns = [
+            r"request\s+approval",
+            r"approval\s*(decision|request|granted)",
+            r"approver",
+        ]
+        return any(re.search(pattern, item.script, re.IGNORECASE) for pattern in approval_patterns)
+
+    return False
+
+
+def _is_email_item(item: WorkflowItem) -> bool:
+    """Check if workflow item represents an email notification."""
+    if item.item_type == "email":
+        return True
+
+    # Check for email/notification keywords
+    if item.display_name:
+        email_keywords = ["email", "notify", "notification", "send mail"]
+        if any(keyword in item.display_name.lower() for keyword in email_keywords):
+            return True
+
+    if item.script:
+        email_patterns = [
+            r"send\s+email",
+            r"notify\s+(owner|user)",
+            r"email\s*(to|subject|body)",
+            r"notification",
+        ]
+        return any(re.search(pattern, item.script, re.IGNORECASE) for pattern in email_patterns)
+
+    return False
