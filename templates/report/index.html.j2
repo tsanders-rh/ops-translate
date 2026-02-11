@@ -535,6 +535,53 @@
                 </div>
                 {% endif %}
 
+                <!-- VM Source -->
+                {% if intent.intent.vm_source %}
+                <div class="intent-block">
+                    <h3>VM Image Source</h3>
+                    <p><strong>Type:</strong>
+                        {% if intent.intent.vm_source.type == 'template' %}
+                        <span class="badge badge-info">VM Template</span>
+                        {% elif intent.intent.vm_source.type == 'ova' %}
+                        <span class="badge badge-info">OVA Import</span>
+                        {% elif intent.intent.vm_source.type == 'ovf' %}
+                        <span class="badge badge-info">OVF Import</span>
+                        {% elif intent.intent.vm_source.type == 'clone' %}
+                        <span class="badge badge-info">VM Clone</span>
+                        {% elif intent.intent.vm_source.type == 'blank' %}
+                        <span class="badge badge-warning">Blank Disk</span>
+                        {% else %}
+                        {{ intent.intent.vm_source.type }}
+                        {% endif %}
+                    </p>
+                    {% if intent.intent.vm_source.name %}
+                    <p><strong>Source:</strong> <code>{{ intent.intent.vm_source.name }}</code></p>
+                    {% endif %}
+                    {% if intent.intent.vm_source.description %}
+                    <p><strong>Description:</strong> {{ intent.intent.vm_source.description }}</p>
+                    {% endif %}
+
+                    {% if intent.intent.vm_source.type != 'blank' and intent.intent.vm_source.name %}
+                    <!-- Check if template mapping exists -->
+                    {% if profile.config.template_mappings and profile.config.template_mappings.get(intent.intent.vm_source.name) %}
+                    <div class="info-box info-box-success">
+                        <strong>✓ Mapped to:</strong> <code>{{ profile.config.template_mappings[intent.intent.vm_source.name] }}</code>
+                    </div>
+                    {% else %}
+                    <div class="info-box info-box-warning">
+                        <strong>⚠ No Mapping Configured</strong>
+                        <p>This template/image is not mapped in the profile configuration. The generated VM will use a blank disk.</p>
+                        <p>Add a mapping in <code>ops-translate.yaml</code>:</p>
+                        <pre>profiles:
+  {{ profile.name }}:
+    template_mappings:
+      "{{ intent.intent.vm_source.name }}": "registry:quay.io/containerdisks/centos:8"</pre>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                </div>
+                {% endif %}
+
                 <!-- Inputs -->
                 {% if intent.intent.inputs %}
                 <div class="intent-block">
