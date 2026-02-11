@@ -582,6 +582,64 @@ ops-translate generate --profile lab   # Uses lab settings
 ops-translate generate --profile prod  # Uses prod settings
 ```
 
+### VM Template/Image Mappings
+
+When PowerCLI scripts use VM templates (e.g., `New-VM -Template "RHEL8-Golden"`), you need to map VMware template names to KubeVirt image sources.
+
+**Add to your profile configuration:**
+
+```yaml
+profiles:
+  lab:
+    default_namespace: virt-lab
+    default_network: lab-network
+    default_storage_class: nfs
+    template_mappings:
+      # Container registry images (ContainerDisk)
+      "RHEL8-Golden-Image": "registry:quay.io/containerdisks/centos:8"
+      "Ubuntu-22.04": "registry:quay.io/containerdisks/ubuntu:22.04"
+
+      # Existing PVCs (DataVolume from PVC)
+      "Windows-2022-Template": "pvc:os-images/windows-server-2022"
+      "PostgreSQL-Base": "pvc:database-pvc"
+
+      # HTTP-accessible images
+      "Custom-App-Image": "http:https://storage.example.com/images/app.qcow2"
+
+      # Explicit blank disk (if template should be ignored)
+      "Empty-Template": "blank"
+```
+
+**Mapping Format:**
+- `registry:URL` - Container registry image (e.g., quay.io/containerdisks/centos:8)
+- `pvc:NAME` - PVC in current namespace
+- `pvc:NAMESPACE/NAME` - PVC in specific namespace
+- `http:URL` - HTTP/HTTPS accessible image
+- `blank` - Empty disk
+
+**What happens without a mapping:**
+
+If your PowerCLI script uses a template that has no mapping:
+```powershell
+New-VM -Name $VMName -Template "UnmappedTemplate"
+```
+
+ops-translate will:
+1. Display a warning during generation
+2. Show an example mapping configuration
+3. Fall back to `blank: {}` disk (won't boot until you add the mapping)
+
+**Example warning:**
+```
+⚠ Warning: No template mapping found for 'UnmappedTemplate'.
+  Add mapping in profile config to use actual image.
+
+  Example: template_mappings:
+    UnmappedTemplate: registry:quay.io/containerdisks/centos:8
+```
+
+**Best Practice:** Set up template mappings before generating artifacts to ensure VMs can boot with the correct base images.
+
 ## Non-Goals (v1)
 
 This is a v1 prototype focused on demonstrating the translation workflow. Not included:
