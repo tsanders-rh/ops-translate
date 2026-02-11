@@ -819,8 +819,9 @@ See: intent/recommendations.md for guidance
                 always_tasks = [
                     {
                         "name": "Cleanup (from finally block)",
-                        "ansible.builtin.debug":
-                            {"msg": "Finally block present but no translatable tasks"},
+                        "ansible.builtin.debug": {
+                            "msg": "Finally block present but no translatable tasks"
+                        },
                     }
                 ]
 
