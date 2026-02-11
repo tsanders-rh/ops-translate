@@ -814,6 +814,15 @@ See: intent/recommendations.md for guidance
         always_tasks = []
         if error_handling["finally_block"]:
             always_tasks = self._translate_script_fragment(error_handling["finally_block"], item)
+            # If finally block didn't translate to any tasks, add a comment task
+            if not always_tasks:
+                always_tasks = [
+                    {
+                        "name": "Cleanup (from finally block)",
+                        "ansible.builtin.debug":
+                            {"msg": "Finally block present but no translatable tasks"},
+                    }
+                ]
 
         # Build block/rescue/always structure
         block_task = {
