@@ -156,9 +156,7 @@ def import_cmd(
                 console.print(
                     f"[yellow]Cannot auto-detect file type for {source_path.name}[/yellow]"
                 )
-                console.print(
-                    "Use --source to specify type explicitly (powercli or vrealize)"
-                )
+                console.print("Use --source to specify type explicitly (powercli or vrealize)")
                 raise typer.Exit(1)
         else:
             # Directory: import both types
@@ -223,9 +221,7 @@ def _import_single_source(source: str, source_path: Path, workspace: Workspace):
         files_to_import = list(source_path.glob(file_pattern))
         if not files_to_import:
             # Disable markup to avoid issues with glob patterns like *.ps1
-            console.print(
-                f"No {file_pattern} files found in {source_path}", style="yellow"
-            )
+            console.print(f"No {file_pattern} files found in {source_path}", style="yellow")
             return  # Not an error, just no files to import
     else:
         raise OpsFileNotFoundError(f"{source_path} is not a file or directory")
@@ -233,8 +229,7 @@ def _import_single_source(source: str, source_path: Path, workspace: Workspace):
     # Display import plan
     if len(files_to_import) == 1:
         console.print(
-            f"[bold blue]Importing {source} file:[/bold blue] "
-            f"{files_to_import[0].name}"
+            f"[bold blue]Importing {source} file:[/bold blue] " f"{files_to_import[0].name}"
         )
     else:
         console.print(
@@ -253,8 +248,7 @@ def _import_single_source(source: str, source_path: Path, workspace: Workspace):
     console.print()
     if imported_files:
         console.print(
-            f"[green]✓ Imported {len(imported_files)} file(s) to "
-            f"input/{source}/[/green]"
+            f"[green]✓ Imported {len(imported_files)} file(s) to " f"input/{source}/[/green]"
         )
         if len(imported_files) == 1:
             console.print(f"[green]✓ SHA256: {imported_files[0][2]}[/green]")
@@ -282,9 +276,7 @@ def _import_file(
 
     # Check file is readable
     if not os.access(file_path, os.R_OK):
-        console.print(
-            f"[yellow]⚠ Skipping {file_path.name}: Cannot read file[/yellow]"
-        )
+        console.print(f"[yellow]⚠ Skipping {file_path.name}: Cannot read file[/yellow]")
         return None
 
     # Copy file to input directory
@@ -299,9 +291,7 @@ def _import_file(
         existing_hash = sha256_file(dest_path)
         new_hash = sha256_file(file_path)
         if existing_hash == new_hash:
-            console.print(
-                f"[dim]  ✓ {file_path.name} (already imported, skipping)[/dim]"
-            )
+            console.print(f"[dim]  ✓ {file_path.name} (already imported, skipping)[/dim]")
             return None
 
     shutil.copy2(file_path, dest_path)
@@ -737,7 +727,11 @@ def generate(
 
     # Generate all artifacts (success messages printed by generator)
     generate_all(
-        workspace, profile, use_ai=not no_ai, output_format=format, assume_existing_vms=assume_existing
+        workspace,
+        profile,
+        use_ai=not no_ai,
+        output_format=format,
+        assume_existing_vms=assume_existing,
     )
 
 

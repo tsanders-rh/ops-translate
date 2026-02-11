@@ -306,7 +306,9 @@ def test_generate_assume_existing_vms_mode(temp_workspace, powercli_fixture):
     assert playbook_path.exists(), "Ansible playbook should be generated"
 
     # Load Ansible role tasks
-    tasks_path = workspace.root / "output" / "ansible" / "roles" / "provision_vm" / "tasks" / "main.yml"
+    tasks_path = (
+        workspace.root / "output" / "ansible" / "roles" / "provision_vm" / "tasks" / "main.yml"
+    )
     assert tasks_path.exists(), "Ansible role tasks should be generated"
 
     with open(tasks_path) as f:
@@ -345,7 +347,9 @@ def test_generate_greenfield_mode(temp_workspace, powercli_fixture):
     assert kubevirt_manifest.exists(), "KubeVirt manifest should be generated in greenfield mode"
 
     # Verify Ansible role tasks
-    tasks_path = workspace.root / "output" / "ansible" / "roles" / "provision_vm" / "tasks" / "main.yml"
+    tasks_path = (
+        workspace.root / "output" / "ansible" / "roles" / "provision_vm" / "tasks" / "main.yml"
+    )
     assert tasks_path.exists(), "Ansible role tasks should be generated"
 
     with open(tasks_path) as f:
@@ -357,7 +361,9 @@ def test_generate_greenfield_mode(temp_workspace, powercli_fixture):
 
     # Verify validation tasks are NOT present
     assert "Verify VM exists" not in tasks_content, "Should not have VM verification task"
-    assert "Validate VM CPU configuration" not in tasks_content, "Should not have CPU validation task"
+    assert (
+        "Validate VM CPU configuration" not in tasks_content
+    ), "Should not have CPU validation task"
 
     # Verify tasks use k8s with state: present for creation
     assert "state: present" in tasks_content, "Should use state: present for creation"

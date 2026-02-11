@@ -72,7 +72,10 @@ def generate_all(
 
 
 def generate_with_ai(
-    workspace: Workspace, profile: str, output_format: str = "yaml", assume_existing_vms: bool = False
+    workspace: Workspace,
+    profile: str,
+    output_format: str = "yaml",
+    assume_existing_vms: bool = False,
 ):
     """
     Generate artifacts using LLM.
@@ -188,7 +191,10 @@ def parse_multifile_response(response: str) -> dict:
 
 
 def generate_with_templates(
-    workspace: Workspace, profile: str, output_format: str = "yaml", assume_existing_vms: bool = False
+    workspace: Workspace,
+    profile: str,
+    output_format: str = "yaml",
+    assume_existing_vms: bool = False,
 ):
     """
     Generate artifacts using Jinja2 templates or direct generation.
@@ -223,7 +229,9 @@ def generate_with_templates(
         # Use direct generation to support gap analysis (only if no custom templates)
         # This path works without merged intent.yaml if gaps.json exists
         try:
-            ansible.generate(workspace, profile, use_ai=False, assume_existing_vms=assume_existing_vms)
+            ansible.generate(
+                workspace, profile, use_ai=False, assume_existing_vms=assume_existing_vms
+            )
             if not assume_existing_vms:
                 kubevirt.generate(workspace, profile, use_ai=False)
                 console.print("[green]✓ KubeVirt manifest: output/kubevirt/vm.yaml[/green]")
@@ -308,7 +316,9 @@ def generate_with_templates(
                 console.print("[green]✓ Overlays: output/overlays/{dev,staging,prod}/[/green]")
             elif output_format == "argocd":
                 console.print("[green]✓ ArgoCD applications: output/argocd/[/green]")
-                console.print("[green]✓ Kustomize structure: output/base/ and output/overlays/[/green]")
+                console.print(
+                    "[green]✓ Kustomize structure: output/base/ and output/overlays/[/green]"
+                )
         except Exception as e:
             console.print(f"[yellow]⚠ Could not apply format {output_format}: {e}[/yellow]")
             return

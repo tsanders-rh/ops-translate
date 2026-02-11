@@ -12,7 +12,9 @@ from ops_translate.util.files import ensure_dir, write_text
 from ops_translate.workspace import Workspace
 
 
-def generate(workspace: Workspace, profile: str, use_ai: bool = False, assume_existing_vms: bool = False):
+def generate(
+    workspace: Workspace, profile: str, use_ai: bool = False, assume_existing_vms: bool = False
+):
     """
     Generate Ansible playbook and role.
 
