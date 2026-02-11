@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow xmlns="http://vmware.com/vco/workflow" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://vmware.com/vco/workflow http://vmware.com/vco/workflow/Workflow-v4.xsd" version="0.4.0">
+  <display-name>VM Provisioning with Integrations</display-name>
+  <description>Example workflow demonstrating integration calls (ServiceNow, Infoblox, etc.)</description>
+
+  <workflow-item name="item1" type="task" out-name="item2">
+    <display-name>Create ServiceNow Change Request</display-name>
+    <script encoded="false"><![CDATA[
+// Create change request in ServiceNow
+System.log("Creating change request for VM: " + vmName);
+
+var changeRequest = ServiceNow.createChangeRequest(
+    "Provision VM: " + vmName,
+    "Automated VM provisioning for " + environment + " environment",
+    "standard",
+    "low"
+);
+
+System.log("Change request created: " + changeRequest);
+    ]]></script>
+    <in-binding>
+      <bind name="vmName" type="string" export-name="vmName"/>
+      <bind name="environment" type="string" export-name="environment"/>
+    </in-binding>
+    <out-binding>
+      <bind name="changeRequest" type="string" export-name="changeRequest"/>
+    </out-binding>
+    <position x="100.0" y="50.0"/>
+  </workflow-item>
+
+  <workflow-item name="item2" type="task" out-name="item3">
+    <display-name>Get Next Available IP</display-name>
+    <script encoded="false"><![CDATA[
+// Get next available IP from Infoblox
+System.log("Requesting IP address from network: " + network);
+
+var ipAddress = Infoblox.getNextAvailableIP(network);
+
+System.log("Allocated IP: " + ipAddress);
+    ]]></script>
+    <in-binding>
+      <bind name="network" type="string" export-name="network"/>
+    </in-binding>
+    <out-binding>
+      <bind name="ipAddress" type="string" export-name="ipAddress"/>
+    </out-binding>
+    <position x="100.0" y="150.0"/>
+  </workflow-item>
+
+  <workflow-item name="item3" type="task" out-name="item4">
+    <display-name>Create DNS Host Record</display-name>
+    <script encoded="false"><![CDATA[
+// Create host record in Infoblox DNS
+System.log("Creating DNS record for: " + vmName + " -> " + ipAddress);
+
+Infoblox.createHostRecord(vmName + ".example.com", ipAddress);
+
+System.log("DNS record created successfully");
+    ]]></script>
+    <in-binding>
+      <bind name="vmName" type="string" export-name="vmName"/>
+      <bind name="ipAddress" type="string" export-name="ipAddress"/>
+    </in-binding>
+    <out-binding/>
+    <position x="100.0" y="250.0"/>
+  </workflow-item>
+
+  <workflow-item name="item4" type="task" out-name="item5">
+    <display-name>Call External REST API</display-name>
+    <script encoded="false"><![CDATA[
+// Call external REST API for VM registration
+System.log("Calling external API to register VM");
+
+var restHost = new RESTHost("api.cmdb.example.com");
+var request = restHost.createRequest("POST", "/api/v1/vms");
+request.setHeader("Content-Type", "application/json");
+request.contentType = "application/json";
+
+var body = {
+    "name": vmName,
+    "ip": ipAddress,
+    "environment": environment
+};
+
+var response = request.execute(JSON.stringify(body));
+System.log("API response: " + response.statusCode);
+    ]]></script>
+    <in-binding>
+      <bind name="vmName" type="string" export-name="vmName"/>
+      <bind name="ipAddress" type="string" export-name="ipAddress"/>
+      <bind name="environment" type="string" export-name="environment"/>
+    </in-binding>
+    <out-binding/>
+    <position x="100.0" y="350.0"/>
+  </workflow-item>
+
+  <workflow-item name="item5" type="task" out-name="item6">
+    <display-name>Create AD User Account</display-name>
+    <script encoded="false"><![CDATA[
+// Create user account in Active Directory
+System.log("Creating AD user for VM owner");
+
+ActiveDirectory.createUser(
+    ownerUsername,
+    defaultPassword,
+    ownerEmail,
+    "VMUsers"
+);
+
+System.log("AD user created: " + ownerUsername);
+    ]]></script>
+    <in-binding>
+      <bind name="ownerUsername" type="string" export-name="ownerUsername"/>
+      <bind name="ownerEmail" type="string" export-name="ownerEmail"/>
+      <bind name="defaultPassword" type="string" export-name="defaultPassword"/>
+    </in-binding>
+    <out-binding/>
+    <position x="100.0" y="450.0"/>
+  </workflow-item>
+
+  <workflow-item name="item6" type="end">
+    <display-name>End</display-name>
+    <position x="100.0" y="550.0"/>
+  </workflow-item>
+
+</workflow>

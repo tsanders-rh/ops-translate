@@ -1,0 +1,375 @@
+# vRealize Orchestrator Integration Mappings
+#
+# This file defines how vRO integration calls (plugins, REST APIs, wrapper actions)
+# are translated to Ansible modules and adapters.
+#
+# Principle: Trust-first, mapping-driven translation
+# - Only translate when confidence is high (explicit mapping match)
+# - Unmapped integrations generate DECISION REQUIRED stubs with evidence
+# - No generic regex matching that could cause false positives
+#
+# Structure:
+#   <integration_name>:
+#     <method_name>:
+#       match:
+#         object: <JavaScript object name>
+#         method: <JavaScript method name>
+#         OR
+#         contains_any: [<pattern1>, <pattern2>]
+#       ansible:
+#         module: <ansible.module.name>
+#         params:
+#           <param>: <value or template>
+#         register: <optional variable name>
+#       requires_profile:
+#         - profile.path.to.config
+#       findings:
+#         - "Category:Subcategory"
+#       severity: SUPPORTED|PARTIAL|BLOCKED|MANUAL
+
+# ServiceNow ITSM Integration
+servicenow:
+  create_incident:
+    match:
+      object: ServiceNow
+      method: createIncident
+    ansible:
+      module: servicenow.servicenow.snow_record
+      params:
+        state: present
+        table: incident
+        data:
+          short_description: "{arg0}"
+          description: "{arg1}"
+          priority: "{arg2}"
+      register: snow_incident
+    requires_profile:
+      - profile.itsm.servicenow.endpoint
+      - profile.itsm.servicenow.username
+      - profile.itsm.servicenow.password
+    findings:
+      - "ITSM:ServiceNow:CreateIncident"
+    severity: PARTIAL
+
+  update_incident:
+    match:
+      object: ServiceNow
+      method: updateIncident
+    ansible:
+      module: servicenow.servicenow.snow_record
+      params:
+        state: present
+        table: incident
+        number: "{arg0}"
+        data: "{arg1}"
+    requires_profile:
+      - profile.itsm.servicenow.endpoint
+      - profile.itsm.servicenow.username
+      - profile.itsm.servicenow.password
+    findings:
+      - "ITSM:ServiceNow:UpdateIncident"
+    severity: PARTIAL
+
+  create_change_request:
+    match:
+      object: ServiceNow
+      method: createChangeRequest
+    ansible:
+      module: servicenow.servicenow.snow_record
+      params:
+        state: present
+        table: change_request
+        data:
+          short_description: "{arg0}"
+          description: "{arg1}"
+          type: "{arg2}"
+          risk: "{arg3}"
+      register: snow_change
+    requires_profile:
+      - profile.itsm.servicenow.endpoint
+      - profile.itsm.servicenow.username
+      - profile.itsm.servicenow.password
+    findings:
+      - "ITSM:ServiceNow:CreateChange"
+    severity: PARTIAL
+
+# REST/HTTP Integration
+rest:
+  rest_host_operation:
+    match:
+      contains_any:
+        - "RESTHost"
+        - "RESTRequest"
+        - "RESTOperation"
+    ansible:
+      module: ansible.builtin.uri
+      params:
+        url: "{url}"
+        method: "{method}"
+        headers: "{headers}"
+        body: "{body}"
+        body_format: json
+        return_content: true
+        validate_certs: true
+      register: rest_response
+    requires_profile:
+      - profile.rest.defaults
+    findings:
+      - "Integration:REST:GenericAPI"
+    severity: PARTIAL
+
+# Infoblox IPAM/DNS Integration
+infoblox:
+  get_next_ip:
+    match:
+      object: Infoblox
+      method: getNextAvailableIP
+    ansible:
+      module: infoblox.nios_modules.nios_next_ip
+      params:
+        network: "{arg0}"
+        num: 1
+      register: next_ip_result
+    requires_profile:
+      - profile.ipam.infoblox.endpoint
+      - profile.ipam.infoblox.username
+      - profile.ipam.infoblox.password
+    findings:
+      - "IPAM:Infoblox:GetNextIP"
+    severity: PARTIAL
+
+  create_host_record:
+    match:
+      object: Infoblox
+      method: createHostRecord
+    ansible:
+      module: infoblox.nios_modules.nios_host_record
+      params:
+        name: "{arg0}"
+        ipv4addrs:
+          - ipv4addr: "{arg1}"
+        state: present
+    requires_profile:
+      - profile.ipam.infoblox.endpoint
+      - profile.ipam.infoblox.username
+      - profile.ipam.infoblox.password
+    findings:
+      - "DNS:Infoblox:CreateHost"
+    severity: PARTIAL
+
+  delete_host_record:
+    match:
+      object: Infoblox
+      method: deleteHostRecord
+    ansible:
+      module: infoblox.nios_modules.nios_host_record
+      params:
+        name: "{arg0}"
+        state: absent
+    requires_profile:
+      - profile.ipam.infoblox.endpoint
+      - profile.ipam.infoblox.username
+      - profile.ipam.infoblox.password
+    findings:
+      - "DNS:Infoblox:DeleteHost"
+    severity: PARTIAL
+
+# Active Directory Integration
+activedirectory:
+  create_user:
+    match:
+      object: ActiveDirectory
+      method: createUser
+    ansible:
+      module: community.windows.win_domain_user
+      params:
+        name: "{arg0}"
+        password: "{arg1}"
+        email: "{arg2}"
+        groups: "{arg3}"
+        state: present
+    requires_profile:
+      - profile.directory.ad.domain_controller
+      - profile.directory.ad.admin_username
+      - profile.directory.ad.admin_password
+    findings:
+      - "Directory:ActiveDirectory:CreateUser"
+    severity: PARTIAL
+
+  delete_user:
+    match:
+      object: ActiveDirectory
+      method: deleteUser
+    ansible:
+      module: community.windows.win_domain_user
+      params:
+        name: "{arg0}"
+        state: absent
+    requires_profile:
+      - profile.directory.ad.domain_controller
+      - profile.directory.ad.admin_username
+      - profile.directory.ad.admin_password
+    findings:
+      - "Directory:ActiveDirectory:DeleteUser"
+    severity: PARTIAL
+
+  add_to_group:
+    match:
+      object: ActiveDirectory
+      method: addUserToGroup
+    ansible:
+      module: community.windows.win_domain_group_membership
+      params:
+        name: "{arg1}"
+        members:
+          - "{arg0}"
+        state: present
+    requires_profile:
+      - profile.directory.ad.domain_controller
+      - profile.directory.ad.admin_username
+      - profile.directory.ad.admin_password
+    findings:
+      - "Directory:ActiveDirectory:AddToGroup"
+    severity: PARTIAL
+
+# NSX-T Networking Integration
+nsxt:
+  create_segment:
+    match:
+      object: NSX
+      method: createSegment
+    ansible:
+      module: vmware.ansible_for_nsxt.nsxt_policy_segment
+      params:
+        display_name: "{arg0}"
+        transport_zone_display_name: "{arg1}"
+        state: present
+    requires_profile:
+      - profile.network.nsxt.manager_host
+      - profile.network.nsxt.username
+      - profile.network.nsxt.password
+    findings:
+      - "Network:NSX:CreateSegment"
+    severity: PARTIAL
+
+  create_security_group:
+    match:
+      object: NSX
+      method: createSecurityGroup
+    ansible:
+      module: vmware.ansible_for_nsxt.nsxt_policy_group
+      params:
+        display_name: "{arg0}"
+        expression:
+          - member_type: VirtualMachine
+            key: Tag
+            operator: EQUALS
+            value: "{arg1}"
+        state: present
+    requires_profile:
+      - profile.network.nsxt.manager_host
+      - profile.network.nsxt.username
+      - profile.network.nsxt.password
+    findings:
+      - "Network:NSX:CreateSecurityGroup"
+    severity: PARTIAL
+
+  create_firewall_rule:
+    match:
+      object: NSX
+      method: createFirewallRule
+    ansible:
+      module: vmware.ansible_for_nsxt.nsxt_policy_security_policy
+      params:
+        display_name: "{arg0}"
+        rules:
+          - display_name: "{arg1}"
+            source_groups: "{arg2}"
+            destination_groups: "{arg3}"
+            services: "{arg4}"
+            action: "{arg5}"
+        state: present
+    requires_profile:
+      - profile.network.nsxt.manager_host
+      - profile.network.nsxt.username
+      - profile.network.nsxt.password
+    findings:
+      - "Network:NSX:CreateFirewallRule"
+    severity: PARTIAL
+
+# Email/SMTP Integration
+email:
+  send_email:
+    match:
+      object: Email
+      method: sendEmail
+    ansible:
+      module: community.general.mail
+      params:
+        host: "{{ profile_smtp_host }}"
+        port: "{{ profile_smtp_port | default(25) }}"
+        to: "{arg0}"
+        subject: "{arg1}"
+        body: "{arg2}"
+        from: "{{ profile_smtp_from }}"
+    requires_profile:
+      - profile.smtp.host
+      - profile.smtp.port
+      - profile.smtp.from
+    findings:
+      - "Integration:Email:SendMail"
+    severity: SUPPORTED
+
+# SQL Database Integration
+sql:
+  execute_query:
+    match:
+      object: SQL
+      method: executeQuery
+    ansible:
+      module: community.general.postgresql_query
+      params:
+        db: "{arg0}"
+        query: "{arg1}"
+      register: sql_result
+    requires_profile:
+      - profile.database.host
+      - profile.database.username
+      - profile.database.password
+    findings:
+      - "Integration:Database:Query"
+    severity: MANUAL
+
+  execute_update:
+    match:
+      object: SQL
+      method: executeUpdate
+    ansible:
+      module: community.general.postgresql_query
+      params:
+        db: "{arg0}"
+        query: "{arg1}"
+    requires_profile:
+      - profile.database.host
+      - profile.database.username
+      - profile.database.password
+    findings:
+      - "Integration:Database:Update"
+    severity: MANUAL
+
+# SSH/Remote Execution Integration
+ssh:
+  execute_command:
+    match:
+      object: SSH
+      method: executeCommand
+    ansible:
+      module: ansible.builtin.command
+      params:
+        cmd: "{arg1}"
+      delegate_to: "{arg0}"
+    requires_profile:
+      - profile.ssh.private_key_path
+    findings:
+      - "Integration:SSH:RemoteExecution"
+    severity: PARTIAL
