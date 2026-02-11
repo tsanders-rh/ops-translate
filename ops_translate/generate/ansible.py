@@ -164,16 +164,25 @@ def generate_tasks(
                         "vm_info.resources | length > 0",
                         "vm_info.resources[0].spec.template.spec.domain.cpu.cores == cpu_cores",
                     ],
-                    "fail_msg": "VM CPU configuration doesn't match intent (expected {{ cpu_cores }} cores)",
+                    "fail_msg": (
+                        "VM CPU configuration doesn't match intent "
+                        "(expected {{ cpu_cores }} cores)"
+                    ),
                 },
             },
             {
                 "name": "Validate VM memory configuration",
                 "ansible.builtin.assert": {
                     "that": [
-                        "vm_info.resources[0].spec.template.spec.domain.resources.requests.memory == memory",
+                        (
+                            "vm_info.resources[0].spec.template.spec.domain."
+                            "resources.requests.memory == memory"
+                        ),
                     ],
-                    "fail_msg": "VM memory configuration doesn't match intent (expected {{ memory }})",
+                    "fail_msg": (
+                        "VM memory configuration doesn't match intent "
+                        "(expected {{ memory }})"
+                    ),
                 },
             },
             {
@@ -215,7 +224,8 @@ def generate_tasks(
                 },
                 "register": "vm_info",
                 "until": (
-                    "vm_info.resources | length > 0 and vm_info.resources[0].status.ready is defined"
+                    "vm_info.resources | length > 0 and "
+                    "vm_info.resources[0].status.ready is defined"
                 ),
                 "retries": 30,
                 "delay": 10,
