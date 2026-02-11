@@ -699,6 +699,56 @@ class TestGenerate:
         finally:
             os.chdir(original_dir)
 
+    @patch("ops_translate.generate.generate_all")
+    def test_generate_assume_existing_vms_flag(self, mock_generate, tmp_path):
+        """Test generation with --assume-existing-vms flag (MTV mode)."""
+        workspace = tmp_path / "workspace"
+        runner.invoke(app, ["init", str(workspace)])
+
+        import os
+
+        original_dir = os.getcwd()
+        try:
+            os.chdir(workspace)
+
+            result = runner.invoke(
+                app, ["generate", "--profile", "lab", "--no-ai", "--assume-existing-vms"]
+            )
+
+            assert result.exit_code == 0
+            assert mock_generate.called
+            # Check that assume_existing_vms=True was passed
+            call_args = mock_generate.call_args
+            assert call_args[1]["assume_existing_vms"] is True
+            # Should show MTV mode in output
+            assert "MTV mode" in result.stdout
+        finally:
+            os.chdir(original_dir)
+
+    @patch("ops_translate.generate.generate_all")
+    def test_generate_greenfield_mode(self, mock_generate, tmp_path):
+        """Test generation without --assume-existing-vms (greenfield mode)."""
+        workspace = tmp_path / "workspace"
+        runner.invoke(app, ["init", str(workspace)])
+
+        import os
+
+        original_dir = os.getcwd()
+        try:
+            os.chdir(workspace)
+
+            result = runner.invoke(app, ["generate", "--profile", "lab", "--no-ai"])
+
+            assert result.exit_code == 0
+            assert mock_generate.called
+            # Check that assume_existing_vms=False was passed
+            call_args = mock_generate.call_args
+            assert call_args[1]["assume_existing_vms"] is False
+            # Should show greenfield in output
+            assert "greenfield" in result.stdout
+        finally:
+            os.chdir(original_dir)
+
 
 class TestDryRun:
     """Tests for dry-run command."""

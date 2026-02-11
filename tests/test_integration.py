@@ -282,3 +282,82 @@ def test_generate_with_different_profiles(temp_workspace, powercli_fixture):
     # Even if content is similar, the generation should succeed for both
     assert len(lab_playbook) > 0
     assert len(prod_playbook) > 0
+
+
+def test_generate_assume_existing_vms_mode(temp_workspace, powercli_fixture):
+    """Test generation with assume_existing_vms creates validation tasks, not creation tasks"""
+    workspace = temp_workspace
+
+    dest = workspace.root / "input" / "powercli" / powercli_fixture.name
+    shutil.copy2(powercli_fixture, dest)
+
+    extract_all(workspace)
+    merge_intents(workspace)
+
+    # Generate with assume_existing_vms=True (MTV mode)
+    generate_all(workspace, profile="lab", use_ai=False, assume_existing_vms=True)
+
+    # Verify KubeVirt manifest was NOT generated (check file, not directory)
+    kubevirt_manifest = workspace.root / "output" / "kubevirt" / "vm.yaml"
+    assert not kubevirt_manifest.exists(), "KubeVirt manifest should not exist in MTV mode"
+
+    # Verify Ansible playbook was generated
+    playbook_path = workspace.root / "output" / "ansible" / "site.yml"
+    assert playbook_path.exists(), "Ansible playbook should be generated"
+
+    # Load Ansible role tasks
+    tasks_path = workspace.root / "output" / "ansible" / "roles" / "provision_vm" / "tasks" / "main.yml"
+    assert tasks_path.exists(), "Ansible role tasks should be generated"
+
+    with open(tasks_path) as f:
+        tasks_content = f.read()
+
+    # Verify validation tasks are present (MTV mode)
+    assert "Verify VM exists" in tasks_content, "Should have VM verification task"
+    assert "Validate VM CPU configuration" in tasks_content, "Should have CPU validation task"
+    assert "Validate VM memory configuration" in tasks_content, "Should have memory validation task"
+    assert "Apply operational labels" in tasks_content, "Should have label patching task"
+
+    # Verify creation tasks are NOT present
+    assert "Create KubeVirt VirtualMachine" not in tasks_content, "Should not have VM creation task"
+    assert "Wait for VM to be ready" not in tasks_content, "Should not have VM wait task"
+
+    # Verify tasks use k8s_info for validation
+    assert "kubernetes.core.k8s_info" in tasks_content, "Should use k8s_info for validation"
+    assert "ansible.builtin.assert" in tasks_content, "Should use assert for validation"
+
+
+def test_generate_greenfield_mode(temp_workspace, powercli_fixture):
+    """Test generation without assume_existing_vms creates VM and waits for ready"""
+    workspace = temp_workspace
+
+    dest = workspace.root / "input" / "powercli" / powercli_fixture.name
+    shutil.copy2(powercli_fixture, dest)
+
+    extract_all(workspace)
+    merge_intents(workspace)
+
+    # Generate with assume_existing_vms=False (greenfield mode - default)
+    generate_all(workspace, profile="lab", use_ai=False, assume_existing_vms=False)
+
+    # Verify KubeVirt manifest WAS generated
+    kubevirt_manifest = workspace.root / "output" / "kubevirt" / "vm.yaml"
+    assert kubevirt_manifest.exists(), "KubeVirt manifest should be generated in greenfield mode"
+
+    # Verify Ansible role tasks
+    tasks_path = workspace.root / "output" / "ansible" / "roles" / "provision_vm" / "tasks" / "main.yml"
+    assert tasks_path.exists(), "Ansible role tasks should be generated"
+
+    with open(tasks_path) as f:
+        tasks_content = f.read()
+
+    # Verify creation tasks are present (greenfield mode)
+    assert "Create KubeVirt VirtualMachine" in tasks_content, "Should have VM creation task"
+    assert "Wait for VM to be ready" in tasks_content, "Should have VM wait task"
+
+    # Verify validation tasks are NOT present
+    assert "Verify VM exists" not in tasks_content, "Should not have VM verification task"
+    assert "Validate VM CPU configuration" not in tasks_content, "Should not have CPU validation task"
+
+    # Verify tasks use k8s with state: present for creation
+    assert "state: present" in tasks_content, "Should use state: present for creation"

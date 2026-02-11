@@ -701,8 +701,17 @@ def generate(
         "--format",
         help="Output format: yaml, json, kustomize, argocd",
     ),
+    assume_existing_vms: bool = typer.Option(
+        False,
+        "--assume-existing-vms",
+        help="Assume VMs exist (MTV mode) - generate validation/day-2 ops only, not VM YAMLs",
+    ),
 ):
-    """Generate Ansible and KubeVirt artifacts in various formats."""
+    """Generate Ansible and KubeVirt artifacts in various formats.
+
+    By default, generates VM definitions for greenfield deployments.
+    Use --assume-existing-vms when VMs were migrated via MTV or already exist.
+    """
     workspace = Workspace(Path.cwd())
     if not workspace.config_file.exists():
         console.print("[red]Error: Not in a workspace.[/red]")
@@ -713,16 +722,23 @@ def generate(
         console.print(f"[red]Error: Profile '{profile}' not found in config[/red]")
         raise typer.Exit(1)
 
+    # Check for workspace-level setting, CLI flag overrides
+    workspace_setting = config.get("assume_existing_vms", False)
+    assume_existing = assume_existing_vms or workspace_setting
+
     mode = "template-based" if no_ai else "AI-assisted"
+    vm_mode = "MTV mode (existing VMs)" if assume_existing else "greenfield"
     console.print(
-        f"[bold blue]Generating artifacts ({mode}):[/bold blue] "
+        f"[bold blue]Generating artifacts ({mode}, {vm_mode}):[/bold blue] "
         f"profile={profile}, format={format}"
     )
 
     from ops_translate.generate import generate_all
 
     # Generate all artifacts (success messages printed by generator)
-    generate_all(workspace, profile, use_ai=not no_ai, output_format=format)
+    generate_all(
+        workspace, profile, use_ai=not no_ai, output_format=format, assume_existing_vms=assume_existing
+    )
 
 
 @app.command()
