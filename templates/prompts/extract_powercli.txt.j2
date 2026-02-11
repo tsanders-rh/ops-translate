@@ -48,6 +48,26 @@ Extract the operational intent from the PowerCLI script and produce a YAML docum
 - Resource validation (CPU/memory limits)
 - Cost center or owner tracking
 
+### VM Templates and Images
+- `New-VM -Template "TemplateName"` - VM created from a template
+- `Import-VApp -Source "path/file.ova"` - OVA/OVF imports
+- `Clone-VM -VM "SourceVM"` - Cloning from existing VM
+- Template names in variables: `$Template = "RHEL8-Golden"`
+
+When a template/image is detected, include a `vm_source` section:
+```yaml
+vm_source:
+  type: template  # or: ova, ovf, clone, blank
+  name: "RHEL8-Golden-Image"
+  description: "Red Hat Enterprise Linux 8 golden image template"
+```
+
+If no template is specified and VM is created with blank/empty disks, use:
+```yaml
+vm_source:
+  type: blank
+```
+
 ### Assumptions (when to document)
 Only include an `assumptions` section when you make **significant inferences** such as:
 - **Inferring behavior** not explicitly coded (e.g., "Assumed day2_operations based on standard VM lifecycle patterns")
@@ -93,6 +113,9 @@ intent:
     Uses environment-based logic to select the appropriate network (prod-net or dev-net)
     and applies environment tags for tracking.
   workload_type: virtual_machine
+
+  vm_source:
+    type: blank
 
   inputs:
     vm_name:
