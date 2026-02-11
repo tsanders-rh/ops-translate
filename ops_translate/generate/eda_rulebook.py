@@ -23,7 +23,12 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 
 
-def generate_eda_rulebook(workspace: Workspace, policy_file: Path, output_file: Path | None = None):
+def generate_eda_rulebook(
+    workspace: Workspace,
+    policy_file: Path,
+    output_file: Path | None = None,
+    use_job_templates: bool = False,
+):
     """
     Generate Event-Driven Ansible rulebook from vRO event subscription policy.
 
@@ -31,6 +36,7 @@ def generate_eda_rulebook(workspace: Workspace, policy_file: Path, output_file: 
         workspace: Workspace instance
         policy_file: Path to vRO policy XML file
         output_file: Optional path to output rulebook (defaults to output/eda/rulebook.yml)
+        use_job_templates: If True, use run_job_template (AAP). If False, use run_playbook.
     """
     # Parse event subscriptions
     try:
@@ -53,7 +59,7 @@ def generate_eda_rulebook(workspace: Workspace, policy_file: Path, output_file: 
         return
 
     # Generate rulebook structure
-    rulebook = _generate_rulebook(subscriptions, event_mappings)
+    rulebook = _generate_rulebook(subscriptions, event_mappings, use_job_templates)
 
     # Write output
     if output_file is None:
@@ -67,8 +73,75 @@ def generate_eda_rulebook(workspace: Workspace, policy_file: Path, output_file: 
     )
 
 
+def generate_eda_artifacts(
+    workspace: Workspace,
+    policy_files: list[Path],
+    use_job_templates: bool = True,
+    categorize: bool = True,
+):
+    """
+    Generate complete EDA artifacts including rulebooks, requirements, and deployment files.
+
+    Args:
+        workspace: Workspace instance
+        policy_files: List of vRO policy XML files
+        use_job_templates: If True, use AAP job templates. If False, use playbooks.
+        categorize: If True, split into multiple rulebooks by category
+    """
+    # Parse all subscriptions
+    all_subscriptions = []
+    for policy_file in policy_files:
+        try:
+            subscriptions = parse_event_subscriptions(policy_file)
+            all_subscriptions.extend(subscriptions)
+        except ValueError as e:
+            console.print(f"[yellow]Warning: Could not parse {policy_file}: {e}[/yellow]")
+
+    if not all_subscriptions:
+        console.print("[yellow]No event subscriptions found in any policy files[/yellow]")
+        return
+
+    # Load event mappings
+    mappings_file = PROJECT_ROOT / "ops_translate/generate/vcenter_event_mappings.yaml"
+    with open(mappings_file) as f:
+        event_mappings = yaml.safe_load(f)
+
+    output_dir = workspace.root / "output/eda"
+    ensure_dir(output_dir)
+    ensure_dir(output_dir / "rulebooks")
+    ensure_dir(output_dir / "deployment")
+
+    # Generate rulebooks (categorized or single)
+    if categorize:
+        categorized = _categorize_subscriptions(all_subscriptions, event_mappings)
+        for category, subs in categorized.items():
+            rulebook = _generate_rulebook(subs, event_mappings, use_job_templates)
+            output_file = output_dir / "rulebooks" / f"{category}.yml"
+            write_text(output_file, yaml.dump(rulebook, default_flow_style=False, sort_keys=False))
+            console.print(f"[green]✓ Generated: {output_file.relative_to(workspace.root)}[/green]")
+    else:
+        rulebook = _generate_rulebook(all_subscriptions, event_mappings, use_job_templates)
+        output_file = output_dir / "rulebooks" / "all_events.yml"
+        write_text(output_file, yaml.dump(rulebook, default_flow_style=False, sort_keys=False))
+        console.print(f"[green]✓ Generated: {output_file.relative_to(workspace.root)}[/green]")
+
+    # Generate requirements.yml
+    _generate_requirements(output_dir)
+    req_file = (output_dir / "requirements.yml").relative_to(workspace.root)
+    console.print(f"[green]✓ Generated: {req_file}[/green]")
+
+    # Generate deployment files
+    _generate_deployment_files(output_dir, use_job_templates)
+    deploy_file = (output_dir / "deployment/deployment.yml").relative_to(workspace.root)
+    inv_file = (output_dir / "deployment/inventory.yml").relative_to(workspace.root)
+    console.print(f"[green]✓ Generated: {deploy_file}[/green]")
+    console.print(f"[green]✓ Generated: {inv_file}[/green]")
+
+
 def _generate_rulebook(
-    subscriptions: list[EventSubscription], event_mappings: dict[str, Any]
+    subscriptions: list[EventSubscription],
+    event_mappings: dict[str, Any],
+    use_job_templates: bool = False,
 ) -> list[dict[str, Any]]:
     """
     Generate EDA rulebook structure from subscriptions and mappings.
@@ -76,6 +149,7 @@ def _generate_rulebook(
     Args:
         subscriptions: List of parsed event subscriptions
         event_mappings: Event mapping configuration
+        use_job_templates: If True, use AAP job templates. If False, use playbooks.
 
     Returns:
         List of rulebook entries (one per rulebook name)
@@ -102,20 +176,23 @@ def _generate_rulebook(
 
     # Generate rules from subscriptions
     for sub in subscriptions:
-        rule = _generate_rule(sub, event_mappings)
+        rule = _generate_rule(sub, event_mappings, use_job_templates)
         if rule:
             rules.append(rule)
 
     return rulebook
 
 
-def _generate_rule(sub: EventSubscription, event_mappings: dict[str, Any]) -> dict[str, Any] | None:
+def _generate_rule(
+    sub: EventSubscription, event_mappings: dict[str, Any], use_job_templates: bool = False
+) -> dict[str, Any] | None:
     """
     Generate a single EDA rule from an event subscription.
 
     Args:
         sub: Event subscription
         event_mappings: Event mapping configuration
+        use_job_templates: If True, use AAP job templates. If False, use playbooks.
 
     Returns:
         Rule dict or None if event type not mapped
@@ -133,7 +210,7 @@ def _generate_rule(sub: EventSubscription, event_mappings: dict[str, Any]) -> di
     conditions = _build_eda_conditions(sub, eda_event_type)
 
     # Build action
-    action = _build_action(sub, event_info)
+    action = _build_action(sub, event_info, use_job_templates)
 
     rule = {
         "name": sub.name,
@@ -241,13 +318,16 @@ def _translate_js_condition(js_script: str) -> str | None:
     return script
 
 
-def _build_action(sub: EventSubscription, event_info: dict[str, Any]) -> dict[str, Any]:
+def _build_action(
+    sub: EventSubscription, event_info: dict[str, Any], use_job_templates: bool = False
+) -> dict[str, Any]:
     """
     Build EDA action from event subscription.
 
     Args:
         sub: Event subscription
         event_info: Event mapping info
+        use_job_templates: If True, use AAP job templates. If False, use playbooks.
 
     Returns:
         Action dict
@@ -259,12 +339,23 @@ def _build_action(sub: EventSubscription, event_info: dict[str, Any]) -> dict[st
         fact_value = _convert_event_path(binding.value)
         set_facts[binding.name] = fact_value
 
-    action = {
-        "run_playbook": {
-            "name": f"playbooks/{sub.workflow_id}.yml",
-            "extra_vars": set_facts,
+    if use_job_templates:
+        # AAP Job Template mode
+        action = {
+            "run_job_template": {
+                "name": sub.workflow_name,
+                "organization": "Default",
+                "job_args": {"extra_vars": set_facts},
+            }
         }
-    }
+    else:
+        # Playbook mode
+        action = {
+            "run_playbook": {
+                "name": f"playbooks/{sub.workflow_id}.yml",
+                "extra_vars": set_facts,
+            }
+        }
 
     return action
 
@@ -298,3 +389,123 @@ def _convert_event_path(event_path: str) -> str:
     }
 
     return conversions.get(event_path, f"{{{{ event.payload.{event_path} }}}}")
+
+
+def _categorize_subscriptions(
+    subscriptions: list[EventSubscription], event_mappings: dict[str, Any]
+) -> dict[str, list[EventSubscription]]:
+    """
+    Categorize subscriptions by event type for separate rulebooks.
+
+    Args:
+        subscriptions: List of all subscriptions
+        event_mappings: Event mapping configuration
+
+    Returns:
+        Dict mapping category names to subscription lists
+    """
+    categories: dict[str, list[EventSubscription]] = {
+        "vm_lifecycle": [],
+        "network_events": [],
+        "storage_events": [],
+        "alarm_events": [],
+    }
+
+    for sub in subscriptions:
+        # Find category from event mappings
+        for category, events in event_mappings.items():
+            if category == "event_sources":
+                continue
+            if isinstance(events, dict) and sub.event_type in events:
+                # Map categories
+                if category in ["vm_lifecycle", "vm_configuration"]:
+                    categories["vm_lifecycle"].append(sub)
+                elif category in ["network", "datastore"]:
+                    categories["network_events"].append(sub)
+                elif category == "alarms":
+                    categories["alarm_events"].append(sub)
+                elif category in ["host_lifecycle", "resource_pool"]:
+                    categories["storage_events"].append(sub)
+                break
+
+    # Remove empty categories
+    return {k: v for k, v in categories.items() if v}
+
+
+def _generate_requirements(output_dir: Path):
+    """Generate requirements.yml for EDA collections."""
+    requirements = {
+        "collections": [
+            {"name": "ansible.eda", "version": ">=1.4.0"},
+            {"name": "ansible.controller", "version": ">=4.5.0"},
+        ]
+    }
+
+    requirements_file = output_dir / "requirements.yml"
+    write_text(
+        requirements_file, yaml.dump(requirements, default_flow_style=False, sort_keys=False)
+    )
+
+
+def _generate_deployment_files(output_dir: Path, use_job_templates: bool):
+    """Generate deployment playbook and inventory."""
+    # Generate deployment playbook
+    deployment_playbook = [
+        {
+            "name": "Deploy EDA Rulebooks to Controller",
+            "hosts": "eda_controller",
+            "gather_facts": False,
+            "tasks": [
+                {
+                    "name": "Ensure EDA collections are installed",
+                    "ansible.builtin.command": (
+                        "ansible-galaxy collection install -r requirements.yml"
+                    ),
+                    "args": {"chdir": "{{ playbook_dir }}/.."},
+                    "delegate_to": "localhost",
+                    "run_once": True,
+                },
+                {
+                    "name": "Copy rulebooks to EDA controller",
+                    "ansible.builtin.copy": {
+                        "src": "{{ playbook_dir }}/../rulebooks/",
+                        "dest": "/var/lib/awx/projects/eda-rulebooks/",
+                        "mode": "0644",
+                    },
+                },
+                {
+                    "name": "Restart EDA services",
+                    "ansible.builtin.systemd": {
+                        "name": "ansible-rulebook",
+                        "state": "restarted",
+                    },
+                    "when": "restart_eda_services | default(false)",
+                },
+            ],
+        }
+    ]
+
+    deployment_file = output_dir / "deployment" / "deployment.yml"
+    write_text(
+        deployment_file, yaml.dump(deployment_playbook, default_flow_style=False, sort_keys=False)
+    )
+
+    # Generate inventory
+    inventory = {
+        "all": {
+            "children": {
+                "eda_controller": {
+                    "hosts": {
+                        "eda-controller.example.com": {
+                            "ansible_host": "{{ eda_controller_host }}",
+                            "ansible_user": "{{ eda_controller_user | default('root') }}",
+                            "ansible_connection": "ssh",
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    inventory_file = output_dir / "deployment" / "inventory.yml"
+    write_text(inventory_file, yaml.dump(inventory, default_flow_style=False, sort_keys=False))

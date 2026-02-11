@@ -696,11 +696,24 @@ def generate(
         "--assume-existing-vms",
         help="Assume VMs exist (MTV mode) - generate validation/day-2 ops only, not VM YAMLs",
     ),
+    eda: bool = typer.Option(
+        False,
+        "--eda",
+        help="Also generate Event-Driven Ansible rulebooks from vRO event subscriptions",
+    ),
+    eda_only: bool = typer.Option(
+        False,
+        "--eda-only",
+        help="Generate only EDA rulebooks (skip Ansible/KubeVirt artifacts)",
+    ),
 ):
     """Generate Ansible and KubeVirt artifacts in various formats.
 
     By default, generates VM definitions for greenfield deployments.
     Use --assume-existing-vms when VMs were migrated via MTV or already exist.
+
+    Use --eda to also generate Event-Driven Ansible rulebooks from vRO event subscriptions.
+    Use --eda-only to generate only EDA rulebooks.
     """
     workspace = Workspace(Path.cwd())
     if not workspace.config_file.exists():
@@ -718,6 +731,35 @@ def generate(
 
     mode = "template-based" if no_ai else "AI-assisted"
     vm_mode = "MTV mode (existing VMs)" if assume_existing else "greenfield"
+
+    # Handle EDA-only mode
+    if eda_only:
+        console.print("[bold blue]Generating Event-Driven Ansible rulebooks:[/bold blue]")
+        from ops_translate.generate.eda_rulebook import generate_eda_artifacts
+
+        # Find all vRO policy files
+        vrealize_dir = workspace.root / "input/vrealize"
+        if not vrealize_dir.exists():
+            console.print("[red]Error: No vRealize files found to process[/red]")
+            console.print(
+                "[dim]Hint: Run 'ops-translate import --source vrealize-events' first[/dim]"
+            )
+            raise typer.Exit(1)
+
+        policy_files = list(vrealize_dir.glob("*policy*.xml")) + list(
+            vrealize_dir.glob("*event*.xml")
+        )
+        if not policy_files:
+            console.print(
+                "[yellow]Warning: No event policy files found in input/vrealize/[/yellow]"
+            )
+            console.print("[dim]Looking for files matching: *policy*.xml or *event*.xml[/dim]")
+            raise typer.Exit(1)
+
+        generate_eda_artifacts(workspace, policy_files, use_job_templates=True, categorize=True)
+        return
+
+    # Standard generation
     console.print(
         f"[bold blue]Generating artifacts ({mode}, {vm_mode}):[/bold blue] "
         f"profile={profile}, format={format}"
@@ -733,6 +775,27 @@ def generate(
         output_format=format,
         assume_existing_vms=assume_existing,
     )
+
+    # Also generate EDA if requested
+    if eda:
+        console.print("\n[bold blue]Generating Event-Driven Ansible rulebooks:[/bold blue]")
+        from ops_translate.generate.eda_rulebook import generate_eda_artifacts
+
+        vrealize_dir = workspace.root / "input/vrealize"
+        if vrealize_dir.exists():
+            policy_files = list(vrealize_dir.glob("*policy*.xml")) + list(
+                vrealize_dir.glob("*event*.xml")
+            )
+            if policy_files:
+                generate_eda_artifacts(
+                    workspace, policy_files, use_job_templates=True, categorize=True
+                )
+            else:
+                console.print(
+                    "[yellow]No event policy files found - skipping EDA generation[/yellow]"
+                )
+        else:
+            console.print("[yellow]No vRealize files found - skipping EDA generation[/yellow]")
 
 
 @app.command()
