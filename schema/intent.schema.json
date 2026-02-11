@@ -51,6 +51,26 @@
           "enum": ["virtual_machine", "container", "mixed"],
           "description": "Type of workload being provisioned"
         },
+        "vm_source": {
+          "type": "object",
+          "description": "VM image or template source",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["template", "ova", "ovf", "clone", "blank"],
+              "description": "Type of VM source"
+            },
+            "name": {
+              "type": "string",
+              "description": "Name or path of the template/image/source VM"
+            },
+            "description": {
+              "type": "string",
+              "description": "Human-readable description of the source"
+            }
+          },
+          "required": ["type"]
+        },
         "inputs": {
           "type": "object",
           "description": "Input parameters for the workflow",

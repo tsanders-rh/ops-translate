@@ -39,6 +39,13 @@ def summarize(ps_file: Path) -> str:
     if detect_network_storage(content):
         summary.append("\n**Network/Storage Selection:** Present")
 
+    # Detect VM templates/images
+    templates = detect_vm_templates(content)
+    if templates:
+        summary.append("\n**VM Templates/Images:**")
+        for template in templates:
+            summary.append(f"- {template['type']}: `{template['name']}`")
+
     return "\n".join(summary) if summary else "No detectable features"
 
 
@@ -111,3 +118,54 @@ def detect_network_storage(content: str) -> bool:
         if re.search(pattern, content, re.IGNORECASE):
             return True
     return False
+
+
+def detect_vm_templates(content: str) -> list[dict[str, str]]:
+    """
+    Detect VM templates and images in PowerCLI scripts.
+
+    Returns list of dicts with 'type' and 'name' keys.
+    """
+    templates = []
+
+    # Detect New-VM -Template parameter
+    # Pattern: New-VM ... -Template "TemplateName" or -Template $Variable
+    template_pattern = r'New-VM[^;]*?-Template\s+["\']([^"\']+)["\']'
+    for match in re.finditer(template_pattern, content, re.IGNORECASE):
+        template_name = match.group(1)
+        templates.append({"type": "Template", "name": template_name})
+
+    # Also check for variable-based templates
+    template_var_pattern = r"New-VM[^;]*?-Template\s+\$(\w+)"
+    for match in re.finditer(template_var_pattern, content, re.IGNORECASE):
+        var_name = match.group(1)
+        # Try to find where the variable is set
+        var_value_pattern = rf'\${var_name}\s*=\s*["\']([^"\']+)["\']'
+        var_match = re.search(var_value_pattern, content, re.IGNORECASE)
+        if var_match:
+            template_name = var_match.group(1)
+            templates.append({"type": "Template", "name": template_name})
+        else:
+            templates.append({"type": "Template", "name": f"${var_name} (variable)"})
+
+    # Detect Import-VApp -Source parameter (OVA/OVF imports)
+    # Pattern: Import-VApp -Source "path/to/file.ova"
+    import_pattern = r'Import-VApp[^;]*?-Source\s+["\']([^"\']+)["\']'
+    for match in re.finditer(import_pattern, content, re.IGNORECASE):
+        source_path = match.group(1)
+        # Determine type from extension
+        if source_path.lower().endswith(".ova"):
+            source_type = "OVA"
+        elif source_path.lower().endswith(".ovf"):
+            source_type = "OVF"
+        else:
+            source_type = "Image"
+        templates.append({"type": source_type, "name": source_path})
+
+    # Detect Clone-VM (cloning from existing VM)
+    clone_pattern = r'Clone-VM[^;]*?-VM\s+["\']([^"\']+)["\']'
+    for match in re.finditer(clone_pattern, content, re.IGNORECASE):
+        vm_name = match.group(1)
+        templates.append({"type": "Clone", "name": vm_name})
+
+    return templates

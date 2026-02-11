@@ -1226,6 +1226,83 @@ profiles:
       tier: production
 ```
 
+### VM Template/Image Mappings
+
+When PowerCLI scripts use VM templates (e.g., `New-VM -Template "RHEL8-Golden"`), ops-translate needs to map VMware template names to KubeVirt image sources. Without a mapping, VMs will be created with blank disks that cannot boot.
+
+**Add template mappings to your profile configuration:**
+
+```yaml
+profiles:
+  lab:
+    default_namespace: virt-lab
+    default_network: lab-network
+    default_storage_class: nfs
+    template_mappings:
+      # Container registry images (ContainerDisk)
+      "RHEL8-Golden-Image": "registry:quay.io/containerdisks/centos:8"
+      "Ubuntu-22.04": "registry:quay.io/containerdisks/ubuntu:22.04"
+
+      # Existing PVCs (DataVolume from PVC)
+      "Windows-2022-Template": "pvc:os-images/windows-server-2022"
+      "PostgreSQL-Base": "pvc:database-pvc"
+
+      # HTTP-accessible images
+      "Custom-App-Image": "http:https://storage.example.com/images/app.qcow2"
+
+      # Explicit blank disk (if template should be ignored)
+      "Empty-Template": "blank"
+```
+
+**Mapping Format:**
+
+| Format | Description | Example |
+|--------|-------------|---------|
+| `registry:URL` | Container registry image (ContainerDisk) | `registry:quay.io/containerdisks/centos:8` |
+| `pvc:NAME` | PVC in current namespace | `pvc:database-pvc` |
+| `pvc:NAMESPACE/NAME` | PVC in specific namespace | `pvc:os-images/windows-server-2022` |
+| `http:URL` | HTTP/HTTPS accessible image | `http:https://storage.example.com/images/app.qcow2` |
+| `blank` | Empty disk (no source) | `blank` |
+
+**What Happens Without a Mapping:**
+
+If a PowerCLI script references a template that has no mapping configured, ops-translate will:
+
+1. Generate a warning message showing the unmapped template name
+2. Provide an example configuration snippet
+3. Fall back to creating a blank disk (which cannot boot)
+
+Example warning:
+
+```
+Warning: No template mapping found for 'RHEL8-Golden-Image'.
+Add mapping in profile config to use actual image.
+  Example: template_mappings:
+    RHEL8-Golden-Image: registry:quay.io/containerdisks/centos:8
+```
+
+**Best Practices:**
+
+- **Use ContainerDisk for common OS images**: quay.io/containerdisks has pre-built images for CentOS, Ubuntu, Fedora, etc.
+- **Use PVCs for custom images**: Import your custom images once as DataVolumes, then reference them via PVC mappings
+- **Document your mappings**: Add comments in `ops-translate.yaml` to explain what each template represents
+- **Test in lab first**: Verify template mappings work in lab profile before using in production
+
+**Example: Multi-Environment Template Mappings:**
+
+Different environments might use different image sources:
+
+```yaml
+profiles:
+  lab:
+    template_mappings:
+      "RHEL8-Golden": "registry:quay.io/containerdisks/centos:8"  # Lab uses public images
+
+  prod:
+    template_mappings:
+      "RHEL8-Golden": "pvc:golden-images/rhel8-prod"  # Prod uses pre-imported PVC
+```
+
 ## Advanced Usage
 
 ### Multi-Source Merging

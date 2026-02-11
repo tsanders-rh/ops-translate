@@ -198,6 +198,102 @@ New-TagAssignment -Tag "env:$Environment"
 
         assert summary == "No detectable features"
 
+    def test_detect_vm_templates_new_vm_literal(self):
+        """Test detection of New-VM -Template with literal string."""
+        content = """
+New-VM -Name $VMName -Template "RHEL8-Golden-Image" -NumCpu 2
+"""
+        templates = powercli.detect_vm_templates(content)
+
+        assert len(templates) == 1
+        assert templates[0]["type"] == "Template"
+        assert templates[0]["name"] == "RHEL8-Golden-Image"
+
+    def test_detect_vm_templates_new_vm_variable(self):
+        """Test detection of New-VM -Template with variable."""
+        content = """
+$Template = "Ubuntu-22.04-Server"
+New-VM -Name $VMName -Template $Template -NumCpu 4
+"""
+        templates = powercli.detect_vm_templates(content)
+
+        assert len(templates) == 1
+        assert templates[0]["type"] == "Template"
+        assert templates[0]["name"] == "Ubuntu-22.04-Server"
+
+    def test_detect_vm_templates_import_vapp_ova(self):
+        """Test detection of Import-VApp with OVA file."""
+        content = """
+Import-VApp -Source "\\\\server\\templates\\RHEL8.ova" -VMHost $vmhost
+"""
+        templates = powercli.detect_vm_templates(content)
+
+        assert len(templates) == 1
+        assert templates[0]["type"] == "OVA"
+        assert templates[0]["name"] == "\\\\server\\templates\\RHEL8.ova"
+
+    def test_detect_vm_templates_import_vapp_ovf(self):
+        """Test detection of Import-VApp with OVF file."""
+        content = """
+Import-VApp -Source "/mnt/images/windows.ovf" -Datastore prod-storage
+"""
+        templates = powercli.detect_vm_templates(content)
+
+        assert len(templates) == 1
+        assert templates[0]["type"] == "OVF"
+        assert templates[0]["name"] == "/mnt/images/windows.ovf"
+
+    def test_detect_vm_templates_clone_vm(self):
+        """Test detection of Clone-VM operation."""
+        content = """
+Clone-VM -VM "SourceVM-Template" -Name $NewVMName -Datastore $ds
+"""
+        templates = powercli.detect_vm_templates(content)
+
+        assert len(templates) == 1
+        assert templates[0]["type"] == "Clone"
+        assert templates[0]["name"] == "SourceVM-Template"
+
+    def test_detect_vm_templates_multiple(self):
+        """Test detection of multiple template operations."""
+        content = """
+$Template = "RHEL8-Golden"
+New-VM -Name vm1 -Template $Template
+Import-VApp -Source "app.ova"
+"""
+        templates = powercli.detect_vm_templates(content)
+
+        assert len(templates) == 2
+        assert templates[0]["type"] == "Template"
+        assert templates[1]["type"] == "OVA"
+
+    def test_detect_vm_templates_none(self):
+        """Test when no templates are used."""
+        content = """
+New-VM -Name $VMName -NumCpu 2 -MemoryGB 8
+"""
+        templates = powercli.detect_vm_templates(content)
+
+        assert templates == []
+
+    def test_summarize_script_with_template(self, tmp_path):
+        """Test summarizing script that uses a template."""
+        script = tmp_path / "with-template.ps1"
+        script.write_text("""
+param(
+    [Parameter(Mandatory=$true)][string]$VMName
+)
+
+$Template = "RHEL8-Golden"
+New-VM -Name $VMName -Template $Template -NumCpu 2
+""")
+
+        summary = powercli.summarize(script)
+
+        assert "**VM Templates/Images:**" in summary
+        assert "Template:" in summary
+        assert "RHEL8-Golden" in summary
+
 
 class TestvRealizeSummarize:
     """Tests for vRealize workflow summarization."""
