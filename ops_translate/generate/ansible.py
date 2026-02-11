@@ -214,7 +214,7 @@ def generate_tasks(
         ]
     else:
         # Greenfield mode: Create VM from YAML
-        tasks: list[dict[str, Any]] = [
+        tasks = [
             {
                 "name": "Create KubeVirt VirtualMachine",
                 "kubernetes.core.k8s": {
@@ -753,7 +753,7 @@ def _get_vrealize_translated_tasks(workspace: Workspace) -> list[dict[str, Any]]
         return []
 
     # Translate all workflows and combine tasks
-    all_tasks = []
+    all_tasks: list[dict[str, Any]] = []
     for workflow_file in workflow_files:
         try:
             tasks = translate_workflow_to_ansible(workflow_file)

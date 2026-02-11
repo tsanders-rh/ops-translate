@@ -80,7 +80,7 @@ class WorkflowParser:
 
         # Get display name
         display_elem = elem.find(".//{http://vmware.com/vco/workflow}display-name")
-        display_name = display_elem.text if display_elem is not None else name
+        display_name = (display_elem.text if display_elem is not None and display_elem.text else None) or name
 
         # Get script content
         script_elem = elem.find(".//{http://vmware.com/vco/workflow}script")
