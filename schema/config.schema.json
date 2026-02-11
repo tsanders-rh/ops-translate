@@ -5,6 +5,11 @@
   "type": "object",
   "required": ["llm", "profiles"],
   "properties": {
+    "assume_existing_vms": {
+      "type": "boolean",
+      "default": false,
+      "description": "MTV mode - assume VMs exist, generate validation/day-2 ops only"
+    },
     "llm": {
       "type": "object",
       "description": "LLM provider configuration",
@@ -49,6 +54,16 @@
           "default_storage_class": {
             "type": "string",
             "description": "Default storage class"
+          },
+          "template_mappings": {
+            "type": "object",
+            "description": "Mappings from VMware templates/images to KubeVirt sources",
+            "patternProperties": {
+              "^.+$": {
+                "type": "string",
+                "description": "Target source in format: registry:url, pvc:name, http:url, or blank"
+              }
+            }
           }
         }
       }
