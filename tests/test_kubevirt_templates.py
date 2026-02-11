@@ -2,7 +2,6 @@
 Tests for KubeVirt template mapping functionality.
 """
 
-
 import yaml
 
 from ops_translate.generate.kubevirt import _get_source_spec
