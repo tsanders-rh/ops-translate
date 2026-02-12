@@ -295,7 +295,7 @@ class TestBackwardsCompatibility:
         workflow_xml.write_text(
             '<?xml version="1.0"?>'
             '<workflow xmlns="http://vmware.com/vco/workflow">'
-            '<display-name>Test Workflow</display-name>'
+            "<display-name>Test Workflow</display-name>"
             "</workflow>"
         )
 
