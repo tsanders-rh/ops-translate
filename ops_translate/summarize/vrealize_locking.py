@@ -78,8 +78,8 @@ def detect_locking_patterns(script: str) -> list[LockPattern]:
             locks[resource]["unlock_position"] = match.start()
 
     # Detect try/finally blocks around locks
-    try_pattern = r'\btry\s*\{'
-    finally_pattern = r'\bfinally\s*\{'
+    try_pattern = r"\btry\s*\{"
+    finally_pattern = r"\bfinally\s*\{"
 
     for resource, lock_info in locks.items():
         # Check if there's a try block near the lock (either before or after)
@@ -93,7 +93,9 @@ def detect_locking_patterns(script: str) -> list[LockPattern]:
 
             # Also check just after lock (lock might be before try)
             script_after_lock = script[lock_pos:]
-            try_after_match = re.search(try_pattern, script_after_lock[:200])  # Check next 200 chars
+            try_after_match = re.search(
+                try_pattern, script_after_lock[:200]
+            )  # Check next 200 chars
 
             # Check if there's a finally block that contains the unlock
             finally_match = re.search(finally_pattern, script_after_lock)
@@ -147,7 +149,7 @@ def sanitize_resource_name(resource: str) -> str:
         'host_name_domain_com'
     """
     # Replace special characters with underscores
-    sanitized = re.sub(r'[^a-zA-Z0-9_]', '_', resource)
+    sanitized = re.sub(r"[^a-zA-Z0-9_]", "_", resource)
 
     # Ensure doesn't start with number
     if sanitized and sanitized[0].isdigit():

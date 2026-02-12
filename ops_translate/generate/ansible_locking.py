@@ -78,7 +78,9 @@ class LockingTaskGenerator:
 
         return task
 
-    def _generate_lock_acquisition(self, pattern: LockPattern) -> list[dict[str, Any]] | dict[str, Any]:
+    def _generate_lock_acquisition(
+        self, pattern: LockPattern
+    ) -> list[dict[str, Any]] | dict[str, Any]:
         """Generate lock acquisition task(s) based on backend."""
         if self.backend == "redis":
             return self._generate_redis_lock(pattern)

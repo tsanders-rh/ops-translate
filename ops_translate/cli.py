@@ -820,9 +820,7 @@ def generate(
                 with open(doc_path, "w") as f:
                     f.write(doc_content)
 
-                console.print(
-                    f"[green]✓ Generated: {doc_path.relative_to(workspace.root)}[/green]"
-                )
+                console.print(f"[green]✓ Generated: {doc_path.relative_to(workspace.root)}[/green]")
 
     # Also generate EDA if requested
     if eda:
