@@ -326,7 +326,23 @@ def _import_directory_bundle(bundle_dir: Path, workspace_root: Path) -> dict[str
                 }
             )
 
-    # Write manifest to workspace
+    # Build and save action index
+    from ops_translate.summarize.vrealize_actions import (
+        build_action_index,
+        save_action_index,
+    )
+
+    action_index = build_action_index(manifest)
+    action_index_file = workspace_root / "input/vrealize/action-index.json"
+    save_action_index(action_index, action_index_file)
+
+    # Add action index info to manifest
+    manifest["action_index"] = {
+        "count": len(action_index),
+        "file": "input/vrealize/action-index.json",
+    }
+
+    # Write manifest to workspace (after action index is added)
     manifest_file = workspace_root / "input/vrealize/manifest.json"
     manifest_file.parent.mkdir(parents=True, exist_ok=True)
     manifest_file.write_text(json.dumps(manifest, indent=2))
