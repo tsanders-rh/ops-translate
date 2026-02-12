@@ -104,20 +104,16 @@ class TestParseActionXML:
         """Test that SHA256 hash changes when script content changes."""
         # Create two actions with different scripts
         action1 = tmp_path / "action1.xml"
-        action1.write_text(
-            """<?xml version="1.0"?>
+        action1.write_text("""<?xml version="1.0"?>
 <dunes-script-module name="test" fqn="test/action1">
   <script><![CDATA[var x = 1;]]></script>
-</dunes-script-module>"""
-        )
+</dunes-script-module>""")
 
         action2 = tmp_path / "action2.xml"
-        action2.write_text(
-            """<?xml version="1.0"?>
+        action2.write_text("""<?xml version="1.0"?>
 <dunes-script-module name="test" fqn="test/action2">
   <script><![CDATA[var x = 2;]]></script>
-</dunes-script-module>"""
-        )
+</dunes-script-module>""")
 
         parsed1 = parse_action_xml(action1)
         parsed2 = parse_action_xml(action2)

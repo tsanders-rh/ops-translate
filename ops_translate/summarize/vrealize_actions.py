@@ -196,9 +196,7 @@ def parse_action_xml(action_file: Path) -> ActionDef:
                     else None
                 )
 
-                inputs.append(
-                    {"name": param_name, "type": param_type, "description": param_desc}
-                )
+                inputs.append({"name": param_name, "type": param_type, "description": param_desc})
     else:
         raise ValueError(f"Unknown action XML format: root tag is {root.tag}")
 
