@@ -8,6 +8,7 @@ from ops_translate.translate.vrealize_workflow import (
     JavaScriptToAnsibleTranslator,
     WorkflowItem,
     WorkflowParser,
+    extract_action_calls,
     translate_workflow_to_ansible,
 )
 

@@ -357,6 +357,9 @@ class JavaScriptToAnsibleTranslator:
         """
         Translate JavaScript script to Ansible tasks.
 
+        If item has resolved_actions, their scripts are analyzed for integrations
+        alongside the workflow script to enable comprehensive translation.
+
         Args:
             script: JavaScript code from workflow item
             item: WorkflowItem containing the script
@@ -364,6 +367,16 @@ class JavaScriptToAnsibleTranslator:
         Returns:
             List of Ansible task dictionaries
         """
+        # Build effective script including resolved action scripts
+        effective_script = script
+
+        # Append resolved action scripts as context for integration detection
+        if item.resolved_actions:
+            for action in item.resolved_actions:
+                effective_script += f"\n\n// Action: {action.fqname}\n"
+                effective_script += f"// Module: {action.module}\n"
+                effective_script += action.script
+
         # Check if script contains locking patterns
         if self.locking_enabled:
             from ops_translate.summarize.vrealize_locking import detect_locking_patterns
@@ -383,7 +396,8 @@ class JavaScriptToAnsibleTranslator:
         tasks = []
 
         # Detect and translate integration calls (trust-first, allowlist-based)
-        integration_tasks = self._detect_integration_calls(script, item)
+        # Use effective_script to include resolved action scripts
+        integration_tasks = self._detect_integration_calls(effective_script, item)
         tasks.extend(integration_tasks)
 
         # Remove System.log statements and replace with debug tasks
@@ -397,6 +411,20 @@ class JavaScriptToAnsibleTranslator:
         # Extract variable assignments
         assignment_tasks = self._extract_assignments(script, item.display_name)
         tasks.extend(assignment_tasks)
+
+        # Add TODO tasks for unresolved actions
+        if item.unresolved_actions:
+            for fqname in item.unresolved_actions:
+                tasks.append({
+                    "name": f"TODO: Implement missing action {fqname}",
+                    "ansible.builtin.debug": {
+                        "msg": (
+                            f"Action {fqname} called but not found in bundle. "
+                            f"Manual implementation or action export required."
+                        )
+                    },
+                    "tags": ["action_missing", "decision_required"]
+                })
 
         return tasks
 
