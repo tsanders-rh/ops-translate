@@ -933,7 +933,7 @@ def detect_nsx_patterns_in_script(script: str, location: str) -> dict[str, list]
     """
     import re
 
-    nsx_ops = {
+    nsx_ops: dict[str, list] = {
         "segments": [],
         "firewall_rules": [],
         "groups": [],
