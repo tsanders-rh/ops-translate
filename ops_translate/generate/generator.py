@@ -53,6 +53,144 @@ def _generate_role_stubs_from_gaps(workspace: Workspace):
             console.print(f"[dim]  Generated role stub for: {comp_name}[/dim]")
 
 
+def _generate_network_policies(workspace: Workspace):
+    """
+    Generate Kubernetes NetworkPolicy manifests from detected NSX firewall rules.
+
+    Reads analysis.vrealize.json to find NSX firewall rules and generates
+    corresponding NetworkPolicy YAML files with limitation warnings.
+    """
+    import json
+
+    from ops_translate.generate.networkpolicy import generate_network_policies
+
+    # Find the latest analysis file
+    runs_dir = workspace.root / "runs"
+    if not runs_dir.exists():
+        return
+
+    # Get the most recent run directory
+    run_dirs = sorted(runs_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
+    if not run_dirs:
+        return
+
+    # Look for analysis.vrealize.json in the latest run
+    for run_dir in run_dirs:
+        analysis_file = run_dir / "analysis.vrealize.json"
+        if analysis_file.exists():
+            # Load analysis data
+            with open(analysis_file) as f:
+                analysis = json.load(f)
+
+            # Extract NSX firewall rules
+            nsx_ops = analysis.get("nsx_operations", {})
+            firewall_rules = nsx_ops.get("firewall_rules", [])
+            distributed_firewall = nsx_ops.get("distributed_firewall", [])
+
+            # Combine both types of firewall rules
+            all_firewall_rules = firewall_rules + distributed_firewall
+
+            if not all_firewall_rules:
+                # No firewall rules detected
+                return
+
+            # Get workflow name from source file
+            source_file = analysis.get("source_file", "workflow")
+            workflow_name = Path(source_file).stem
+
+            # Generate NetworkPolicy manifests
+            policies = generate_network_policies(all_firewall_rules, workflow_name)
+
+            if not policies:
+                # No policies could be generated
+                return
+
+            # Write NetworkPolicy files
+            output_dir = workspace.root / "output/network-policies"
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            for filename, content in policies.items():
+                policy_file = output_dir / filename
+                policy_file.write_text(content)
+
+            # Generate README
+            readme_content = _generate_networkpolicy_readme()
+            (output_dir / "README.md").write_text(readme_content)
+
+            # Print success message
+            console.print(
+                f"[green]✓ Generated {len(policies)} NetworkPolicy manifest(s): "
+                f"output/network-policies/[/green]"
+            )
+            console.print(
+                "[yellow]⚠ Review limitations in YAML comments before deployment[/yellow]"
+            )
+
+            return  # Found analysis and generated policies
+
+
+def _generate_networkpolicy_readme() -> str:
+    """Generate README for NetworkPolicy output directory."""
+    return """# NetworkPolicy Manifests
+
+This directory contains Kubernetes NetworkPolicy manifests generated from NSX-T
+Distributed Firewall rules detected in vRealize workflows.
+
+## Important Limitations
+
+**NetworkPolicy is not a complete replacement for NSX-T Distributed Firewall.**
+
+### Supported Features
+- ✅ Layer 3/4 traffic filtering (IP, port, protocol)
+- ✅ Pod-to-pod communication control
+- ✅ Ingress and egress rules
+- ✅ CIDR-based source/destination selectors
+
+### Unsupported Features (NSX-only)
+- ❌ Layer 7 application-aware filtering
+- ❌ FQDN-based rules
+- ❌ Time-based rules
+- ❌ User/group-based authentication
+- ❌ Connection tracking and stateful inspection
+- ❌ IDS/IPS integration
+
+## Before Deployment
+
+1. **Read YAML comments** - Each generated manifest includes specific limitations
+2. **Test in dev/lab** - Validate policies don't break existing traffic
+3. **Consider alternatives** for advanced features:
+   - **Calico NetworkPolicy** - FQDN, global policies, deny rules
+   - **Cilium** - L7 policies, observability, eBPF-based filtering
+   - **Istio** - Application-layer (L7) service mesh policies
+
+## Deployment
+
+```bash
+# Review policies
+cat *.yaml
+
+# Apply to cluster
+kubectl apply -f output/network-policies/
+
+# Verify
+kubectl get networkpolicies -n default
+```
+
+## Migration Strategy
+
+For complex NSX environments, consider a hybrid approach:
+- Use NetworkPolicy for basic L3/L4 filtering
+- Keep NSX for advanced features (L7, FQDN, IDS/IPS)
+- Gradually migrate as CNI capabilities mature
+
+## Additional Resources
+
+- [Kubernetes NetworkPolicy Docs](https://kubernetes.io/docs/concepts/services-networking/network-policies/)
+- [Calico NetworkPolicy](https://docs.tigera.io/calico/latest/network-policy/)
+- [Cilium Network Policy](https://docs.cilium.io/en/stable/security/policy/)
+"""
+
+
 def generate_all(
     workspace: Workspace,
     profile: str,
@@ -245,6 +383,12 @@ def generate_with_templates(
             console.print("[green]✓ Ansible playbook: output/ansible/site.yml[/green]")
             console.print("[green]✓ Ansible role: output/ansible/roles/provision_vm/[/green]")
             console.print("[green]✓ README: output/README.md[/green]")
+
+            # Generate NetworkPolicy manifests from NSX firewall rules if detected
+            try:
+                _generate_network_policies(workspace)
+            except Exception as e:
+                console.print(f"[yellow]⚠ Could not generate NetworkPolicy manifests: {e}[/yellow]")
         except Exception as e:
             console.print(f"[red]Error generating artifacts: {e}[/red]")
         return
