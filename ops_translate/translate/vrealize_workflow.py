@@ -183,11 +183,20 @@ class JavaScriptToAnsibleTranslator:
     - Approval interactions → pause
     - Email notifications → mail
     - Integration calls → Ansible modules/adapters (mapping-driven)
+    - LockingSystem calls → distributed locking (Redis/Consul/file)
     """
 
-    def __init__(self):
-        """Initialize translator and load integration mappings."""
+    def __init__(self, locking_backend: str = "redis", locking_enabled: bool = True):
+        """
+        Initialize translator and load integration mappings.
+
+        Args:
+            locking_backend: Backend for distributed locking (redis, consul, file)
+            locking_enabled: Whether to generate locking tasks
+        """
         self.integration_mappings = self._load_integration_mappings()
+        self.locking_backend = locking_backend
+        self.locking_enabled = locking_enabled
 
     def _load_integration_mappings(self) -> dict[str, Any]:
         """
@@ -220,13 +229,22 @@ class JavaScriptToAnsibleTranslator:
         Returns:
             List of Ansible task dictionaries
         """
+        # Check if script contains locking patterns
+        if self.locking_enabled:
+            from ops_translate.summarize.vrealize_locking import detect_locking_patterns
+
+            lock_patterns = detect_locking_patterns(script)
+            if lock_patterns:
+                # Translate with locking structure
+                return self._translate_with_locking(script, item, lock_patterns)
+
         # Check if script contains error handling (try/catch/finally)
         error_handling = self._extract_error_handling(script)
         if error_handling:
             # Translate with block/rescue/always structure
             return self._translate_error_handling(error_handling, item)
 
-        # Normal translation (no error handling)
+        # Normal translation (no error handling or locking)
         tasks = []
 
         # Detect and translate integration calls (trust-first, allowlist-based)
@@ -246,6 +264,93 @@ class JavaScriptToAnsibleTranslator:
         tasks.extend(assignment_tasks)
 
         return tasks
+
+    def _translate_with_locking(
+        self, script: str, item: WorkflowItem, lock_patterns: list[Any]
+    ) -> list[dict[str, Any]]:
+        """
+        Translate script with locking patterns to Ansible block/always structure.
+
+        Args:
+            script: JavaScript code with LockingSystem calls
+            item: WorkflowItem for context
+            lock_patterns: Detected lock patterns from detect_locking_patterns()
+
+        Returns:
+            List containing block/always task structures with locking
+        """
+        from ops_translate.generate.ansible_locking import LockingTaskGenerator
+
+        # For now, handle single lock pattern (most common case)
+        # TODO: Handle nested/multiple locks
+        if len(lock_patterns) > 1:
+            # Multiple locks - use first one and add TODO comment
+            pattern = lock_patterns[0]
+            tasks = [
+                {
+                    "name": "TODO: Multiple locks detected - review and implement",
+                    "ansible.builtin.debug": {
+                        "msg": (
+                            "This workflow uses multiple locks. "
+                            "Current implementation uses first lock only. "
+                            "Review vRO workflow for proper lock ordering."
+                        )
+                    },
+                    "tags": ["todo", "multiple_locks"],
+                }
+            ]
+        else:
+            tasks = []
+            pattern = lock_patterns[0]
+
+        # Extract work tasks (code between lock and unlock)
+        work_script = self._extract_locked_work(script, pattern)
+
+        # Translate work tasks (without checking for locking again)
+        work_tasks = self._translate_script_fragment(work_script, item)
+
+        # If no work tasks were translated, add a placeholder
+        if not work_tasks:
+            work_tasks = [
+                {
+                    "name": f"Work while holding lock: {pattern.resource}",
+                    "ansible.builtin.debug": {
+                        "msg": "Locked work section - implement business logic here"
+                    },
+                    "tags": ["todo", "locked_work"],
+                }
+            ]
+
+        # Generate locking structure
+        generator = LockingTaskGenerator(backend=self.locking_backend)
+        lock_task = generator.generate_lock_tasks(pattern, work_tasks)
+
+        tasks.append(lock_task)
+        return tasks
+
+    def _extract_locked_work(self, script: str, pattern: Any) -> str:
+        """
+        Extract the code between lock acquisition and release.
+
+        Args:
+            script: Full JavaScript code
+            pattern: LockPattern with lock_position and unlock_position
+
+        Returns:
+            Code fragment between lock and unlock calls
+        """
+        # Find the end of the lock call (after the semicolon)
+        lock_end = script.find(";", pattern.lock_position)
+        if lock_end == -1:
+            lock_end = pattern.lock_position + 100  # Fallback
+
+        # Find the start of unlock call
+        unlock_start = pattern.unlock_position if pattern.unlock_position else len(script)
+
+        # Extract work between lock and unlock
+        work_script = script[lock_end + 1 : unlock_start].strip()
+
+        return work_script
 
     def translate_approval_interaction(self, item: WorkflowItem) -> dict[str, Any]:
         """
@@ -916,12 +1021,16 @@ See: intent/recommendations.md for guidance
         return rescue_tasks
 
 
-def translate_workflow_to_ansible(workflow_file: Path) -> list[dict[str, Any]]:
+def translate_workflow_to_ansible(
+    workflow_file: Path, locking_backend: str = "redis", locking_enabled: bool = True
+) -> list[dict[str, Any]]:
     """
     Translate vRealize workflow to Ansible tasks.
 
     Args:
         workflow_file: Path to vRealize workflow XML file
+        locking_backend: Backend for distributed locking (redis, consul, file)
+        locking_enabled: Whether to generate locking tasks for LockingSystem calls
 
     Returns:
         List of Ansible task dictionaries
@@ -932,7 +1041,9 @@ def translate_workflow_to_ansible(workflow_file: Path) -> list[dict[str, Any]]:
         ...     print(task["name"])
     """
     parser = WorkflowParser()
-    translator = JavaScriptToAnsibleTranslator()
+    translator = JavaScriptToAnsibleTranslator(
+        locking_backend=locking_backend, locking_enabled=locking_enabled
+    )
 
     # Parse workflow
     items = parser.parse_file(workflow_file)

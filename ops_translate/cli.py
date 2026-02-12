@@ -706,6 +706,16 @@ def generate(
         "--eda-only",
         help="Generate only EDA rulebooks (skip Ansible/KubeVirt artifacts)",
     ),
+    locking_backend: str = typer.Option(
+        "redis",
+        "--locking-backend",
+        help="Distributed locking backend: redis, consul, file",
+    ),
+    no_locking: bool = typer.Option(
+        False,
+        "--no-locking",
+        help="Disable distributed locking for LockingSystem calls (not recommended for production)",
+    ),
 ):
     """Generate Ansible and KubeVirt artifacts in various formats.
 
@@ -714,6 +724,9 @@ def generate(
 
     Use --eda to also generate Event-Driven Ansible rulebooks from vRO event subscriptions.
     Use --eda-only to generate only EDA rulebooks.
+
+    Use --locking-backend to choose distributed locking backend (redis, consul, file).
+    Use --no-locking to disable locking (only for testing/development).
     """
     workspace = Workspace(Path.cwd())
     if not workspace.config_file.exists():
@@ -724,6 +737,20 @@ def generate(
     if profile not in config.get("profiles", {}):
         console.print(f"[red]Error: Profile '{profile}' not found in config[/red]")
         raise typer.Exit(1)
+
+    # Validate locking backend
+    valid_backends = ["redis", "consul", "file"]
+    if locking_backend not in valid_backends:
+        console.print(
+            f"[red]Error: Invalid locking backend '{locking_backend}'. "
+            f"Must be one of: {', '.join(valid_backends)}[/red]"
+        )
+        raise typer.Exit(1)
+
+    # Determine locking settings (CLI overrides profile config)
+    locking_enabled = not no_locking
+    profile_config = config["profiles"][profile]
+    backend = locking_backend or profile_config.get("locking", {}).get("backend", "redis")
 
     # Check for workspace-level setting, CLI flag overrides
     workspace_setting = config.get("assume_existing_vms", False)
@@ -775,6 +802,27 @@ def generate(
         output_format=format,
         assume_existing_vms=assume_existing,
     )
+
+    # Generate locking setup documentation if vRealize workflows exist
+    if locking_enabled:
+        vrealize_dir = workspace.root / "input/vrealize"
+        if vrealize_dir.exists():
+            workflow_files = list(vrealize_dir.glob("*.xml"))
+            if workflow_files:
+                from ops_translate.generate.ansible_locking import generate_locking_setup_doc
+
+                output_dir = workspace.root / "output/ansible"
+                output_dir.mkdir(parents=True, exist_ok=True)
+                doc_path = output_dir / "LOCKING_SETUP.md"
+
+                doc_content = generate_locking_setup_doc(backend, str(doc_path))
+
+                with open(doc_path, "w") as f:
+                    f.write(doc_content)
+
+                console.print(
+                    f"[green]✓ Generated: {doc_path.relative_to(workspace.root)}[/green]"
+                )
 
     # Also generate EDA if requested
     if eda:
