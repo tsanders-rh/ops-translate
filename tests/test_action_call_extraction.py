@@ -203,8 +203,7 @@ class TestActionResolution:
 
         # Create test workflow that calls an action
         workflow_xml = tmp_path / "test_workflow.xml"
-        workflow_xml.write_text(
-            """<?xml version="1.0"?>
+        workflow_xml.write_text("""<?xml version="1.0"?>
 <workflow xmlns="http://vmware.com/vco/workflow">
   <workflow-item name="item1" type="task">
     <display-name>Create NSX Rule</display-name>
@@ -212,8 +211,7 @@ class TestActionResolution:
       var rule = System.getModule("com.acme.nsx").createFirewallRule("test");
     ]]></script>
   </workflow-item>
-</workflow>"""
-        )
+</workflow>""")
 
         # Parse with ActionIndex
         parser = WorkflowParser(action_index=action_index)
