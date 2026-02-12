@@ -73,14 +73,14 @@ def summarize_with_actions(xml_file: Path, action_index: Any = None) -> str:
 
     # NEW: Action resolution and integration detection
     if action_index is not None:
-        from ops_translate.translate.vrealize_workflow import WorkflowParser
         from ops_translate.analyze.vrealize import (
-            detect_nsx_operations,
             detect_custom_plugins,
-            detect_rest_calls,
+            detect_nsx_operations,
             detect_nsx_patterns_in_script,
+            detect_rest_calls,
             merge_nsx_operations,
         )
+        from ops_translate.translate.vrealize_workflow import WorkflowParser
 
         # Parse workflow with action resolution
         parser = WorkflowParser(action_index=action_index)
@@ -116,7 +116,8 @@ def summarize_with_actions(xml_file: Path, action_index: Any = None) -> str:
                     all_nsx_ops = merge_nsx_operations(all_nsx_ops, action_nsx)
 
                     # Note: detect_custom_plugins() and detect_rest_calls() require XML root
-                    # For action scripts, we only detect NSX operations via detect_nsx_patterns_in_script()
+                    # For action scripts, we only detect NSX operations via
+                    # detect_nsx_patterns_in_script()
                     # TODO: Extract script-based plugin/REST detection logic for action scripts
 
             unresolved_count += len(item.unresolved_actions)
