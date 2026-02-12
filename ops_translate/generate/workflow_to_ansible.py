@@ -147,6 +147,9 @@ def _convert_scriptable_task(
     Returns:
         List of AnsibleTask objects
     """
+    # Ensure script is not None (guaranteed by caller check)
+    assert item.script is not None, "ScriptableTask must have a script"
+
     # Use existing translator
     translator = JavaScriptToAnsibleTranslator(locking_backend, locking_enabled)
 
