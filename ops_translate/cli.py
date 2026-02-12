@@ -378,7 +378,7 @@ def _import_vrealize_bundle_cli(source_path: Path, workspace: Workspace) -> None
 
         # Display results
         console.print()
-        console.print(f"[green]✓ Bundle imported successfully[/green]")
+        console.print("[green]✓ Bundle imported successfully[/green]")
         console.print(f"[green]  • Source type: {manifest['source_type']}[/green]")
 
         # Show discovered artifacts
@@ -393,7 +393,7 @@ def _import_vrealize_bundle_cli(source_path: Path, workspace: Workspace) -> None
         if config_count > 0:
             console.print(f"[green]  • {config_count} configuration(s) discovered[/green]")
 
-        console.print(f"[green]  • Manifest: input/vrealize/manifest.json[/green]")
+        console.print("[green]  • Manifest: input/vrealize/manifest.json[/green]")
         console.print(f"[green]  • SHA256: {manifest['sha256']}[/green]")
 
     except ValueError as e:
