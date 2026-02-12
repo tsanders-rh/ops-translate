@@ -228,7 +228,7 @@ def _build_network_attachment_definition(
     # Add VLAN ID label if present
     vlan_ids = segment_details.get("vlan_ids", [])
     if vlan_ids:
-        nad["metadata"]["labels"]["vlan-id"] = str(vlan_ids[0])
+        nad["metadata"]["labels"]["vlan-id"] = str(vlan_ids[0])  # type: ignore[index]
 
     # Add location annotation if available
     if location:

@@ -209,6 +209,12 @@ def _import_directory_auto(source_path: Path, workspace: Workspace):
 
 def _import_single_source(source: str, source_path: Path, workspace: Workspace):
     """Import files for a single source type."""
+    # Check if this is a vRealize bundle import
+    if source == "vrealize" and _is_vrealize_bundle(source_path):
+        _import_vrealize_bundle_cli(source_path, workspace)
+        return
+
+    # Standard file import (original behavior)
     # Determine file pattern based on source type
     file_pattern = "*.ps1" if source == "powercli" else "*.xml"
 
@@ -314,6 +320,88 @@ def _import_file(
 
     console.print(f"[green]  ✓ {file_path.name}[/green]")
     return (file_path.name, dest_path, file_hash)
+
+
+def _is_vrealize_bundle(source_path: Path) -> bool:
+    """
+    Check if source_path is a vRealize bundle.
+
+    A vRealize bundle is:
+    - A .package or .zip file
+    - A directory containing workflows/, actions/, or configurations/ subdirectories
+
+    Args:
+        source_path: Path to check
+
+    Returns:
+        True if it's a bundle, False otherwise
+    """
+    if source_path.is_file():
+        # Check for bundle archive extensions
+        return source_path.suffix in [".package", ".zip"]
+
+    elif source_path.is_dir():
+        # Check for bundle directory structure
+        workflows_dir = source_path / "workflows"
+        actions_dir = source_path / "actions"
+        configs_dir = source_path / "configurations"
+
+        return workflows_dir.exists() or actions_dir.exists() or configs_dir.exists()
+
+    return False
+
+
+def _import_vrealize_bundle_cli(source_path: Path, workspace: Workspace) -> None:
+    """
+    Import vRealize bundle using the bundle importer.
+
+    Calls the vrealize.import_vrealize_bundle() function and displays
+    user-friendly output.
+
+    Args:
+        source_path: Path to bundle (file or directory)
+        workspace: Workspace instance
+    """
+    from ops_translate.summarize.vrealize import import_vrealize_bundle
+
+    # Determine bundle type for display
+    if source_path.is_file():
+        bundle_type = f"{source_path.suffix} bundle"
+    else:
+        bundle_type = "directory bundle"
+
+    console.print(f"[bold blue]Importing vRealize {bundle_type}:[/bold blue] {source_path.name}")
+
+    try:
+        # Import bundle and get manifest
+        manifest = import_vrealize_bundle(source_path, workspace.root)
+
+        # Display results
+        console.print()
+        console.print("[green]✓ Bundle imported successfully[/green]")
+        console.print(f"[green]  • Source type: {manifest['source_type']}[/green]")
+
+        # Show discovered artifacts
+        workflow_count = len(manifest.get("workflows", []))
+        action_count = len(manifest.get("actions", []))
+        config_count = len(manifest.get("configurations", []))
+
+        if workflow_count > 0:
+            console.print(f"[green]  • {workflow_count} workflow(s) discovered[/green]")
+        if action_count > 0:
+            console.print(f"[green]  • {action_count} action(s) discovered[/green]")
+        if config_count > 0:
+            console.print(f"[green]  • {config_count} configuration(s) discovered[/green]")
+
+        console.print("[green]  • Manifest: input/vrealize/manifest.json[/green]")
+        console.print(f"[green]  • SHA256: {manifest['sha256']}[/green]")
+
+    except ValueError as e:
+        console.print(f"[red]Error importing bundle: {e}[/red]")
+        raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"[red]Unexpected error importing bundle: {e}[/red]")
+        raise typer.Exit(1)
 
 
 @app.command()

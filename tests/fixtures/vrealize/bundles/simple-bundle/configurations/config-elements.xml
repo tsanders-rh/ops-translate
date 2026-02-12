@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config-elements>
+  <config-element id="config-1">
+    <name>Default VM Settings</name>
+    <description>Default configuration for VM provisioning</description>
+    <attributes>
+      <attribute>
+        <key>defaultMemoryMB</key>
+        <value>4096</value>
+      </attribute>
+      <attribute>
+        <key>defaultCpuCount</key>
+        <value>2</value>
+      </attribute>
+    </attributes>
+  </config-element>
+</config-elements>
