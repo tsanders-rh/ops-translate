@@ -101,15 +101,86 @@ def _generate_component_questions(component: ClassifiedComponent) -> list[dict[s
     return questions
 
 
+def _format_evidence_for_display(component: ClassifiedComponent) -> str:
+    """
+    Format component evidence for display in interview questions.
+
+    Extracts and formats evidence from ClassifiedComponent to show users exactly
+    what was detected and where (workflow vs action script).
+
+    Args:
+        component: ClassifiedComponent with evidence field
+
+    Returns:
+        Formatted evidence string for prompt display, or empty string if no evidence
+
+    Example:
+        >>> component = ClassifiedComponent(
+        ...     evidence="Pattern match: nsxClient.createFirewallRule in context...",
+        ...     location="action:com.acme.nsx/createFirewallRule"
+        ... )
+        >>> print(_format_evidence_for_display(component))
+
+        Evidence detected:
+          • Source: Action (com.acme.nsx/createFirewallRule)
+          • Pattern: nsxClient.createFirewallRule
+    """
+    if not component.evidence:
+        return ""
+
+    evidence_lines = []
+    evidence_lines.append("\n\nEvidence detected:")
+
+    # Determine source type from location
+    if component.location and component.location.startswith("action:"):
+        source_type = "Action"
+        source_name = component.location.replace("action:", "")
+    else:
+        source_type = "Workflow"
+        source_name = component.location or "unknown"
+
+    evidence_lines.append(f"  • Source: {source_type} ({source_name})")
+
+    # Extract pattern from evidence string
+    # Evidence format: "Pattern match: <pattern> in context (<location>): <snippet>"
+    if "Pattern match:" in component.evidence:
+        # Extract pattern between "Pattern match:" and "in context"
+        pattern_start = component.evidence.find("Pattern match:") + len("Pattern match:")
+        pattern_end = component.evidence.find(" in context")
+        if pattern_end > pattern_start:
+            pattern = component.evidence[pattern_start:pattern_end].strip()
+            evidence_lines.append(f"  • Pattern: {pattern}")
+
+        # Extract code snippet after the second colon
+        snippet_parts = component.evidence.split("): ")
+        if len(snippet_parts) > 1:
+            snippet = snippet_parts[1].strip()
+            # Truncate if too long
+            if len(snippet) > 100:
+                snippet = snippet[:97] + "..."
+            evidence_lines.append(f"  • Code: {snippet}")
+    else:
+        # Fallback: just show the evidence as-is (truncated)
+        evidence_text = component.evidence
+        if len(evidence_text) > 150:
+            evidence_text = evidence_text[:147] + "..."
+        evidence_lines.append(f"  • {evidence_text}")
+
+    return "\n".join(evidence_lines)
+
+
 def _nsx_firewall_questions(component: ClassifiedComponent) -> list[dict[str, Any]]:
     """Generate questions for NSX firewall components."""
+    # Format evidence for display
+    evidence_display = _format_evidence_for_display(component)
+
     return [
         {
             "id": f"nsx_firewall_equivalence_{component.location}",
             "component": component.name,
             "component_type": component.component_type,
             "location": component.location,
-            "prompt": "For firewall behavior, what level of equivalence is required?",
+            "prompt": f"For firewall behavior, what level of equivalence is required?{evidence_display}",
             "type": "single_choice",
             "options": [
                 {
@@ -136,7 +207,7 @@ def _nsx_firewall_questions(component: ClassifiedComponent) -> list[dict[str, An
             "component": component.name,
             "component_type": component.component_type,
             "location": component.location,
-            "prompt": "Where should network policies be enforced?",
+            "prompt": f"Where should network policies be enforced?{evidence_display}",
             "type": "single_choice",
             "options": [
                 {
@@ -163,7 +234,7 @@ def _nsx_firewall_questions(component: ClassifiedComponent) -> list[dict[str, An
             "component": component.name,
             "component_type": component.component_type,
             "location": component.location,
-            "prompt": "Do workloads have stable labels for policy targeting?",
+            "prompt": f"Do workloads have stable labels for policy targeting?{evidence_display}",
             "type": "single_choice",
             "options": [
                 {
@@ -190,13 +261,16 @@ def _nsx_firewall_questions(component: ClassifiedComponent) -> list[dict[str, An
 
 def _nsx_segment_questions(component: ClassifiedComponent) -> list[dict[str, Any]]:
     """Generate questions for NSX segment/networking components."""
+    # Format evidence for display
+    evidence_display = _format_evidence_for_display(component)
+
     return [
         {
             "id": f"nsx_segment_isolation_{component.location}",
             "component": component.name,
             "component_type": component.component_type,
             "location": component.location,
-            "prompt": "What level of network isolation is required?",
+            "prompt": f"What level of network isolation is required?{evidence_display}",
             "type": "single_choice",
             "options": [
                 {
@@ -223,13 +297,16 @@ def _nsx_segment_questions(component: ClassifiedComponent) -> list[dict[str, Any
 
 def _approval_questions(component: ClassifiedComponent) -> list[dict[str, Any]]:
     """Generate questions for approval workflow components."""
+    # Format evidence for display
+    evidence_display = _format_evidence_for_display(component)
+
     return [
         {
             "id": f"approval_target_{component.location}",
             "component": component.name,
             "component_type": component.component_type,
             "location": component.location,
-            "prompt": "How should approvals be handled post-migration?",
+            "prompt": f"How should approvals be handled post-migration?{evidence_display}",
             "type": "single_choice",
             "options": [
                 {
@@ -261,7 +338,7 @@ def _approval_questions(component: ClassifiedComponent) -> list[dict[str, Any]]:
             "component": component.name,
             "component_type": component.component_type,
             "location": component.location,
-            "prompt": "When is approval required?",
+            "prompt": f"When is approval required?{evidence_display}",
             "type": "single_choice",
             "options": [
                 {
@@ -288,13 +365,16 @@ def _approval_questions(component: ClassifiedComponent) -> list[dict[str, Any]]:
 
 def _api_call_questions(component: ClassifiedComponent) -> list[dict[str, Any]]:
     """Generate questions for REST/API call components."""
+    # Format evidence for display
+    evidence_display = _format_evidence_for_display(component)
+
     return [
         {
             "id": f"api_purpose_{component.location}",
             "component": component.name,
             "component_type": component.component_type,
             "location": component.location,
-            "prompt": "What is the purpose of the external API calls?",
+            "prompt": f"What is the purpose of the external API calls?{evidence_display}",
             "type": "single_choice",
             "options": [
                 {
@@ -321,7 +401,7 @@ def _api_call_questions(component: ClassifiedComponent) -> list[dict[str, Any]]:
             "component": component.name,
             "component_type": component.component_type,
             "location": component.location,
-            "prompt": "How should authentication be handled?",
+            "prompt": f"How should authentication be handled?{evidence_display}",
             "type": "single_choice",
             "options": [
                 {
