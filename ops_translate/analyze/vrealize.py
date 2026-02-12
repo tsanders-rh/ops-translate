@@ -944,7 +944,9 @@ def detect_nsx_patterns_in_script(script: str, location: str) -> dict[str, list]
 
     # Segment patterns
     if re.search(
-        r"nsxClient\.createSegment|segment[-_]?id|\/policy\/api\/v1\/infra\/segments", script
+        r"nsxClient\.createSegment|segment[-_]?id|\/policy\/api\/v1\/infra\/segments",
+        script,
+        re.IGNORECASE,
     ):
         nsx_ops["segments"].append(
             {
@@ -959,6 +961,7 @@ def detect_nsx_patterns_in_script(script: str, location: str) -> dict[str, list]
     if re.search(
         r"nsxClient\.createFirewallRule|firewall[-_]?rule|\/policy\/api\/v1\/infra\/domains\/default\/security-policies",
         script,
+        re.IGNORECASE,
     ):
         nsx_ops["firewall_rules"].append(
             {
@@ -971,7 +974,9 @@ def detect_nsx_patterns_in_script(script: str, location: str) -> dict[str, list]
 
     # Group patterns
     if re.search(
-        r"nsxClient\.createGroup|\/policy\/api\/v1\/infra\/domains\/default\/groups", script
+        r"nsxClient\.createGroup|\/policy\/api\/v1\/infra\/domains\/default\/groups",
+        script,
+        re.IGNORECASE,
     ):
         nsx_ops["groups"].append(
             {

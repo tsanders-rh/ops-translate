@@ -21,6 +21,22 @@ def summarize(xml_file: Path) -> str:
     Summarize a vRealize workflow XML.
 
     Returns a markdown-formatted summary string.
+
+    This function wraps summarize_with_actions() for backward compatibility.
+    """
+    return summarize_with_actions(xml_file, action_index=None)
+
+
+def summarize_with_actions(xml_file: Path, action_index: Any = None) -> str:
+    """
+    Summarize a vRealize workflow XML including resolved action scripts.
+
+    Args:
+        xml_file: Path to workflow XML file
+        action_index: Optional ActionIndex for action resolution
+
+    Returns:
+        Markdown-formatted summary string
     """
     try:
         tree = ElementTree.parse(xml_file)
@@ -33,10 +49,18 @@ def summarize(xml_file: Path) -> str:
 
     summary = []
 
-    # Extract workflow display name
-    display_name = root.findtext(".//display-name")
+    # Extract workflow display name (with namespace handling)
+    # Try with namespace first
+    ns = {"vco": "http://vmware.com/vco/workflow"}
+    display_name = root.findtext(".//vco:display-name", namespaces=ns)
     if not display_name:
+        # Try without namespace
+        display_name = root.findtext(".//display-name")
+    if not display_name:
+        # Try alternative name
         display_name = root.findtext(".//displayName")
+    if not display_name:
+        display_name = root.findtext(".//vco:displayName", namespaces=ns)
     if display_name:
         summary.append(f"**Workflow:** {display_name}")
 
@@ -47,19 +71,86 @@ def summarize(xml_file: Path) -> str:
         for inp in inputs:
             summary.append(f"- `{inp['name']}` ({inp['type']})")
 
-    # Detect approval
+    # NEW: Action resolution and integration detection
+    if action_index is not None:
+        from ops_translate.translate.vrealize_workflow import WorkflowParser
+        from ops_translate.analyze.vrealize import (
+            detect_nsx_operations,
+            detect_custom_plugins,
+            detect_rest_calls,
+            detect_nsx_patterns_in_script,
+            merge_nsx_operations,
+        )
+
+        # Parse workflow with action resolution
+        parser = WorkflowParser(action_index=action_index)
+        items = parser.parse_file(xml_file)
+
+        # Collect all scripts (workflow + actions)
+        all_nsx_ops: dict[str, list] = {}
+        all_plugins = []
+        all_rest_calls = []
+        action_count = 0
+        unresolved_count = 0
+
+        for item in items:
+            # Analyze workflow script
+            if item.script:
+                nsx_ops = detect_nsx_operations(root, item.script)
+                all_nsx_ops = merge_nsx_operations(all_nsx_ops, nsx_ops)
+
+                plugins = detect_custom_plugins(root, item.script)
+                all_plugins.extend(plugins)
+
+                rest = detect_rest_calls(root, item.script)
+                all_rest_calls.extend(rest)
+
+            # Analyze resolved action scripts
+            for action in item.resolved_actions:
+                action_count += 1
+                if action.script:
+                    # Detect NSX in action script
+                    action_nsx = detect_nsx_patterns_in_script(
+                        action.script, f"action:{action.fqname}"
+                    )
+                    all_nsx_ops = merge_nsx_operations(all_nsx_ops, action_nsx)
+
+                    # Note: detect_custom_plugins() and detect_rest_calls() require XML root
+                    # For action scripts, we only detect NSX operations via detect_nsx_patterns_in_script()
+                    # TODO: Extract script-based plugin/REST detection logic for action scripts
+
+            unresolved_count += len(item.unresolved_actions)
+
+        # Add integration findings to summary
+        if action_count > 0 or unresolved_count > 0:
+            summary.append(f"\n**Actions:** {action_count} resolved")
+            if unresolved_count > 0:
+                summary.append(f"  ⚠️  {unresolved_count} unresolved")
+
+        if all_nsx_ops:
+            summary.append("\n**NSX-T Operations:**")
+            for category, ops in sorted(all_nsx_ops.items()):
+                category_name = category.replace("_", " ").title()
+                summary.append(f"- {category_name}: {len(ops)} detected")
+
+        if all_plugins:
+            # Get unique plugin names and sort
+            unique_plugins = sorted({p["plugin_name"] for p in all_plugins})
+            summary.append(f"\n**Custom Plugins:** {', '.join(unique_plugins)}")
+
+        if all_rest_calls:
+            summary.append(f"\n**REST API Calls:** {len(all_rest_calls)} detected")
+
+    # Existing simple detections (keep for backward compatibility)
     if detect_approval(root):
         summary.append("\n**Approval Semantics:** Detected")
 
-    # Detect environment branching
     if detect_environment_branching(root):
         summary.append("\n**Environment Branching:** Detected")
 
-    # Detect tagging
     if detect_tagging(root):
         summary.append("\n**Tagging/Metadata:** Present")
 
-    # Detect network/storage
     if detect_network_storage(root):
         summary.append("\n**Network/Storage Selection:** Present")
 
@@ -69,22 +160,30 @@ def summarize(xml_file: Path) -> str:
 def extract_inputs(root) -> list:
     """Extract workflow inputs."""
     inputs = []
+    ns = {"vco": "http://vmware.com/vco/workflow"}
 
-    # Try multiple common XML paths for inputs
-    for input_elem in root.findall(".//input"):
-        name = input_elem.get("name") or input_elem.findtext("name")
-        type_ = input_elem.get("type") or input_elem.findtext("type") or "unknown"
-
+    # Try with namespace first
+    for input_elem in root.findall(".//vco:input/vco:param", namespaces=ns):
+        name = input_elem.get("name")
+        type_ = input_elem.get("type") or "unknown"
         if name:
             inputs.append({"name": name, "type": type_})
+
+    # Try without namespace
+    if not inputs:
+        for input_elem in root.findall(".//input/param"):
+            name = input_elem.get("name")
+            type_ = input_elem.get("type") or "unknown"
+            if name:
+                inputs.append({"name": name, "type": type_})
 
     # Alternative path
-    for input_elem in root.findall(".//inputs/entry"):
-        name = input_elem.get("key")
-        type_ = input_elem.findtext("value/type") or "unknown"
-
-        if name:
-            inputs.append({"name": name, "type": type_})
+    if not inputs:
+        for input_elem in root.findall(".//inputs/entry"):
+            name = input_elem.get("key")
+            type_ = input_elem.findtext("value/type") or "unknown"
+            if name:
+                inputs.append({"name": name, "type": type_})
 
     return inputs
 
