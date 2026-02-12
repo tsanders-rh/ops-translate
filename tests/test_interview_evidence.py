@@ -4,7 +4,6 @@ Tests for interview evidence formatting (Issue #55).
 Tests that evidence from action scripts is properly displayed in interview questions.
 """
 
-from pathlib import Path
 
 from ops_translate.intent.classify import ClassifiedComponent, MigrationPath, TranslatabilityLevel
 from ops_translate.intent.interview import (
@@ -28,7 +27,11 @@ class TestFormatEvidence:
             reason="Test",
             openshift_equivalent="NetworkPolicy",
             migration_path=MigrationPath.PATH_A,
-            evidence="Pattern match: nsxClient.createFirewallRule in context (action:com.acme.nsx/createFirewallRule): nsxClient.createFirewallRule({name: 'test'})",
+            evidence=(
+                "Pattern match: nsxClient.createFirewallRule in context "
+                "(action:com.acme.nsx/createFirewallRule): "
+                "nsxClient.createFirewallRule({name: 'test'})"
+            ),
             location="action:com.acme.nsx/createFirewallRule",
             recommendations=[],
         )
@@ -47,7 +50,10 @@ class TestFormatEvidence:
             reason="Test",
             openshift_equivalent="NetworkPolicy",
             migration_path=MigrationPath.PATH_A,
-            evidence="Workflow item name/type contains NSX keyword (workflow.xml:67): Create Firewall Rule",
+            evidence=(
+                "Workflow item name/type contains NSX keyword (workflow.xml:67): "
+                "Create Firewall Rule"
+            ),
             location="workflow.xml:67",
             recommendations=[],
         )
@@ -66,7 +72,11 @@ class TestFormatEvidence:
             reason="Test",
             openshift_equivalent="NetworkAttachmentDefinition",
             migration_path=MigrationPath.PATH_A,
-            evidence="Pattern match: nsxClient.createSegment in context (action:com.acme.nsx/createSegment): var segment = nsxClient.createSegment({name: 'web-tier'})",
+            evidence=(
+                "Pattern match: nsxClient.createSegment in context "
+                "(action:com.acme.nsx/createSegment): "
+                "var segment = nsxClient.createSegment({name: 'web-tier'})"
+            ),
             location="action:com.acme.nsx/createSegment",
             recommendations=[],
         )
@@ -84,7 +94,11 @@ class TestFormatEvidence:
             reason="Test",
             openshift_equivalent="NetworkPolicy",
             migration_path=MigrationPath.PATH_A,
-            evidence="Pattern match: nsxClient.createFirewallRule in context (action:com.acme.nsx/createFirewallRule): var rule = nsxClient.createFirewallRule({sources: ['10.0.0.0/8'], destinations: ['192.168.0.0/16']})",
+            evidence=(
+                "Pattern match: nsxClient.createFirewallRule in context "
+                "(action:com.acme.nsx/createFirewallRule): var rule = nsxClient.createFirewallRule("
+                "{sources: ['10.0.0.0/8'], destinations: ['192.168.0.0/16']})"
+            ),
             location="action:com.acme.nsx/createFirewallRule",
             recommendations=[],
         )
@@ -96,7 +110,10 @@ class TestFormatEvidence:
 
     def test_format_evidence_truncates_long_snippet(self):
         """Test that code snippet is truncated if too long (>100 chars)."""
-        long_snippet = "var segment = nsxClient.createSegment({name: 'web-tier', vlan: 100, subnet: '10.1.1.0/24', gateway: '10.1.1.1', dns: ['10.1.1.2', '10.1.1.3']})"
+        long_snippet = (
+            "var segment = nsxClient.createSegment({name: 'web-tier', vlan: 100, "
+            "subnet: '10.1.1.0/24', gateway: '10.1.1.1', dns: ['10.1.1.2', '10.1.1.3']})"
+        )
         component = ClassifiedComponent(
             name="nsxClient.createSegment",
             component_type="nsx_segments",
@@ -104,7 +121,10 @@ class TestFormatEvidence:
             reason="Test",
             openshift_equivalent="NetworkAttachmentDefinition",
             migration_path=MigrationPath.PATH_A,
-            evidence=f"Pattern match: nsxClient.createSegment in context (action:com.acme.nsx/createSegment): {long_snippet}",
+            evidence=(
+                f"Pattern match: nsxClient.createSegment in context "
+                f"(action:com.acme.nsx/createSegment): {long_snippet}"
+            ),
             location="action:com.acme.nsx/createSegment",
             recommendations=[],
         )
@@ -169,7 +189,11 @@ class TestQuestionGeneratorsWithEvidence:
             reason="Firewall rules can be partially translated",
             openshift_equivalent="NetworkPolicy",
             migration_path=MigrationPath.PATH_A,
-            evidence="Pattern match: nsxClient.createFirewallRule in context (action:com.acme.nsx/createFirewallRule): nsxClient.createFirewallRule({name: 'web-to-db'})",
+            evidence=(
+                "Pattern match: nsxClient.createFirewallRule in context "
+                "(action:com.acme.nsx/createFirewallRule): "
+                "nsxClient.createFirewallRule({name: 'web-to-db'})"
+            ),
             location="action:com.acme.nsx/createFirewallRule",
             recommendations=[],
         )
@@ -194,7 +218,11 @@ class TestQuestionGeneratorsWithEvidence:
             reason="Segments can be partially translated",
             openshift_equivalent="NetworkAttachmentDefinition",
             migration_path=MigrationPath.PATH_A,
-            evidence="Pattern match: nsxClient.createSegment in context (action:com.acme.nsx/createSegment): var segment = nsxClient.createSegment({name: 'web-segment'})",
+            evidence=(
+                "Pattern match: nsxClient.createSegment in context "
+                "(action:com.acme.nsx/createSegment): "
+                "var segment = nsxClient.createSegment({name: 'web-segment'})"
+            ),
             location="action:com.acme.nsx/createSegment",
             recommendations=[],
         )
@@ -218,7 +246,10 @@ class TestQuestionGeneratorsWithEvidence:
             reason="Approval requires custom integration",
             openshift_equivalent=None,
             migration_path=MigrationPath.PATH_B,
-            evidence="Workflow item name/type contains approval keyword (workflow.xml:45): Wait for Approval",
+            evidence=(
+                "Workflow item name/type contains approval keyword (workflow.xml:45): "
+                "Wait for Approval"
+            ),
             location="workflow.xml:45",
             recommendations=[],
         )
@@ -242,7 +273,10 @@ class TestQuestionGeneratorsWithEvidence:
             reason="REST calls can be migrated to Ansible",
             openshift_equivalent="Ansible uri module",
             migration_path=MigrationPath.PATH_A,
-            evidence="Pattern match: restClient.post in context (workflow.xml:78): var response = restClient.post('https://api.example.com/v1/resources', data)",
+            evidence=(
+                "Pattern match: restClient.post in context (workflow.xml:78): "
+                "var response = restClient.post('https://api.example.com/v1/resources', data)"
+            ),
             location="workflow.xml:78",
             recommendations=[],
         )
