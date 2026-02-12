@@ -15,8 +15,7 @@ class TestSummarizeBackwardCompatibility:
         """Test that summarize() works without ActionIndex (backward compatibility)."""
         # Create simple workflow XML with proper vRO structure
         workflow_xml = tmp_path / "test.xml"
-        workflow_xml.write_text(
-            """<?xml version="1.0" encoding="UTF-8"?>
+        workflow_xml.write_text("""<?xml version="1.0" encoding="UTF-8"?>
 <workflow xmlns="http://vmware.com/vco/workflow" version="1.0.0">
   <display-name>Test Workflow</display-name>
   <input>
@@ -25,8 +24,7 @@ class TestSummarizeBackwardCompatibility:
     </param>
   </input>
   <workflow-item name="item0" type="end" end-mode="0"/>
-</workflow>"""
-        )
+</workflow>""")
 
         summary = summarize(workflow_xml)
 
@@ -40,13 +38,11 @@ class TestSummarizeBackwardCompatibility:
         action_index = ActionIndex(actions={})
 
         workflow_xml = tmp_path / "test.xml"
-        workflow_xml.write_text(
-            """<?xml version="1.0" encoding="UTF-8"?>
+        workflow_xml.write_text("""<?xml version="1.0" encoding="UTF-8"?>
 <workflow xmlns="http://vmware.com/vco/workflow" version="1.0.0">
   <display-name>Test Workflow</display-name>
   <workflow-item name="item0" type="end" end-mode="0"/>
-</workflow>"""
-        )
+</workflow>""")
 
         summary = summarize_with_actions(workflow_xml, action_index)
 
@@ -80,14 +76,11 @@ class TestActionScriptDetection:
             sha256="abc123",
         )
 
-        action_index = ActionIndex(
-            actions={"com.acme.nsx/createFirewallRule": nsx_action}
-        )
+        action_index = ActionIndex(actions={"com.acme.nsx/createFirewallRule": nsx_action})
 
         # Create workflow that calls this action
         workflow_xml = tmp_path / "test.xml"
-        workflow_xml.write_text(
-            """<?xml version="1.0" encoding="UTF-8"?>
+        workflow_xml.write_text("""<?xml version="1.0" encoding="UTF-8"?>
 <workflow xmlns="http://vmware.com/vco/workflow" version="1.0.0">
   <display-name>Create Firewall Rule</display-name>
   <workflow-item name="item1" type="task" out-name="item0">
@@ -101,8 +94,7 @@ class TestActionScriptDetection:
   <workflow-item name="item0" type="end" end-mode="0">
     <position y="200.0" x="100.0"/>
   </workflow-item>
-</workflow>"""
-        )
+</workflow>""")
 
         summary = summarize_with_actions(workflow_xml, action_index)
 
@@ -119,8 +111,7 @@ class TestActionScriptDetection:
         # NOTE: REST/plugin detection requires specialized analyze functions
         # This test verifies basic summarize works without crashing
         workflow_xml = tmp_path / "test.xml"
-        workflow_xml.write_text(
-            """<?xml version="1.0" encoding="UTF-8"?>
+        workflow_xml.write_text("""<?xml version="1.0" encoding="UTF-8"?>
 <workflow xmlns="http://vmware.com/vco/workflow" version="1.0.0">
   <display-name>API Workflow</display-name>
   <workflow-item name="item1" type="task" out-name="item0">
@@ -134,8 +125,7 @@ class TestActionScriptDetection:
   <workflow-item name="item0" type="end" end-mode="0">
     <position y="200.0" x="100.0"/>
   </workflow-item>
-</workflow>"""
-        )
+</workflow>""")
 
         # Without ActionIndex, no action resolution occurs
         summary = summarize(workflow_xml)
@@ -148,8 +138,7 @@ class TestActionScriptDetection:
         # NOTE: Plugin detection requires analyze functions with XML parsing
         # This test verifies basic summarize works without crashing
         workflow_xml = tmp_path / "test.xml"
-        workflow_xml.write_text(
-            """<?xml version="1.0" encoding="UTF-8"?>
+        workflow_xml.write_text("""<?xml version="1.0" encoding="UTF-8"?>
 <workflow xmlns="http://vmware.com/vco/workflow" version="1.0.0">
   <display-name>ITSM Workflow</display-name>
   <workflow-item name="item1" type="task" out-name="item0">
@@ -163,8 +152,7 @@ class TestActionScriptDetection:
   <workflow-item name="item0" type="end" end-mode="0">
     <position y="200.0" x="100.0"/>
   </workflow-item>
-</workflow>"""
-        )
+</workflow>""")
 
         # Without ActionIndex, no plugin detection occurs
         summary = summarize(workflow_xml)
@@ -182,8 +170,7 @@ class TestUnresolvedActions:
         action_index = ActionIndex(actions={})
 
         workflow_xml = tmp_path / "test.xml"
-        workflow_xml.write_text(
-            """<?xml version="1.0" encoding="UTF-8"?>
+        workflow_xml.write_text("""<?xml version="1.0" encoding="UTF-8"?>
 <workflow xmlns="http://vmware.com/vco/workflow" version="1.0.0">
   <display-name>Test Workflow</display-name>
   <workflow-item name="item1" type="task" out-name="item0">
@@ -197,8 +184,7 @@ class TestUnresolvedActions:
   <workflow-item name="item0" type="end" end-mode="0">
     <position y="200.0" x="100.0"/>
   </workflow-item>
-</workflow>"""
-        )
+</workflow>""")
 
         summary = summarize_with_actions(workflow_xml, action_index)
 
@@ -250,8 +236,7 @@ class TestAggregation:
 
         # Workflow with multiple items calling different actions
         workflow_xml = tmp_path / "test.xml"
-        workflow_xml.write_text(
-            """<?xml version="1.0" encoding="UTF-8"?>
+        workflow_xml.write_text("""<?xml version="1.0" encoding="UTF-8"?>
 <workflow xmlns="http://vmware.com/vco/workflow" version="1.0.0">
   <display-name>Multi-Item Workflow</display-name>
   <workflow-item name="item1" type="task" out-name="item2">
@@ -273,8 +258,7 @@ class TestAggregation:
   <workflow-item name="item0" type="end" end-mode="0">
     <position y="300.0" x="100.0"/>
   </workflow-item>
-</workflow>"""
-        )
+</workflow>""")
 
         summary = summarize_with_actions(workflow_xml, action_index)
 
