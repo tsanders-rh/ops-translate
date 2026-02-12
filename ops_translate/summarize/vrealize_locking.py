@@ -6,7 +6,7 @@ lock acquisition/release pairs for translation to Ansible locking tasks.
 """
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 

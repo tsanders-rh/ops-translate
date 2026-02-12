@@ -1,7 +1,5 @@
 """Tests for vRealize LockingSystem pattern detection."""
 
-import pytest
-
 from ops_translate.summarize.vrealize_locking import (
     LockPattern,
     detect_locking_patterns,

@@ -49,8 +49,6 @@ class LockingTaskGenerator:
         Returns:
             Ansible block task with locking structure
         """
-        var_name = sanitize_resource_name(pattern.resource)
-
         # Generate lock acquisition tasks
         acquire_tasks = self._generate_lock_acquisition(pattern)
 
