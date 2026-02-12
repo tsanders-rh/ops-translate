@@ -153,17 +153,11 @@ def parse_action_xml(action_file: Path) -> ActionDef:
 
     elif root.tag == "action":
         # action format (alternative export format)
-        display_name_elem = root.find("display-name")
-        name = display_name_elem.text if display_name_elem is not None else None
+        # Always use filename-based FQN to match workflow call syntax
+        fqn = _extract_fqname_from_path(action_file)
 
-        # Extract module and build fqn
-        module_elem = root.find("module")
-        module_path = module_elem.text if module_elem is not None else None
-
-        if module_path and name:
-            fqn = f"{module_path}/{name}"
-        else:
-            fqn = _extract_fqname_from_path(action_file)
+        # Extract name from filename (last part of FQN)
+        name = fqn.split("/")[-1] if "/" in fqn else fqn
 
         # Extract description
         desc_elem = root.find("description")

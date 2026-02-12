@@ -420,6 +420,16 @@ def summarize():
     from ops_translate.summarize import powercli, vrealize
     from ops_translate.util.progress import track_progress
 
+    # Load ActionIndex if available for vRealize action resolution
+    action_index = None
+    action_index_file = workspace.root / "input/vrealize/action-index.json"
+    if action_index_file.exists():
+        from ops_translate.summarize.vrealize_actions import load_action_index
+
+        action_index = load_action_index(action_index_file)
+        if action_index is not None:
+            console.print(f"[dim]Loaded {len(action_index)} actions for resolution[/dim]")
+
     # Count total files to analyze
     powercli_dir = workspace.root / "input/powercli"
     vrealize_dir = workspace.root / "input/vrealize"
@@ -452,7 +462,7 @@ def summarize():
                 summary_lines.append(summary + "\n")
                 progress.update(task, advance=1)
 
-        # Summarize vRealize files
+        # Summarize vRealize files with action resolution
         if xml_files:
             summary_lines.append("## vRealize Workflows\n")
             for xml_file in xml_files:
@@ -460,7 +470,7 @@ def summarize():
                 progress.update(
                     task, description=f"Analyzing {xml_file.name} ({file_count}/{total_files})"
                 )
-                summary = vrealize.summarize(xml_file)
+                summary = vrealize.summarize_with_actions(xml_file, action_index)
                 summary_lines.append(f"### {xml_file.name}\n")
                 summary_lines.append(summary + "\n")
                 progress.update(task, advance=1)
