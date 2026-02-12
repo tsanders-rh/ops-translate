@@ -4,7 +4,6 @@ Tests for interview evidence formatting (Issue #55).
 Tests that evidence from action scripts is properly displayed in interview questions.
 """
 
-
 from ops_translate.intent.classify import ClassifiedComponent, MigrationPath, TranslatabilityLevel
 from ops_translate.intent.interview import (
     _api_call_questions,
