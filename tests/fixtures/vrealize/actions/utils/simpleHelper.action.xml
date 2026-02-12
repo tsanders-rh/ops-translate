@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dunes-script-module name="simpleHelper">
+  <script encoded="false"><![CDATA[// Simple helper function
+return "Hello from action!";]]></script>
+</dunes-script-module>

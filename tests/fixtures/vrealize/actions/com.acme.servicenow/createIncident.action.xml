@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dunes-script-module name="createIncident"
+                     result-type="string"
+                     api-version="6.0.0"
+                     id="action-snow-incident-001"
+                     version="2.1.0"
+                     fqn="com.acme.servicenow/createIncident">
+  <description>Create ServiceNow incident ticket via REST API</description>
+
+  <param n="shortDescription" t="string">
+    <description>Brief description of the incident</description>
+  </param>
+  <param n="urgency" t="number">
+    <description>Urgency level (1=High, 2=Medium, 3=Low)</description>
+  </param>
+  <param n="assignmentGroup" t="string">
+    <description>Assignment group name</description>
+  </param>
+
+  <script encoded="false"><![CDATA[// Create ServiceNow incident
+var snowHost = new RESTHost("servicenow-prod");
+var client = snowHost.createRequest("POST", "/api/now/table/incident");
+
+// Build incident payload
+var incident = {
+    short_description: shortDescription,
+    urgency: urgency,
+    assignment_group: assignmentGroup,
+    caller_id: "vro_automation",
+    impact: 2,
+    category: "Infrastructure"
+};
+
+client.setHeader("Content-Type", "application/json");
+client.setHeader("Accept", "application/json");
+client.content = JSON.stringify(incident);
+
+// Execute request
+var response = client.execute();
+
+if (response.statusCode !== 201) {
+    throw "Failed to create incident: " + response.contentAsString;
+}
+
+var result = JSON.parse(response.contentAsString);
+System.log("Created ServiceNow incident: " + result.result.number);
+
+return result.result.number;]]></script>
+</dunes-script-module>

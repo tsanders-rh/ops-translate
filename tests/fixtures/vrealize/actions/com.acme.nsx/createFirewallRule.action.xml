@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dunes-script-module name="createFirewallRule"
+                     result-type="any"
+                     api-version="6.0.0"
+                     id="action-nsx-firewall-001"
+                     version="1.0.0"
+                     fqn="com.acme.nsx/createFirewallRule">
+  <description>Create NSX-T firewall rule with specified parameters</description>
+
+  <param n="ruleName" t="string">
+    <description>Name of the firewall rule</description>
+  </param>
+  <param n="source" t="string">
+    <description>Source security group ID</description>
+  </param>
+  <param n="destination" t="string">
+    <description>Destination security group ID</description>
+  </param>
+
+  <script encoded="false"><![CDATA[// Create NSX-T firewall rule
+var nsxClient = System.getModule("com.vmware.library.vc.nsx").client();
+
+// Build rule configuration
+var ruleConfig = {
+    display_name: ruleName,
+    source_groups: [source],
+    destination_groups: [destination],
+    services: ["ANY"],
+    action: "ALLOW",
+    direction: "IN_OUT",
+    logged: true
+};
+
+// Create the firewall rule
+var rule = nsxClient.createFirewallRule(ruleConfig);
+
+System.log("Created firewall rule: " + rule.id);
+return rule;]]></script>
+</dunes-script-module>

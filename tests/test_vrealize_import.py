@@ -83,6 +83,11 @@ class TestManifestGeneration:
             assert "workflows" in manifest
             assert "actions" in manifest
             assert "configurations" in manifest
+            assert "action_index" in manifest
+
+            # Check action_index structure
+            assert "count" in manifest["action_index"]
+            assert "file" in manifest["action_index"]
 
             # Verify manifest was written to workspace
             manifest_file = workspace_root / "input/vrealize/manifest.json"

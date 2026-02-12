@@ -393,6 +393,11 @@ def _import_vrealize_bundle_cli(source_path: Path, workspace: Workspace) -> None
         if config_count > 0:
             console.print(f"[green]  • {config_count} configuration(s) discovered[/green]")
 
+        # Show action index statistics
+        if "action_index" in manifest:
+            indexed_count = manifest["action_index"]["count"]
+            console.print(f"[green]  • {indexed_count} action(s) indexed[/green]")
+
         console.print("[green]  • Manifest: input/vrealize/manifest.json[/green]")
         console.print(f"[green]  • SHA256: {manifest['sha256']}[/green]")
 

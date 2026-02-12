@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dunes-script-module name="noScript"
+                     fqn="malformed/noScript">
+  <description>This action has no script element</description>
+  <param n="input1" t="string">
+    <description>Input parameter</description>
+  </param>
+</dunes-script-module>

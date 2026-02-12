@@ -137,13 +137,52 @@ ops-translate import --source vrealize --file malicious.zip
 
 All archive members are validated before extraction to ensure they resolve within the workspace directory.
 
+## Action Indexing
+
+When importing a bundle, ops-translate automatically parses and indexes all actions into `input/vrealize/action-index.json`:
+
+```json
+{
+  "actions": {
+    "com.acme.nsx/createFirewallRule": {
+      "fqname": "com.acme.nsx/createFirewallRule",
+      "name": "createFirewallRule",
+      "module": "com.acme.nsx",
+      "script": "var nsxClient = System.getModule(...);\n...",
+      "inputs": [
+        {"name": "ruleName", "type": "string", "description": "..."}
+      ],
+      "result_type": "any",
+      "description": "Create NSX-T firewall rule",
+      "sha256": "abc123..."
+    }
+  },
+  "count": 42,
+  "indexed_at": "2026-02-12T..."
+}
+```
+
+**What's Indexed:**
+- JavaScript source code from action scripts
+- Input parameters with types and descriptions
+- Return types
+- Module organization
+- SHA256 hashes for change detection
+
+**Why Action Indexing Matters:**
+- **Integration Detection**: Action scripts contain the real NSX, ServiceNow, IPAM integration logic
+- **Action Resolution**: Workflows can reference actions by fully-qualified name
+- **Signature Analysis**: Understand action inputs/outputs for better classification
+- **Deterministic**: Pure text parsing, no AI required
+
 ## Benefits of Bundle Import
 
 1. **Complete Export Support**: Import all workflows, actions, and configurations in one operation
-2. **Action Resolution**: Enables future features to resolve action references within workflows
-3. **Traceability**: Manifest includes file hashes and paths for integrity verification
-4. **Security**: Zip-slip protection prevents path traversal attacks
-5. **Backwards Compatible**: Single XML workflow import still works
+2. **Action Indexing**: Automatically parses action scripts for integration detection
+3. **Action Resolution**: Enables resolving action calls within workflows
+4. **Traceability**: Manifest includes file hashes and paths for integrity verification
+5. **Security**: Zip-slip protection prevents path traversal attacks
+6. **Backwards Compatible**: Single XML workflow import still works
 
 ## Next Steps
 
