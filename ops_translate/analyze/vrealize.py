@@ -258,11 +258,13 @@ def analyze_vrealize_workflow(workflow_file: Path, action_index: Any = None) -> 
         for item in items:
             # Track action call information
             for action in item.resolved_actions:
-                action_calls.append({
-                    "fqname": action.fqname,
-                    "module": action.module,
-                    "workflow_item": item.display_name,
-                })
+                action_calls.append(
+                    {
+                        "fqname": action.fqname,
+                        "module": action.module,
+                        "workflow_item": item.display_name,
+                    }
+                )
 
                 # Analyze action script content (create pseudo-root for XML-like processing)
                 # For now, detect NSX operations in action scripts via string matching
@@ -272,8 +274,7 @@ def analyze_vrealize_workflow(workflow_file: Path, action_index: Any = None) -> 
                     from ops_translate.analyze.vrealize import detect_nsx_patterns_in_script
 
                     action_nsx = detect_nsx_patterns_in_script(
-                        script_content,
-                        f"action:{action.fqname}"
+                        script_content, f"action:{action.fqname}"
                     )
 
                     # Merge NSX operations from actions into main results
@@ -942,31 +943,44 @@ def detect_nsx_patterns_in_script(script: str, location: str) -> dict[str, list]
     }
 
     # Segment patterns
-    if re.search(r"nsxClient\.createSegment|segment[-_]?id|\/policy\/api\/v1\/infra\/segments", script):
-        nsx_ops["segments"].append({
-            "location": location,
-            "snippet": script[:100],
-            "confidence": 0.9,
-            "source": "action_script",
-        })
+    if re.search(
+        r"nsxClient\.createSegment|segment[-_]?id|\/policy\/api\/v1\/infra\/segments", script
+    ):
+        nsx_ops["segments"].append(
+            {
+                "location": location,
+                "snippet": script[:100],
+                "confidence": 0.9,
+                "source": "action_script",
+            }
+        )
 
     # Firewall rule patterns
-    if re.search(r"nsxClient\.createFirewallRule|firewall[-_]?rule|\/policy\/api\/v1\/infra\/domains\/default\/security-policies", script):
-        nsx_ops["firewall_rules"].append({
-            "location": location,
-            "snippet": script[:100],
-            "confidence": 0.9,
-            "source": "action_script",
-        })
+    if re.search(
+        r"nsxClient\.createFirewallRule|firewall[-_]?rule|\/policy\/api\/v1\/infra\/domains\/default\/security-policies",
+        script,
+    ):
+        nsx_ops["firewall_rules"].append(
+            {
+                "location": location,
+                "snippet": script[:100],
+                "confidence": 0.9,
+                "source": "action_script",
+            }
+        )
 
     # Group patterns
-    if re.search(r"nsxClient\.createGroup|\/policy\/api\/v1\/infra\/domains\/default\/groups", script):
-        nsx_ops["groups"].append({
-            "location": location,
-            "snippet": script[:100],
-            "confidence": 0.9,
-            "source": "action_script",
-        })
+    if re.search(
+        r"nsxClient\.createGroup|\/policy\/api\/v1\/infra\/domains\/default\/groups", script
+    ):
+        nsx_ops["groups"].append(
+            {
+                "location": location,
+                "snippet": script[:100],
+                "confidence": 0.9,
+                "source": "action_script",
+            }
+        )
 
     return nsx_ops
 

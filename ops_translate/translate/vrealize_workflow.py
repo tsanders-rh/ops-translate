@@ -68,7 +68,7 @@ def extract_action_calls(script: str) -> list[dict[str, Any]]:
 
     # Find method calls on those variables
     for var_name, module in var_to_module.items():
-        method_pattern = rf'{re.escape(var_name)}\.(\w+)\s*\('
+        method_pattern = rf"{re.escape(var_name)}\.(\w+)\s*\("
 
         for match in re.finditer(method_pattern, script):
             method = match.group(1)
@@ -415,16 +415,18 @@ class JavaScriptToAnsibleTranslator:
         # Add TODO tasks for unresolved actions
         if item.unresolved_actions:
             for fqname in item.unresolved_actions:
-                tasks.append({
-                    "name": f"TODO: Implement missing action {fqname}",
-                    "ansible.builtin.debug": {
-                        "msg": (
-                            f"Action {fqname} called but not found in bundle. "
-                            f"Manual implementation or action export required."
-                        )
-                    },
-                    "tags": ["action_missing", "decision_required"]
-                })
+                tasks.append(
+                    {
+                        "name": f"TODO: Implement missing action {fqname}",
+                        "ansible.builtin.debug": {
+                            "msg": (
+                                f"Action {fqname} called but not found in bundle. "
+                                f"Manual implementation or action export required."
+                            )
+                        },
+                        "tags": ["action_missing", "decision_required"],
+                    }
+                )
 
         return tasks
 

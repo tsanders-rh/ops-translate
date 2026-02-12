@@ -164,14 +164,11 @@ class TestActionResolution:
             version="1.0.0",
             sha256="abc123",
         )
-        action_index = ActionIndex(
-            actions={"com.acme.nsx/createFirewallRule": action_def}
-        )
+        action_index = ActionIndex(actions={"com.acme.nsx/createFirewallRule": action_def})
 
         # Create test workflow that calls this action
         workflow_xml = tmp_path / "test_workflow.xml"
-        workflow_xml.write_text(
-            """<?xml version="1.0"?>
+        workflow_xml.write_text("""<?xml version="1.0"?>
 <workflow xmlns="http://vmware.com/vco/workflow">
   <workflow-item name="item1" type="task">
     <display-name>Create NSX Rule</display-name>
@@ -181,8 +178,7 @@ class TestActionResolution:
       System.log("Rule created: " + rule.id);
     ]]></script>
   </workflow-item>
-</workflow>"""
-        )
+</workflow>""")
 
         # Parse with ActionIndex
         parser = WorkflowParser(action_index=action_index)
@@ -208,15 +204,13 @@ class TestActionResolution:
 
         # Create test workflow that calls an action
         workflow_xml = tmp_path / "test_workflow.xml"
-        workflow_xml.write_text(
-            """<?xml version="1.0"?>
+        workflow_xml.write_text("""<?xml version="1.0"?>
 <workflow xmlns="http://vmware.com/vco/workflow">
   <workflow-item name="item1" type="task">
     <display-name>Create NSX Rule</display-name>
     <script><![CDATA[var rule = System.getModule("com.acme.nsx").createFirewallRule("test");]]></script>
   </workflow-item>
-</workflow>"""
-        )
+</workflow>""")
 
         # Parse with ActionIndex
         parser = WorkflowParser(action_index=action_index)
@@ -271,8 +265,7 @@ class TestActionResolution:
 
         # Create workflow calling both actions
         workflow_xml = tmp_path / "test_workflow.xml"
-        workflow_xml.write_text(
-            """<?xml version="1.0"?>
+        workflow_xml.write_text("""<?xml version="1.0"?>
 <workflow xmlns="http://vmware.com/vco/workflow">
   <workflow-item name="item1" type="task">
     <display-name>Provision Resources</display-name>
@@ -281,8 +274,7 @@ class TestActionResolution:
       var incident = System.getModule("com.acme.servicenow").createIncident("Provisioned");
     ]]></script>
   </workflow-item>
-</workflow>"""
-        )
+</workflow>""")
 
         parser = WorkflowParser(action_index=action_index)
         items = parser.parse_file(workflow_xml)
@@ -302,8 +294,7 @@ class TestActionResolution:
         """Test that without ActionIndex, no resolution occurs."""
         # Create workflow with action calls
         workflow_xml = tmp_path / "test_workflow.xml"
-        workflow_xml.write_text(
-            """<?xml version="1.0"?>
+        workflow_xml.write_text("""<?xml version="1.0"?>
 <workflow xmlns="http://vmware.com/vco/workflow">
   <workflow-item name="item1" type="task">
     <display-name>Test</display-name>
@@ -311,8 +302,7 @@ class TestActionResolution:
       System.getModule("com.acme.nsx").createSegment("test");
     ]]></script>
   </workflow-item>
-</workflow>"""
-        )
+</workflow>""")
 
         # Parse without ActionIndex
         parser = WorkflowParser()
@@ -331,14 +321,12 @@ class TestActionResolution:
         action_index = ActionIndex(actions={})
 
         workflow_xml = tmp_path / "test_workflow.xml"
-        workflow_xml.write_text(
-            """<?xml version="1.0"?>
+        workflow_xml.write_text("""<?xml version="1.0"?>
 <workflow xmlns="http://vmware.com/vco/workflow">
   <workflow-item name="item1" type="decision">
     <display-name>Check Approval</display-name>
   </workflow-item>
-</workflow>"""
-        )
+</workflow>""")
 
         parser = WorkflowParser(action_index=action_index)
         items = parser.parse_file(workflow_xml)
