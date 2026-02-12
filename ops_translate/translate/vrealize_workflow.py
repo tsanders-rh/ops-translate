@@ -5,13 +5,94 @@ Parses vRealize Orchestrator workflow XML and translates workflow items
 into executable Ansible tasks.
 """
 
+import logging
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import yaml
 from lxml import etree
+
+if TYPE_CHECKING:
+    from ops_translate.summarize.vrealize_actions import ActionIndex
+
+logger = logging.getLogger(__name__)
+
+
+def extract_action_calls(script: str) -> list[dict[str, Any]]:
+    """
+    Extract action calls from vRealize workflow script.
+
+    Detects patterns where workflows call reusable actions via System.getModule():
+    - Direct: System.getModule("com.acme.nsx").createFirewallRule(...)
+    - Variable: var mod = System.getModule("com.acme.nsx"); mod.createRule(...)
+
+    Args:
+        script: JavaScript workflow script content
+
+    Returns:
+        List of detected action calls with module, method, fqname, pattern, and evidence.
+        Example: [{'module': 'com.acme.nsx', 'method': 'createFirewallRule',
+                   'fqname': 'com.acme.nsx/createFirewallRule', 'pattern': 'direct_call',
+                   'evidence': 'System.getModule("com.acme.nsx").createFirewallRule(...)'}]
+    """
+    calls = []
+
+    # Pattern 1: Direct call - System.getModule("module").method(...)
+    direct_pattern = r'System\.getModule\(["\']([^"\']+)["\']\)\.(\w+)\s*\('
+
+    for match in re.finditer(direct_pattern, script):
+        module = match.group(1)
+        method = match.group(2)
+        fqname = f"{module}/{method}"
+
+        calls.append(
+            {
+                "module": module,
+                "method": method,
+                "fqname": fqname,
+                "pattern": "direct_call",
+                "evidence": match.group(0),
+            }
+        )
+
+    # Pattern 2: Variable assignment - var mod = System.getModule("module"); mod.method(...)
+    assign_pattern = r'(\w+)\s*=\s*System\.getModule\(["\']([^"\']+)["\']\)'
+    var_to_module = {}
+
+    for match in re.finditer(assign_pattern, script):
+        var_name = match.group(1)
+        module = match.group(2)
+        var_to_module[var_name] = module
+
+    # Find method calls on those variables
+    for var_name, module in var_to_module.items():
+        method_pattern = rf"{re.escape(var_name)}\.(\w+)\s*\("
+
+        for match in re.finditer(method_pattern, script):
+            method = match.group(1)
+            fqname = f"{module}/{method}"
+
+            calls.append(
+                {
+                    "module": module,
+                    "method": method,
+                    "fqname": fqname,
+                    "pattern": "variable_call",
+                    "evidence": match.group(0),
+                }
+            )
+
+    # Deduplicate by fqname
+    seen = set()
+    unique_calls = []
+    for call in calls:
+        if call["fqname"] not in seen:
+            seen.add(call["fqname"])
+            unique_calls.append(call)
+
+    return unique_calls
 
 
 @dataclass
@@ -27,6 +108,11 @@ class WorkflowItem:
     out_name: str | None  # Next item in workflow
     position: tuple[float, float] | None = None
 
+    # Action resolution (from Issue #53)
+    action_calls: list[dict[str, Any]] = field(default_factory=list)
+    resolved_actions: list[Any] = field(default_factory=list)  # list[ActionDef]
+    unresolved_actions: list[str] = field(default_factory=list)
+
 
 class WorkflowParser:
     """
@@ -38,6 +124,17 @@ class WorkflowParser:
         >>> for item in items:
         ...     print(f"{item.display_name}: {item.item_type}")
     """
+
+    def __init__(self, action_index: "ActionIndex | None" = None):
+        """
+        Initialize parser with optional ActionIndex for action resolution.
+
+        Args:
+            action_index: Index of vRO actions for resolving action calls.
+                         If provided, action calls in workflow scripts will be
+                         resolved and attached to WorkflowItem objects.
+        """
+        self.action_index = action_index
 
     def parse_file(self, workflow_file: Path) -> list[WorkflowItem]:
         """
@@ -64,6 +161,9 @@ class WorkflowParser:
         for elem in root.findall(".//{http://vmware.com/vco/workflow}workflow-item"):
             item = self._parse_workflow_item(elem)
             if item:
+                # Resolve action calls if ActionIndex available
+                if self.action_index is not None:
+                    self._resolve_action_calls(item)
                 items.append(item)
 
         # Sort by execution order (following out-name links)
@@ -126,6 +226,41 @@ class WorkflowParser:
                     }
                 )
         return bindings
+
+    def _resolve_action_calls(self, item: WorkflowItem) -> None:
+        """
+        Resolve action calls in workflow item script against ActionIndex.
+
+        Detects action calls using System.getModule() patterns, looks up action
+        definitions in the ActionIndex, and populates the item's action_calls,
+        resolved_actions, and unresolved_actions fields.
+
+        Modifies item in-place.
+
+        Args:
+            item: WorkflowItem to analyze and resolve action calls for
+        """
+        if not item.script or self.action_index is None:
+            return
+
+        # Extract action calls from script
+        calls = extract_action_calls(item.script)
+        item.action_calls = calls
+
+        # Resolve each call against ActionIndex
+        for call in calls:
+            fqname = call["fqname"]
+            action_def = self.action_index.get(fqname)
+
+            if action_def:
+                item.resolved_actions.append(action_def)
+            else:
+                item.unresolved_actions.append(fqname)
+                logger.warning(
+                    f"Workflow item '{item.display_name}' calls action '{fqname}' "
+                    f"but action not found in ActionIndex. "
+                    f"Integration detection may be incomplete."
+                )
 
     def _sort_by_execution_order(self, items: list[WorkflowItem]) -> list[WorkflowItem]:
         """
@@ -222,6 +357,9 @@ class JavaScriptToAnsibleTranslator:
         """
         Translate JavaScript script to Ansible tasks.
 
+        If item has resolved_actions, their scripts are analyzed for integrations
+        alongside the workflow script to enable comprehensive translation.
+
         Args:
             script: JavaScript code from workflow item
             item: WorkflowItem containing the script
@@ -229,6 +367,16 @@ class JavaScriptToAnsibleTranslator:
         Returns:
             List of Ansible task dictionaries
         """
+        # Build effective script including resolved action scripts
+        effective_script = script
+
+        # Append resolved action scripts as context for integration detection
+        if item.resolved_actions:
+            for action in item.resolved_actions:
+                effective_script += f"\n\n// Action: {action.fqname}\n"
+                effective_script += f"// Module: {action.module}\n"
+                effective_script += action.script
+
         # Check if script contains locking patterns
         if self.locking_enabled:
             from ops_translate.summarize.vrealize_locking import detect_locking_patterns
@@ -248,7 +396,8 @@ class JavaScriptToAnsibleTranslator:
         tasks = []
 
         # Detect and translate integration calls (trust-first, allowlist-based)
-        integration_tasks = self._detect_integration_calls(script, item)
+        # Use effective_script to include resolved action scripts
+        integration_tasks = self._detect_integration_calls(effective_script, item)
         tasks.extend(integration_tasks)
 
         # Remove System.log statements and replace with debug tasks
@@ -262,6 +411,22 @@ class JavaScriptToAnsibleTranslator:
         # Extract variable assignments
         assignment_tasks = self._extract_assignments(script, item.display_name)
         tasks.extend(assignment_tasks)
+
+        # Add TODO tasks for unresolved actions
+        if item.unresolved_actions:
+            for fqname in item.unresolved_actions:
+                tasks.append(
+                    {
+                        "name": f"TODO: Implement missing action {fqname}",
+                        "ansible.builtin.debug": {
+                            "msg": (
+                                f"Action {fqname} called but not found in bundle. "
+                                f"Manual implementation or action export required."
+                            )
+                        },
+                        "tags": ["action_missing", "decision_required"],
+                    }
+                )
 
         return tasks
 

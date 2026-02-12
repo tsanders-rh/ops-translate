@@ -183,12 +183,16 @@ def build_evidence_array(
     return evidence
 
 
-def analyze_vrealize_workflow(workflow_file: Path) -> dict[str, Any]:
+def analyze_vrealize_workflow(workflow_file: Path, action_index: Any = None) -> dict[str, Any]:
     """
     Analyze a vRealize workflow for external dependencies.
 
+    Optionally resolves action calls against ActionIndex to analyze action scripts
+    alongside workflow scripts for comprehensive integration detection.
+
     Args:
         workflow_file: Path to vRealize workflow XML file
+        action_index: Optional ActionIndex for resolving action calls
 
     Returns:
         Dictionary containing analysis results with keys:
@@ -201,6 +205,8 @@ def analyze_vrealize_workflow(workflow_file: Path) -> dict[str, Any]:
         - rest_api_calls: External REST API calls (detailed list)
         - complexity_score: Overall complexity rating (0-100)
         - has_external_dependencies: Boolean flag for any external dependencies
+        - action_calls: List of resolved action calls (if ActionIndex provided)
+        - unresolved_actions: List of unresolved action fqnames (if ActionIndex provided)
 
     Raises:
         OpsFileNotFoundError: If workflow file doesn't exist
@@ -237,6 +243,46 @@ def analyze_vrealize_workflow(workflow_file: Path) -> dict[str, Any]:
     plugins = detect_custom_plugins(root, namespace)
     rest_calls = detect_rest_calls(root, namespace)
 
+    # If ActionIndex provided, also analyze resolved action scripts
+    action_calls = []
+    unresolved_actions = []
+
+    if action_index is not None:
+        from ops_translate.translate.vrealize_workflow import WorkflowParser
+
+        # Parse workflow with action resolution
+        workflow_parser = WorkflowParser(action_index=action_index)
+        items = workflow_parser.parse_file(workflow_file)
+
+        # Analyze resolved action scripts
+        for item in items:
+            # Track action call information
+            for action in item.resolved_actions:
+                action_calls.append(
+                    {
+                        "fqname": action.fqname,
+                        "module": action.module,
+                        "workflow_item": item.display_name,
+                    }
+                )
+
+                # Analyze action script content (create pseudo-root for XML-like processing)
+                # For now, detect NSX operations in action scripts via string matching
+                script_content = action.script
+                if script_content:
+                    # Detect NSX patterns in action script
+                    from ops_translate.analyze.vrealize import detect_nsx_patterns_in_script
+
+                    action_nsx = detect_nsx_patterns_in_script(
+                        script_content, f"action:{action.fqname}"
+                    )
+
+                    # Merge NSX operations from actions into main results
+                    nsx_ops = merge_nsx_operations(nsx_ops, action_nsx)
+
+            # Track unresolved actions
+            unresolved_actions.extend(item.unresolved_actions)
+
     # Calculate complexity score
     complexity = calculate_complexity(nsx_ops, plugins, rest_calls)
 
@@ -245,7 +291,7 @@ def analyze_vrealize_workflow(workflow_file: Path) -> dict[str, Any]:
     confidence = calculate_overall_confidence(nsx_ops, plugins, rest_calls)
     evidence = build_evidence_array(nsx_ops, plugins, rest_calls)
 
-    return {
+    result = {
         "source_file": str(workflow_file),
         "signals": signals,
         "confidence": confidence,
@@ -256,6 +302,13 @@ def analyze_vrealize_workflow(workflow_file: Path) -> dict[str, Any]:
         "complexity_score": complexity,
         "has_external_dependencies": bool(nsx_ops or plugins or rest_calls),
     }
+
+    # Add action resolution info if ActionIndex was provided
+    if action_index is not None:
+        result["action_calls"] = action_calls
+        result["unresolved_actions"] = unresolved_actions
+
+    return result
 
 
 def calculate_detection_confidence(match_type: str, context: str, pattern: str = "") -> float:
@@ -865,3 +918,87 @@ def write_analysis_report(analysis: dict[str, Any], output_dir: Path) -> None:
             f.write("## No External Dependencies\n\n")
             f.write("This workflow appears to use only standard vRealize operations ")
             f.write("and should be fully translatable to OpenShift-native equivalents.\n\n")
+
+
+def detect_nsx_patterns_in_script(script: str, location: str) -> dict[str, list]:
+    """
+    Detect NSX operation patterns in a script string.
+
+    Args:
+        script: JavaScript code to analyze
+        location: Location identifier (e.g., "action:com.acme.nsx/createSegment")
+
+    Returns:
+        Dict of NSX operations by category (segments, firewall_rules, etc.)
+    """
+    import re
+
+    nsx_ops: dict[str, list] = {
+        "segments": [],
+        "firewall_rules": [],
+        "groups": [],
+        "tags": [],
+        "ip_pools": [],
+        "load_balancers": [],
+    }
+
+    # Segment patterns
+    if re.search(
+        r"nsxClient\.createSegment|segment[-_]?id|\/policy\/api\/v1\/infra\/segments", script
+    ):
+        nsx_ops["segments"].append(
+            {
+                "location": location,
+                "snippet": script[:100],
+                "confidence": 0.9,
+                "source": "action_script",
+            }
+        )
+
+    # Firewall rule patterns
+    if re.search(
+        r"nsxClient\.createFirewallRule|firewall[-_]?rule|\/policy\/api\/v1\/infra\/domains\/default\/security-policies",
+        script,
+    ):
+        nsx_ops["firewall_rules"].append(
+            {
+                "location": location,
+                "snippet": script[:100],
+                "confidence": 0.9,
+                "source": "action_script",
+            }
+        )
+
+    # Group patterns
+    if re.search(
+        r"nsxClient\.createGroup|\/policy\/api\/v1\/infra\/domains\/default\/groups", script
+    ):
+        nsx_ops["groups"].append(
+            {
+                "location": location,
+                "snippet": script[:100],
+                "confidence": 0.9,
+                "source": "action_script",
+            }
+        )
+
+    return nsx_ops
+
+
+def merge_nsx_operations(base: dict[str, list], additional: dict[str, list]) -> dict[str, list]:
+    """
+    Merge two NSX operations dictionaries.
+
+    Args:
+        base: Base NSX operations dict
+        additional: Additional NSX operations to merge in
+
+    Returns:
+        Merged NSX operations dict
+    """
+    for category, ops in additional.items():
+        if category in base:
+            base[category].extend(ops)
+        else:
+            base[category] = ops
+    return base

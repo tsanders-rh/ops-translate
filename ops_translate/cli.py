@@ -980,14 +980,25 @@ def analyze():
 
     console.print(f"Found {len(xml_files)} workflow(s) to analyze\n")
 
+    # Load ActionIndex if available for action resolution
+    action_index = None
+    action_index_file = workspace.root / "input/vrealize/action-index.json"
+    if action_index_file.exists():
+        from ops_translate.summarize.vrealize_actions import load_action_index
+
+        action_index = load_action_index(action_index_file)
+        if action_index is not None:
+            action_count = len(action_index)
+            console.print(f"[dim]Loaded {action_count} actions for resolution[/dim]\n")
+
     all_components = []
 
     # Analyze each workflow
     for xml_file in xml_files:
         console.print(f"[dim]Analyzing {xml_file.name}...[/dim]")
 
-        # Run analysis
-        analysis = analyze_vrealize_workflow(xml_file)
+        # Run analysis with ActionIndex if available
+        analysis = analyze_vrealize_workflow(xml_file, action_index=action_index)
 
         # Write analysis report
         write_analysis_report(analysis, workspace.root / "intent")
