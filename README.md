@@ -60,6 +60,10 @@ ops-translate generate --profile lab --format argocd    # ArgoCD
 # OR if VMs were already migrated via MTV, generate validation playbooks
 ops-translate generate --profile lab --assume-existing-vms
 
+# Generate Event-Driven Ansible rulebooks from vRO event subscriptions
+ops-translate generate --profile lab --eda           # Generate EDA + Ansible/KubeVirt
+ops-translate generate --profile lab --eda-only      # Generate only EDA rulebooks
+
 # Review generated files
 tree output/
 ```
@@ -159,6 +163,7 @@ PowerCLI/vRealize  ──[LLM]──>  intent.yaml  ──[Templates]──>  An
 - **Migration path guidance** - Provides specific recommendations with production-grade patterns
 - **Smart Ansible scaffolding** - Generates TODO tasks and role stubs for manual work
 - **MTV (Migration Toolkit for Virtualization) support** - Generate validation playbooks for already-migrated VMs
+- **Event-Driven Ansible (EDA) rulebook generation** - Translate vRO event subscriptions to preserve reactive automation patterns
 - Detect conflicts during intent merge (different approval requirements, network mappings, etc.)
 - Generate KubeVirt VirtualMachine manifests
 - Generate Ansible roles with proper structure and defaults

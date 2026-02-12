@@ -872,13 +872,15 @@ open output/report/index.html
 The interactive report shows translation status, expert recommendations, and migration paths to help you understand what will be automated vs. what needs manual work.
 
 ```bash
-ops-translate generate --profile <profile_name> [--no-ai] [--assume-existing-vms]
+ops-translate generate --profile <profile_name> [--no-ai] [--assume-existing-vms] [--eda] [--eda-only]
 ```
 
 **Options**:
 - `--profile`: Target environment profile (lab, prod, etc.)
 - `--no-ai`: Use templates instead of AI for generation
 - `--assume-existing-vms`: MTV mode - assume VMs exist, generate validation/day-2 ops only
+- `--eda`: Also generate Event-Driven Ansible rulebooks from vRO event subscriptions
+- `--eda-only`: Generate only EDA rulebooks (skip Ansible/KubeVirt artifacts)
 
 **Output** (greenfield mode):
 - `output/kubevirt/vm.yaml`
@@ -893,6 +895,13 @@ ops-translate generate --profile <profile_name> [--no-ai] [--assume-existing-vms
 - `output/README.md`
 - **Note**: KubeVirt VM YAML is not generated in MTV mode
 
+**Output** (EDA mode with `--eda` or `--eda-only`):
+- `output/eda/rulebooks/vm_lifecycle.yml` - VM lifecycle event rules
+- `output/eda/rulebooks/alarm_events.yml` - vCenter alarm event rules
+- `output/eda/requirements.yml` - EDA collection dependencies
+- `output/eda/deployment/deployment.yml` - Deployment playbook
+- `output/eda/deployment/inventory.yml` - EDA controller inventory
+
 **Examples**:
 ```bash
 # Generate for lab environment (greenfield - creates VMs)
@@ -906,6 +915,10 @@ ops-translate generate --profile lab --no-ai
 
 # MTV mode - VMs already migrated, generate validation only
 ops-translate generate --profile lab --assume-existing-vms
+
+# Generate Event-Driven Ansible rulebooks from vRO event subscriptions
+ops-translate generate --profile lab --eda           # Generate EDA + Ansible/KubeVirt
+ops-translate generate --profile lab --eda-only      # Generate only EDA rulebooks
 ```
 
 **MTV (Migration Toolkit for Virtualization) Mode**:
@@ -927,6 +940,30 @@ This is useful for post-migration scenarios where:
 |------|------|---------|---------------|
 | **Greenfield** | (default) | ✅ Generated | Create VM, wait for ready |
 | **MTV** | `--assume-existing-vms` | ❌ Skipped | Verify, validate, label |
+
+**Event-Driven Ansible (EDA) Mode**:
+
+When using `--eda` or `--eda-only`, ops-translate generates Event-Driven Ansible rulebooks from vRealize Orchestrator event subscriptions to preserve reactive automation patterns:
+
+1. **Parse vRO event subscriptions** - Extract event types, conditions, workflow bindings
+2. **Translate JavaScript conditions** - Convert to Python/Jinja2 for EDA
+3. **Map event properties** - Transform vCenter event payloads to EDA format
+4. **Generate categorized rulebooks** - Split by event type (VM lifecycle, alarms, etc.)
+5. **Create deployment artifacts** - Collection requirements and deployment playbooks
+
+Generated rulebooks include:
+- **Event sources**: Webhook configuration for vCenter Event Broker Appliance (VEBA)
+- **Conditions**: Translated from vRO JavaScript to Python/Jinja2
+- **Actions**: AAP Job Templates or Ansible playbooks
+- **Variable bindings**: Event data mapping to workflow parameters
+
+This is useful for migrating reactive automation:
+- vRO workflows triggered by vCenter events
+- Event-driven compliance checks, cleanup tasks, ITSM integration
+- Alarm-based incident creation
+- Preserving event-driven patterns in Ansible Automation Platform
+
+See `examples/eda/README.md` for detailed usage and configuration.
 
 **Configure in workspace** (optional):
 ```yaml
