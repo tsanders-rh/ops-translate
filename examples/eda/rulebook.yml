@@ -1,0 +1,47 @@
+- name: vCenter Event-Driven Automation
+  hosts: localhost
+  sources:
+  - ansible.eda.webhook:
+      host: 0.0.0.0
+      port: 5000
+      token: '{{ webhook_token }}'
+  rules:
+  - name: VM Powered On - Compliance Check
+    condition: "(event.type == \"vm_powered_on\") and (event.payload.cluster == \"\
+      Production-Cluster\"  and \nevent.payload.cpu_count > 4)"
+    action:
+      run_playbook:
+        name: playbooks/compliance-check-workflow.yml
+        extra_vars:
+          vmName: '{{ event.payload.vm_name }}'
+          vmId: '{{ event.payload.vm_id }}'
+          cluster: '{{ event.payload.cluster }}'
+          poweredOnTime: '{{ event.payload.created_time }}'
+  - name: VM Powered Off - Cleanup
+    condition: event.type == "vm_powered_off"
+    action:
+      run_playbook:
+        name: playbooks/vm-cleanup-workflow.yml
+        extra_vars:
+          vmName: '{{ event.payload.vm_name }}'
+          vmId: '{{ event.payload.vm_id }}'
+  - name: VM Created - CMDB Registration
+    condition: (event.type == "vm_created") and (not event.payload.template)
+    action:
+      run_playbook:
+        name: playbooks/cmdb-register-vm.yml
+        extra_vars:
+          vmName: '{{ event.payload.vm_name }}'
+          vmId: '{{ event.payload.vm_id }}'
+          template: '{{ event.payload.template }}'
+          createdTime: '{{ event.payload.created_time }}'
+  - name: Critical Alarm - Create Incident
+    condition: "(event.type == \"alarm_status_changed\") and (event.payload.to_status\
+      \ == \"red\"  and \nevent.payload.alarm_name != \"Test Alarm\")"
+    action:
+      run_playbook:
+        name: playbooks/create-incident-from-alarm.yml
+        extra_vars:
+          alarmName: '{{ event.payload.alarm_name }}'
+          entityName: '{{ event.payload.entity_name }}'
+          alarmStatus: '{{ event.payload.to_status }}'

@@ -1,0 +1,296 @@
+# vCenter to Event-Driven Ansible Event Mappings
+#
+# Defines how vCenter events are mapped to EDA rulebook conditions and payloads.
+# Used by the EDA rulebook generator to create appropriate event sources and rules.
+
+# VM Lifecycle Events
+vm_lifecycle:
+  VmPoweredOnEvent:
+    description: "VM powered on"
+    eda_event_type: "vm_powered_on"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      vm_name: "event.vm.name"
+      vm_id: "event.vm.id"
+      vm_uuid: "event.vm.uuid"
+      cluster: "event.vm.cluster"
+      host: "event.host.name"
+      datacenter: "event.datacenter.name"
+      powered_on_time: "event.createdTime"
+
+  VmPoweredOffEvent:
+    description: "VM powered off"
+    eda_event_type: "vm_powered_off"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      vm_name: "event.vm.name"
+      vm_id: "event.vm.id"
+      vm_uuid: "event.vm.uuid"
+      cluster: "event.vm.cluster"
+      host: "event.host.name"
+      powered_off_time: "event.createdTime"
+
+  VmSuspendedEvent:
+    description: "VM suspended"
+    eda_event_type: "vm_suspended"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      vm_name: "event.vm.name"
+      vm_id: "event.vm.id"
+      vm_uuid: "event.vm.uuid"
+
+  VmCreatedEvent:
+    description: "VM created"
+    eda_event_type: "vm_created"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      vm_name: "event.vm.name"
+      vm_id: "event.vm.id"
+      vm_uuid: "event.vm.uuid"
+      template: "event.template.name"
+      folder: "event.vm.folder"
+      created_time: "event.createdTime"
+
+  VmRemovedEvent:
+    description: "VM removed/deleted"
+    eda_event_type: "vm_removed"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      vm_name: "event.vm.name"
+      vm_id: "event.vm.id"
+      vm_uuid: "event.vm.uuid"
+      removed_time: "event.createdTime"
+
+  VmClonedEvent:
+    description: "VM cloned"
+    eda_event_type: "vm_cloned"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      vm_name: "event.vm.name"
+      source_vm: "event.sourceVm.name"
+      vm_uuid: "event.vm.uuid"
+
+  VmMigratedEvent:
+    description: "VM migrated (vMotion)"
+    eda_event_type: "vm_migrated"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      vm_name: "event.vm.name"
+      vm_id: "event.vm.id"
+      source_host: "event.sourceHost.name"
+      dest_host: "event.destHost.name"
+      source_datacenter: "event.sourceDatacenter.name"
+      dest_datacenter: "event.destDatacenter.name"
+
+# VM Configuration Events
+vm_configuration:
+  VmReconfiguredEvent:
+    description: "VM configuration changed"
+    eda_event_type: "vm_reconfigured"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      vm_name: "event.vm.name"
+      vm_id: "event.vm.id"
+      config_spec: "event.configSpec"
+      modified_time: "event.createdTime"
+
+  VmRenamedEvent:
+    description: "VM renamed"
+    eda_event_type: "vm_renamed"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      old_name: "event.oldName"
+      new_name: "event.newName"
+      vm_id: "event.vm.id"
+
+# Alarm Events
+alarms:
+  AlarmStatusChangedEvent:
+    description: "Alarm status changed"
+    eda_event_type: "alarm_status_changed"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      alarm_name: "event.alarm.name"
+      entity_name: "event.entity.name"
+      entity_type: "event.entity.type"
+      from_status: "event.from"
+      to_status: "event.to"
+      time: "event.createdTime"
+
+  AlarmCreatedEvent:
+    description: "Alarm created"
+    eda_event_type: "alarm_created"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      alarm_name: "event.alarm.name"
+      entity_name: "event.entity.name"
+
+# Host Events
+host_lifecycle:
+  HostConnectedEvent:
+    description: "Host connected"
+    eda_event_type: "host_connected"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      host_name: "event.host.name"
+      datacenter: "event.datacenter.name"
+      cluster: "event.cluster.name"
+
+  HostDisconnectedEvent:
+    description: "Host disconnected"
+    eda_event_type: "host_disconnected"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      host_name: "event.host.name"
+      reason: "event.reason"
+
+  EnteredMaintenanceModeEvent:
+    description: "Host entered maintenance mode"
+    eda_event_type: "host_maintenance_mode_entered"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      host_name: "event.host.name"
+      cluster: "event.cluster.name"
+
+  ExitMaintenanceModeEvent:
+    description: "Host exited maintenance mode"
+    eda_event_type: "host_maintenance_mode_exited"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      host_name: "event.host.name"
+      cluster: "event.cluster.name"
+
+# Datastore Events
+datastore:
+  DatastoreFileUploadedEvent:
+    description: "File uploaded to datastore"
+    eda_event_type: "datastore_file_uploaded"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      datastore_name: "event.datastore.name"
+      file_path: "event.file.name"
+      size: "event.fileSize"
+
+  DatastoreFileDeletedEvent:
+    description: "File deleted from datastore"
+    eda_event_type: "datastore_file_deleted"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      datastore_name: "event.datastore.name"
+      file_path: "event.file.name"
+
+# Network Events
+network:
+  DvsCreatedEvent:
+    description: "Distributed virtual switch created"
+    eda_event_type: "dvs_created"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      dvs_name: "event.dvs.name"
+      datacenter: "event.datacenter.name"
+
+  DvsPortConnectedEvent:
+    description: "DVS port connected"
+    eda_event_type: "dvs_port_connected"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      dvs_name: "event.dvs.name"
+      port_key: "event.portKey"
+      vm_name: "event.vm.name"
+
+# Resource Pool Events
+resource_pool:
+  ResourcePoolCreatedEvent:
+    description: "Resource pool created"
+    eda_event_type: "resource_pool_created"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      pool_name: "event.resourcePool.name"
+      parent: "event.parent.name"
+      cluster: "event.cluster.name"
+
+  ResourcePoolMovedEvent:
+    description: "Resource pool moved"
+    eda_event_type: "resource_pool_moved"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      pool_name: "event.resourcePool.name"
+      old_parent: "event.oldParent.name"
+      new_parent: "event.newParent.name"
+
+# Task Events
+tasks:
+  TaskTimeoutEvent:
+    description: "Task timeout"
+    eda_event_type: "task_timeout"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      task_name: "event.task.name"
+      task_type: "event.task.type"
+      entity: "event.entity.name"
+
+# License Events
+licensing:
+  LicenseExpiredEvent:
+    description: "License expired"
+    eda_event_type: "license_expired"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      license_key: "event.licenseKey"
+      product: "event.product"
+
+# User/Permission Events
+user_management:
+  UserLoginSessionEvent:
+    description: "User login"
+    eda_event_type: "user_login"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      username: "event.userName"
+      ip_address: "event.ipAddress"
+      time: "event.createdTime"
+
+  UserLogoutSessionEvent:
+    description: "User logout"
+    eda_event_type: "user_logout"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      username: "event.userName"
+      time: "event.createdTime"
+
+# Generic/Custom Events
+custom:
+  CustomEvent:
+    description: "Custom event"
+    eda_event_type: "custom_event"
+    source: "ansible.eda.webhook"
+    payload_mapping:
+      event_type: "event.type"
+      message: "event.message"
+      entity: "event.entity.name"
+      time: "event.createdTime"
+
+# Event source configurations
+event_sources:
+  # Webhook source for vCenter Event Broker Appliance (VEBA)
+  webhook:
+    type: "ansible.eda.webhook"
+    default_config:
+      host: "0.0.0.0"
+      port: 5000
+      token: "{{ webhook_token }}"
+
+  # URL polling source (for REST APIs)
+  url_check:
+    type: "ansible.eda.url_check"
+    default_config:
+      url: "{{ api_endpoint }}"
+      delay: 30
+
+  # Kafka source (for event streaming)
+  kafka:
+    type: "ansible.eda.kafka"
+    default_config:
+      host: "{{ kafka_host }}"
+      port: 9092
+      topic: "vcenter-events"
