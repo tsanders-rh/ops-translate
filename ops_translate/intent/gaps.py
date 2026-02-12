@@ -179,7 +179,7 @@ def _write_markdown_report(
 
         # Group by severity level
         trans_level: TranslatabilityLevel
-        level_labels: dict[TranslatabilityLevel, str] = {
+        level_descriptions: dict[TranslatabilityLevel, str] = {
             TranslatabilityLevel.SUPPORTED: "Fully Supported",
             TranslatabilityLevel.PARTIAL: "Partial Translation",
             TranslatabilityLevel.BLOCKED: "Expert-Guided",
@@ -196,7 +196,7 @@ def _write_markdown_report(
             if not level_components:
                 continue
 
-            label = level_labels[trans_level]
+            label = level_descriptions[trans_level]
             f.write(f"### {trans_level.emoji} {label} Components\n\n")
 
             for comp in level_components:

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow xmlns="http://vmware.com/vco/workflow" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <id>b7f9d3a1-6e4c-8912-3def-567890abcdef</id>
+  <name>Allocate IP Address with Locking</name>
+  <description>Allocate next available IP address with distributed locking to prevent race conditions</description>
+  <version>1.0.0</version>
+
+  <!-- Workflow Item 1: Lock IP and Assign -->
+  <workflow-item name="allocate_ip" type="task" out-name="register_dns">
+    <display-name>Allocate IP Address</display-name>
+    <script><![CDATA[
+// Lock the IP address globally to prevent concurrent allocation
+LockingSystem.lockGlobalStringRead("ip_10.0.1.50", 300);
+
+try {
+    // Assign IP to VM
+    System.log("Assigning IP 10.0.1.50 to VM: " + vmName);
+    vm.assignIP("10.0.1.50");
+
+    // Update IPAM system
+    ipam.recordAllocation(vmName, "10.0.1.50");
+
+    // Set output variable
+    assignedIP = "10.0.1.50";
+} finally {
+    // Always unlock, even if assignment fails
+    LockingSystem.unlockGlobalStringRead("ip_10.0.1.50");
+}
+    ]]></script>
+    <in-binding>
+      <bind name="vmName" type="string" export-name="vm_name"/>
+      <bind name="vm" type="VC:VirtualMachine" export-name="vm_object"/>
+    </in-binding>
+    <out-binding>
+      <bind name="assignedIP" type="string" export-name="assigned_ip"/>
+    </out-binding>
+    <position x="100.0" y="50.0"/>
+  </workflow-item>
+
+  <!-- Workflow Item 2: Register DNS -->
+  <workflow-item name="register_dns" type="task" out-name="end">
+    <display-name>Register DNS Record</display-name>
+    <script><![CDATA[
+// Register DNS record
+System.log("Registering DNS for " + vmName + " -> " + assignedIP);
+dnsServer.createARecord(vmName, assignedIP);
+    ]]></script>
+    <in-binding>
+      <bind name="vmName" type="string" export-name="vm_name"/>
+      <bind name="assignedIP" type="string" export-name="assigned_ip"/>
+    </in-binding>
+    <position x="300.0" y="50.0"/>
+  </workflow-item>
+
+  <!-- End node -->
+  <workflow-item name="end" type="end">
+    <position x="500.0" y="50.0"/>
+  </workflow-item>
+
+</workflow>

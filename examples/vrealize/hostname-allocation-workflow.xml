@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow xmlns="http://vmware.com/vco/workflow" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <id>c8e0a4b2-7f5d-9023-4efg-678901bcdefa</id>
+  <name>Allocate Hostname with Locking</name>
+  <description>Allocate next available hostname with locking (simple pattern)</description>
+  <version>1.0.0</version>
+
+  <!-- Workflow Item: Lock and Assign Hostname -->
+  <workflow-item name="allocate_hostname" type="task" out-name="end">
+    <display-name>Allocate Hostname</display-name>
+    <script><![CDATA[
+// Simple lock/unlock pattern (not recommended but common in legacy workflows)
+LockingSystem.lockGlobalStringRead("hostname_web-server-001", 180);
+
+// Get next available hostname
+nextHostname = naming.getNextHostname("web-server");
+System.log("Allocated hostname: " + nextHostname);
+
+// Assign to VM
+vm.setHostname(nextHostname);
+
+// Release lock
+LockingSystem.unlockGlobalStringRead("hostname_web-server-001");
+
+// Return hostname
+allocatedHostname = nextHostname;
+    ]]></script>
+    <in-binding>
+      <bind name="vm" type="VC:VirtualMachine" export-name="vm_object"/>
+    </in-binding>
+    <out-binding>
+      <bind name="allocatedHostname" type="string" export-name="allocated_hostname"/>
+    </out-binding>
+    <position x="100.0" y="50.0"/>
+  </workflow-item>
+
+  <!-- End node -->
+  <workflow-item name="end" type="end">
+    <position x="300.0" y="50.0"/>
+  </workflow-item>
+
+</workflow>
