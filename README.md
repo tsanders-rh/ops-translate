@@ -82,6 +82,10 @@ ops-translate init my-project --with-templates && cd my-project
 ops-translate import --source powercli --file /path/to/your-script.ps1
 ops-translate import --source vrealize --file /path/to/workflow.xml
 
+# Import vRealize bundles (.package, .zip, or directory)
+ops-translate import --source vrealize --file /path/to/vro-export.package
+ops-translate import --source vrealize --file /path/to/vro-export/
+
 # Extract and merge operational intent
 ops-translate summarize
 ops-translate intent extract

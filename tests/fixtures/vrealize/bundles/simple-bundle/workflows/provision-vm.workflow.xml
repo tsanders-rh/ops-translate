@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow xmlns="http://vmware.com/vco/workflow" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://vmware.com/vco/workflow http://vmware.com/vco/workflow" version="1.0.0" api-version="8.0.0">
+  <display-name>Provision VM</display-name>
+  <description>Test workflow for bundle import</description>
+
+  <input>
+    <param name="vmName" type="string">
+      <description>Name of the virtual machine</description>
+    </param>
+  </input>
+
+  <output>
+    <param name="vm" type="VC:VirtualMachine">
+      <description>The created virtual machine</description>
+    </param>
+  </output>
+
+  <workflow-item name="item0" type="end" end-mode="0">
+    <position y="100.0" x="200.0"/>
+  </workflow-item>
+
+  <workflow-item name="item1" out-name="item0" type="task">
+    <display-name>Create VM</display-name>
+    <script encoded="false">
+      System.log("Creating VM: " + vmName);
+    </script>
+    <position y="50.0" x="100.0"/>
+  </workflow-item>
+</workflow>

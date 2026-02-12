@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<action xmlns="http://vmware.com/vco/action" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://vmware.com/vco/action http://vmware.com/vco/action" version="1.0.0" api-version="8.0.0">
+  <display-name>Validate Input</display-name>
+  <description>Validates input parameters</description>
+  <module>com.acme.utils</module>
+
+  <input>
+    <param name="value" type="string">
+      <description>Value to validate</description>
+    </param>
+  </input>
+
+  <output>
+    <param name="isValid" type="boolean">
+      <description>Validation result</description>
+    </param>
+  </output>
+
+  <script>
+    isValid = (value != null &amp;&amp; value.length > 0);
+    System.log("Validation result: " + isValid);
+  </script>
+</action>
