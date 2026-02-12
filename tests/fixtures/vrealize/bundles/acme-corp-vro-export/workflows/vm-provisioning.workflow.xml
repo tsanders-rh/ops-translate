@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow xmlns="http://vmware.com/vco/workflow" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://vmware.com/vco/workflow http://vmware.com/vco/workflow" version="1.0.0" api-version="8.0.0" root-name="item1" id="acme-vm-prov-001">
+  <display-name>VM Provisioning with Networking</display-name>
+  <description>End-to-end VM provisioning with NSX networking, Infoblox IPAM, and ServiceNow integration</description>
+
+  <input>
+    <param name="vmName" type="string">
+      <description>Name of the virtual machine to provision</description>
+    </param>
+    <param name="environment" type="string">
+      <description>Deployment environment (dev/qa/prod)</description>
+    </param>
+    <param name="networkSegment" type="string">
+      <description>NSX segment name for VM networking</description>
+    </param>
+  </input>
+
+  <output>
+    <param name="vm" type="VC:VirtualMachine">
+      <description>The provisioned virtual machine</description>
+    </param>
+    <param name="ipAddress" type="string">
+      <description>Assigned IP address</description>
+    </param>
+  </output>
+
+  <attrib name="isValid" type="boolean" read-only="false">
+    <description>VM name validation result</description>
+  </attrib>
+  <attrib name="segmentId" type="string" read-only="false">
+    <description>Created NSX segment ID</description>
+  </attrib>
+  <attrib name="nextIP" type="string" read-only="false">
+    <description>Next available IP from Infoblox</description>
+  </attrib>
+  <attrib name="ruleId" type="string" read-only="false">
+    <description>Created firewall rule ID</description>
+  </attrib>
+  <attrib name="requiresApproval" type="boolean" read-only="false">
+    <description>Whether approval is required</description>
+  </attrib>
+
+  <!-- item1: Validate VM Name -->
+  <workflow-item name="item1" out-name="item2" type="task">
+    <display-name>Validate VM Name</display-name>
+    <description>Validates the VM name meets naming standards</description>
+    <script encoded="false"><![CDATA[
+// Call validation action
+var validateModule = System.getModule("com.acme.utils");
+isValid = validateModule.validateInput(vmName);
+
+if (!isValid) {
+  throw "VM name '" + vmName + "' does not meet naming standards";
+}
+
+System.log("VM name validation passed: " + vmName);
+]]></script>
+    <in-binding>
+      <bind name="vmName" type="string" export-name="vmName"/>
+    </in-binding>
+    <out-binding>
+      <bind name="isValid" type="boolean" export-name="isValid"/>
+    </out-binding>
+    <position y="50.0" x="100.0"/>
+  </workflow-item>
+
+  <!-- item2: Create NSX Segment -->
+  <workflow-item name="item2" out-name="item3" type="task">
+    <display-name>Create NSX Segment</display-name>
+    <description>Creates NSX-T segment for VM networking</description>
+    <script encoded="false"><![CDATA[
+// Create NSX segment via action
+var nsxModule = System.getModule("com.acme.nsx");
+segmentId = nsxModule.createSegment(networkSegment, "tz-overlay-01");
+
+System.log("Created NSX segment: " + segmentId);
+]]></script>
+    <in-binding>
+      <bind name="networkSegment" type="string" export-name="networkSegment"/>
+    </in-binding>
+    <out-binding>
+      <bind name="segmentId" type="string" export-name="segmentId"/>
+    </out-binding>
+    <position y="100.0" x="100.0"/>
+  </workflow-item>
+
+  <!-- item3: Get Next Available IP -->
+  <workflow-item name="item3" out-name="item4" type="task">
+    <display-name>Get Next Available IP</display-name>
+    <description>Gets next available IP address from Infoblox IPAM</description>
+    <script encoded="false"><![CDATA[
+// Get next IP from Infoblox
+var infobloxModule = System.getModule("com.acme.infoblox");
+nextIP = infobloxModule.getNextIP("10.1.0.0/24");
+
+System.log("Assigned IP address: " + nextIP);
+ipAddress = nextIP;
+]]></script>
+    <in-binding>
+      <bind name="networkSegment" type="string" export-name="networkSegment"/>
+    </in-binding>
+    <out-binding>
+      <bind name="nextIP" type="string" export-name="nextIP"/>
+      <bind name="ipAddress" type="string" export-name="ipAddress"/>
+    </out-binding>
+    <position y="150.0" x="100.0"/>
+  </workflow-item>
+
+  <!-- item4: Create Firewall Rule -->
+  <workflow-item name="item4" out-name="item5" type="task">
+    <display-name>Create Firewall Rule</display-name>
+    <description>Creates NSX-T distributed firewall rule for VM</description>
+    <script encoded="false"><![CDATA[
+// Create firewall rule for the VM
+var nsxModule = System.getModule("com.acme.nsx");
+var ruleName = vmName + "-allow-web";
+ruleId = nsxModule.createFirewallRule(ruleName, "web-tier", "app-tier");
+
+System.log("Created firewall rule: " + ruleId);
+]]></script>
+    <in-binding>
+      <bind name="vmName" type="string" export-name="vmName"/>
+    </in-binding>
+    <out-binding>
+      <bind name="ruleId" type="string" export-name="ruleId"/>
+    </out-binding>
+    <position y="200.0" x="100.0"/>
+  </workflow-item>
+
+  <!-- item5: Decision - Require Approval? -->
+  <workflow-item name="item5" out-name="item6" type="decision">
+    <display-name>Require Approval?</display-name>
+    <description>Check if production environment requires approval</description>
+    <script encoded="false"><![CDATA[
+requiresApproval = (environment === "prod");
+return requiresApproval;
+]]></script>
+    <in-binding>
+      <bind name="environment" type="string" export-name="environment"/>
+    </in-binding>
+    <out-binding>
+      <bind name="requiresApproval" type="boolean" export-name="requiresApproval"/>
+    </out-binding>
+    <position y="250.0" x="100.0"/>
+  </workflow-item>
+
+  <!-- item6: Wait for Approval -->
+  <workflow-item name="item6" out-name="item7" type="task">
+    <display-name>Wait for Approval</display-name>
+    <description>Requires governance approval workflow for production deployments. Waits for approval before proceeding with VM provisioning.</description>
+    <script encoded="false"><![CDATA[
+if (requiresApproval) {
+  System.log("Production deployment - waiting for approval");
+  // In real workflow, this would use vRO user interaction
+  // For testing, we just log the requirement
+  System.log("Approval required for: " + vmName + " in " + environment);
+} else {
+  System.log("Non-production deployment - no approval required");
+}
+]]></script>
+    <in-binding>
+      <bind name="requiresApproval" type="boolean" export-name="requiresApproval"/>
+      <bind name="vmName" type="string" export-name="vmName"/>
+      <bind name="environment" type="string" export-name="environment"/>
+    </in-binding>
+    <position y="300.0" x="100.0"/>
+  </workflow-item>
+
+  <!-- item7: Provision VM -->
+  <workflow-item name="item7" out-name="item8" type="task">
+    <display-name>Provision VM</display-name>
+    <description>Provision the virtual machine in vCenter</description>
+    <script encoded="false"><![CDATA[
+// Provision VM using vCenter operations
+System.log("Provisioning VM: " + vmName);
+System.log("  Environment: " + environment);
+System.log("  Segment: " + segmentId);
+System.log("  IP Address: " + ipAddress);
+System.log("  Firewall Rule: " + ruleId);
+
+// In real workflow, this would use VcPlugin or similar
+// For testing purposes, we simulate the VM creation
+var vmId = "vm-" + vmName + "-" + Math.random().toString(36).substr(2, 9);
+System.log("VM provisioned with ID: " + vmId);
+
+// Set output (in real workflow, this would be actual VC:VirtualMachine object)
+vm = null; // Placeholder for VC:VirtualMachine
+]]></script>
+    <in-binding>
+      <bind name="vmName" type="string" export-name="vmName"/>
+      <bind name="environment" type="string" export-name="environment"/>
+      <bind name="segmentId" type="string" export-name="segmentId"/>
+      <bind name="ipAddress" type="string" export-name="ipAddress"/>
+      <bind name="ruleId" type="string" export-name="ruleId"/>
+    </in-binding>
+    <out-binding>
+      <bind name="vm" type="VC:VirtualMachine" export-name="vm"/>
+    </out-binding>
+    <position y="350.0" x="100.0"/>
+  </workflow-item>
+
+  <!-- item8: End -->
+  <workflow-item name="item8" type="end" end-mode="0">
+    <position y="400.0" x="100.0"/>
+  </workflow-item>
+
+  <presentation>
+    <p-param name="vmName">
+      <desc>VM Name</desc>
+    </p-param>
+    <p-param name="environment">
+      <desc>Environment</desc>
+      <p-qual kind="static" name="genericEnumeration" type="Array/string"><![CDATA[#{#string#dev#;#string#qa#;#string#prod#}#]]></p-qual>
+    </p-param>
+    <p-param name="networkSegment">
+      <desc>Network Segment</desc>
+    </p-param>
+  </presentation>
+</workflow>

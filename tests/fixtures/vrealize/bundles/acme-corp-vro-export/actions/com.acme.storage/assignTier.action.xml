@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<action xmlns="http://vmware.com/vco/action" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://vmware.com/vco/action http://vmware.com/vco/action" version="1.0.0" api-version="8.0.0">
+  <display-name>Assign Storage Tier</display-name>
+  <description>Assigns storage tier to a virtual machine</description>
+  <module>com.acme.storage</module>
+
+  <input>
+    <param name="vmName" type="string">
+      <description>Name of the virtual machine</description>
+    </param>
+    <param name="tier" type="string">
+      <description>Storage tier (gold/silver/bronze)</description>
+    </param>
+  </input>
+
+  <output>
+    <param name="success" type="boolean">
+      <description>Whether tier assignment was successful</description>
+    </param>
+  </output>
+
+  <script><![CDATA[
+// Storage tier assignment
+// Map tier to storage profile
+var storageProfile;
+if (tier === "gold") {
+  storageProfile = "vSAN-Gold";
+} else if (tier === "silver") {
+  storageProfile = "vSAN-Silver";
+} else if (tier === "bronze") {
+  storageProfile = "vSAN-Bronze";
+} else {
+  throw "Invalid storage tier: " + tier;
+}
+
+System.log("Assigning storage tier '" + tier + "' to VM: " + vmName);
+System.log("  Storage Profile: " + storageProfile);
+
+// In real implementation, this would update VM storage policy
+// For testing, we just log the assignment
+success = true;
+
+System.log("Successfully assigned tier " + tier + " to VM " + vmName);
+
+return success;
+]]></script>
+</action>

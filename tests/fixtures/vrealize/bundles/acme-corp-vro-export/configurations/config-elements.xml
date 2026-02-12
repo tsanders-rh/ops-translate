@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config-elements>
+  <config-element id="nsx-defaults">
+    <name>NSX Default Settings</name>
+    <description>Default configuration for NSX-T operations</description>
+    <attributes>
+      <attribute>
+        <key>defaultTransportZone</key>
+        <value>tz-overlay-01</value>
+      </attribute>
+      <attribute>
+        <key>defaultTier1Gateway</key>
+        <value>/infra/tier-1s/T1-Gateway</value>
+      </attribute>
+      <attribute>
+        <key>defaultEdgeCluster</key>
+        <value>/infra/sites/default/enforcement-points/default/edge-clusters/edge-cluster-01</value>
+      </attribute>
+    </attributes>
+  </config-element>
+
+  <config-element id="storage-tier-config">
+    <name>Storage Tier Configuration</name>
+    <description>Configuration for storage tier management</description>
+    <attributes>
+      <attribute>
+        <key>goldTierIOPS</key>
+        <value>5000</value>
+      </attribute>
+      <attribute>
+        <key>silverTierIOPS</key>
+        <value>2000</value>
+      </attribute>
+      <attribute>
+        <key>bronzeTierIOPS</key>
+        <value>500</value>
+      </attribute>
+      <attribute>
+        <key>goldTierProfile</key>
+        <value>vSAN-Gold</value>
+      </attribute>
+      <attribute>
+        <key>silverTierProfile</key>
+        <value>vSAN-Silver</value>
+      </attribute>
+      <attribute>
+        <key>bronzeTierProfile</key>
+        <value>vSAN-Bronze</value>
+      </attribute>
+    </attributes>
+  </config-element>
+</config-elements>
