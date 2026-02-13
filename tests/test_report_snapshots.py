@@ -111,9 +111,7 @@ class TestReportSnapshots:
         intent_dir.mkdir(exist_ok=True)
 
         gaps_data = {
-            "summary": {
-                "counts": {"SUPPORTED": 15, "PARTIAL": 8, "BLOCKED": 5, "MANUAL": 2}
-            },
+            "summary": {"counts": {"SUPPORTED": 15, "PARTIAL": 8, "BLOCKED": 5, "MANUAL": 2}},
             "components": [
                 {
                     "component_type": "servicenow_integration",
@@ -220,7 +218,10 @@ class TestReportSnapshots:
         assert "estate-summary" in html_output
 
         # Should show zeros
-        assert "0" in html_output or context["effort_metrics"]["estate_summary"]["total_workflows"] == 0
+        assert (
+            "0" in html_output
+            or context["effort_metrics"]["estate_summary"]["total_workflows"] == 0
+        )
 
     def test_executive_dashboard_metrics_accuracy(self, tmp_path):
         """Test that metrics are calculated and displayed accurately."""
