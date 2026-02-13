@@ -2,6 +2,25 @@
 Analysis and progress tracking for generated Ansible artifacts.
 
 Scans generated roles to classify workflows and track migration progress.
+
+Key Principles:
+--------------
+1. Deterministic: Same inputs → same outputs, always
+2. No temporal state: Progress derived from current analysis, not stored history
+3. Conservative classification: When in doubt, classify as BLOCKED
+4. Profile-driven: Classifications upgrade when profile provides required config
+
+Progress Model:
+--------------
+Progress is NOT:  compare(previous-run.json, current-run.json) as source of truth
+Progress IS:      diff(current state, previous state) for visibility only
+
+The analysis.json file contains the current state based on:
+- Generated task content (BLOCKED stubs vs real tasks)
+- Adapter usage percentage (30% threshold for PARTIAL)
+- Module types used (native vs adapter includes)
+
+Comparison between runs shows progress but does not affect classification logic.
 """
 
 import json
@@ -35,7 +54,7 @@ def analyze_generated_roles(project_dir: Path) -> dict[str, Any]:
             "blockers": [],
         }
 
-    analysis = {
+    analysis: dict[str, Any] = {
         "total_workflows": 0,
         "workflows": {},
         "summary": {
@@ -75,7 +94,30 @@ def analyze_generated_roles(project_dir: Path) -> dict[str, Any]:
 
 def _analyze_workflow_tasks(tasks_file: Path) -> dict[str, Any]:
     """
-    Analyze a single workflow's tasks file.
+    Analyze a single workflow's tasks file and classify it.
+
+    Classification Decision Rules (Conservative):
+    -------------------------------------------
+
+    1. BLOCKED - Workflow has unresolved blockers that prevent automation
+       - ANY task with name containing "BLOCKED" AND using ansible.builtin.fail
+       - Indicates missing profile configuration or unsupported integration
+       - Will NOT upgrade until ALL blockers are resolved
+
+    2. PARTIAL - Workflow can run but requires external adapters
+       - No BLOCKED tasks present
+       - 30% or more tasks are adapter includes (adapters/ directory)
+       - Indicates workflow delegates to user-maintained integration code
+       - Can upgrade from BLOCKED when profile provides adapter configuration
+
+    3. AUTOMATABLE - Workflow uses only native Ansible/Kubernetes modules
+       - No BLOCKED tasks
+       - Less than 30% adapter tasks (mostly native modules)
+       - Can run without external dependencies
+       - Highest confidence level for automation
+
+    Upgrade Path: BLOCKED → PARTIAL → AUTOMATABLE
+    (Conservative: only upgrades when ALL conditions are met)
 
     Args:
         tasks_file: Path to tasks/main.yml

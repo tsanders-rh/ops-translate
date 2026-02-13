@@ -830,3 +830,99 @@ class TestDryRun:
             assert "Intent file not found" in result.stdout or "BLOCKING" in result.stdout
         finally:
             os.chdir(original_dir)
+
+
+class TestCompare:
+    """Tests for the compare command."""
+
+    def test_compare_shows_progress(self, tmp_path):
+        """Test comparing two analysis files shows progress."""
+        import json
+
+        # Create previous analysis
+        previous_analysis = {
+            "total_workflows": 10,
+            "summary": {"blocked": 8, "partial": 2, "automatable": 0},
+            "blockers": ["blocker1", "blocker2", "blocker3"],
+        }
+
+        previous_file = tmp_path / "previous.json"
+        with previous_file.open("w") as f:
+            json.dump(previous_analysis, f)
+
+        # Create current analysis
+        current_analysis = {
+            "total_workflows": 10,
+            "summary": {"blocked": 5, "partial": 3, "automatable": 2},
+            "blockers": ["blocker1"],
+        }
+
+        current_file = tmp_path / "current.json"
+        with current_file.open("w") as f:
+            json.dump(current_analysis, f)
+
+        # Run compare command
+        result = runner.invoke(app, ["compare", str(previous_file), str(current_file)])
+
+        assert result.exit_code == 0
+        assert "Migration Progress Comparison" in result.stdout
+        assert "BLOCKED: 8 → 5" in result.stdout
+        assert "PARTIAL: 2 → 3" in result.stdout
+        assert "AUTOMATABLE: 0 → 2" in result.stdout
+        assert "Resolved 2 blocker(s)" in result.stdout
+
+    def test_compare_no_changes(self, tmp_path):
+        """Test comparing identical analysis files."""
+        import json
+
+        analysis = {
+            "total_workflows": 5,
+            "summary": {"blocked": 3, "partial": 2, "automatable": 0},
+            "blockers": ["blocker1"],
+        }
+
+        file1 = tmp_path / "file1.json"
+        file2 = tmp_path / "file2.json"
+
+        with file1.open("w") as f:
+            json.dump(analysis, f)
+        with file2.open("w") as f:
+            json.dump(analysis, f)
+
+        result = runner.invoke(app, ["compare", str(file1), str(file2)])
+
+        assert result.exit_code == 0
+        assert "No classification changes" in result.stdout
+
+    def test_compare_missing_previous_file(self, tmp_path):
+        """Test compare with missing previous file."""
+        current_file = tmp_path / "current.json"
+        current_file.write_text("{}")
+
+        result = runner.invoke(app, ["compare", "nonexistent.json", str(current_file)])
+
+        assert result.exit_code == 1
+        assert "not found" in result.stdout
+
+    def test_compare_missing_current_file(self, tmp_path):
+        """Test compare with missing current file."""
+        previous_file = tmp_path / "previous.json"
+        previous_file.write_text("{}")
+
+        result = runner.invoke(app, ["compare", str(previous_file), "nonexistent.json"])
+
+        assert result.exit_code == 1
+        assert "not found" in result.stdout
+
+    def test_compare_invalid_json(self, tmp_path):
+        """Test compare with invalid JSON file."""
+        previous_file = tmp_path / "previous.json"
+        previous_file.write_text("{invalid json")
+
+        current_file = tmp_path / "current.json"
+        current_file.write_text("{}")
+
+        result = runner.invoke(app, ["compare", str(previous_file), str(current_file)])
+
+        assert result.exit_code == 1
+        assert "Invalid JSON" in result.stdout
