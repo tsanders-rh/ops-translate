@@ -363,7 +363,7 @@ class TestErrorHandling:
         ]
 
         # Load a minimal profile for the test
-        from ops_translate.models.profile import ProfileSchema, EnvironmentConfig
+        from ops_translate.models.profile import EnvironmentConfig, ProfileSchema
 
         profile = ProfileSchema(
             name="test",

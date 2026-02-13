@@ -267,21 +267,18 @@ class PowerShellToAnsibleTranslator:
         tasks = []
 
         # Track control flow context
-        in_if_block = False
         current_condition = None
 
         for stmt in statements:
             # Handle control flow
             if stmt.statement_type == "control_flow":
                 if stmt.control_type == "if":
-                    in_if_block = True
                     current_condition = stmt.condition
                     continue
                 elif stmt.control_type == "throw":
                     task = self._translate_validation(stmt, current_condition)
                     if task:
                         tasks.append(task)
-                    in_if_block = False
                     current_condition = None
                     continue
 

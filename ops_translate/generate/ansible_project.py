@@ -261,11 +261,11 @@ def _generate_powercli_role(
         project_dir: Ansible project root directory
         profile: ProfileSchema for profile-driven translation
     """
+    from ops_translate.generate.workflow_to_ansible import generate_ansible_yaml
     from ops_translate.translate.powercli_script import (
         PowerCLIScriptParser,
         PowerShellToAnsibleTranslator,
     )
-    from ops_translate.generate.workflow_to_ansible import generate_ansible_yaml
 
     # Extract metadata for role structure
     metadata = _extract_powercli_metadata(source_file)
