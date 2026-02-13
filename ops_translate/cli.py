@@ -856,10 +856,10 @@ def generate(
         profile_path = Path(translation_profile)
     else:
         # Auto-load profile/profile.yml if it exists
-        auto_profile_path = workspace.workspace_dir / "profile" / "profile.yml"
+        auto_profile_path = workspace.root / "profile" / "profile.yml"
         if auto_profile_path.exists():
             profile_path = auto_profile_path
-            rel_path = auto_profile_path.relative_to(workspace.workspace_dir)
+            rel_path = auto_profile_path.relative_to(workspace.root)
             console.print(f"[dim]Auto-loading translation profile: {rel_path}[/dim]")
 
     if profile_path:
