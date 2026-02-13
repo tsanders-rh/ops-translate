@@ -10,7 +10,6 @@ import pytest
 
 from ops_translate.generate.ansible_project import (
     _create_fallback_role,
-    _create_role_structure,
     _extract_powercli_metadata,
     _extract_vrealize_metadata,
     _generate_defaults_main,
@@ -378,7 +377,7 @@ class TestEndToEndRoleGeneration:
 
     def test_e2e_role_generation_with_vrealize(self, tmp_path):
         """Test full project generation includes vRealize role."""
-        # Setup workspace with vRealize workflow  - source files must be in tmp_path (output_dir.parent)
+        # Setup workspace - source files in tmp_path (output_dir.parent)
         workflow_src = Path(__file__).parent / "fixtures/vrealize/simple-workflow.xml"
         workflow_dst = tmp_path / "input/vrealize/simple-workflow.xml"
         workflow_dst.parent.mkdir(parents=True)
@@ -413,7 +412,7 @@ class TestEndToEndRoleGeneration:
 
     def test_e2e_role_generation_with_powercli(self, tmp_path):
         """Test full project generation includes PowerCLI role."""
-        # Setup workspace with PowerCLI script - source files must be in tmp_path (output_dir.parent)
+        # Setup workspace - source files in tmp_path (output_dir.parent)
         script_src = Path(__file__).parent / "fixtures/powercli/simple-vm.ps1"
         script_dst = tmp_path / "input/powercli/simple-vm.ps1"
         script_dst.parent.mkdir(parents=True)

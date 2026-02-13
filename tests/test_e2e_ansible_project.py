@@ -248,7 +248,7 @@ class TestEndToEndProjectGeneration:
 
     def test_roles_generated_from_workflows(self, tmp_path):
         """Verify roles/ directory populated with workflow roles."""
-        # Setup workspace with vRealize workflow - source files must be in tmp_path (output_dir.parent)
+        # Setup workspace - source files in tmp_path (output_dir.parent)
         workflow_src = Path(__file__).parent / "fixtures/vrealize/simple-workflow.xml"
         workflow_dst = tmp_path / "input/vrealize/simple-workflow.xml"
         workflow_dst.parent.mkdir(parents=True)
@@ -306,7 +306,7 @@ class TestEndToEndProjectGeneration:
 
     def test_role_readme_documentation(self, tmp_path):
         """Verify each role has README with inputs documented."""
-        # Setup workspace with vRealize workflow - source files must be in tmp_path (output_dir.parent)
+        # Setup workspace - source files in tmp_path (output_dir.parent)
         workflow_src = Path(__file__).parent / "fixtures/vrealize/simple-workflow.xml"
         workflow_dst = tmp_path / "input/vrealize/simple-workflow.xml"
         workflow_dst.parent.mkdir(parents=True)
