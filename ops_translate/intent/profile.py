@@ -243,6 +243,10 @@ def save_profile(profile: ProfileSchema, profile_file: Path) -> None:
     # Convert dataclass to dict
     profile_dict = asdict(profile)
 
+    # Remove None values to avoid schema validation errors on reload
+    # Only keep non-None values at top level
+    profile_dict = {k: v for k, v in profile_dict.items() if v is not None}
+
     # Write YAML
     profile_file.parent.mkdir(parents=True, exist_ok=True)
     profile_file.write_text(yaml.dump(profile_dict, default_flow_style=False, sort_keys=False))

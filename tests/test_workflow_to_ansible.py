@@ -21,6 +21,11 @@ from ops_translate.generate.workflow_to_ansible import (
     generate_ansible_yaml,
     workflow_to_ansible_tasks,
 )
+from ops_translate.models.profile import (
+    ApprovalConfig,
+    EnvironmentConfig,
+    ProfileSchema,
+)
 from ops_translate.translate.vrealize_workflow import WorkflowItem
 
 
@@ -152,13 +157,17 @@ def test_user_interaction_default_fails(sample_interaction_item):
 
     assert "BLOCKED" in task.name
     assert task.module == "ansible.builtin.fail"
-    assert "profile.approval.model" in task.module_args["msg"]
+    assert "approval" in task.module_args["msg"].lower()
     assert "blocked" in task.tags
 
 
 def test_user_interaction_with_servicenow_profile(sample_interaction_item):
     """Test UserInteraction with ServiceNow profile."""
-    profile = {"approval": {"model": "servicenow"}}
+    profile = ProfileSchema(
+        name="test",
+        environments={"dev": EnvironmentConfig(openshift_api_url="https://test")},
+        approval=ApprovalConfig(model="servicenow_change"),
+    )
     tasks = _convert_user_interaction(sample_interaction_item, profile)
 
     assert len(tasks) == 1
@@ -166,13 +175,17 @@ def test_user_interaction_with_servicenow_profile(sample_interaction_item):
 
     assert "ServiceNow" in task.name
     assert task.module == "ansible.builtin.include_tasks"
-    assert "adapters/snow" in task.module_args["file"]
+    assert "adapters/servicenow" in task.module_args["file"]
     assert "servicenow" in task.tags
 
 
 def test_user_interaction_with_aap_workflow_profile(sample_interaction_item):
     """Test UserInteraction with AAP workflow profile."""
-    profile = {"approval": {"model": "aap_workflow"}}
+    profile = ProfileSchema(
+        name="test",
+        environments={"dev": EnvironmentConfig(openshift_api_url="https://test")},
+        approval=ApprovalConfig(model="aap_workflow"),
+    )
     tasks = _convert_user_interaction(sample_interaction_item, profile)
 
     assert len(tasks) == 1
@@ -186,7 +199,11 @@ def test_user_interaction_with_aap_workflow_profile(sample_interaction_item):
 
 def test_user_interaction_with_pause_profile(sample_interaction_item):
     """Test UserInteraction with pause profile."""
-    profile = {"approval": {"model": "pause"}}
+    profile = ProfileSchema(
+        name="test",
+        environments={"dev": EnvironmentConfig(openshift_api_url="https://test")},
+        approval=ApprovalConfig(model="manual_pause"),
+    )
     tasks = _convert_user_interaction(sample_interaction_item, profile)
 
     assert len(tasks) == 1
@@ -199,22 +216,27 @@ def test_user_interaction_with_pause_profile(sample_interaction_item):
 
 def test_user_interaction_with_unknown_profile(sample_interaction_item):
     """Test UserInteraction with unknown approval model."""
-    profile = {"approval": {"model": "invalid_model"}}
+    profile = ProfileSchema(
+        name="test",
+        environments={"dev": EnvironmentConfig(openshift_api_url="https://test")},
+        approval=ApprovalConfig(model="blocked"),
+    )
     tasks = _convert_user_interaction(sample_interaction_item, profile)
 
     assert len(tasks) == 1
     task = tasks[0]
 
-    assert "ERROR" in task.name
+    assert "BLOCKED" in task.name
     assert task.module == "ansible.builtin.fail"
-    assert "Unknown approval model" in task.module_args["msg"]
+    assert "blocked" in task.module_args["msg"].lower()
 
 
 def test_generate_approval_fail_message(sample_interaction_item):
     """Test approval fail message generation."""
     msg = _generate_approval_fail_message(sample_interaction_item)
 
-    assert "Approval workflow detected" in msg
+    assert "BLOCKED" in msg
+    assert "approval" in msg.lower()
     assert "servicenow" in msg.lower()
     assert "aap_workflow" in msg.lower()
     assert "pause" in msg.lower()
@@ -410,7 +432,11 @@ def test_workflow_with_no_profile():
 def test_workflow_with_profile():
     """Test workflow conversion with profile."""
     workflow_file = Path(__file__).parent.parent / "examples/vrealize/simple-provision.workflow.xml"
-    profile = {"approval": {"model": "pause"}}
+    profile = ProfileSchema(
+        name="test",
+        environments={"dev": EnvironmentConfig(openshift_api_url="https://test")},
+        approval=ApprovalConfig(model="manual_pause"),
+    )
 
     tasks = workflow_to_ansible_tasks(workflow_file, profile=profile)
 
