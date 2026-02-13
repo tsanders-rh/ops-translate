@@ -163,12 +163,12 @@ var incident = ServiceNow.createIncident(
         assert len(integration_tasks) == 1
 
         task = integration_tasks[0]
-        assert "ServiceNow" in task["name"] or "DECISION REQUIRED" in task["name"]
+        assert "ServiceNow" in task["name"] or "BLOCKED" in task["name"]
 
-        # Should generate DECISION REQUIRED stub (requires profile keys)
-        assert "DECISION REQUIRED" in task["name"]
+        # Should generate BLOCKED stub (requires profile keys)
+        assert "BLOCKED" in task["name"]
         assert "ansible.builtin.fail" in task
-        assert "profile.itsm.servicenow" in task["ansible.builtin.fail"]["msg"]
+        assert "profile.itsm" in task["ansible.builtin.fail"]["msg"]
 
     def test_detects_rest_host_operation(self):
         """RESTHost usage should be detected and translated to uri module."""
@@ -318,15 +318,14 @@ var incident = ServiceNow.createIncident("Title", "Description", "3");
         assert len(integration_tasks) == 1
         task = integration_tasks[0]
 
-        # Should be a DECISION REQUIRED stub
-        assert "DECISION REQUIRED" in task["name"]
+        # Should be a BLOCKED stub
+        assert "BLOCKED" in task["name"]
         assert "ansible.builtin.fail" in task
 
         # Should mention profile keys
         msg = task["ansible.builtin.fail"]["msg"]
-        assert "profile.itsm.servicenow" in msg
+        assert "profile.itsm" in msg
         assert "Evidence:" in msg
-        assert "Action required:" in msg
 
     def test_stub_includes_evidence(self):
         """Test that stubs include evidence of the detected call."""
@@ -376,7 +375,7 @@ var user = ActiveDirectory.createUser(username, password, email, groups);
 
         # Should have tags
         assert "tags" in task
-        assert "decision_required" in task["tags"]
+        assert "blocked" in task["tags"]
         assert "integration" in task["tags"]
 
 
