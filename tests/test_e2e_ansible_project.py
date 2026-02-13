@@ -246,6 +246,94 @@ class TestEndToEndProjectGeneration:
         assert "roles_path = roles" in cfg_content
         assert "stdout_callback = yaml" in cfg_content
 
+    def test_roles_generated_from_workflows(self, tmp_path):
+        """Verify roles/ directory populated with workflow roles."""
+        # Setup workspace with vRealize workflow - source files must be in tmp_path (output_dir.parent)
+        workflow_src = Path(__file__).parent / "fixtures/vrealize/simple-workflow.xml"
+        workflow_dst = tmp_path / "input/vrealize/simple-workflow.xml"
+        workflow_dst.parent.mkdir(parents=True)
+
+        # Copy fixture
+        import shutil
+
+        shutil.copy(workflow_src, workflow_dst)
+
+        profile_path = Path(__file__).parent / "fixtures/profiles/complete_profile.yml"
+        profile = load_profile(profile_path)
+
+        workflows = [
+            {"name": "simple_workflow", "source": "vrealize", "source_file": "input/vrealize/simple-workflow.xml"}
+        ]
+
+        output_dir = tmp_path / "output"
+        project_dir = generate_ansible_project(workflows, profile, output_dir)
+
+        # Verify role directory exists with proper structure
+        role_dir = project_dir / "roles" / "simple_workflow"
+        assert role_dir.exists()
+        assert (role_dir / "tasks").exists()
+        assert (role_dir / "defaults").exists()
+        assert (role_dir / "meta").exists()
+        assert (role_dir / "tasks" / "main.yml").exists()
+        assert (role_dir / "defaults" / "main.yml").exists()
+        assert (role_dir / "meta" / "main.yml").exists()
+        assert (role_dir / "README.md").exists()
+
+    def test_site_yml_references_generated_roles(self, tmp_path):
+        """Verify site.yml includes all generated roles."""
+        profile_path = Path(__file__).parent / "fixtures/profiles/complete_profile.yml"
+        profile = load_profile(profile_path)
+
+        workflows = [
+            {"name": "workflow_one", "source": "template", "source_file": "test1"},
+            {"name": "workflow_two", "source": "template", "source_file": "test2"},
+        ]
+
+        output_dir = tmp_path / "output"
+        project_dir = generate_ansible_project(workflows, profile, output_dir)
+
+        # Read site.yml
+        site_yml = project_dir / "site.yml"
+        site_content = site_yml.read_text()
+
+        # Should reference both roles
+        assert "workflow_one" in site_content
+        assert "workflow_two" in site_content
+
+    def test_role_readme_documentation(self, tmp_path):
+        """Verify each role has README with inputs documented."""
+        # Setup workspace with vRealize workflow - source files must be in tmp_path (output_dir.parent)
+        workflow_src = Path(__file__).parent / "fixtures/vrealize/simple-workflow.xml"
+        workflow_dst = tmp_path / "input/vrealize/simple-workflow.xml"
+        workflow_dst.parent.mkdir(parents=True)
+
+        # Copy fixture
+        import shutil
+
+        shutil.copy(workflow_src, workflow_dst)
+
+        profile_path = Path(__file__).parent / "fixtures/profiles/complete_profile.yml"
+        profile = load_profile(profile_path)
+
+        workflows = [
+            {"name": "simple_workflow", "source": "vrealize", "source_file": "input/vrealize/simple-workflow.xml"}
+        ]
+
+        output_dir = tmp_path / "output"
+        project_dir = generate_ansible_project(workflows, profile, output_dir)
+
+        # Verify README exists and contains documentation
+        readme = project_dir / "roles" / "simple_workflow" / "README.md"
+        assert readme.exists()
+
+        readme_content = readme.read_text()
+        assert "# Role: simple_workflow" in readme_content
+        assert "## Description" in readme_content
+        assert "## Source" in readme_content
+        assert "## Inputs" in readme_content
+        assert "## Implementation Status" in readme_content
+        assert "Skeleton Only" in readme_content
+
 
 class TestDeterministicGeneration:
     """Test deterministic generation behavior."""

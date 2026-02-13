@@ -796,6 +796,19 @@ def _get_vrealize_translated_tasks(workspace: Workspace) -> list[dict[str, Any]]
     return all_tasks
 
 
+def _normalize_name(name: str) -> str:
+    """
+    Convert filename to valid Ansible role name.
+
+    Args:
+        name: Filename (without extension)
+
+    Returns:
+        Normalized name (lowercase, underscores instead of hyphens/spaces)
+    """
+    return name.replace("-", "_").replace(" ", "_").lower()
+
+
 def _collect_workflow_definitions(workspace: Workspace) -> list[dict[str, Any]]:
     """
     Collect workflow definitions from workspace for project generation.
@@ -813,14 +826,24 @@ def _collect_workflow_definitions(workspace: Workspace) -> list[dict[str, Any]]:
     if vrealize_dir.exists():
         workflow_files = list(vrealize_dir.glob("*.xml"))
         for workflow_file in workflow_files:
-            # Extract workflow name from filename (without extension)
-            workflow_name = workflow_file.stem.replace("-", "_").replace(" ", "_").lower()
-
             workflows.append(
                 {
-                    "name": workflow_name,
+                    "name": _normalize_name(workflow_file.stem),
                     "source": "vrealize",
                     "source_file": str(workflow_file.relative_to(workspace.root)),
+                }
+            )
+
+    # Check for PowerCLI scripts
+    powercli_dir = workspace.root / "input/powercli"
+    if powercli_dir.exists():
+        script_files = list(powercli_dir.glob("*.ps1"))
+        for script_file in script_files:
+            workflows.append(
+                {
+                    "name": _normalize_name(script_file.stem),
+                    "source": "powercli",
+                    "source_file": str(script_file.relative_to(workspace.root)),
                 }
             )
 
