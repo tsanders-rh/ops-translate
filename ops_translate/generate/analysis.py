@@ -26,13 +26,13 @@ def analyze_generated_roles(project_dir: Path) -> dict[str, Any]:
     if not roles_dir.exists():
         return {
             "total_workflows": 0,
-            "classification": {},
-            "blockers": [],
-            "progress": {
+            "workflows": {},
+            "summary": {
                 "blocked": 0,
                 "partial": 0,
                 "automatable": 0,
             },
+            "blockers": [],
         }
 
     analysis = {
