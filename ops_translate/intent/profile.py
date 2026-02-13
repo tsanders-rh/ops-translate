@@ -288,7 +288,8 @@ def validate_profile_completeness(profile: ProfileSchema) -> dict[str, list[str]
         warnings["approval"] = [
             "No approval configuration provided",
             "Workflows requiring approval will generate BLOCKED stubs",
-            "Add approval section to enable: servicenow_change, aap_workflow, gitops_pr, manual_pause",
+            "Add approval section to enable: "
+            "servicenow_change, aap_workflow, gitops_pr, manual_pause",
         ]
 
     if profile.network_security is None:

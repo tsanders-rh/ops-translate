@@ -8,11 +8,12 @@ Tests the complete workflow:
 4. Verify adapters rendered with profile-conditional logic
 """
 
-import pytest
 from pathlib import Path
 
-from ops_translate.intent.profile import load_profile
+import pytest
+
 from ops_translate.generate.ansible_project import generate_ansible_project
+from ops_translate.intent.profile import load_profile
 
 
 class TestEndToEndProjectGeneration:

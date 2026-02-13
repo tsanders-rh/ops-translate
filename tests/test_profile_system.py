@@ -4,20 +4,21 @@ Tests for profile-driven Ansible translation system.
 Validates profile loading, validation, and adapter template rendering.
 """
 
-import pytest
 from pathlib import Path
+
+import pytest
+from jinja2 import Environment, FileSystemLoader
 
 from ops_translate.intent.profile import (
     load_profile,
     save_profile,
-    validate_profile_schema,
     validate_profile_completeness,
 )
 from ops_translate.models.profile import (
-    ProfileSchema,
-    EnvironmentConfig,
     ApprovalConfig,
+    EnvironmentConfig,
     NetworkSecurityConfig,
+    ProfileSchema,
 )
 
 
@@ -219,9 +220,6 @@ class TestAdapterTemplateRendering:
 
     def test_nsx_segment_adapter_with_profile(self):
         """NSX segment adapter should render with network_security configured."""
-        from jinja2 import Environment, FileSystemLoader
-        from pathlib import Path
-
         template_dir = Path(__file__).parent.parent / "templates/ansible/adapters"
         env = Environment(loader=FileSystemLoader(template_dir))
 
@@ -244,9 +242,6 @@ class TestAdapterTemplateRendering:
 
     def test_nsx_segment_adapter_without_profile(self):
         """NSX segment adapter should generate BLOCKED stub without network_security."""
-        from jinja2 import Environment, FileSystemLoader
-        from pathlib import Path
-
         template_dir = Path(__file__).parent.parent / "templates/ansible/adapters"
         env = Environment(loader=FileSystemLoader(template_dir))
 
@@ -267,9 +262,6 @@ class TestAdapterTemplateRendering:
 
     def test_servicenow_change_adapter_with_approval(self):
         """ServiceNow change adapter should render with approval configured."""
-        from jinja2 import Environment, FileSystemLoader
-        from pathlib import Path
-
         template_dir = Path(__file__).parent.parent / "templates/ansible/adapters"
         env = Environment(loader=FileSystemLoader(template_dir))
 

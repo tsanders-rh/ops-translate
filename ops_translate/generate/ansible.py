@@ -62,7 +62,7 @@ def generate(
         workflows = _collect_workflow_definitions(workspace)
 
         # Generate full project
-        project_dir = generate_ansible_project(workflows, translation_profile, output_dir)
+        generate_ansible_project(workflows, translation_profile, output_dir)
 
         # Also generate traditional artifacts for compatibility
         # Fall through to standard generation
