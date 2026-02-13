@@ -260,7 +260,10 @@ def _consolidate_supported_patterns(gaps_data: dict[str, Any]) -> list[dict[str,
 
 def _generate_executive_summary(summary: dict[str, Any], gaps_data: dict[str, Any] | None) -> str:
     """
-    Generate a one-line executive summary for the report.
+    Generate an outcome-focused executive summary for the report.
+
+    Uses percentages and confidence language to communicate business value
+    rather than technical status.
 
     Args:
         summary: Summary statistics from gap analysis
@@ -272,6 +275,17 @@ def _generate_executive_summary(summary: dict[str, Any], gaps_data: dict[str, An
     assessment = summary.get("overall_assessment", "UNKNOWN")
     has_blocking = summary.get("has_blocking_issues", False)
     counts = summary.get("counts", {})
+    total = summary.get("total_components", 0)
+
+    # Calculate automation percentage
+    supported = counts.get("SUPPORTED", 0)
+    partial = counts.get("PARTIAL", 0)
+    blocked = counts.get("BLOCKED", 0)
+
+    if total > 0:
+        automation_pct = int((supported / total) * 100)
+    else:
+        automation_pct = 0
 
     # Find blocked components for specific mention
     blocked_components = []
@@ -281,45 +295,42 @@ def _generate_executive_summary(summary: dict[str, Any], gaps_data: dict[str, An
             comp.get("name", "Unknown") for comp in components if comp.get("level") == "BLOCKED"
         ]
 
-    # Generate summary based on assessment
+    # Generate outcome-focused summary based on assessment
     if assessment == "FULLY_TRANSLATABLE":
         return (
-            "This workflow can be fully automatically migrated to " "OpenShift-native equivalents."
+            f"{automation_pct}% of this automation estate can migrate immediately with "
+            "fully automated translation to OpenShift-native equivalents."
         )
 
     elif has_blocking and blocked_components:
-        # Mention specific blockers
+        # Mention specific blockers with confidence language
         if len(blocked_components) == 1:
             blocker = blocked_components[0]
             return (
-                f"This workflow can be migrated with partial automation; "
-                f"{blocker} requires custom design."
+                f"{automation_pct}% of this automation estate can migrate immediately. "
+                f"{blocker} requires design alignment, but proven patterns exist."
             )
         else:
             blocker_count = len(blocked_components)
             return (
-                f"This workflow can be migrated with partial automation; "
-                f"{blocker_count} components require custom design."
+                f"{automation_pct}% of this automation estate can migrate immediately. "
+                f"{blocker_count} components require design alignment, but proven patterns exist."
             )
 
-    elif counts.get("PARTIAL", 0) > 0:
-        partial_count = counts.get("PARTIAL", 0)
-        if partial_count == 1:
-            return (
-                "This workflow can be migrated with partial automation; "
-                "manual configuration required for 1 component."
-            )
-        else:
-            return (
-                f"This workflow can be migrated with partial automation; "
-                f"manual configuration required for {partial_count} components."
-            )
+    elif partial > 0:
+        return (
+            f"{automation_pct}% of this automation estate can migrate immediately. "
+            f"{partial} component{'s' if partial != 1 else ''} require configuration—standard work with clear implementation paths."
+        )
 
     elif counts.get("MANUAL", 0) > 0:
-        return "This workflow requires custom specialist implementation for migration."
+        return (
+            f"{automation_pct}% automation coverage achieved. "
+            "Remaining components require specialist implementation with expert guidance available."
+        )
 
     else:
-        return "This workflow is ready for automated migration review."
+        return f"{automation_pct}% of this automation estate is ready for immediate migration."
 
 
 def _load_source_files(
@@ -747,10 +758,13 @@ def _generate_integration_heatmap(
     Generate integration heatmap showing which workflows use which integrations.
 
     Creates a matrix showing the presence of different integration types across workflows.
+    Integrations are detected from both:
+    1. gaps.json components (detected during analysis)
+    2. analysis.json blocker_details (blocked code generation)
 
     Args:
         workflows: Workflow data from analysis.json
-        gaps_data: Gap analysis data
+        gaps_data: Gap analysis data from gaps.json
 
     Returns:
         List of workflow rows with integration presence indicators
@@ -761,16 +775,48 @@ def _generate_integration_heatmap(
     # Define integration categories to track
     integration_categories = ["Approval", "ITSM", "NSX", "DNS", "Storage", "AD"]
 
-    heatmap_rows = []
+    # Build workflow integration map
+    workflow_integrations: dict[str, dict[str, bool]] = {}
 
+    for workflow_name in workflows.keys():
+        workflow_integrations[workflow_name] = {cat: False for cat in integration_categories}
+
+    # Source 1: Detect integrations from gaps.json components
+    if gaps_data:
+        components = gaps_data.get("components", [])
+        for component in components:
+            location = component.get("location", "")
+            component_type = component.get("component_type", "").lower()
+            component_name = component.get("name", "").lower()
+
+            # Find matching workflow
+            for workflow_name in workflow_integrations.keys():
+                # Normalize names for comparison (handle hyphens vs underscores)
+                normalized_location = location.lower().replace("-", "_").replace(" ", "_")
+                normalized_workflow = workflow_name.lower().replace("-", "_").replace(" ", "_")
+
+                # Match by location field or workflow name substring
+                if normalized_location in normalized_workflow or normalized_workflow in normalized_location:
+                    integrations = workflow_integrations[workflow_name]
+
+                    # Map component types to integration categories
+                    if "approval" in component_type or "approval" in component_name:
+                        integrations["Approval"] = True
+                    if "servicenow" in component_type or "itsm" in component_type:
+                        integrations["ITSM"] = True
+                    if "nsx" in component_type or "firewall" in component_type or "load_balancer" in component_type:
+                        integrations["NSX"] = True
+                    if "dns" in component_type:
+                        integrations["DNS"] = True
+                    if "storage" in component_type or "datastore" in component_type:
+                        integrations["Storage"] = True
+                    if "ad" in component_type or "ldap" in component_type or "active_directory" in component_type:
+                        integrations["AD"] = True
+
+    # Source 2: Detect integrations from analysis.json blocker details
     for workflow_name, workflow_data in workflows.items():
-        integrations: dict[str, bool] = {cat: False for cat in integration_categories}
-        row: dict[str, Any] = {
-            "workflow": workflow_name,
-            "integrations": integrations,
-        }
+        integrations = workflow_integrations[workflow_name]
 
-        # Detect integrations from blocker details
         blocker_details = workflow_data.get("blocker_details", [])
         for blocker in blocker_details:
             task_name = blocker.get("task", "").lower()
@@ -790,9 +836,14 @@ def _generate_integration_heatmap(
             if "ad" in task_name or "ldap" in message or "activedirectory" in message:
                 integrations["AD"] = True
 
-        # Only include workflows with at least one integration
+    # Build heatmap rows - only include workflows with at least one integration
+    heatmap_rows = []
+    for workflow_name, integrations in workflow_integrations.items():
         if any(integrations.values()):
-            heatmap_rows.append(row)
+            heatmap_rows.append({
+                "workflow": workflow_name,
+                "integrations": integrations,
+            })
 
     return heatmap_rows
 

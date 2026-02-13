@@ -52,6 +52,7 @@
     <section class="executive-dashboard-section">
         <div class="container">
             <h2 class="section-title">📊 Migration Effort Dashboard</h2>
+            <p class="section-subtitle">Workflow-level effort estimation for sprint planning. See component-level analysis below for technical implementation details.</p>
 
             <!-- Estate Overview -->
             <div class="estate-summary">
@@ -226,7 +227,11 @@
                 </div>
                 <div class="story-content">
                     <p class="story-intro">
-                        We analyzed <strong>{{ workspace.name }}</strong> — including your most complex workflows with NSX firewall rules, approval gates, and custom orchestration.
+                        {% if workspace.name == "sample-workspace" %}
+                        This analysis represents a typical enterprise automation estate—years of vRealize workflows, PowerCLI scripts for provisioning, NSX security policies, and ServiceNow integrations. The kind of automation debt that accumulates when teams deliver value quarter after quarter.
+                        {% else %}
+                        We analyzed <strong>{{ workspace.name }}</strong> — {{ summary.total_components }} components across your automation estate, including complex workflows with NSX integration, approval gates, and custom orchestration.
+                        {% endif %}
                     </p>
                     <div class="story-results">
                         <div class="story-stat">
@@ -279,7 +284,8 @@
     <!-- At a Glance Summary Cards -->
     <section class="summary-section">
         <div class="container">
-            <h2>Translation Status</h2>
+            <h2>Component-Level Translation Status</h2>
+            <p class="section-subtitle">Detailed component analysis showing {{ summary.total_components }} individual components detected across your workflows.</p>
             <div class="summary-cards">
                 <div class="card card-supported" data-filter="SUPPORTED" title="Components that can be fully automatically translated to OpenShift-native equivalents">
                     <div class="card-icon">✅</div>
@@ -685,6 +691,17 @@
                 <div class="expand-hint-wrapper">
                     <span class="expand-hint">Click to expand detailed workflow information</span>
                 </div>
+
+            {% if conflicts_md %}
+            <div class="legacy-drift-banner">
+                <div class="banner-icon">⚠️</div>
+                <div class="banner-content">
+                    <strong>Legacy Drift Detected</strong>
+                    <p>Multiple naming conventions, parameter inconsistencies, and policy variations detected across workflows—common in mature automation estates. This analysis surfaced {{ summary.total_components }} individual patterns, revealing technical debt that would otherwise remain hidden until migration.</p>
+                </div>
+            </div>
+            {% endif %}
+
             <div class="intent-content">
                 {% if intent.intent %}
                 <!-- Workflow Info -->

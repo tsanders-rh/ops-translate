@@ -2468,8 +2468,16 @@ pre code {
 .executive-dashboard-section .section-title {
     font-size: 2rem;
     color: #0c4a6e;
+    margin-bottom: var(--spacing-sm);
+    text-align: center;
+}
+
+.section-subtitle {
+    font-size: 0.95rem;
+    color: #64748b;
     margin-bottom: var(--spacing-lg);
     text-align: center;
+    font-style: italic;
 }
 
 .subsection-title {
@@ -2767,4 +2775,38 @@ pre code {
     .heatmap-scroll {
         overflow-x: visible;
     }
+}
+
+/* Legacy Drift Banner */
+.legacy-drift-banner {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-left: 4px solid #f59e0b;
+    border-radius: 8px;
+    padding: var(--spacing-lg);
+    margin: var(--spacing-lg) 0;
+    display: flex;
+    gap: var(--spacing-md);
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);
+}
+
+.legacy-drift-banner .banner-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.legacy-drift-banner .banner-content {
+    flex: 1;
+}
+
+.legacy-drift-banner .banner-content strong {
+    display: block;
+    color: #92400e;
+    font-size: 1.1rem;
+    margin-bottom: var(--spacing-xs);
+}
+
+.legacy-drift-banner .banner-content p {
+    color: #78350f;
+    margin: 0;
+    line-height: 1.6;
 }
