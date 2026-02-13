@@ -437,7 +437,7 @@ def _create_minimal_translation_profile(workspace: Workspace, profile_name: str)
         openshift_api_url=profile_config.get(
             "openshift_api_url", "https://api.cluster.example.com:6443"
         ),
-        default_namespace=profile_config.get("default_namespace", "default"),
+        namespace=profile_config.get("default_namespace", "default"),
     )
 
     # Create profile with single environment
