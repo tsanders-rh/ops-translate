@@ -3,8 +3,6 @@ Tests for analysis and progress tracking functionality.
 """
 
 import json
-from pathlib import Path
-from tempfile import TemporaryDirectory
 
 import pytest
 import yaml
