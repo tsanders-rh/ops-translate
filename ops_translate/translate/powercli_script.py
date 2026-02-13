@@ -419,7 +419,7 @@ class PowerShellToAnsibleTranslator:
                 params[param_key] = param_value
 
         # Generate task name
-        cmdlet_action = stmt.cmdlet.replace("-", " ").lower()
+        cmdlet_action = stmt.cmdlet.replace("-", " ").lower() if stmt.cmdlet else "unknown"
         entity_param = stmt.parameters.get("Name") or stmt.parameters.get("VM") or ""
         if entity_param.startswith("$"):
             entity_var = entity_param[1:].lower()

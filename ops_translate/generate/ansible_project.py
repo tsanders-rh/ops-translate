@@ -122,7 +122,7 @@ openshift_cluster ansible_host={env_config.openshift_api_url}
         group_vars_dir = env_dir / "group_vars"
         group_vars_dir.mkdir(parents=True, exist_ok=True)
 
-        group_vars = {
+        group_vars: dict[str, Any] = {
             "target_namespace": env_config.namespace or f"{profile.name}-{env_name}",
             "openshift_api_url": env_config.openshift_api_url,
         }
