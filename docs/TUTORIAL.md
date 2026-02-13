@@ -804,9 +804,19 @@ open output/report/index.html  # macOS
 
 After reviewing the report, generate Ansible and KubeVirt artifacts for lab environment:
 
+**🚀 Note on Automatic Path Selection:**
+
+ops-translate automatically detects that you have PowerCLI files and uses **direct translation** (no LLM required) to convert cmdlets to Ansible tasks. If you had created `intent/intent.yaml`, it would use intent-based generation instead. No configuration needed!
+
 ```bash
 ops-translate generate --profile lab
 ```
+
+**What's happening behind the scenes:**
+- Detected PowerCLI files in `input/powercli/`
+- Auto-creating minimal translation profile from workspace config
+- Using direct translation (deterministic, no LLM calls)
+- Translating cmdlets: New-VM → kubevirt_vm, Start-VM → running state, etc.
 
 **Output**:
 ```

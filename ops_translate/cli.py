@@ -827,6 +827,11 @@ def generate(
 ):
     """Generate Ansible and KubeVirt artifacts in various formats.
 
+    **Automatic Path Selection:**
+    - If PowerCLI/vRO files exist → Direct translation (deterministic, no LLM)
+    - If intent.yaml exists → Intent-based generation
+    - Use --translation-profile to explicitly use direct translation
+
     By default, generates VM definitions for greenfield deployments.
     Use --assume-existing-vms when VMs were migrated via MTV or already exist.
 

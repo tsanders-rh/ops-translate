@@ -64,21 +64,50 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Variables: `$VMName` → `{{ vmname }}`
 - Integration with role generation (`_generate_powercli_role`)
 
+#### Automatic Path Selection
+- **Zero-configuration workflow** - Automatically selects Direct Translation or Intent-Based generation
+- Added `_create_minimal_translation_profile()` helper function:
+  - Auto-generates ProfileSchema from workspace config
+  - No `--translation-profile` file required for simple cases
+  - Falls back to minimal config (namespace, API URL from workspace)
+- Updated `generate_all()` with auto-detection logic:
+  - Checks for PowerCLI `.ps1` files in `input/powercli/`
+  - Checks for vRealize `.xml` files in `input/vrealize/`
+  - Checks for `intent/intent.yaml`
+- Decision tree:
+  1. Has source files + no intent.yaml → **Direct Translation** (no LLM)
+  2. Has intent.yaml → **Intent-Based Generation** (LLM optional)
+  3. Has `--translation-profile` → **Explicit Direct Translation**
+  4. Has nothing → **Helpful error** with import guidance
+- **Improved user experience:**
+  - Simple workflow: `import` → `generate` (no intermediate steps!)
+  - No LLM required for standard PowerCLI cmdlets
+  - Automatic profile creation from workspace settings
+  - Clear messaging about which path is being used
+- Console output shows selected path:
+  - "Using direct translation (deterministic, no LLM required)"
+  - "Using intent-based generation (AI-assisted)"
+
 #### Documentation Updates
 - New `docs/POWERCLI_MAPPINGS.md` - Comprehensive cmdlet mapping guide
 - Updated `docs/ARCHITECTURE.md`:
   - Added Translate Module section with detailed architecture
   - Updated Generate Module section to mention role generation
+  - Added Automatic Path Selection section with decision tree
   - Translation flow diagrams and component descriptions
   - Profile-driven decision documentation
 - Updated `README.md`:
   - Added two translation paths (Direct Translation vs Intent Extraction)
+  - Added Automatic Path Selection section with examples
   - Clarified when LLM is required vs optional
   - Updated architecture diagram
 - Updated `docs/USER_GUIDE.md`:
+  - Added 🚀 Automatic Path Selection section with table and examples
   - Clarified `generate` command output includes translated role tasks
   - Added role generation details for PowerCLI and vRO workflows
+  - Documented when to use `--translation-profile`
 - Updated `docs/TUTORIAL.md`:
+  - Added note about automatic path selection in generate step
   - Added PowerCLI translation example showing before/after
   - Module mapping examples (New-VM → kubevirt_vm, etc.)
   - Variable conversion examples

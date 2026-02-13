@@ -414,6 +414,41 @@ kubectl exec test-multi-network -- ping <gateway-ip>
 """
 
 
+def _create_minimal_translation_profile(workspace: Workspace, profile_name: str):
+    """
+    Create a minimal ProfileSchema from workspace config for auto-translation.
+
+    This allows direct translation without requiring a separate translation profile file.
+
+    Args:
+        workspace: Workspace instance
+        profile_name: Profile name from workspace config
+
+    Returns:
+        ProfileSchema with minimal configuration
+    """
+    from ops_translate.models.profile import ProfileSchema, EnvironmentConfig
+
+    config = workspace.load_config()
+    profile_config = config["profiles"][profile_name]
+
+    # Build minimal environment config
+    env_config = EnvironmentConfig(
+        openshift_api_url=profile_config.get(
+            "openshift_api_url", "https://api.cluster.example.com:6443"
+        ),
+        default_namespace=profile_config.get("default_namespace", "default"),
+    )
+
+    # Create profile with single environment
+    translation_profile = ProfileSchema(
+        name=profile_name,
+        environments={profile_name: env_config},
+    )
+
+    return translation_profile
+
+
 def generate_all(
     workspace: Workspace,
     profile: str,
@@ -423,7 +458,13 @@ def generate_all(
     translation_profile=None,
 ):
     """
-    Generate all artifacts (KubeVirt + Ansible) using AI or templates.
+    Generate all artifacts (KubeVirt + Ansible) with automatic path selection.
+
+    Selection logic:
+    1. If translation_profile provided → Direct translation
+    2. If has PowerCLI/vRO files but no intent.yaml → Auto direct translation
+    3. If has intent.yaml → Intent-based generation
+    4. Otherwise → Error with helpful message
 
     Args:
         workspace: Workspace instance
@@ -433,14 +474,57 @@ def generate_all(
         assume_existing_vms: If True, assume VMs exist (MTV mode) - skip VM YAML generation
         translation_profile: ProfileSchema for deterministic Ansible adapter generation
     """
-    if use_ai:
-        generate_with_ai(
-            workspace, profile, output_format, assume_existing_vms, translation_profile
-        )
-    else:
+    # Check what we have in the workspace
+    has_powercli = (workspace.root / "input/powercli").exists() and bool(
+        list((workspace.root / "input/powercli").glob("*.ps1"))
+    )
+    has_vrealize = (workspace.root / "input/vrealize").exists() and bool(
+        list((workspace.root / "input/vrealize").glob("*.xml"))
+    )
+    has_source_files = has_powercli or has_vrealize
+    has_intent = (workspace.root / "intent/intent.yaml").exists()
+
+    # Decision tree for path selection
+    if translation_profile or (has_source_files and not has_intent):
+        # Use direct translation (deterministic)
+        console.print("[dim]Using direct translation (deterministic, no LLM required)[/dim]")
+
+        # Auto-create minimal profile if needed
+        if translation_profile is None and has_source_files:
+            console.print(
+                "[dim]Auto-generating translation profile from workspace config[/dim]"
+            )
+            translation_profile = _create_minimal_translation_profile(workspace, profile)
+
         generate_with_templates(
             workspace, profile, output_format, assume_existing_vms, translation_profile
         )
+
+    elif has_intent:
+        # Use intent-based generation
+        mode = "AI-assisted" if use_ai else "template-based"
+        console.print(f"[dim]Using intent-based generation ({mode})[/dim]")
+
+        if use_ai:
+            generate_with_ai(
+                workspace, profile, output_format, assume_existing_vms, translation_profile
+            )
+        else:
+            generate_with_templates(
+                workspace, profile, output_format, assume_existing_vms, translation_profile
+            )
+
+    else:
+        # No source files, no intent - provide helpful error
+        console.print("[red]Error: No source files or intent found.[/red]")
+        console.print("\n[yellow]Import PowerCLI/vRealize files first:[/yellow]")
+        console.print("  ops-translate import --source powercli --file script.ps1")
+        console.print("  ops-translate import --source vrealize --file workflow.xml")
+        console.print("\n[dim]Or create intent.yaml manually:[/dim]")
+        console.print("  ops-translate intent extract")
+        import typer
+
+        raise typer.Exit(1)
 
 
 def generate_with_ai(

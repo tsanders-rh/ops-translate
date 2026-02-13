@@ -646,6 +646,53 @@ generate/
 
 **Note**: Role generation for PowerCLI and vRO workflows uses the Translate Module (see below) to produce deterministic Ansible tasks rather than LLM-generated skeletons.
 
+**Automatic Path Selection**:
+
+The Generate Module automatically selects the appropriate generation path based on workspace contents:
+
+```python
+def generate_all(...):
+    # Check workspace contents
+    has_powercli = exists("input/powercli/*.ps1")
+    has_vrealize = exists("input/vrealize/*.xml")
+    has_source_files = has_powercli or has_vrealize
+    has_intent = exists("intent/intent.yaml")
+
+    # Decision tree
+    if translation_profile or (has_source_files and not has_intent):
+        # Path 1: Direct Translation (Deterministic)
+        # - No LLM required
+        # - Auto-creates minimal profile from workspace config
+        # - Translates PowerCLI cmdlets → Ansible tasks
+        use_direct_translation()
+
+    elif has_intent:
+        # Path 2: Intent-Based Generation
+        # - Uses LLM (if --no-ai not set) or templates
+        # - Handles complex logic, merging
+        use_intent_based_generation()
+
+    else:
+        # No source files, no intent
+        raise Error("Import files first or create intent.yaml")
+```
+
+**Path Selection Logic:**
+
+| Condition | Path | LLM Required | Use Case |
+|-----------|------|--------------|----------|
+| Has `.ps1`/`.xml`, no `intent.yaml` | **Direct Translation** | ❌ No | Standard cmdlets/workflows |
+| Has `intent.yaml` | **Intent-Based** | ⚠️ Optional | Complex logic, merging |
+| Has `--translation-profile` | **Direct Translation** | ❌ No | Explicit control |
+| Nothing | **Error** | N/A | Guide user to import files |
+
+**Benefits:**
+
+1. **Zero Configuration** - Just import files and generate
+2. **Faster Workflow** - Skip intent extraction for simple scripts
+3. **Deterministic by Default** - No LLM for common patterns
+4. **Graceful Fallback** - Error messages guide next steps
+
 **Generation Flow**:
 
 ```python

@@ -141,6 +141,20 @@ PowerCLI/vRealize  ──[LLM]──>  intent.yaml  ──[Templates]──>  An
    (custom logic)    NEEDS AI    (normalized)   NO AI NEEDED    (cloud-native)
 ```
 
+**Automatic Path Selection:**
+
+ops-translate **automatically chooses** the right path based on your workspace:
+
+- **Have `.ps1`/`.xml` files only?** → Direct Translation (no LLM)
+- **Have `intent.yaml`?** → Intent-based generation
+- **Just import and generate** - the tool figures it out!
+
+Example:
+```bash
+ops-translate import --source powercli --file script.ps1
+ops-translate generate --profile lab  # ← Auto-selects Direct Translation (no LLM!)
+```
+
 **When each path is used:**
 - **Direct Translation**: Standard PowerCLI cmdlets (New-VM, Start-VM, New-TagAssignment) and vRO workflows with common patterns
 - **Intent Extraction**: Complex custom logic, multiple source merging, advanced scenarios

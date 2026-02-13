@@ -877,10 +877,41 @@ ops-translate generate --profile <profile_name> [--no-ai] [--assume-existing-vms
 
 **Options**:
 - `--profile`: Target environment profile (lab, prod, etc.)
+- `--translation-profile`: Path to translation profile YAML (optional, auto-created if not provided)
 - `--no-ai`: Use templates instead of AI for generation
 - `--assume-existing-vms`: MTV mode - assume VMs exist, generate validation/day-2 ops only
 - `--eda`: Also generate Event-Driven Ansible rulebooks from vRO event subscriptions
 - `--eda-only`: Generate only EDA rulebooks (skip Ansible/KubeVirt artifacts)
+
+**🚀 Automatic Path Selection (NEW)**:
+
+ops-translate automatically chooses the best generation approach based on workspace contents:
+
+| You Have | What Happens | LLM Needed? |
+|----------|--------------|-------------|
+| PowerCLI `.ps1` or vRO `.xml` files | **Direct Translation** - Deterministic cmdlet/workflow → Ansible | ❌ No |
+| `intent/intent.yaml` file | **Intent-Based** - Generate from normalized intent | ⚠️ Optional (--no-ai) |
+| Both | **Intent-Based** (intent.yaml takes priority) | ⚠️ Optional |
+| Neither | **Error** with guidance to import files first | N/A |
+
+**Example Workflow:**
+```bash
+# Simple workflow - no LLM required!
+ops-translate import --source powercli --file script.ps1
+ops-translate generate --profile lab  # ← Automatically uses direct translation
+
+# Complex workflow with merging
+ops-translate import --source powercli --file script1.ps1
+ops-translate import --source vrealize --file workflow.xml
+ops-translate intent extract  # Creates intent.yaml
+ops-translate intent merge
+ops-translate generate --profile lab  # ← Uses intent-based generation
+```
+
+**When to use `--translation-profile`:**
+- Explicitly control profile-driven adapters (network, approval, ITSM)
+- Override auto-generated minimal profile
+- Required for advanced network/security configurations
 
 **Output** (greenfield mode):
 - `output/kubevirt/vm.yaml`
