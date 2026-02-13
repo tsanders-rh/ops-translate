@@ -846,14 +846,27 @@ def generate(
         console.print(f"[red]Error: Profile '{profile}' not found in config[/red]")
         raise typer.Exit(1)
 
-    # Load translation profile if provided
+    # Load translation profile
+    # Priority: 1) --translation-profile flag, 2) profile/profile.yml, 3) None
     translation_profile_schema = None
+    profile_path = None
+
     if translation_profile:
+        # Explicit profile provided via flag
+        profile_path = Path(translation_profile)
+    else:
+        # Auto-load profile/profile.yml if it exists
+        auto_profile_path = workspace.workspace_dir / "profile" / "profile.yml"
+        if auto_profile_path.exists():
+            profile_path = auto_profile_path
+            rel_path = auto_profile_path.relative_to(workspace.workspace_dir)
+            console.print(f"[dim]Auto-loading translation profile: {rel_path}[/dim]")
+
+    if profile_path:
         from ops_translate.intent.profile import load_profile
 
-        profile_path = Path(translation_profile)
         if not profile_path.exists():
-            console.print(f"[red]Error: Translation profile not found: {translation_profile}[/red]")
+            console.print(f"[red]Error: Translation profile not found: {profile_path}[/red]")
             raise typer.Exit(1)
 
         try:
@@ -970,6 +983,66 @@ def generate(
                 )
         else:
             console.print("[yellow]No vRealize files found - skipping EDA generation[/yellow]")
+
+    # Generate analysis.json with classification results
+    ansible_project_dir = workspace.root / "output" / "ansible-project"
+    if ansible_project_dir.exists():
+        from ops_translate.generate.analysis import compare_analysis, generate_analysis_json
+
+        output_dir = workspace.root / "output"
+        analysis_path = output_dir / "analysis.json"
+        previous_analysis_path = output_dir / "analysis.previous.json"
+
+        # Load previous analysis if exists (for comparison)
+        previous_analysis = None
+        if analysis_path.exists():
+            # Move current to previous
+            import shutil
+
+            shutil.copy(analysis_path, previous_analysis_path)
+            import json
+
+            with analysis_path.open() as f:
+                previous_analysis = json.load(f)
+
+        # Generate new analysis
+        generate_analysis_json(ansible_project_dir, analysis_path)
+        console.print(f"[green]✓ Generated: {analysis_path.relative_to(workspace.root)}[/green]")
+
+        # Show progress comparison if we have previous data
+        if previous_analysis:
+            import json
+
+            with analysis_path.open() as f:
+                current_analysis = json.load(f)
+
+            progress = compare_analysis(previous_analysis, current_analysis)
+
+            # Only show if there's actual progress
+            if any(progress[k]["delta"] != 0 for k in ["blocked", "partial", "automatable"]):
+                console.print("\n[bold]Progress since last run:[/bold]")
+                if progress["blocked"]["delta"] < 0:
+                    before = progress["blocked"]["before"]
+                    after = progress["blocked"]["after"]
+                    delta = progress["blocked"]["delta"]
+                    console.print(f"  [green]✓ BLOCKED: {before} → {after} ({delta:+d})[/green]")
+                if progress["partial"]["delta"] > 0:
+                    before = progress["partial"]["before"]
+                    after = progress["partial"]["after"]
+                    delta = progress["partial"]["delta"]
+                    console.print(f"  [yellow]↑ PARTIAL: {before} → {after} ({delta:+d})[/yellow]")
+                if progress["automatable"]["delta"] > 0:
+                    before = progress["automatable"]["before"]
+                    after = progress["automatable"]["after"]
+                    delta = progress["automatable"]["delta"]
+                    console.print(
+                        f"  [green]✓ AUTOMATABLE: {before} → {after} ({delta:+d})[/green]"
+                    )
+
+                if progress["blockers_resolved"] > 0:
+                    console.print(
+                        f"\n  [green]Resolved {progress['blockers_resolved']} blocker(s)[/green]"
+                    )
 
 
 @app.command()
