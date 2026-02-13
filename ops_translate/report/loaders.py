@@ -114,6 +114,16 @@ class ReportFileLocator:
         path = self.workspace.root / "intent/conflicts.md"
         return path if path.exists() else None
 
+    def analysis_file(self) -> Path | None:
+        """
+        Locate analysis.json file with workflow classification data.
+
+        Returns:
+            Path to analysis.json if it exists, None otherwise
+        """
+        path = self.workspace.root / "output/analysis.json"
+        return path if path.exists() else None
+
     def input_files(self, pattern: str = "*") -> list[Path]:
         """
         Locate input files matching pattern.

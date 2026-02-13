@@ -136,6 +136,10 @@ def build_report_context(workspace: Workspace, profile: str | None = None) -> di
     if questions_file := locator.questions_file():
         questions_data = loader.load_json(questions_file)
 
+    analysis_data = None
+    if analysis_file := locator.analysis_file():
+        analysis_data = loader.load_json(analysis_file)
+
     # Load workspace-specific data (these still have custom logic)
     intent_data = _load_intent_data(workspace)
     sources = _load_source_files(workspace, gaps_data)
@@ -159,6 +163,9 @@ def build_report_context(workspace: Workspace, profile: str | None = None) -> di
     if gaps_data:
         consolidated_supported = _consolidate_supported_patterns(gaps_data)
 
+    # Calculate effort metrics for executive dashboard
+    effort_metrics = _calculate_effort_metrics(analysis_data, gaps_data)
+
     # Use ContextBuilder to assemble final context
     builder = ReportContextBuilder()
     context = builder.build(
@@ -178,6 +185,9 @@ def build_report_context(workspace: Workspace, profile: str | None = None) -> di
         executive_summary=executive_summary,
         consolidated_supported=consolidated_supported,
     )
+
+    # Add effort metrics to context
+    context["effort_metrics"] = effort_metrics
 
     return context
 
@@ -559,6 +569,232 @@ def _detect_generated_artifacts(workspace: Workspace) -> dict[str, Any]:
                     )
 
     return artifacts
+
+
+def _calculate_effort_metrics(
+    analysis_data: dict[str, Any] | None, gaps_data: dict[str, Any] | None
+) -> dict[str, Any]:
+    """
+    Calculate effort metrics for executive dashboard.
+
+    Uses deterministic heuristics to classify workflows by effort level:
+    - Ready Now (0-1 points): No decisions required
+    - Moderate Effort (2-3 points): Configuration needed
+    - Complex (4+ points): Adapter development required
+
+    Effort scoring:
+    +1 per approval gate
+    +1 per integration detected
+    +1 per policy mapping required
+    +2 per unresolved integration (BLOCKED stub)
+    +2 per security/network mapping
+    +3 per missing action body
+
+    Args:
+        analysis_data: Workflow classification data from analysis.json
+        gaps_data: Gap analysis data from gaps.json
+
+    Returns:
+        Dictionary with:
+        - estate_summary: overview stats
+        - effort_buckets: ready/moderate/complex counts
+        - cost_drivers: percentage-based metrics
+        - integration_heatmap: matrix of workflow vs integrations
+    """
+    if not analysis_data:
+        return {
+            "estate_summary": {
+                "total_workflows": 0,
+                "total_lines_of_code": 0,
+                "external_integrations": 0,
+                "approval_gates": 0,
+            },
+            "effort_buckets": {"ready_now": 0, "moderate": 0, "complex": 0},
+            "cost_drivers": [],
+            "integration_heatmap": [],
+        }
+
+    # Extract workflow data
+    workflows = analysis_data.get("workflows", {})
+    total_workflows = analysis_data.get("total_workflows", 0)
+
+    # Calculate estate overview
+    total_blocked = len([w for w in workflows.values() if w.get("classification") == "blocked"])
+
+    # Estimate LOC (approximate: 20 lines per task average)
+    total_tasks = sum(w.get("total_tasks", 0) for w in workflows.values())
+    estimated_loc = total_tasks * 20
+
+    # Count external integrations from gaps data
+    external_integrations = set()
+    approval_gates_count = 0
+
+    if gaps_data:
+        components = gaps_data.get("components", [])
+        for comp in components:
+            comp_type = comp.get("component_type", "")
+            if "approval" in comp_type.lower():
+                approval_gates_count += 1
+            if comp.get("classification") in ["PARTIAL", "BLOCKED"]:
+                # Extract integration type
+                if "servicenow" in comp_type.lower() or "itsm" in comp_type.lower():
+                    external_integrations.add("ITSM")
+                if "nsx" in comp_type.lower() or "firewall" in comp_type.lower():
+                    external_integrations.add("NSX")
+                if "dns" in comp_type.lower():
+                    external_integrations.add("DNS")
+                if "storage" in comp_type.lower():
+                    external_integrations.add("Storage")
+                if "ad" in comp_type.lower() or "ldap" in comp_type.lower():
+                    external_integrations.add("AD")
+
+    estate_summary = {
+        "total_workflows": total_workflows,
+        "total_lines_of_code": estimated_loc,
+        "external_integrations": len(external_integrations),
+        "approval_gates": approval_gates_count,
+    }
+
+    # Calculate effort buckets using scoring heuristic
+    ready_now = 0
+    moderate = 0
+    complex_count = 0
+
+    for workflow_name, workflow_data in workflows.items():
+        score = 0
+
+        # Classification-based scoring
+        classification = workflow_data.get("classification", "blocked")
+        if classification == "blocked":
+            score += 4  # Blocked workflows are complex by default
+        elif classification == "partial":
+            score += 2  # Partial workflows need moderate effort
+
+        # Task-based scoring
+        adapter_tasks = workflow_data.get("adapter_tasks", 0)
+        blocked_tasks = workflow_data.get("blocked_tasks", 0)
+
+        score += min(adapter_tasks, 2)  # Cap adapter task score at +2
+        score += blocked_tasks * 2  # Each blocked stub adds +2
+
+        # Categorize by score
+        if score <= 1:
+            ready_now += 1
+        elif score <= 3:
+            moderate += 1
+        else:
+            complex_count += 1
+
+    effort_buckets = {"ready_now": ready_now, "moderate": moderate, "complex": complex_count}
+
+    # Calculate cost drivers (percentage-based)
+    cost_drivers = []
+    if total_workflows > 0:
+        # Approval gates
+        if approval_gates_count > 0:
+            pct = int((approval_gates_count / total_workflows) * 100)
+            cost_drivers.append(
+                {
+                    "label": f"{pct}% have approval gates",
+                    "percentage": pct,
+                    "count": approval_gates_count,
+                }
+            )
+
+        # BLOCKED workflows (security/network decisions)
+        if total_blocked > 0:
+            pct = int((total_blocked / total_workflows) * 100)
+            cost_drivers.append(
+                {
+                    "label": f"{pct}% require configuration decisions",
+                    "percentage": pct,
+                    "count": total_blocked,
+                }
+            )
+
+        # Adapter tasks (integration complexity)
+        workflows_with_adapters = len(
+            [w for w in workflows.values() if w.get("adapter_tasks", 0) > 0]
+        )
+        if workflows_with_adapters > 0:
+            pct = int((workflows_with_adapters / total_workflows) * 100)
+            cost_drivers.append(
+                {
+                    "label": f"{pct}% require external integrations",
+                    "percentage": pct,
+                    "count": workflows_with_adapters,
+                }
+            )
+
+    # Sort cost drivers by percentage descending
+    cost_drivers.sort(key=lambda x: cast(int, x["percentage"]), reverse=True)
+
+    # Generate integration heatmap
+    integration_heatmap = _generate_integration_heatmap(workflows, gaps_data)
+
+    return {
+        "estate_summary": estate_summary,
+        "effort_buckets": effort_buckets,
+        "cost_drivers": cost_drivers,
+        "integration_heatmap": integration_heatmap,
+    }
+
+
+def _generate_integration_heatmap(
+    workflows: dict[str, Any], gaps_data: dict[str, Any] | None
+) -> list[dict[str, Any]]:
+    """
+    Generate integration heatmap showing which workflows use which integrations.
+
+    Creates a matrix showing the presence of different integration types across workflows.
+
+    Args:
+        workflows: Workflow data from analysis.json
+        gaps_data: Gap analysis data
+
+    Returns:
+        List of workflow rows with integration presence indicators
+    """
+    if not workflows:
+        return []
+
+    # Define integration categories to track
+    integration_categories = ["Approval", "ITSM", "NSX", "DNS", "Storage", "AD"]
+
+    heatmap_rows = []
+
+    for workflow_name, workflow_data in workflows.items():
+        integrations: dict[str, bool] = {cat: False for cat in integration_categories}
+        row: dict[str, Any] = {
+            "workflow": workflow_name,
+            "integrations": integrations,
+        }
+
+        # Detect integrations from blocker details
+        blocker_details = workflow_data.get("blocker_details", [])
+        for blocker in blocker_details:
+            task_name = blocker.get("task", "").lower()
+            message = blocker.get("message", "").lower()
+
+            # Map to integration categories
+            if "approval" in task_name or "approval" in message:
+                integrations["Approval"] = True
+            if "servicenow" in task_name or "itsm" in message:
+                integrations["ITSM"] = True
+            if "nsx" in task_name or "firewall" in message:
+                integrations["NSX"] = True
+            if "dns" in task_name or "dns" in message:
+                integrations["DNS"] = True
+            if "storage" in task_name or "datastore" in message:
+                integrations["Storage"] = True
+            if "ad" in task_name or "ldap" in message or "activedirectory" in message:
+                integrations["AD"] = True
+
+        # Only include workflows with at least one integration
+        if any(integrations.values()):
+            heatmap_rows.append(row)
+
+    return heatmap_rows
 
 
 def render_report_template(context: dict[str, Any]) -> str:

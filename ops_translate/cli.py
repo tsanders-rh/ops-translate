@@ -987,7 +987,11 @@ def generate(
     # Generate analysis.json with classification results
     ansible_project_dir = workspace.root / "output" / "ansible-project"
     if ansible_project_dir.exists():
-        from ops_translate.generate.analysis import compare_analysis, generate_analysis_json
+        from ops_translate.generate.analysis import (
+            compare_analysis,
+            generate_analysis_json,
+            generate_effort_json,
+        )
 
         output_dir = workspace.root / "output"
         analysis_path = output_dir / "analysis.json"
@@ -1008,6 +1012,23 @@ def generate(
         # Generate new analysis
         generate_analysis_json(ansible_project_dir, analysis_path)
         console.print(f"[green]✓ Generated: {analysis_path.relative_to(workspace.root)}[/green]")
+
+        # Generate effort.json with migration effort metrics
+        import json
+
+        with analysis_path.open() as f:
+            analysis_data = json.load(f)
+
+        # Load gaps data if it exists
+        gaps_data = None
+        gaps_path = workspace.root / "intent" / "gaps.json"
+        if gaps_path.exists():
+            with gaps_path.open() as f:
+                gaps_data = json.load(f)
+
+        effort_path = output_dir / "effort.json"
+        generate_effort_json(analysis_data, gaps_data, effort_path)
+        console.print(f"[green]✓ Generated: {effort_path.relative_to(workspace.root)}[/green]")
 
         # Load current analysis to display summary
         import json

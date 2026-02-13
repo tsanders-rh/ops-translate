@@ -2453,3 +2453,318 @@ pre code {
     color: #92400e;
     font-style: italic;
 }
+
+/* ========================================================================
+   Executive Dashboard Styles (Issue #79)
+   ======================================================================== */
+
+.executive-dashboard-section {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-top: 4px solid #0284c7;
+    margin-top: var(--spacing-lg);
+    padding: var(--spacing-xl) 0;
+}
+
+.executive-dashboard-section .section-title {
+    font-size: 2rem;
+    color: #0c4a6e;
+    margin-bottom: var(--spacing-lg);
+    text-align: center;
+}
+
+.subsection-title {
+    font-size: 1.5rem;
+    color: #0c4a6e;
+    margin: var(--spacing-lg) 0 var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 2px solid #7dd3fc;
+}
+
+/* Estate Summary Cards */
+.estate-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+}
+
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: var(--spacing-lg);
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #0284c7;
+    margin-bottom: var(--spacing-xs);
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Effort Buckets */
+.effort-buckets-container {
+    margin-bottom: var(--spacing-xl);
+}
+
+.effort-buckets {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-md);
+}
+
+.bucket {
+    background: white;
+    border-radius: 12px;
+    padding: var(--spacing-lg);
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.bucket:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+.bucket-ready {
+    border-top: 4px solid #22c55e;
+}
+
+.bucket-moderate {
+    border-top: 4px solid #eab308;
+}
+
+.bucket-complex {
+    border-top: 4px solid #ef4444;
+}
+
+.bucket-icon {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-sm);
+}
+
+.bucket-count {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #1e293b;
+    margin-bottom: var(--spacing-xs);
+}
+
+.bucket-label {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: var(--spacing-xs);
+}
+
+.bucket-detail {
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+/* Cost Drivers */
+.cost-drivers-container {
+    margin-bottom: var(--spacing-xl);
+}
+
+.cost-drivers {
+    background: white;
+    border-radius: 12px;
+    padding: var(--spacing-lg);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.driver-item {
+    position: relative;
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-sm) 0;
+}
+
+.driver-bar {
+    height: 32px;
+    background: linear-gradient(90deg, #0284c7 0%, #0ea5e9 100%);
+    border-radius: 6px;
+    transition: width 0.3s ease;
+    box-shadow: 0 2px 4px rgba(2, 132, 199, 0.3);
+}
+
+.driver-label {
+    position: absolute;
+    left: var(--spacing-md);
+    top: 50%;
+    transform: translateY(-50%);
+    color: white;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Integration Heatmap */
+.integration-heatmap-container {
+    margin-bottom: var(--spacing-xl);
+}
+
+.heatmap-description {
+    color: #64748b;
+    margin-bottom: var(--spacing-md);
+    font-style: italic;
+}
+
+.heatmap-scroll {
+    overflow-x: auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.integration-heatmap {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.integration-heatmap th {
+    background: #0284c7;
+    color: white;
+    padding: var(--spacing-md);
+    text-align: center;
+    font-weight: 600;
+    border: 1px solid #0369a1;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.integration-heatmap th.workflow-col {
+    text-align: left;
+    min-width: 200px;
+}
+
+.integration-heatmap td {
+    padding: var(--spacing-sm) var(--spacing-md);
+    text-align: center;
+    border: 1px solid #e2e8f0;
+}
+
+.integration-heatmap td.workflow-name {
+    font-weight: 600;
+    text-align: left;
+    background: #f8fafc;
+    color: #1e293b;
+}
+
+.integration-heatmap .cell-present {
+    background: #dcfce7;
+    color: #15803d;
+    font-weight: bold;
+}
+
+.integration-heatmap .cell-none {
+    background: #f1f5f9;
+    color: #94a3b8;
+}
+
+.integration-heatmap tbody tr:hover {
+    background: #fef9c3;
+}
+
+/* Sprint Planning */
+.sprint-plan-container {
+    margin-bottom: var(--spacing-xl);
+}
+
+.sprint-plan {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.sprint-phase {
+    background: white;
+    border-radius: 12px;
+    padding: var(--spacing-lg);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-left: 6px solid #0284c7;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.sprint-phase:hover {
+    transform: translateX(4px);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+
+.phase-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+.phase-label {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #0c4a6e;
+}
+
+.phase-duration {
+    font-size: 0.9rem;
+    color: #64748b;
+    font-style: italic;
+}
+
+.phase-content {
+    color: #475569;
+    line-height: 1.6;
+}
+
+.sprint-note {
+    background: #fef3c7;
+    border: 2px solid #fbbf24;
+    border-radius: 8px;
+    padding: var(--spacing-md);
+    color: #78350f;
+    font-size: 1rem;
+}
+
+/* Print Styles for PDF Export */
+@media print {
+    .executive-dashboard-section {
+        page-break-before: auto;
+        page-break-inside: avoid;
+    }
+
+    .estate-summary,
+    .effort-buckets,
+    .cost-drivers,
+    .integration-heatmap-container,
+    .sprint-plan {
+        page-break-inside: avoid;
+    }
+
+    .bucket,
+    .sprint-phase {
+        box-shadow: none;
+        border: 1px solid #cbd5e1;
+    }
+
+    .heatmap-scroll {
+        overflow-x: visible;
+    }
+}
