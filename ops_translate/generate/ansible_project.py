@@ -46,7 +46,7 @@ def generate_ansible_project(
     _generate_inventories(profile, project_dir)
     _generate_ansible_cfg(project_dir)
     _generate_adapters(profile, project_dir)
-    _generate_workflow_roles(workflows, output_dir, project_dir)
+    _generate_workflow_roles(workflows, output_dir, project_dir, profile)
     _generate_documentation(profile, workflows, project_dir)
 
     return project_dir
@@ -198,6 +198,7 @@ def _generate_workflow_roles(
     workflows: list[dict[str, Any]],
     output_dir: Path,
     project_dir: Path,
+    profile: ProfileSchema,
 ) -> None:
     """
     Generate role skeletons for all workflows.
@@ -206,6 +207,7 @@ def _generate_workflow_roles(
         workflows: List of workflow definitions
         output_dir: Output directory (parent of project_dir)
         project_dir: Ansible project root directory
+        profile: ProfileSchema for profile-driven translation
     """
     workspace_root = output_dir.parent
 
@@ -220,7 +222,7 @@ def _generate_workflow_roles(
             if workflow["source"] == "vrealize":
                 _generate_vrealize_role(workflow, source_file, project_dir)
             elif workflow["source"] == "powercli":
-                _generate_powercli_role(workflow, source_file, project_dir)
+                _generate_powercli_role(workflow, source_file, project_dir, profile)
         except Exception as e:
             # Log but continue - graceful degradation
             print(f"Warning: Failed to generate role {workflow['name']}: {e}")
@@ -248,17 +250,44 @@ def _generate_powercli_role(
     workflow: dict,
     source_file: Path,
     project_dir: Path,
+    profile: ProfileSchema | None = None,
 ) -> None:
     """
-    Generate role for PowerCLI script.
+    Generate role for PowerCLI script with translated tasks.
 
     Args:
         workflow: Workflow definition dict
         source_file: Path to PowerCLI script file
         project_dir: Ansible project root directory
+        profile: ProfileSchema for profile-driven translation
     """
+    from ops_translate.translate.powercli_script import (
+        PowerCLIScriptParser,
+        PowerShellToAnsibleTranslator,
+    )
+    from ops_translate.generate.workflow_to_ansible import generate_ansible_yaml
+
+    # Extract metadata for role structure
     metadata = _extract_powercli_metadata(source_file)
+
+    # Create role structure (tasks/, defaults/, meta/, README.md)
     _create_role_structure(workflow["name"], project_dir, metadata, workflow)
+
+    # Parse PowerCLI script
+    parser = PowerCLIScriptParser()
+    statements = parser.parse_file(source_file)
+
+    # Translate to Ansible tasks
+    translator = PowerShellToAnsibleTranslator(profile=profile)
+    tasks = translator.translate_statements(statements)
+
+    # Generate YAML from tasks
+    tasks_yaml = generate_ansible_yaml(tasks)
+
+    # Override tasks/main.yml with translated content
+    role_dir = project_dir / "roles" / workflow["name"]
+    tasks_file = role_dir / "tasks" / "main.yml"
+    tasks_file.write_text(tasks_yaml)
 
 
 def _extract_vrealize_metadata(workflow_file: Path) -> dict:

@@ -1,0 +1,178 @@
+# PowerCLI cmdlet to Ansible module mappings
+#
+# Maps PowerCLI cmdlets to Kubernetes/KubeVirt Ansible modules
+# Structure mirrors vro_integration_mappings.yaml
+
+vm_operations:
+  new_vm:
+    match:
+      cmdlet: New-VM
+    ansible:
+      module: kubevirt.core.kubevirt_vm
+      params:
+        state: present
+        name: "{Name}"
+        namespace: "{{ target_namespace }}"
+        cpu_cores: "{NumCpu}"
+        memory: "{MemoryGB}Gi"
+    category: mutation
+    tags: [mutation, vm]
+    requires_profile:
+      - profile.environments.*.namespace
+    findings:
+      - "VM:Create:KubeVirt"
+
+  start_vm:
+    match:
+      cmdlet: Start-VM
+    ansible:
+      module: kubevirt.core.kubevirt_vm
+      params:
+        state: running
+        name: "{VM}"
+        namespace: "{{ target_namespace }}"
+    category: mutation
+    tags: [mutation, vm]
+    findings:
+      - "VM:PowerOn:KubeVirt"
+
+  stop_vm:
+    match:
+      cmdlet: Stop-VM
+    ansible:
+      module: kubevirt.core.kubevirt_vm
+      params:
+        state: stopped
+        name: "{VM}"
+        namespace: "{{ target_namespace }}"
+    category: mutation
+    tags: [mutation, vm]
+    findings:
+      - "VM:PowerOff:KubeVirt"
+
+  set_vm:
+    match:
+      cmdlet: Set-VM
+    ansible:
+      module: kubevirt.core.kubevirt_vm
+      params:
+        state: present
+        name: "{VM}"
+        namespace: "{{ target_namespace }}"
+        cpu_cores: "{NumCpu}"
+        memory: "{MemoryGB}Gi"
+    category: mutation
+    tags: [mutation, vm]
+    findings:
+      - "VM:Update:KubeVirt"
+
+  remove_vm:
+    match:
+      cmdlet: Remove-VM
+    ansible:
+      module: kubevirt.core.kubevirt_vm
+      params:
+        state: absent
+        name: "{VM}"
+        namespace: "{{ target_namespace }}"
+    category: mutation
+    tags: [mutation, vm]
+    findings:
+      - "VM:Delete:KubeVirt"
+
+tagging:
+  new_tag_assignment:
+    match:
+      cmdlet: New-TagAssignment
+    ansible:
+      module: kubernetes.core.k8s
+      params:
+        state: patched
+        kind: VirtualMachine
+        name: "{Entity}"
+        namespace: "{{ target_namespace }}"
+        definition:
+          metadata:
+            labels:
+              "{tag_key}": "{tag_value}"
+    category: integration
+    tags: [integration, tagging]
+    integration_type: tagging
+    findings:
+      - "Metadata:Tagging:Labels"
+
+snapshot:
+  new_snapshot:
+    match:
+      cmdlet: New-Snapshot
+    ansible:
+      module: kubevirt.core.kubevirt_vm_snapshot
+      params:
+        state: present
+        name: "{Name}"
+        vm_name: "{VM}"
+        namespace: "{{ target_namespace }}"
+    category: integration
+    tags: [integration, snapshot]
+    integration_type: snapshot
+    findings:
+      - "Storage:Snapshot:VolumeSnapshot"
+
+  remove_snapshot:
+    match:
+      cmdlet: Remove-Snapshot
+    ansible:
+      module: kubevirt.core.kubevirt_vm_snapshot
+      params:
+        state: absent
+        name: "{Snapshot}"
+        namespace: "{{ target_namespace }}"
+    category: integration
+    tags: [integration, snapshot]
+    integration_type: snapshot
+    findings:
+      - "Storage:Snapshot:Delete"
+
+network:
+  new_network_adapter:
+    match:
+      cmdlet: New-NetworkAdapter
+    ansible:
+      module: ansible.builtin.fail
+      params:
+        msg: "BLOCKED: Network adapter requires profile.network_security"
+    category: integration
+    tags: [blocked, network]
+    integration_type: network
+    requires_profile:
+      - profile.network_security.model
+    findings:
+      - "Network:Adapter:BLOCKED"
+
+lookup:
+  get_vm:
+    match:
+      cmdlet: Get-VM
+    ansible:
+      module: kubernetes.core.k8s_info
+      params:
+        kind: VirtualMachine
+        name: "{Name}"
+        namespace: "{{ target_namespace }}"
+    category: lookup
+    tags: [lookup, vm]
+    findings:
+      - "VM:Lookup:K8sInfo"
+
+  get_datastore:
+    match:
+      cmdlet: Get-Datastore
+    ansible:
+      module: kubernetes.core.k8s_info
+      params:
+        kind: StorageClass
+        name: "{Name}"
+    category: lookup
+    tags: [lookup, storage]
+    findings:
+      - "Storage:Lookup:StorageClass"
