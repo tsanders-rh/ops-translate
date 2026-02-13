@@ -232,6 +232,24 @@ def load_profile(profile_file: Path) -> ProfileSchema:
     )
 
 
+def _remove_none_values(data: Any) -> Any:
+    """
+    Recursively remove None values from nested dicts/lists.
+
+    Args:
+        data: Data structure to clean
+
+    Returns:
+        Cleaned data structure with None values removed
+    """
+    if isinstance(data, dict):
+        return {k: _remove_none_values(v) for k, v in data.items() if v is not None}
+    elif isinstance(data, list):
+        return [_remove_none_values(item) for item in data if item is not None]
+    else:
+        return data
+
+
 def save_profile(profile: ProfileSchema, profile_file: Path) -> None:
     """
     Save profile to YAML file.
@@ -243,9 +261,8 @@ def save_profile(profile: ProfileSchema, profile_file: Path) -> None:
     # Convert dataclass to dict
     profile_dict = asdict(profile)
 
-    # Remove None values to avoid schema validation errors on reload
-    # Only keep non-None values at top level
-    profile_dict = {k: v for k, v in profile_dict.items() if v is not None}
+    # Remove None values recursively to avoid schema validation errors on reload
+    profile_dict = _remove_none_values(profile_dict)
 
     # Write YAML
     profile_file.parent.mkdir(parents=True, exist_ok=True)

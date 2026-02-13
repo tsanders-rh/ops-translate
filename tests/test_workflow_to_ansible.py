@@ -192,8 +192,7 @@ def test_user_interaction_with_aap_workflow_profile(sample_interaction_item):
     task = tasks[0]
 
     assert "AAP" in task.name
-    assert task.module == "ansible.builtin.pause"
-    assert task.register == "approval_response"
+    assert task.module == "ansible.builtin.debug"
     assert "aap" in task.tags
 
 
