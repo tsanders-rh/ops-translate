@@ -47,6 +47,7 @@ servicenow:
       - profile.itsm.servicenow.endpoint
       - profile.itsm.servicenow.username
       - profile.itsm.servicenow.password
+    adapter: servicenow/create_incident.yml
     findings:
       - "ITSM:ServiceNow:CreateIncident"
     severity: PARTIAL
@@ -89,6 +90,7 @@ servicenow:
       - profile.itsm.servicenow.endpoint
       - profile.itsm.servicenow.username
       - profile.itsm.servicenow.password
+    adapter: servicenow/create_change.yml
     findings:
       - "ITSM:ServiceNow:CreateChange"
     severity: PARTIAL
@@ -131,9 +133,9 @@ infoblox:
         num: 1
       register: next_ip_result
     requires_profile:
-      - profile.ipam.infoblox.endpoint
-      - profile.ipam.infoblox.username
-      - profile.ipam.infoblox.password
+      - profile.ipam.provider
+      - profile.ipam.endpoint
+    adapter: ipam/reserve_ip.yml
     findings:
       - "IPAM:Infoblox:GetNextIP"
     severity: PARTIAL
@@ -150,9 +152,9 @@ infoblox:
           - ipv4addr: "{arg1}"
         state: present
     requires_profile:
-      - profile.ipam.infoblox.endpoint
-      - profile.ipam.infoblox.username
-      - profile.ipam.infoblox.password
+      - profile.dns.provider
+      - profile.dns.endpoint
+    adapter: dns/create_record.yml
     findings:
       - "DNS:Infoblox:CreateHost"
     severity: PARTIAL
@@ -167,9 +169,9 @@ infoblox:
         name: "{arg0}"
         state: absent
     requires_profile:
-      - profile.ipam.infoblox.endpoint
-      - profile.ipam.infoblox.username
-      - profile.ipam.infoblox.password
+      - profile.dns.provider
+      - profile.dns.endpoint
+    adapter: dns/create_record.yml
     findings:
       - "DNS:Infoblox:DeleteHost"
     severity: PARTIAL
@@ -245,9 +247,8 @@ nsxt:
         transport_zone_display_name: "{arg1}"
         state: present
     requires_profile:
-      - profile.network.nsxt.manager_host
-      - profile.network.nsxt.username
-      - profile.network.nsxt.password
+      - profile.network_security.model
+    adapter: nsx/create_segment.yml
     findings:
       - "Network:NSX:CreateSegment"
     severity: PARTIAL
@@ -267,9 +268,8 @@ nsxt:
             value: "{arg1}"
         state: present
     requires_profile:
-      - profile.network.nsxt.manager_host
-      - profile.network.nsxt.username
-      - profile.network.nsxt.password
+      - profile.network_security.model
+    adapter: nsx/assign_security_group.yml
     findings:
       - "Network:NSX:CreateSecurityGroup"
     severity: PARTIAL
@@ -290,9 +290,8 @@ nsxt:
             action: "{arg5}"
         state: present
     requires_profile:
-      - profile.network.nsxt.manager_host
-      - profile.network.nsxt.username
-      - profile.network.nsxt.password
+      - profile.network_security.model
+    adapter: nsx/create_firewall_rule.yml
     findings:
       - "Network:NSX:CreateFirewallRule"
     severity: PARTIAL
