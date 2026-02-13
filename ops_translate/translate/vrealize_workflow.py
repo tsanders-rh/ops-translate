@@ -959,7 +959,7 @@ Once configured, this BLOCKED task will be replaced with a functional adapter ca
         Check if profile has all required configuration keys.
 
         Args:
-            required_keys: List of profile keys in dotted notation (e.g., "approval.model")
+            required_keys: List of profile keys in dotted notation (e.g., "profile.approval.model")
 
         Returns:
             True if profile has all required keys, False otherwise
@@ -968,6 +968,10 @@ Once configured, this BLOCKED task will be replaced with a functional adapter ca
             return False
 
         for key_path in required_keys:
+            # Strip "profile." prefix if present
+            if key_path.startswith("profile."):
+                key_path = key_path[len("profile.") :]
+
             # Navigate nested attributes using dotted notation
             keys = key_path.split(".")
             value = self.profile

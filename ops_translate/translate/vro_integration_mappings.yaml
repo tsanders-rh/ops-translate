@@ -44,9 +44,8 @@ servicenow:
           priority: "{arg2}"
       register: snow_incident
     requires_profile:
-      - profile.itsm.servicenow.endpoint
-      - profile.itsm.servicenow.username
-      - profile.itsm.servicenow.password
+      - profile.itsm.provider
+      - profile.itsm.endpoint
     adapter: servicenow/create_incident.yml
     findings:
       - "ITSM:ServiceNow:CreateIncident"
@@ -64,9 +63,8 @@ servicenow:
         number: "{arg0}"
         data: "{arg1}"
     requires_profile:
-      - profile.itsm.servicenow.endpoint
-      - profile.itsm.servicenow.username
-      - profile.itsm.servicenow.password
+      - profile.itsm.provider
+      - profile.itsm.endpoint
     findings:
       - "ITSM:ServiceNow:UpdateIncident"
     severity: PARTIAL
@@ -87,9 +85,8 @@ servicenow:
           risk: "{arg3}"
       register: snow_change
     requires_profile:
-      - profile.itsm.servicenow.endpoint
-      - profile.itsm.servicenow.username
-      - profile.itsm.servicenow.password
+      - profile.itsm.provider
+      - profile.itsm.endpoint
     adapter: servicenow/create_change.yml
     findings:
       - "ITSM:ServiceNow:CreateChange"
