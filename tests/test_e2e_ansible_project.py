@@ -262,7 +262,11 @@ class TestEndToEndProjectGeneration:
         profile = load_profile(profile_path)
 
         workflows = [
-            {"name": "simple_workflow", "source": "vrealize", "source_file": "input/vrealize/simple-workflow.xml"}
+            {
+                "name": "simple_workflow",
+                "source": "vrealize",
+                "source_file": "input/vrealize/simple-workflow.xml",
+            }
         ]
 
         output_dir = tmp_path / "output"
@@ -316,7 +320,11 @@ class TestEndToEndProjectGeneration:
         profile = load_profile(profile_path)
 
         workflows = [
-            {"name": "simple_workflow", "source": "vrealize", "source_file": "input/vrealize/simple-workflow.xml"}
+            {
+                "name": "simple_workflow",
+                "source": "vrealize",
+                "source_file": "input/vrealize/simple-workflow.xml",
+            }
         ]
 
         output_dir = tmp_path / "output"
