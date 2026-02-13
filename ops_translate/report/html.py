@@ -280,7 +280,6 @@ def _generate_executive_summary(summary: dict[str, Any], gaps_data: dict[str, An
     # Calculate automation percentage
     supported = counts.get("SUPPORTED", 0)
     partial = counts.get("PARTIAL", 0)
-    blocked = counts.get("BLOCKED", 0)
 
     if total > 0:
         automation_pct = int((supported / total) * 100)
@@ -320,7 +319,8 @@ def _generate_executive_summary(summary: dict[str, Any], gaps_data: dict[str, An
     elif partial > 0:
         return (
             f"{automation_pct}% of this automation estate can migrate immediately. "
-            f"{partial} component{'s' if partial != 1 else ''} require configuration—standard work with clear implementation paths."
+            f"{partial} component{'s' if partial != 1 else ''} require configuration—"
+            "standard work with clear implementation paths."
         )
 
     elif counts.get("MANUAL", 0) > 0:
