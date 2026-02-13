@@ -96,7 +96,7 @@
       var vmFolder = cluster.vmFolder;
       var resourcePool = cluster.resourcePool;
 
-      for (var i = 1; i <= instanceCount; i++) {
+      for (var i = 1; i &lt;= instanceCount; i++) {
           var vmName = appName + "-web-" + i;
 
           var spec = new VcVirtualMachineConfigSpec();

@@ -136,6 +136,10 @@ def build_report_context(workspace: Workspace, profile: str | None = None) -> di
     if questions_file := locator.questions_file():
         questions_data = loader.load_json(questions_file)
 
+    analysis_data = None
+    if analysis_file := locator.analysis_file():
+        analysis_data = loader.load_json(analysis_file)
+
     # Load workspace-specific data (these still have custom logic)
     intent_data = _load_intent_data(workspace)
     sources = _load_source_files(workspace, gaps_data)
@@ -159,6 +163,9 @@ def build_report_context(workspace: Workspace, profile: str | None = None) -> di
     if gaps_data:
         consolidated_supported = _consolidate_supported_patterns(gaps_data)
 
+    # Calculate effort metrics for executive dashboard
+    effort_metrics = _calculate_effort_metrics(analysis_data, gaps_data)
+
     # Use ContextBuilder to assemble final context
     builder = ReportContextBuilder()
     context = builder.build(
@@ -178,6 +185,9 @@ def build_report_context(workspace: Workspace, profile: str | None = None) -> di
         executive_summary=executive_summary,
         consolidated_supported=consolidated_supported,
     )
+
+    # Add effort metrics to context
+    context["effort_metrics"] = effort_metrics
 
     return context
 
@@ -250,7 +260,10 @@ def _consolidate_supported_patterns(gaps_data: dict[str, Any]) -> list[dict[str,
 
 def _generate_executive_summary(summary: dict[str, Any], gaps_data: dict[str, Any] | None) -> str:
     """
-    Generate a one-line executive summary for the report.
+    Generate an outcome-focused executive summary for the report.
+
+    Uses percentages and confidence language to communicate business value
+    rather than technical status.
 
     Args:
         summary: Summary statistics from gap analysis
@@ -262,6 +275,16 @@ def _generate_executive_summary(summary: dict[str, Any], gaps_data: dict[str, An
     assessment = summary.get("overall_assessment", "UNKNOWN")
     has_blocking = summary.get("has_blocking_issues", False)
     counts = summary.get("counts", {})
+    total = summary.get("total_components", 0)
+
+    # Calculate automation percentage
+    supported = counts.get("SUPPORTED", 0)
+    partial = counts.get("PARTIAL", 0)
+
+    if total > 0:
+        automation_pct = int((supported / total) * 100)
+    else:
+        automation_pct = 0
 
     # Find blocked components for specific mention
     blocked_components = []
@@ -271,45 +294,43 @@ def _generate_executive_summary(summary: dict[str, Any], gaps_data: dict[str, An
             comp.get("name", "Unknown") for comp in components if comp.get("level") == "BLOCKED"
         ]
 
-    # Generate summary based on assessment
+    # Generate outcome-focused summary based on assessment
     if assessment == "FULLY_TRANSLATABLE":
         return (
-            "This workflow can be fully automatically migrated to " "OpenShift-native equivalents."
+            f"{automation_pct}% of this automation estate can migrate immediately with "
+            "fully automated translation to OpenShift-native equivalents."
         )
 
     elif has_blocking and blocked_components:
-        # Mention specific blockers
+        # Mention specific blockers with confidence language
         if len(blocked_components) == 1:
             blocker = blocked_components[0]
             return (
-                f"This workflow can be migrated with partial automation; "
-                f"{blocker} requires custom design."
+                f"{automation_pct}% of this automation estate can migrate immediately. "
+                f"{blocker} requires design alignment, but proven patterns exist."
             )
         else:
             blocker_count = len(blocked_components)
             return (
-                f"This workflow can be migrated with partial automation; "
-                f"{blocker_count} components require custom design."
+                f"{automation_pct}% of this automation estate can migrate immediately. "
+                f"{blocker_count} components require design alignment, but proven patterns exist."
             )
 
-    elif counts.get("PARTIAL", 0) > 0:
-        partial_count = counts.get("PARTIAL", 0)
-        if partial_count == 1:
-            return (
-                "This workflow can be migrated with partial automation; "
-                "manual configuration required for 1 component."
-            )
-        else:
-            return (
-                f"This workflow can be migrated with partial automation; "
-                f"manual configuration required for {partial_count} components."
-            )
+    elif partial > 0:
+        return (
+            f"{automation_pct}% of this automation estate can migrate immediately. "
+            f"{partial} component{'s' if partial != 1 else ''} require configuration—"
+            "standard work with clear implementation paths."
+        )
 
     elif counts.get("MANUAL", 0) > 0:
-        return "This workflow requires custom specialist implementation for migration."
+        return (
+            f"{automation_pct}% automation coverage achieved. "
+            "Remaining components require specialist implementation with expert guidance available."
+        )
 
     else:
-        return "This workflow is ready for automated migration review."
+        return f"{automation_pct}% of this automation estate is ready for immediate migration."
 
 
 def _load_source_files(
@@ -559,6 +580,285 @@ def _detect_generated_artifacts(workspace: Workspace) -> dict[str, Any]:
                     )
 
     return artifacts
+
+
+def _calculate_effort_metrics(
+    analysis_data: dict[str, Any] | None, gaps_data: dict[str, Any] | None
+) -> dict[str, Any]:
+    """
+    Calculate effort metrics for executive dashboard.
+
+    Uses deterministic heuristics to classify workflows by effort level:
+    - Ready Now (0-1 points): No decisions required
+    - Moderate Effort (2-3 points): Configuration needed
+    - Complex (4+ points): Adapter development required
+
+    Effort scoring:
+    +1 per approval gate
+    +1 per integration detected
+    +1 per policy mapping required
+    +2 per unresolved integration (BLOCKED stub)
+    +2 per security/network mapping
+    +3 per missing action body
+
+    Args:
+        analysis_data: Workflow classification data from analysis.json
+        gaps_data: Gap analysis data from gaps.json
+
+    Returns:
+        Dictionary with:
+        - estate_summary: overview stats
+        - effort_buckets: ready/moderate/complex counts
+        - cost_drivers: percentage-based metrics
+        - integration_heatmap: matrix of workflow vs integrations
+    """
+    if not analysis_data:
+        return {
+            "estate_summary": {
+                "total_workflows": 0,
+                "total_lines_of_code": 0,
+                "external_integrations": 0,
+                "approval_gates": 0,
+            },
+            "effort_buckets": {"ready_now": 0, "moderate": 0, "complex": 0},
+            "cost_drivers": [],
+            "integration_heatmap": [],
+        }
+
+    # Extract workflow data
+    workflows = analysis_data.get("workflows", {})
+    total_workflows = analysis_data.get("total_workflows", 0)
+
+    # Calculate estate overview
+    total_blocked = len([w for w in workflows.values() if w.get("classification") == "blocked"])
+
+    # Estimate LOC (approximate: 20 lines per task average)
+    total_tasks = sum(w.get("total_tasks", 0) for w in workflows.values())
+    estimated_loc = total_tasks * 20
+
+    # Count external integrations from gaps data
+    external_integrations = set()
+    approval_gates_count = 0
+
+    if gaps_data:
+        components = gaps_data.get("components", [])
+        for comp in components:
+            comp_type = comp.get("component_type", "")
+            if "approval" in comp_type.lower():
+                approval_gates_count += 1
+            if comp.get("classification") in ["PARTIAL", "BLOCKED"]:
+                # Extract integration type
+                if "servicenow" in comp_type.lower() or "itsm" in comp_type.lower():
+                    external_integrations.add("ITSM")
+                if "nsx" in comp_type.lower() or "firewall" in comp_type.lower():
+                    external_integrations.add("NSX")
+                if "dns" in comp_type.lower():
+                    external_integrations.add("DNS")
+                if "storage" in comp_type.lower():
+                    external_integrations.add("Storage")
+                if "ad" in comp_type.lower() or "ldap" in comp_type.lower():
+                    external_integrations.add("AD")
+
+    estate_summary = {
+        "total_workflows": total_workflows,
+        "total_lines_of_code": estimated_loc,
+        "external_integrations": len(external_integrations),
+        "approval_gates": approval_gates_count,
+    }
+
+    # Calculate effort buckets using scoring heuristic
+    ready_now = 0
+    moderate = 0
+    complex_count = 0
+
+    for workflow_name, workflow_data in workflows.items():
+        score = 0
+
+        # Classification-based scoring
+        classification = workflow_data.get("classification", "blocked")
+        if classification == "blocked":
+            score += 4  # Blocked workflows are complex by default
+        elif classification == "partial":
+            score += 2  # Partial workflows need moderate effort
+
+        # Task-based scoring
+        adapter_tasks = workflow_data.get("adapter_tasks", 0)
+        blocked_tasks = workflow_data.get("blocked_tasks", 0)
+
+        score += min(adapter_tasks, 2)  # Cap adapter task score at +2
+        score += blocked_tasks * 2  # Each blocked stub adds +2
+
+        # Categorize by score
+        if score <= 1:
+            ready_now += 1
+        elif score <= 3:
+            moderate += 1
+        else:
+            complex_count += 1
+
+    effort_buckets = {"ready_now": ready_now, "moderate": moderate, "complex": complex_count}
+
+    # Calculate cost drivers (percentage-based)
+    cost_drivers = []
+    if total_workflows > 0:
+        # Approval gates
+        if approval_gates_count > 0:
+            pct = int((approval_gates_count / total_workflows) * 100)
+            cost_drivers.append(
+                {
+                    "label": f"{pct}% have approval gates",
+                    "percentage": pct,
+                    "count": approval_gates_count,
+                }
+            )
+
+        # BLOCKED workflows (security/network decisions)
+        if total_blocked > 0:
+            pct = int((total_blocked / total_workflows) * 100)
+            cost_drivers.append(
+                {
+                    "label": f"{pct}% require configuration decisions",
+                    "percentage": pct,
+                    "count": total_blocked,
+                }
+            )
+
+        # Adapter tasks (integration complexity)
+        workflows_with_adapters = len(
+            [w for w in workflows.values() if w.get("adapter_tasks", 0) > 0]
+        )
+        if workflows_with_adapters > 0:
+            pct = int((workflows_with_adapters / total_workflows) * 100)
+            cost_drivers.append(
+                {
+                    "label": f"{pct}% require external integrations",
+                    "percentage": pct,
+                    "count": workflows_with_adapters,
+                }
+            )
+
+    # Sort cost drivers by percentage descending
+    cost_drivers.sort(key=lambda x: cast(int, x["percentage"]), reverse=True)
+
+    # Generate integration heatmap
+    integration_heatmap = _generate_integration_heatmap(workflows, gaps_data)
+
+    return {
+        "estate_summary": estate_summary,
+        "effort_buckets": effort_buckets,
+        "cost_drivers": cost_drivers,
+        "integration_heatmap": integration_heatmap,
+    }
+
+
+def _generate_integration_heatmap(
+    workflows: dict[str, Any], gaps_data: dict[str, Any] | None
+) -> list[dict[str, Any]]:
+    """
+    Generate integration heatmap showing which workflows use which integrations.
+
+    Creates a matrix showing the presence of different integration types across workflows.
+    Integrations are detected from both:
+    1. gaps.json components (detected during analysis)
+    2. analysis.json blocker_details (blocked code generation)
+
+    Args:
+        workflows: Workflow data from analysis.json
+        gaps_data: Gap analysis data from gaps.json
+
+    Returns:
+        List of workflow rows with integration presence indicators
+    """
+    if not workflows:
+        return []
+
+    # Define integration categories to track
+    integration_categories = ["Approval", "ITSM", "NSX", "DNS", "Storage", "AD"]
+
+    # Build workflow integration map
+    workflow_integrations: dict[str, dict[str, bool]] = {}
+
+    for workflow_name in workflows.keys():
+        workflow_integrations[workflow_name] = {cat: False for cat in integration_categories}
+
+    # Source 1: Detect integrations from gaps.json components
+    if gaps_data:
+        components = gaps_data.get("components", [])
+        for component in components:
+            location = component.get("location", "")
+            component_type = component.get("component_type", "").lower()
+            component_name = component.get("name", "").lower()
+
+            # Find matching workflow
+            for workflow_name in workflow_integrations.keys():
+                # Normalize names for comparison (handle hyphens vs underscores)
+                normalized_location = location.lower().replace("-", "_").replace(" ", "_")
+                normalized_workflow = workflow_name.lower().replace("-", "_").replace(" ", "_")
+
+                # Match by location field or workflow name substring
+                if (
+                    normalized_location in normalized_workflow
+                    or normalized_workflow in normalized_location
+                ):
+                    integrations = workflow_integrations[workflow_name]
+
+                    # Map component types to integration categories
+                    if "approval" in component_type or "approval" in component_name:
+                        integrations["Approval"] = True
+                    if "servicenow" in component_type or "itsm" in component_type:
+                        integrations["ITSM"] = True
+                    if (
+                        "nsx" in component_type
+                        or "firewall" in component_type
+                        or "load_balancer" in component_type
+                    ):
+                        integrations["NSX"] = True
+                    if "dns" in component_type:
+                        integrations["DNS"] = True
+                    if "storage" in component_type or "datastore" in component_type:
+                        integrations["Storage"] = True
+                    if (
+                        "ad" in component_type
+                        or "ldap" in component_type
+                        or "active_directory" in component_type
+                    ):
+                        integrations["AD"] = True
+
+    # Source 2: Detect integrations from analysis.json blocker details
+    for workflow_name, workflow_data in workflows.items():
+        integrations = workflow_integrations[workflow_name]
+
+        blocker_details = workflow_data.get("blocker_details", [])
+        for blocker in blocker_details:
+            task_name = blocker.get("task", "").lower()
+            message = blocker.get("message", "").lower()
+
+            # Map to integration categories
+            if "approval" in task_name or "approval" in message:
+                integrations["Approval"] = True
+            if "servicenow" in task_name or "itsm" in message:
+                integrations["ITSM"] = True
+            if "nsx" in task_name or "firewall" in message:
+                integrations["NSX"] = True
+            if "dns" in task_name or "dns" in message:
+                integrations["DNS"] = True
+            if "storage" in task_name or "datastore" in message:
+                integrations["Storage"] = True
+            if "ad" in task_name or "ldap" in message or "activedirectory" in message:
+                integrations["AD"] = True
+
+    # Build heatmap rows - only include workflows with at least one integration
+    heatmap_rows = []
+    for workflow_name, integrations in workflow_integrations.items():
+        if any(integrations.values()):
+            heatmap_rows.append(
+                {
+                    "workflow": workflow_name,
+                    "integrations": integrations,
+                }
+            )
+
+    return heatmap_rows
 
 
 def render_report_template(context: dict[str, Any]) -> str:

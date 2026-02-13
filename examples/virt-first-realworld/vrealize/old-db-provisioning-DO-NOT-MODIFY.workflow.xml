@@ -70,7 +70,7 @@
       var clusters = vc.getAllClusterComputeResources();
 
       var targetCluster = null;
-      for (var i = 0; i < clusters.length; i++) {
+      for (var i = 0; i &lt; clusters.length; i++) {
           if (clusters[i].name == temp3) {
               targetCluster = clusters[i];
               break;

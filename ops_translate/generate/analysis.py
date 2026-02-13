@@ -215,6 +215,40 @@ def generate_analysis_json(project_dir: Path, output_path: Path) -> None:
         json.dump(analysis, f, indent=2)
 
 
+def generate_effort_json(
+    analysis_data: dict[str, Any], gaps_data: dict[str, Any] | None, output_path: Path
+) -> None:
+    """
+    Generate effort.json file with migration effort metrics.
+
+    This provides machine-readable data for teams who prefer JSON over HTML reports.
+    Complements analysis.json with executive-focused metrics.
+
+    Args:
+        analysis_data: Workflow classification data from analysis.json
+        gaps_data: Gap analysis data from gaps.json (optional)
+        output_path: Path where effort.json should be written
+    """
+    # Import here to avoid circular dependency
+    from ops_translate.report.html import _calculate_effort_metrics
+
+    effort_metrics = _calculate_effort_metrics(analysis_data, gaps_data)
+
+    # Add metadata
+    from datetime import datetime, timezone
+
+    effort_output = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "version": "1.0",
+        **effort_metrics,
+    }
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with output_path.open("w") as f:
+        json.dump(effort_output, f, indent=2)
+
+
 def compare_analysis(previous: dict[str, Any], current: dict[str, Any]) -> dict[str, Any]:
     """
     Compare two analysis results to show progress.

@@ -47,6 +47,176 @@
     </section>
     {% endif %}
 
+    <!-- Executive Dashboard -->
+    {% if effort_metrics %}
+    <section class="executive-dashboard-section">
+        <div class="container">
+            <h2 class="section-title">📊 Migration Effort Dashboard</h2>
+            <p class="section-subtitle">Workflow-level effort estimation for sprint planning. See component-level analysis below for technical implementation details.</p>
+
+            <!-- Estate Overview -->
+            <div class="estate-summary">
+                <div class="stat-card">
+                    <div class="stat-value">{{ effort_metrics.estate_summary.total_workflows }}</div>
+                    <div class="stat-label">Total Workflows</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">~{{ "{:,}".format(effort_metrics.estate_summary.total_lines_of_code) }}</div>
+                    <div class="stat-label">Lines of Code</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ effort_metrics.estate_summary.external_integrations }}</div>
+                    <div class="stat-label">External Integrations</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ effort_metrics.estate_summary.approval_gates }}</div>
+                    <div class="stat-label">Approval Gates</div>
+                </div>
+            </div>
+
+            <!-- Effort Buckets -->
+            <div class="effort-buckets-container">
+                <h3 class="subsection-title">Migration Complexity Breakdown</h3>
+                <div class="effort-buckets">
+                    <div class="bucket bucket-ready">
+                        <div class="bucket-icon">🟢</div>
+                        <div class="bucket-count">{{ effort_metrics.effort_buckets.ready_now }}</div>
+                        <div class="bucket-label">Ready Now</div>
+                        <div class="bucket-detail">No decisions required</div>
+                    </div>
+                    <div class="bucket bucket-moderate">
+                        <div class="bucket-icon">🟡</div>
+                        <div class="bucket-count">{{ effort_metrics.effort_buckets.moderate }}</div>
+                        <div class="bucket-label">Configuration Needed</div>
+                        <div class="bucket-detail">1-2 sprints</div>
+                    </div>
+                    <div class="bucket bucket-complex">
+                        <div class="bucket-icon">🔴</div>
+                        <div class="bucket-count">{{ effort_metrics.effort_buckets.complex }}</div>
+                        <div class="bucket-label">Adapter Development</div>
+                        <div class="bucket-detail">2-3 sprints</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cost Drivers -->
+            {% if effort_metrics.cost_drivers %}
+            <div class="cost-drivers-container">
+                <h3 class="subsection-title">Primary Cost Drivers</h3>
+                <div class="cost-drivers">
+                    {% for driver in effort_metrics.cost_drivers[:5] %}
+                    <div class="driver-item">
+                        <div class="driver-bar" style="width: {{ driver.percentage }}%"></div>
+                        <div class="driver-label">{{ driver.label }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Integration Heatmap -->
+            {% if effort_metrics.integration_heatmap %}
+            <div class="integration-heatmap-container">
+                <h3 class="subsection-title">Integration Complexity Matrix</h3>
+                <p class="heatmap-description">This matrix shows which workflows require which integrations, helping identify concentration areas and reusable adapter development.</p>
+                <div class="heatmap-scroll">
+                    <table class="integration-heatmap">
+                        <thead>
+                            <tr>
+                                <th class="workflow-col">Workflow</th>
+                                <th>Approval</th>
+                                <th>ITSM</th>
+                                <th>NSX</th>
+                                <th>DNS</th>
+                                <th>Storage</th>
+                                <th>AD</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in effort_metrics.integration_heatmap %}
+                            <tr>
+                                <td class="workflow-name">{{ row.workflow }}</td>
+                                <td class="{% if row.integrations.Approval %}cell-present{% else %}cell-none{% endif %}">
+                                    {% if row.integrations.Approval %}✓{% else %}-{% endif %}
+                                </td>
+                                <td class="{% if row.integrations.ITSM %}cell-present{% else %}cell-none{% endif %}">
+                                    {% if row.integrations.ITSM %}✓{% else %}-{% endif %}
+                                </td>
+                                <td class="{% if row.integrations.NSX %}cell-present{% else %}cell-none{% endif %}">
+                                    {% if row.integrations.NSX %}✓{% else %}-{% endif %}
+                                </td>
+                                <td class="{% if row.integrations.DNS %}cell-present{% else %}cell-none{% endif %}">
+                                    {% if row.integrations.DNS %}✓{% else %}-{% endif %}
+                                </td>
+                                <td class="{% if row.integrations.Storage %}cell-present{% else %}cell-none{% endif %}">
+                                    {% if row.integrations.Storage %}✓{% else %}-{% endif %}
+                                </td>
+                                <td class="{% if row.integrations.AD %}cell-present{% else %}cell-none{% endif %}">
+                                    {% if row.integrations.AD %}✓{% else %}-{% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Sprint Planning Recommendations -->
+            <div class="sprint-plan-container">
+                <h3 class="subsection-title">Recommended Migration Phases</h3>
+                <div class="sprint-plan">
+                    {% if effort_metrics.effort_buckets.ready_now > 0 %}
+                    <div class="sprint-phase">
+                        <div class="phase-header">
+                            <span class="phase-label">Phase 1</span>
+                            <span class="phase-duration">Sprint 1</span>
+                        </div>
+                        <div class="phase-content">
+                            Deploy {{ effort_metrics.effort_buckets.ready_now }} ready workflows immediately
+                            {% if effort_metrics.effort_buckets.moderate > 0 %}+ configure {{ effort_metrics.effort_buckets.moderate }} workflows requiring profile decisions{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if effort_metrics.effort_buckets.moderate > 0 and effort_metrics.effort_buckets.ready_now == 0 %}
+                    <div class="sprint-phase">
+                        <div class="phase-header">
+                            <span class="phase-label">Phase 1</span>
+                            <span class="phase-duration">Sprint 1-2</span>
+                        </div>
+                        <div class="phase-content">
+                            Configure {{ effort_metrics.effort_buckets.moderate }} workflows requiring profile decisions
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if effort_metrics.effort_buckets.complex > 0 %}
+                    <div class="sprint-phase">
+                        <div class="phase-header">
+                            <span class="phase-label">{% if effort_metrics.effort_buckets.ready_now > 0 or effort_metrics.effort_buckets.moderate > 0 %}Phase 2{% else %}Phase 1{% endif %}</span>
+                            <span class="phase-duration">Sprint {% if effort_metrics.effort_buckets.ready_now > 0 or effort_metrics.effort_buckets.moderate > 0 %}2-4{% else %}1-3{% endif %}</span>
+                        </div>
+                        <div class="phase-content">
+                            Build adapters for {{ effort_metrics.effort_buckets.complex }} complex workflows
+                            {% if effort_metrics.integration_heatmap|length > 0 %}
+                            (focus on {{ effort_metrics.integration_heatmap|length }} workflows with external integrations)
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <p class="sprint-note">
+                    <strong>Total Estimated Effort:</strong>
+                    {% set total_sprints = 1 if effort_metrics.effort_buckets.ready_now > 0 else 0 %}
+                    {% set total_sprints = total_sprints + (2 if effort_metrics.effort_buckets.moderate > 0 else 0) %}
+                    {% set total_sprints = total_sprints + (3 if effort_metrics.effort_buckets.complex > 0 else 0) %}
+                    {{ total_sprints }} sprint{% if total_sprints != 1 %}s{% endif %}
+                    ({{ effort_metrics.estate_summary.total_workflows }} workflows, not a rewrite)
+                </p>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
     <!-- Real-World Migration Story -->
     <section class="migration-story-section">
         <div class="container">
@@ -57,7 +227,11 @@
                 </div>
                 <div class="story-content">
                     <p class="story-intro">
-                        We analyzed <strong>{{ workspace.name }}</strong> — including your most complex workflows with NSX firewall rules, approval gates, and custom orchestration.
+                        {% if workspace.name == "sample-workspace" %}
+                        This analysis represents a typical enterprise automation estate—years of vRealize workflows, PowerCLI scripts for provisioning, NSX security policies, and ServiceNow integrations. The kind of automation debt that accumulates when teams deliver value quarter after quarter.
+                        {% else %}
+                        We analyzed <strong>{{ workspace.name }}</strong> — {{ summary.total_components }} components across your automation estate, including complex workflows with NSX integration, approval gates, and custom orchestration.
+                        {% endif %}
                     </p>
                     <div class="story-results">
                         <div class="story-stat">
@@ -110,7 +284,8 @@
     <!-- At a Glance Summary Cards -->
     <section class="summary-section">
         <div class="container">
-            <h2>Translation Status</h2>
+            <h2>Component-Level Translation Status</h2>
+            <p class="section-subtitle">Detailed component analysis showing {{ summary.total_components }} individual components detected across your workflows.</p>
             <div class="summary-cards">
                 <div class="card card-supported" data-filter="SUPPORTED" title="Components that can be fully automatically translated to OpenShift-native equivalents">
                     <div class="card-icon">✅</div>
@@ -516,6 +691,17 @@
                 <div class="expand-hint-wrapper">
                     <span class="expand-hint">Click to expand detailed workflow information</span>
                 </div>
+
+            {% if conflicts_md %}
+            <div class="legacy-drift-banner">
+                <div class="banner-icon">⚠️</div>
+                <div class="banner-content">
+                    <strong>Legacy Drift Detected</strong>
+                    <p>Multiple naming conventions, parameter inconsistencies, and policy variations detected across workflows—common in mature automation estates. This analysis surfaced {{ summary.total_components }} individual patterns, revealing technical debt that would otherwise remain hidden until migration.</p>
+                </div>
+            </div>
+            {% endif %}
+
             <div class="intent-content">
                 {% if intent.intent %}
                 <!-- Workflow Info -->
