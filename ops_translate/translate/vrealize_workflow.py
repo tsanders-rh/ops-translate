@@ -917,12 +917,12 @@ Approve? (yes/no)
             else:
                 # Profile not configured - generate BLOCKED stub
                 profile_keys_str = "\n      ".join(requires_profile)
+                separator = "=" * 79
                 task = {
                     "name": f"BLOCKED - {task_name}",
-                    "ansible.builtin.fail": {
-                        "msg": f"""═══════════════════════════════════════════════════════════════════════════════
+                    "ansible.builtin.fail": {"msg": f"""{separator}
 BLOCKED: {integration.capitalize()} Integration
-═══════════════════════════════════════════════════════════════════════════════
+{separator}
 
 This workflow requires {integration} integration, but your profile does not have
 the required configuration.
@@ -938,8 +938,7 @@ TO FIX THIS:
 
 Once configured, this BLOCKED task will be replaced with a functional adapter call.
 ═══════════════════════════════════════════════════════════════════════════════
-"""
-                    },
+"""},
                     "tags": ["blocked", "integration", integration],
                 }
         else:

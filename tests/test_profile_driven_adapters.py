@@ -6,13 +6,9 @@ Validates that integrations generate:
 - BLOCKED fail tasks when profile is missing
 """
 
-from pathlib import Path
-from unittest.mock import MagicMock
-
 import pytest
 
 from ops_translate.models.profile import (
-    ApprovalConfig,
     DNSConfig,
     IPAMConfig,
     ITSMConfig,
@@ -57,7 +53,9 @@ var incident = ServiceNow.createIncident(
 
         # Find the ServiceNow task
         snow_tasks = [t for t in tasks if "servicenow" in t.get("name", "").lower()]
-        assert len(snow_tasks) > 0, f"Should generate a ServiceNow task. Got tasks: {[t.get('name') for t in tasks]}"
+        assert (
+            len(snow_tasks) > 0
+        ), f"Should generate a ServiceNow task. Got tasks: {[t.get('name') for t in tasks]}"
 
         snow_task = snow_tasks[0]
         assert "BLOCKED" in snow_task["name"], "Task should be BLOCKED without profile"
@@ -104,7 +102,9 @@ var incident = ServiceNow.createIncident(
 
         # Find the ServiceNow task
         snow_tasks = [t for t in tasks if "servicenow" in t.get("name", "").lower()]
-        assert len(snow_tasks) > 0, f"Should generate a ServiceNow task. Got tasks: {[t.get('name') for t in tasks]}"
+        assert (
+            len(snow_tasks) > 0
+        ), f"Should generate a ServiceNow task. Got tasks: {[t.get('name') for t in tasks]}"
 
         snow_task = snow_tasks[0]
         assert "BLOCKED" not in snow_task["name"], "Task should not be BLOCKED with profile"
@@ -178,9 +178,7 @@ var incident = ServiceNow.createIncident(
 
         nsx_task = nsx_tasks[0]
         assert "BLOCKED" not in nsx_task["name"], "Task should not be BLOCKED with profile"
-        assert (
-            "ansible.builtin.include_tasks" in nsx_task
-        ), "Should use include_tasks module"
+        assert "ansible.builtin.include_tasks" in nsx_task, "Should use include_tasks module"
         assert "nsx/create_segment.yml" in nsx_task["ansible.builtin.include_tasks"]["file"]
 
     def test_dns_without_profile_generates_blocked(self):
@@ -248,9 +246,7 @@ var incident = ServiceNow.createIncident(
 
         dns_task = dns_tasks[0]
         assert "BLOCKED" not in dns_task["name"], "Task should not be BLOCKED with profile"
-        assert (
-            "ansible.builtin.include_tasks" in dns_task
-        ), "Should use include_tasks module"
+        assert "ansible.builtin.include_tasks" in dns_task, "Should use include_tasks module"
         assert "dns/create_record.yml" in dns_task["ansible.builtin.include_tasks"]["file"]
 
     def test_ipam_without_profile_generates_blocked(self):
@@ -318,9 +314,7 @@ var incident = ServiceNow.createIncident(
 
         ipam_task = ipam_tasks[0]
         assert "BLOCKED" not in ipam_task["name"], "Task should not be BLOCKED with profile"
-        assert (
-            "ansible.builtin.include_tasks" in ipam_task
-        ), "Should use include_tasks module"
+        assert "ansible.builtin.include_tasks" in ipam_task, "Should use include_tasks module"
         assert "ipam/reserve_ip.yml" in ipam_task["ansible.builtin.include_tasks"]["file"]
 
     def test_profile_has_config_method(self):
@@ -343,9 +337,7 @@ var incident = ServiceNow.createIncident(
         # Test negative cases
         assert not translator._profile_has_config(["profile.dns.provider"])
         assert not translator._profile_has_config(["profile.ipam.endpoint"])
-        assert not translator._profile_has_config(
-            ["profile.itsm.provider", "profile.dns.provider"]
-        )
+        assert not translator._profile_has_config(["profile.itsm.provider", "profile.dns.provider"])
 
     def test_profile_has_config_without_profile(self):
         """Test _profile_has_config returns False when no profile."""
