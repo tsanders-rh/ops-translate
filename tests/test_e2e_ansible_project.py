@@ -254,9 +254,7 @@ class TestDeterministicGeneration:
         profile_path = Path(__file__).parent / "fixtures/profiles/complete_profile.yml"
         profile = load_profile(profile_path)
 
-        workflows = [
-            {"name": "vm_provisioning", "source": "vrealize", "source_file": "test.xml"}
-        ]
+        workflows = [{"name": "vm_provisioning", "source": "vrealize", "source_file": "test.xml"}]
 
         # Generate first time
         output_dir_1 = tmp_path / "output1"

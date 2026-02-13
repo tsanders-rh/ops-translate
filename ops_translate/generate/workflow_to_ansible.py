@@ -247,7 +247,9 @@ def _extract_decision_condition(script: str) -> str:
     return script.strip()
 
 
-def _convert_user_interaction(item: WorkflowItem, profile: ProfileSchema | None) -> list[AnsibleTask]:
+def _convert_user_interaction(
+    item: WorkflowItem, profile: ProfileSchema | None
+) -> list[AnsibleTask]:
     """
     Convert UserInteraction (approval) to Ansible tasks.
 

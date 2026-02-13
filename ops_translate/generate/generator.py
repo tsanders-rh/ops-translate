@@ -434,9 +434,13 @@ def generate_all(
         translation_profile: ProfileSchema for deterministic Ansible adapter generation
     """
     if use_ai:
-        generate_with_ai(workspace, profile, output_format, assume_existing_vms, translation_profile)
+        generate_with_ai(
+            workspace, profile, output_format, assume_existing_vms, translation_profile
+        )
     else:
-        generate_with_templates(workspace, profile, output_format, assume_existing_vms, translation_profile)
+        generate_with_templates(
+            workspace, profile, output_format, assume_existing_vms, translation_profile
+        )
 
 
 def generate_with_ai(

@@ -214,8 +214,7 @@ def load_profile(profile_file: Path) -> ProfileSchema:
     storage_tiers = []
     if "storage_tiers" in profile_data:
         storage_tiers = [
-            _parse_storage_tier_mapping(tier_data)
-            for tier_data in profile_data["storage_tiers"]
+            _parse_storage_tier_mapping(tier_data) for tier_data in profile_data["storage_tiers"]
         ]
 
     return ProfileSchema(
