@@ -846,14 +846,27 @@ def generate(
         console.print(f"[red]Error: Profile '{profile}' not found in config[/red]")
         raise typer.Exit(1)
 
-    # Load translation profile if provided
+    # Load translation profile
+    # Priority: 1) --translation-profile flag, 2) profile/profile.yml, 3) None
     translation_profile_schema = None
+    profile_path = None
+
     if translation_profile:
+        # Explicit profile provided via flag
+        profile_path = Path(translation_profile)
+    else:
+        # Auto-load profile/profile.yml if it exists
+        auto_profile_path = workspace.root / "profile" / "profile.yml"
+        if auto_profile_path.exists():
+            profile_path = auto_profile_path
+            rel_path = auto_profile_path.relative_to(workspace.root)
+            console.print(f"[dim]Auto-loading translation profile: {rel_path}[/dim]")
+
+    if profile_path:
         from ops_translate.intent.profile import load_profile
 
-        profile_path = Path(translation_profile)
         if not profile_path.exists():
-            console.print(f"[red]Error: Translation profile not found: {translation_profile}[/red]")
+            console.print(f"[red]Error: Translation profile not found: {profile_path}[/red]")
             raise typer.Exit(1)
 
         try:
@@ -970,6 +983,176 @@ def generate(
                 )
         else:
             console.print("[yellow]No vRealize files found - skipping EDA generation[/yellow]")
+
+    # Generate analysis.json with classification results
+    ansible_project_dir = workspace.root / "output" / "ansible-project"
+    if ansible_project_dir.exists():
+        from ops_translate.generate.analysis import compare_analysis, generate_analysis_json
+
+        output_dir = workspace.root / "output"
+        analysis_path = output_dir / "analysis.json"
+        previous_analysis_path = output_dir / "analysis.previous.json"
+
+        # Load previous analysis if exists (for comparison)
+        previous_analysis = None
+        if analysis_path.exists():
+            # Move current to previous
+            import shutil
+
+            shutil.copy(analysis_path, previous_analysis_path)
+            import json
+
+            with analysis_path.open() as f:
+                previous_analysis = json.load(f)
+
+        # Generate new analysis
+        generate_analysis_json(ansible_project_dir, analysis_path)
+        console.print(f"[green]✓ Generated: {analysis_path.relative_to(workspace.root)}[/green]")
+
+        # Load current analysis to display summary
+        import json
+
+        with analysis_path.open() as f:
+            current_analysis = json.load(f)
+
+        # Display current classification summary
+        total = current_analysis.get("total_workflows", 0)
+        summary = current_analysis.get("summary", {})
+        blocked = summary.get("blocked", 0)
+        partial = summary.get("partial", 0)
+        automatable = summary.get("automatable", 0)
+
+        console.print("\n[bold]Workflow Classification:[/bold]")
+        console.print(f"  Total workflows: {total}")
+        if blocked > 0:
+            console.print(f"  [red]BLOCKED:[/red] {blocked}")
+        if partial > 0:
+            console.print(f"  [yellow]PARTIAL:[/yellow] {partial}")
+        if automatable > 0:
+            console.print(f"  [green]AUTOMATABLE:[/green] {automatable}")
+
+        # Show progress comparison if we have previous data
+        if previous_analysis:
+            progress = compare_analysis(previous_analysis, current_analysis)
+
+            # Only show if there's actual progress
+            if any(progress[k]["delta"] != 0 for k in ["blocked", "partial", "automatable"]):
+                console.print("\n[bold]Progress since last run:[/bold]")
+                if progress["blocked"]["delta"] < 0:
+                    before = progress["blocked"]["before"]
+                    after = progress["blocked"]["after"]
+                    delta = progress["blocked"]["delta"]
+                    console.print(f"  [green]✓ BLOCKED: {before} → {after} ({delta:+d})[/green]")
+                if progress["partial"]["delta"] > 0:
+                    before = progress["partial"]["before"]
+                    after = progress["partial"]["after"]
+                    delta = progress["partial"]["delta"]
+                    console.print(f"  [yellow]↑ PARTIAL: {before} → {after} ({delta:+d})[/yellow]")
+                if progress["automatable"]["delta"] > 0:
+                    before = progress["automatable"]["before"]
+                    after = progress["automatable"]["after"]
+                    delta = progress["automatable"]["delta"]
+                    console.print(
+                        f"  [green]✓ AUTOMATABLE: {before} → {after} ({delta:+d})[/green]"
+                    )
+
+                if progress["blockers_resolved"] > 0:
+                    console.print(
+                        f"\n  [green]Resolved {progress['blockers_resolved']} blocker(s)[/green]"
+                    )
+
+
+@app.command()
+@handle_errors
+def compare(
+    previous: str = typer.Argument(..., help="Path to previous analysis.json file"),
+    current: str = typer.Argument(..., help="Path to current analysis.json file"),
+):
+    """
+    Compare two analysis.json files to show migration progress.
+
+    Displays the delta between two translation runs, showing how many workflows
+    moved from BLOCKED to PARTIAL or AUTOMATABLE classifications.
+
+    Example:
+        ops-translate compare output/run1/analysis.json output/run2/analysis.json
+    """
+    import json
+    from pathlib import Path
+
+    from ops_translate.generate.analysis import compare_analysis
+
+    # Load analysis files
+    previous_path = Path(previous)
+    current_path = Path(current)
+
+    if not previous_path.exists():
+        console.print(f"[red]Error: Previous analysis file not found: {previous_path}[/red]")
+        raise typer.Exit(1)
+
+    if not current_path.exists():
+        console.print(f"[red]Error: Current analysis file not found: {current_path}[/red]")
+        raise typer.Exit(1)
+
+    try:
+        with previous_path.open() as f:
+            previous_analysis = json.load(f)
+    except json.JSONDecodeError as e:
+        console.print(f"[red]Error: Invalid JSON in previous file: {e}[/red]")
+        raise typer.Exit(1)
+
+    try:
+        with current_path.open() as f:
+            current_analysis = json.load(f)
+    except json.JSONDecodeError as e:
+        console.print(f"[red]Error: Invalid JSON in current file: {e}[/red]")
+        raise typer.Exit(1)
+
+    # Calculate and display progress
+    progress = compare_analysis(previous_analysis, current_analysis)
+
+    console.print("[bold blue]Migration Progress Comparison[/bold blue]\n")
+
+    # Show current state
+    total = current_analysis.get("total_workflows", 0)
+    console.print(f"Total workflows: {total}\n")
+
+    # Show classification changes
+    console.print("[bold]Classification Changes:[/bold]")
+
+    blocked_delta = progress["blocked"]["delta"]
+    if blocked_delta != 0:
+        before = progress["blocked"]["before"]
+        after = progress["blocked"]["after"]
+        color = "green" if blocked_delta < 0 else "red"
+        console.print(f"  [{color}]BLOCKED: {before} → {after} ({blocked_delta:+d})[/{color}]")
+
+    partial_delta = progress["partial"]["delta"]
+    if partial_delta != 0:
+        before = progress["partial"]["before"]
+        after = progress["partial"]["after"]
+        color = "green" if partial_delta > 0 else "yellow"
+        console.print(f"  [{color}]PARTIAL: {before} → {after} ({partial_delta:+d})[/{color}]")
+
+    automatable_delta = progress["automatable"]["delta"]
+    if automatable_delta != 0:
+        before = progress["automatable"]["before"]
+        after = progress["automatable"]["after"]
+        color = "green" if automatable_delta > 0 else "yellow"
+        console.print(
+            f"  [{color}]AUTOMATABLE: {before} → {after} ({automatable_delta:+d})[/{color}]"
+        )
+
+    # Show blockers resolved
+    if progress["blockers_resolved"] > 0:
+        console.print(f"\n[green]✓ Resolved {progress['blockers_resolved']} blocker(s)[/green]")
+    elif progress["blockers_resolved"] < 0:
+        added = abs(progress["blockers_resolved"])
+        console.print(f"\n[yellow]⚠ {added} new blocker(s) detected[/yellow]")
+
+    # No changes
+    if all(progress[k]["delta"] == 0 for k in ["blocked", "partial", "automatable"]):
+        console.print("\n[dim]No classification changes between runs.[/dim]")
 
 
 @app.command()
