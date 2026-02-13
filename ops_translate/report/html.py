@@ -796,7 +796,10 @@ def _generate_integration_heatmap(
                 normalized_workflow = workflow_name.lower().replace("-", "_").replace(" ", "_")
 
                 # Match by location field or workflow name substring
-                if normalized_location in normalized_workflow or normalized_workflow in normalized_location:
+                if (
+                    normalized_location in normalized_workflow
+                    or normalized_workflow in normalized_location
+                ):
                     integrations = workflow_integrations[workflow_name]
 
                     # Map component types to integration categories
@@ -804,13 +807,21 @@ def _generate_integration_heatmap(
                         integrations["Approval"] = True
                     if "servicenow" in component_type or "itsm" in component_type:
                         integrations["ITSM"] = True
-                    if "nsx" in component_type or "firewall" in component_type or "load_balancer" in component_type:
+                    if (
+                        "nsx" in component_type
+                        or "firewall" in component_type
+                        or "load_balancer" in component_type
+                    ):
                         integrations["NSX"] = True
                     if "dns" in component_type:
                         integrations["DNS"] = True
                     if "storage" in component_type or "datastore" in component_type:
                         integrations["Storage"] = True
-                    if "ad" in component_type or "ldap" in component_type or "active_directory" in component_type:
+                    if (
+                        "ad" in component_type
+                        or "ldap" in component_type
+                        or "active_directory" in component_type
+                    ):
                         integrations["AD"] = True
 
     # Source 2: Detect integrations from analysis.json blocker details
@@ -840,10 +851,12 @@ def _generate_integration_heatmap(
     heatmap_rows = []
     for workflow_name, integrations in workflow_integrations.items():
         if any(integrations.values()):
-            heatmap_rows.append({
-                "workflow": workflow_name,
-                "integrations": integrations,
-            })
+            heatmap_rows.append(
+                {
+                    "workflow": workflow_name,
+                    "integrations": integrations,
+                }
+            )
 
     return heatmap_rows
 
