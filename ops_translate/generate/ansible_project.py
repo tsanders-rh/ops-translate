@@ -46,6 +46,7 @@ def generate_ansible_project(
     _generate_inventories(profile, project_dir)
     _generate_ansible_cfg(project_dir)
     _generate_adapters(profile, project_dir)
+    _generate_workflow_roles(workflows, output_dir, project_dir)
     _generate_documentation(profile, workflows, project_dir)
 
     return project_dir
@@ -191,6 +192,386 @@ def _generate_adapters(profile: ProfileSchema, project_dir: Path) -> None:
 
         output_file = project_dir / output_path
         output_file.write_text(rendered)
+
+
+def _generate_workflow_roles(
+    workflows: list[dict[str, Any]],
+    output_dir: Path,
+    project_dir: Path,
+) -> None:
+    """
+    Generate role skeletons for all workflows.
+
+    Args:
+        workflows: List of workflow definitions
+        output_dir: Output directory (parent of project_dir)
+        project_dir: Ansible project root directory
+    """
+    workspace_root = output_dir.parent
+
+    for workflow in workflows:
+        try:
+            # Skip template placeholders - they don't have real source files
+            if workflow["source"] == "template":
+                continue
+
+            source_file = workspace_root / workflow["source_file"]
+
+            if workflow["source"] == "vrealize":
+                _generate_vrealize_role(workflow, source_file, project_dir)
+            elif workflow["source"] == "powercli":
+                _generate_powercli_role(workflow, source_file, project_dir)
+        except Exception as e:
+            # Log but continue - graceful degradation
+            print(f"Warning: Failed to generate role {workflow['name']}: {e}")
+            _create_fallback_role(workflow["name"], project_dir)
+
+
+def _generate_vrealize_role(
+    workflow: dict,
+    source_file: Path,
+    project_dir: Path,
+) -> None:
+    """
+    Generate role for vRealize workflow.
+
+    Args:
+        workflow: Workflow definition dict
+        source_file: Path to workflow XML file
+        project_dir: Ansible project root directory
+    """
+    metadata = _extract_vrealize_metadata(source_file)
+    _create_role_structure(workflow["name"], project_dir, metadata, workflow)
+
+
+def _generate_powercli_role(
+    workflow: dict,
+    source_file: Path,
+    project_dir: Path,
+) -> None:
+    """
+    Generate role for PowerCLI script.
+
+    Args:
+        workflow: Workflow definition dict
+        source_file: Path to PowerCLI script file
+        project_dir: Ansible project root directory
+    """
+    metadata = _extract_powercli_metadata(source_file)
+    _create_role_structure(workflow["name"], project_dir, metadata, workflow)
+
+
+def _extract_vrealize_metadata(workflow_file: Path) -> dict:
+    """
+    Extract inputs/outputs from vRealize workflow XML.
+
+    Args:
+        workflow_file: Path to vRealize workflow XML file
+
+    Returns:
+        Metadata dict with display_name, description, inputs, source_type
+    """
+    from xml.etree import ElementTree
+
+    from ops_translate.summarize.vrealize import extract_inputs
+
+    tree = ElementTree.parse(workflow_file)
+    root = tree.getroot()
+
+    ns = {"vco": "http://vmware.com/vco/workflow"}
+    display_name = root.findtext(".//vco:display-name", namespaces=ns)
+    description = root.findtext(".//vco:description", namespaces=ns)
+
+    inputs = extract_inputs(root)
+
+    return {
+        "display_name": display_name or workflow_file.stem,
+        "description": description or "",
+        "inputs": inputs,
+        "source_type": "vRealize Orchestrator Workflow",
+    }
+
+
+def _extract_powercli_metadata(script_file: Path) -> dict:
+    """
+    Extract parameters from PowerCLI script.
+
+    Args:
+        script_file: Path to PowerCLI script file
+
+    Returns:
+        Metadata dict with display_name, description, parameters, source_type
+    """
+    from ops_translate.summarize.powercli import extract_parameters
+
+    content = script_file.read_text()
+    parameters = extract_parameters(content)
+
+    # Extract header comments as description
+    description_lines = []
+    for line in content.split("\n"):
+        if line.strip().startswith("#"):
+            description_lines.append(line.strip("# ").strip())
+        elif line.strip() and not line.strip().startswith("#"):
+            break
+
+    return {
+        "display_name": script_file.stem,
+        "description": "\n".join(description_lines),
+        "parameters": parameters,
+        "source_type": "PowerCLI Script",
+    }
+
+
+def _create_role_structure(
+    role_name: str,
+    project_dir: Path,
+    metadata: dict,
+    workflow: dict,
+) -> None:
+    """
+    Create physical role directory with files.
+
+    Args:
+        role_name: Role name (normalized)
+        project_dir: Ansible project root directory
+        metadata: Metadata extracted from source file
+        workflow: Workflow definition dict
+    """
+    import shutil
+
+    role_dir = project_dir / "roles" / role_name
+
+    # Recreate directory (idempotent, overwrite existing)
+    if role_dir.exists():
+        shutil.rmtree(role_dir)
+
+    # Create structure
+    role_dir.mkdir(parents=True)
+    (role_dir / "tasks").mkdir()
+    (role_dir / "defaults").mkdir()
+    (role_dir / "meta").mkdir()
+
+    # Generate tasks/main.yml
+    _generate_tasks_main(role_dir, role_name, metadata, workflow)
+
+    # Generate defaults/main.yml
+    _generate_defaults_main(role_dir, role_name, metadata)
+
+    # Generate README.md
+    _generate_role_readme(role_dir, role_name, metadata, workflow)
+
+    # Generate meta/main.yml
+    _generate_role_meta(role_dir, role_name, metadata)
+
+
+def _generate_tasks_main(
+    role_dir: Path,
+    role_name: str,
+    metadata: dict,
+    workflow: dict,
+) -> None:
+    """
+    Generate tasks/main.yml with metadata header.
+
+    Args:
+        role_dir: Role directory path
+        role_name: Role name
+        metadata: Metadata dict
+        workflow: Workflow definition dict
+    """
+    # Build inputs section
+    inputs_section = ""
+    if "inputs" in metadata:  # vRealize
+        for inp in metadata["inputs"]:
+            inputs_section += f"#   - {inp['name']}: {inp['type']}\n"
+    elif "parameters" in metadata:  # PowerCLI
+        for param in metadata["parameters"]:
+            req = "[required]" if param.get("required") else "[optional]"
+            inputs_section += f"#   - {param['name']}: {param['type']} {req}\n"
+
+    content = f"""---
+# Ansible role: {role_name}
+# Source: {metadata['source_type']}
+# Original: {workflow['source_file']}
+#
+# This role skeleton was auto-generated by ops-translate.
+# Business logic translation will be implemented in future issues.
+
+# Inputs:
+{inputs_section if inputs_section else "# (none)"}
+
+# TODO: Implement workflow logic
+# This role currently contains placeholder tasks only.
+
+- name: Placeholder for {role_name}
+  ansible.builtin.debug:
+    msg: "Role skeleton - awaiting business logic translation (Issue #59/#60)"
+  tags:
+    - todo
+    - {role_name}
+"""
+
+    (role_dir / "tasks" / "main.yml").write_text(content)
+
+
+def _generate_defaults_main(
+    role_dir: Path,
+    role_name: str,
+    metadata: dict,
+) -> None:
+    """
+    Generate defaults/main.yml from inputs/parameters.
+
+    Args:
+        role_dir: Role directory path
+        role_name: Role name
+        metadata: Metadata dict
+    """
+    lines = [
+        "---",
+        f"# Default variables for {role_name}",
+        "# Auto-generated from workflow inputs/parameters",
+        "",
+    ]
+
+    if "inputs" in metadata:
+        for inp in metadata["inputs"]:
+            lines.append(f"# {inp['name']}: {inp['type']}")
+            lines.append(f"{inp['name']}: \"\"  # TODO: Set default")
+            lines.append("")
+    elif "parameters" in metadata:
+        for param in metadata["parameters"]:
+            lines.append(f"# {param['name']}: {param['type']}")
+            default = '""' if param["type"] == "string" else "null"
+            lines.append(f"{param['name']}: {default}")
+            lines.append("")
+
+    (role_dir / "defaults" / "main.yml").write_text("\n".join(lines))
+
+
+def _generate_role_readme(
+    role_dir: Path,
+    role_name: str,
+    metadata: dict,
+    workflow: dict,
+) -> None:
+    """
+    Generate role README.md.
+
+    Args:
+        role_dir: Role directory path
+        role_name: Role name
+        metadata: Metadata dict
+        workflow: Workflow definition dict
+    """
+    # Build inputs table
+    inputs_table = "| Name | Type | Required |\n|------|------|----------|\n"
+
+    if "inputs" in metadata:
+        for inp in metadata["inputs"]:
+            inputs_table += f"| {inp['name']} | {inp['type']} | - |\n"
+    elif "parameters" in metadata:
+        for param in metadata["parameters"]:
+            req = "Yes" if param.get("required") else "No"
+            inputs_table += f"| {param['name']} | {param['type']} | {req} |\n"
+
+    content = f"""# Role: {role_name}
+
+## Description
+
+{metadata['description'] or 'No description available'}
+
+## Source
+
+- **Type:** {metadata['source_type']}
+- **Original File:** `{workflow['source_file']}`
+
+## Inputs
+
+{inputs_table}
+
+## Implementation Status
+
+**Status:** Skeleton Only
+
+This role was auto-generated by ops-translate. It contains:
+- ✅ Role directory structure
+- ✅ Documented inputs/parameters
+- ✅ Placeholder tasks
+- ❌ Business logic (to be implemented in Issue #59/#60)
+
+## Usage
+
+```bash
+ansible-playbook -i inventories/dev site.yml --tags {role_name}
+```
+
+## Next Steps
+
+1. Review inputs in `defaults/main.yml` and set appropriate defaults
+2. Implement business logic in `tasks/main.yml`
+3. Add integration adapter calls (see `adapters/` directory)
+4. Test independently before integration
+
+---
+
+*Auto-generated by [ops-translate](https://github.com/tsanders-rh/ops-translate)*
+"""
+
+    (role_dir / "README.md").write_text(content)
+
+
+def _generate_role_meta(
+    role_dir: Path,
+    role_name: str,
+    metadata: dict,
+) -> None:
+    """
+    Generate Ansible Galaxy metadata.
+
+    Args:
+        role_dir: Role directory path
+        role_name: Role name
+        metadata: Metadata dict
+    """
+    description = metadata.get("description", "Auto-generated role")
+    # Truncate description to 100 chars for Galaxy compatibility
+    if len(description) > 100:
+        description = description[:97] + "..."
+
+    content = f"""---
+galaxy_info:
+  role_name: {role_name}
+  author: ops-translate
+  description: {description}
+  license: MIT
+  min_ansible_version: "2.9"
+
+dependencies: []
+"""
+    (role_dir / "meta" / "main.yml").write_text(content)
+
+
+def _create_fallback_role(role_name: str, project_dir: Path) -> None:
+    """
+    Create minimal role when metadata extraction fails.
+
+    Args:
+        role_name: Role name
+        project_dir: Ansible project root directory
+    """
+    role_dir = project_dir / "roles" / role_name
+    role_dir.mkdir(parents=True, exist_ok=True)
+    (role_dir / "tasks").mkdir(exist_ok=True)
+
+    tasks_file = role_dir / "tasks" / "main.yml"
+    tasks_file.write_text("""---
+# Role generation failed - placeholder created
+- name: Placeholder
+  ansible.builtin.debug:
+    msg: "Role skeleton generation incomplete"
+""")
 
 
 def _generate_documentation(
