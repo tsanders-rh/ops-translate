@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<action xmlns="http://vmware.com/vco/action" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://vmware.com/vco/action http://vmware.com/vco/action" version="1.0.0" api-version="8.0.0">
+  <display-name>Create ServiceNow Incident</display-name>
+  <description>Creates a new incident in ServiceNow ITSM platform</description>
+  <module>com.acme.servicenow</module>
+
+  <input>
+    <param name="shortDescription" type="string">
+      <description>Short description of the incident</description>
+    </param>
+    <param name="urgency" type="number">
+      <description>Urgency level (1=High, 2=Medium, 3=Low)</description>
+    </param>
+    <param name="assignmentGroup" type="string">
+      <description>Assignment group name</description>
+    </param>
+  </input>
+
+  <output>
+    <param name="incidentNumber" type="string">
+      <description>Created incident number</description>
+    </param>
+  </output>
+
+  <script><![CDATA[
+// ServiceNow incident creation
+// Get ServiceNow connection from library
+var snow = System.getModule("com.vmware.library.servicenow").getConnection();
+
+// Prepare incident data
+var incident = {
+  short_description: shortDescription,
+  urgency: urgency,
+  assignment_group: assignmentGroup,
+  category: "Infrastructure",
+  subcategory: "Virtual Machine",
+  caller_id: "vro-automation"
+};
+
+// Create incident via REST API
+var response = restClient.post(
+  "https://servicenow-prod.acme.com/api/now/table/incident",
+  JSON.stringify(incident)
+);
+
+if (response.statusCode === 201) {
+  var result = JSON.parse(response.body);
+  incidentNumber = result.result.number;
+  System.log("Created ServiceNow incident: " + incidentNumber);
+} else {
+  throw "Failed to create ServiceNow incident: " + response.statusCode;
+}
+
+return incidentNumber;
+]]></script>
+</action>

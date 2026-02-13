@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<action xmlns="http://vmware.com/vco/action" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://vmware.com/vco/action http://vmware.com/vco/action" version="1.0.0" api-version="8.0.0">
+  <display-name>Create NSX Segment</display-name>
+  <description>Creates a new NSX-T segment with specified transport zone</description>
+  <module>com.acme.nsx</module>
+
+  <input>
+    <param name="segmentName" type="string">
+      <description>Name of the segment to create</description>
+    </param>
+    <param name="transportZone" type="string">
+      <description>Transport zone ID or name</description>
+    </param>
+  </input>
+
+  <output>
+    <param name="segmentId" type="string">
+      <description>Created segment ID</description>
+    </param>
+  </output>
+
+  <script><![CDATA[
+// NSX-T segment creation
+// Get NSX client from library
+var nsxClient = System.getModule("com.vmware.library.nsx").getNsxClient();
+
+// Create segment configuration
+var segment = nsxClient.createSegment({
+  display_name: segmentName,
+  transport_zone_path: "/infra/zones/" + transportZone,
+  subnets: [
+    {
+      gateway_address: "10.1.1.1/24",
+      dhcp_ranges: ["10.1.1.100-10.1.1.200"]
+    }
+  ],
+  admin_state: "UP",
+  replication_mode: "MTEP"
+});
+
+segmentId = segment.id;
+System.log("Created NSX segment: " + segmentId + " (name: " + segmentName + ")");
+
+return segmentId;
+]]></script>
+</action>

@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow xmlns="http://vmware.com/vco/workflow" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://vmware.com/vco/workflow http://vmware.com/vco/workflow" version="1.0.0" api-version="8.0.0" root-name="item1" id="acme-storage-tier-001">
+  <display-name>Storage Tier Assignment</display-name>
+  <description>Assigns storage tier to VM and handles capacity management</description>
+
+  <input>
+    <param name="vmName" type="string">
+      <description>Name of the virtual machine</description>
+    </param>
+    <param name="tier" type="string">
+      <description>Storage tier (gold/silver/bronze)</description>
+    </param>
+    <param name="sizeGB" type="number">
+      <description>Required storage size in GB</description>
+    </param>
+  </input>
+
+  <output>
+    <param name="storageProfile" type="string">
+      <description>Assigned storage profile</description>
+    </param>
+    <param name="success" type="boolean">
+      <description>Whether storage was successfully assigned</description>
+    </param>
+  </output>
+
+  <attrib name="storageProfile" type="string" read-only="false"/>
+  <attrib name="capacityAvailable" type="boolean" read-only="false"/>
+  <attrib name="expandSuccess" type="boolean" read-only="false"/>
+  <attrib name="incidentNumber" type="string" read-only="false"/>
+  <attrib name="success" type="boolean" read-only="false"/>
+
+  <!-- item1: Assign Storage Tier -->
+  <workflow-item name="item1" out-name="item2" type="task">
+    <display-name>Assign Storage Tier</display-name>
+    <description>Assigns appropriate storage tier based on requirements</description>
+    <script encoded="false"><![CDATA[
+// Assign storage tier via storage management action
+var storageModule = System.getModule("com.acme.storage");
+storageModule.assignTier(vmName, tier);
+
+// Set storage profile name
+storageProfile = "vSAN-" + tier.charAt(0).toUpperCase() + tier.slice(1);
+
+System.log("Assigned storage tier '" + tier + "' to VM: " + vmName);
+System.log("Storage profile: " + storageProfile);
+System.log("Required size: " + sizeGB + " GB");
+
+// Check if capacity is available (simplified check)
+// In real scenario, this would query storage cluster capacity
+var availableCapacity = 500; // GB, placeholder
+capacityAvailable = (sizeGB <= availableCapacity);
+
+if (!capacityAvailable) {
+  System.warn("Insufficient capacity - only " + availableCapacity + " GB available, need " + sizeGB + " GB");
+}
+]]></script>
+    <in-binding>
+      <bind name="vmName" type="string" export-name="vmName"/>
+      <bind name="tier" type="string" export-name="tier"/>
+      <bind name="sizeGB" type="number" export-name="sizeGB"/>
+    </in-binding>
+    <out-binding>
+      <bind name="storageProfile" type="string" export-name="storageProfile"/>
+      <bind name="capacityAvailable" type="boolean" export-name="capacityAvailable"/>
+    </out-binding>
+    <position y="50.0" x="100.0"/>
+  </workflow-item>
+
+  <!-- item2: Decision - Capacity Available? -->
+  <workflow-item name="item2" out-name="item3" type="decision" alt-out-name="item4">
+    <display-name>Capacity Available?</display-name>
+    <description>Check if sufficient storage capacity is available</description>
+    <script encoded="false"><![CDATA[
+return capacityAvailable;
+]]></script>
+    <in-binding>
+      <bind name="capacityAvailable" type="boolean" export-name="capacityAvailable"/>
+    </in-binding>
+    <position y="100.0" x="100.0"/>
+  </workflow-item>
+
+  <!-- item3: Expand Datastore (success path) -->
+  <workflow-item name="item3" out-name="item5" type="task">
+    <display-name>Expand Datastore</display-name>
+    <description>Expands datastore capacity if needed</description>
+    <script encoded="false"><![CDATA[
+// Expand datastore via storage management action
+var storageModule = System.getModule("com.acme.storage");
+var datastoreName = storageProfile + "-Datastore";
+var additionalGB = sizeGB;
+
+expandSuccess = storageModule.expandDatastore(datastoreName, additionalGB);
+
+if (expandSuccess) {
+  System.log("Successfully expanded datastore: " + datastoreName + " by " + additionalGB + " GB");
+  success = true;
+} else {
+  System.error("Failed to expand datastore: " + datastoreName);
+  success = false;
+}
+]]></script>
+    <in-binding>
+      <bind name="storageProfile" type="string" export-name="storageProfile"/>
+      <bind name="sizeGB" type="number" export-name="sizeGB"/>
+    </in-binding>
+    <out-binding>
+      <bind name="expandSuccess" type="boolean" export-name="expandSuccess"/>
+      <bind name="success" type="boolean" export-name="success"/>
+    </out-binding>
+    <position y="150.0" x="50.0"/>
+  </workflow-item>
+
+  <!-- item4: Create ServiceNow Incident (failure path) -->
+  <workflow-item name="item4" out-name="item5" type="task">
+    <display-name>Create Storage Incident</display-name>
+    <description>Creates ServiceNow incident for insufficient storage capacity</description>
+    <script encoded="false"><![CDATA[
+// Create high-priority incident in ServiceNow
+var snowModule = System.getModule("com.acme.servicenow");
+var description = "Insufficient storage capacity for VM: " + vmName +
+                  "\nTier: " + tier +
+                  "\nRequired: " + sizeGB + " GB" +
+                  "\nStorage Profile: " + storageProfile;
+
+incidentNumber = snowModule.createIncident(description, 1, "Storage Operations");
+
+System.log("Created ServiceNow incident for storage capacity issue: " + incidentNumber);
+success = false;
+]]></script>
+    <in-binding>
+      <bind name="vmName" type="string" export-name="vmName"/>
+      <bind name="tier" type="string" export-name="tier"/>
+      <bind name="sizeGB" type="number" export-name="sizeGB"/>
+      <bind name="storageProfile" type="string" export-name="storageProfile"/>
+    </in-binding>
+    <out-binding>
+      <bind name="incidentNumber" type="string" export-name="incidentNumber"/>
+      <bind name="success" type="boolean" export-name="success"/>
+    </out-binding>
+    <position y="150.0" x="150.0"/>
+  </workflow-item>
+
+  <!-- item5: End -->
+  <workflow-item name="item5" type="end" end-mode="0">
+    <position y="200.0" x="100.0"/>
+  </workflow-item>
+
+  <presentation>
+    <p-param name="vmName">
+      <desc>VM Name</desc>
+    </p-param>
+    <p-param name="tier">
+      <desc>Storage Tier</desc>
+      <p-qual kind="static" name="genericEnumeration" type="Array/string"><![CDATA[#{#string#gold#;#string#silver#;#string#bronze#}#]]></p-qual>
+    </p-param>
+    <p-param name="sizeGB">
+      <desc>Storage Size (GB)</desc>
+    </p-param>
+  </presentation>
+</workflow>

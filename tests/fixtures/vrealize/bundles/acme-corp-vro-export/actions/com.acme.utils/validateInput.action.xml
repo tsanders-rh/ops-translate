@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<action xmlns="http://vmware.com/vco/action" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://vmware.com/vco/action http://vmware.com/vco/action" version="1.0.0" api-version="8.0.0">
+  <display-name>Validate Input</display-name>
+  <description>Validates input against naming standards and business rules</description>
+  <module>com.acme.utils</module>
+
+  <input>
+    <param name="input" type="string">
+      <description>Input string to validate</description>
+    </param>
+  </input>
+
+  <output>
+    <param name="isValid" type="boolean">
+      <description>Whether input is valid</description>
+    </param>
+  </output>
+
+  <script><![CDATA[
+// Input validation utility
+System.log("Validating input: " + input);
+
+// Naming standards:
+// - Must be 3-32 characters
+// - Must start with letter
+// - Can contain letters, numbers, hyphens
+// - Cannot end with hyphen
+var namePattern = /^[a-zA-Z][a-zA-Z0-9-]{2,31}$/;
+var endsWithHyphen = /.-$/;
+
+isValid = namePattern.test(input) && !endsWithHyphen.test(input);
+
+if (isValid) {
+  System.log("Input validation passed: " + input);
+} else {
+  System.log("Input validation failed: " + input);
+  System.log("  Must be 3-32 characters, start with letter, contain only letters/numbers/hyphens");
+}
+
+return isValid;
+]]></script>
+</action>

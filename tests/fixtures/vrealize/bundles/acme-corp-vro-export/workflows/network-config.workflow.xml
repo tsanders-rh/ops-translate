@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow xmlns="http://vmware.com/vco/workflow" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://vmware.com/vco/workflow http://vmware.com/vco/workflow" version="1.0.0" api-version="8.0.0" root-name="item1" id="acme-net-config-001">
+  <display-name>Network Configuration</display-name>
+  <description>Network configuration workflow with NSX, Infoblox, and external API integration</description>
+
+  <input>
+    <param name="segmentName" type="string">
+      <description>Name of the NSX segment</description>
+    </param>
+    <param name="vlanId" type="number">
+      <description>VLAN ID for the segment</description>
+    </param>
+    <param name="gatewayIP" type="string">
+      <description>Gateway IP address</description>
+    </param>
+  </input>
+
+  <output>
+    <param name="segmentId" type="string">
+      <description>Created segment ID</description>
+    </param>
+    <param name="dnsRecordId" type="string">
+      <description>Created DNS record ID</description>
+    </param>
+  </output>
+
+  <attrib name="dnsRecordId" type="string" read-only="false"/>
+  <attrib name="segmentId" type="string" read-only="false"/>
+  <attrib name="apiResponse" type="string" read-only="false"/>
+  <attrib name="incidentNumber" type="string" read-only="false"/>
+
+  <!-- item1: Create DNS Record -->
+  <workflow-item name="item1" out-name="item2" type="task">
+    <display-name>Create DNS Record</display-name>
+    <description>Creates DNS A record in Infoblox for the gateway IP</description>
+    <script encoded="false"><![CDATA[
+// Create DNS record via Infoblox action
+var infobloxModule = System.getModule("com.acme.infoblox");
+var hostname = segmentName + ".acme.com";
+dnsRecordId = infobloxModule.createDNSRecord(hostname, gatewayIP);
+
+System.log("Created DNS record: " + hostname + " -> " + gatewayIP);
+System.log("DNS Record ID: " + dnsRecordId);
+]]></script>
+    <in-binding>
+      <bind name="segmentName" type="string" export-name="segmentName"/>
+      <bind name="gatewayIP" type="string" export-name="gatewayIP"/>
+    </in-binding>
+    <out-binding>
+      <bind name="dnsRecordId" type="string" export-name="dnsRecordId"/>
+    </out-binding>
+    <position y="50.0" x="100.0"/>
+  </workflow-item>
+
+  <!-- item2: Configure NSX Segment -->
+  <workflow-item name="item2" out-name="item3" type="task">
+    <display-name>Configure NSX Segment</display-name>
+    <description>Creates NSX-T segment with VLAN and gateway configuration</description>
+    <script encoded="false"><![CDATA[
+// Create NSX segment with VLAN configuration
+var nsxModule = System.getModule("com.acme.nsx");
+segmentId = nsxModule.createSegment(segmentName, "tz-vlan-01");
+
+System.log("Created NSX segment: " + segmentId);
+System.log("  Segment Name: " + segmentName);
+System.log("  VLAN ID: " + vlanId);
+System.log("  Gateway: " + gatewayIP);
+]]></script>
+    <in-binding>
+      <bind name="segmentName" type="string" export-name="segmentName"/>
+      <bind name="vlanId" type="number" export-name="vlanId"/>
+      <bind name="gatewayIP" type="string" export-name="gatewayIP"/>
+    </in-binding>
+    <out-binding>
+      <bind name="segmentId" type="string" export-name="segmentId"/>
+    </out-binding>
+    <position y="100.0" x="100.0"/>
+  </workflow-item>
+
+  <!-- item3: External API Call -->
+  <workflow-item name="item3" out-name="item4" type="task">
+    <display-name>External API Call</display-name>
+    <description>Registers network configuration with external IPAM system via REST API</description>
+    <script encoded="false"><![CDATA[
+// Register network configuration with external IPAM system
+var payload = {
+  "segment_name": segmentName,
+  "vlan_id": vlanId,
+  "gateway": gatewayIP,
+  "dns_record": dnsRecordId
+};
+
+// Use RESTClient to call external API
+var response = restClient.post(
+  "https://ipam.acme.com/api/v1/networks",
+  JSON.stringify(payload)
+);
+
+apiResponse = response.statusCode + ": " + response.body;
+System.log("IPAM API response: " + apiResponse);
+
+if (response.statusCode !== 201) {
+  System.warn("IPAM registration returned non-success status: " + response.statusCode);
+}
+]]></script>
+    <in-binding>
+      <bind name="segmentName" type="string" export-name="segmentName"/>
+      <bind name="vlanId" type="number" export-name="vlanId"/>
+      <bind name="gatewayIP" type="string" export-name="gatewayIP"/>
+      <bind name="dnsRecordId" type="string" export-name="dnsRecordId"/>
+    </in-binding>
+    <out-binding>
+      <bind name="apiResponse" type="string" export-name="apiResponse"/>
+    </out-binding>
+    <position y="150.0" x="100.0"/>
+  </workflow-item>
+
+  <!-- item4: Create ServiceNow Ticket -->
+  <workflow-item name="item4" out-name="item5" type="task">
+    <display-name>Create Notification Ticket</display-name>
+    <description>Creates ServiceNow ticket to notify network team of new segment</description>
+    <script encoded="false"><![CDATA[
+// Create notification ticket in ServiceNow
+var snowModule = System.getModule("com.acme.servicenow");
+var description = "New NSX segment created: " + segmentName +
+                  " (VLAN " + vlanId + ", Gateway " + gatewayIP + ")";
+
+incidentNumber = snowModule.createIncident(description, 3, "Network Operations");
+
+System.log("Created ServiceNow ticket: " + incidentNumber);
+]]></script>
+    <in-binding>
+      <bind name="segmentName" type="string" export-name="segmentName"/>
+      <bind name="vlanId" type="number" export-name="vlanId"/>
+      <bind name="gatewayIP" type="string" export-name="gatewayIP"/>
+    </in-binding>
+    <out-binding>
+      <bind name="incidentNumber" type="string" export-name="incidentNumber"/>
+    </out-binding>
+    <position y="200.0" x="100.0"/>
+  </workflow-item>
+
+  <!-- item5: End -->
+  <workflow-item name="item5" type="end" end-mode="0">
+    <position y="250.0" x="100.0"/>
+  </workflow-item>
+
+  <presentation>
+    <p-param name="segmentName">
+      <desc>Segment Name</desc>
+    </p-param>
+    <p-param name="vlanId">
+      <desc>VLAN ID</desc>
+    </p-param>
+    <p-param name="gatewayIP">
+      <desc>Gateway IP Address</desc>
+    </p-param>
+  </presentation>
+</workflow>

@@ -180,7 +180,9 @@ def _nsx_firewall_questions(component: ClassifiedComponent) -> list[dict[str, An
             "component": component.name,
             "component_type": component.component_type,
             "location": component.location,
-            "prompt": f"For firewall behavior, what level of equivalence is required?{evidence_display}",
+            "prompt": (
+                f"For firewall behavior, what level of equivalence is required?{evidence_display}"
+            ),
             "type": "single_choice",
             "options": [
                 {
