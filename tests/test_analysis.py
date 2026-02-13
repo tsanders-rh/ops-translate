@@ -39,9 +39,7 @@ class TestAnalyzeGeneratedRoles:
         tasks = [
             {
                 "name": "BLOCKED - ServiceNow integration",
-                "ansible.builtin.fail": {
-                    "msg": "Missing profile.itsm configuration"
-                },
+                "ansible.builtin.fail": {"msg": "Missing profile.itsm configuration"},
                 "tags": ["blocked", "integration"],
             },
             {
