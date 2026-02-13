@@ -600,7 +600,11 @@ def generate_with_templates(
         # This path works without merged intent.yaml if gaps.json exists
         try:
             ansible.generate(
-                workspace, profile, use_ai=False, assume_existing_vms=assume_existing_vms
+                workspace,
+                profile,
+                use_ai=False,
+                assume_existing_vms=assume_existing_vms,
+                translation_profile=translation_profile,
             )
             if not assume_existing_vms:
                 kubevirt.generate(workspace, profile, use_ai=False)
