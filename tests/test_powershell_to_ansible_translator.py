@@ -4,7 +4,6 @@ Tests for PowerShell to Ansible translation.
 Validates cmdlet translation, profile-driven decisions, and BLOCKED stubs.
 """
 
-
 import pytest
 
 from ops_translate.models.profile import (
