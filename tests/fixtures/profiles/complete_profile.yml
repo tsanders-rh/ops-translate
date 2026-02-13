@@ -1,0 +1,56 @@
+name: "acme-production"
+description: "Complete profile demonstrating all configuration options"
+
+environments:
+  dev:
+    openshift_api_url: "https://api.dev.ocp.acme.com:6443"
+    namespace: "acme-dev"
+    node_selectors:
+      environment: "development"
+      workload-type: "general"
+
+  prod:
+    openshift_api_url: "https://api.prod.ocp.acme.com:6443"
+    namespace: "acme-prod"
+    node_selectors:
+      environment: "production"
+      workload-type: "critical"
+
+approval:
+  model: "servicenow_change"
+  endpoint: "https://acme.service-now.com"
+  username_var: "snow_api_user"
+  password_var: "snow_api_password"
+
+network_security:
+  model: "networkpolicy"
+  default_isolation: "namespace"
+
+itsm:
+  provider: "servicenow"
+  endpoint: "https://acme.service-now.com"
+  username_var: "snow_api_user"
+  password_var: "snow_api_password"
+
+dns:
+  provider: "infoblox"
+  endpoint: "https://infoblox.acme.com"
+  credentials_var: "infoblox_creds"
+
+ipam:
+  provider: "infoblox"
+  endpoint: "https://infoblox.acme.com"
+  credentials_var: "infoblox_creds"
+
+storage_tiers:
+  - vmware_tier: "gold"
+    openshift_storage_class: "ocs-storagecluster-ceph-rbd-gold"
+  - vmware_tier: "silver"
+    openshift_storage_class: "ocs-storagecluster-ceph-rbd-silver"
+  - vmware_tier: "bronze"
+    openshift_storage_class: "ocs-storagecluster-ceph-rbd-bronze"
+
+custom:
+  organization: "ACME Corporation"
+  contact: "cloud-ops@acme.com"
+  cost_center: "CC-1234"
