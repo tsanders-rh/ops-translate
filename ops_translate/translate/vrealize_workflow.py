@@ -321,17 +321,24 @@ class JavaScriptToAnsibleTranslator:
     - LockingSystem calls → distributed locking (Redis/Consul/file)
     """
 
-    def __init__(self, locking_backend: str = "redis", locking_enabled: bool = True):
+    def __init__(
+        self,
+        locking_backend: str = "redis",
+        locking_enabled: bool = True,
+        profile: Any | None = None,
+    ):
         """
         Initialize translator and load integration mappings.
 
         Args:
             locking_backend: Backend for distributed locking (redis, consul, file)
             locking_enabled: Whether to generate locking tasks
+            profile: Optional ProfileSchema for profile-driven adapter selection
         """
         self.integration_mappings = self._load_integration_mappings()
         self.locking_backend = locking_backend
         self.locking_enabled = locking_enabled
+        self.profile = profile
 
     def _load_integration_mappings(self) -> dict[str, Any]:
         """
@@ -860,8 +867,9 @@ Approve? (yes/no)
         Generate Ansible task for detected integration call.
 
         Generates either:
-        1. A fully mapped Ansible module task
-        2. A DECISION REQUIRED stub if profile keys are missing
+        1. An include_tasks call to adapter if profile is configured
+        2. A fully mapped Ansible module task (for simple integrations)
+        3. A BLOCKED stub if profile keys are missing
 
         Args:
             detection: Detected integration info with mapping
@@ -881,6 +889,7 @@ Approve? (yes/no)
         params = ansible_config.get("params", {})
         register = ansible_config.get("register")
         requires_profile = mapping.get("requires_profile", [])
+        adapter_path = mapping.get("adapter")  # Optional adapter path
 
         # Parse arguments (simple arg0, arg1, arg2 substitution for v1)
         parsed_args = self._parse_args(args)
@@ -893,27 +902,47 @@ Approve? (yes/no)
 
         # Check if this requires profile configuration
         if requires_profile:
-            # Generate DECISION REQUIRED stub
-            profile_keys_str = "\n      ".join(requires_profile)
-            task = {
-                "name": f"DECISION REQUIRED - {task_name}",
-                "ansible.builtin.fail": {"msg": f"""Integration detected: {integration}
-Missing required profile configuration:
+            # Check if profile has required configuration
+            has_required_config = self._profile_has_config(requires_profile)
+
+            if has_required_config and adapter_path:
+                # Profile is configured - use adapter
+                task = {
+                    "name": task_name,
+                    "ansible.builtin.include_tasks": {
+                        "file": f"{{{{ playbook_dir }}}}/adapters/{adapter_path}"
+                    },
+                    "tags": ["integration", integration],
+                }
+            else:
+                # Profile not configured - generate BLOCKED stub
+                profile_keys_str = "\n      ".join(requires_profile)
+                separator = "=" * 79
+                task = {
+                    "name": f"BLOCKED - {task_name}",
+                    "ansible.builtin.fail": {"msg": f"""{separator}
+BLOCKED: {integration.capitalize()} Integration
+{separator}
+
+This workflow requires {integration} integration, but your profile does not have
+the required configuration.
+
+Missing profile configuration:
       {profile_keys_str}
 
 Evidence: {item.display_name} - {evidence.strip()}
 
-Action required:
-1. Configure profile keys in profile.yml
-2. Implement adapter stub if needed
-3. Re-run translation
+TO FIX THIS:
+1. Add the required configuration to your profile.yml
+2. Re-run the generator: ops-translate generate --profile <your-profile>
 
-See: intent/recommendations.md for guidance
+Once configured, this BLOCKED task will be replaced with a functional adapter call.
+═══════════════════════════════════════════════════════════════════════════════
 """},
-                "tags": ["decision_required", "integration", integration],
-            }
+                    "tags": ["blocked", "integration", integration],
+                }
         else:
-            # Generate fully mapped task
+            # No profile required - generate fully mapped task
             task = {
                 "name": task_name,
                 module: substituted_params,
@@ -923,6 +952,37 @@ See: intent/recommendations.md for guidance
                 task["register"] = register
 
         return task
+
+    def _profile_has_config(self, required_keys: list[str]) -> bool:
+        """
+        Check if profile has all required configuration keys.
+
+        Args:
+            required_keys: List of profile keys in dotted notation (e.g., "profile.approval.model")
+
+        Returns:
+            True if profile has all required keys, False otherwise
+        """
+        if not self.profile:
+            return False
+
+        for key_path in required_keys:
+            # Strip "profile." prefix if present
+            if key_path.startswith("profile."):
+                key_path = key_path[len("profile.") :]
+
+            # Navigate nested attributes using dotted notation
+            keys = key_path.split(".")
+            value = self.profile
+
+            for key in keys:
+                if not hasattr(value, key):
+                    return False
+                value = getattr(value, key)
+                if value is None:
+                    return False
+
+        return True
 
     def _parse_args(self, args_str: str) -> list[str]:
         """
