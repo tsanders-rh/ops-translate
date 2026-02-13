@@ -191,9 +191,7 @@ class TestPowerShellToAnsibleTranslator:
         """Test New-NetworkAdapter generates adapter call with profile."""
         profile = ProfileSchema(
             name="test-profile",
-            environments={
-                "dev": EnvironmentConfig(openshift_api_url="https://api.test.com:6443")
-            },
+            environments={"dev": EnvironmentConfig(openshift_api_url="https://api.test.com:6443")},
             network_security=NetworkSecurityConfig(
                 model="networkpolicy", default_isolation="namespace"
             ),
@@ -320,9 +318,7 @@ class TestProfileDrivenTranslation:
         """Test minimal profile generates BLOCKED stubs for missing configs."""
         minimal_profile = ProfileSchema(
             name="minimal",
-            environments={
-                "dev": EnvironmentConfig(openshift_api_url="https://api.test.com:6443")
-            },
+            environments={"dev": EnvironmentConfig(openshift_api_url="https://api.test.com:6443")},
             # No network_security configured
         )
 
@@ -345,9 +341,7 @@ class TestProfileDrivenTranslation:
         """Test complete profile generates functional tasks."""
         complete_profile = ProfileSchema(
             name="complete",
-            environments={
-                "dev": EnvironmentConfig(openshift_api_url="https://api.test.com:6443")
-            },
+            environments={"dev": EnvironmentConfig(openshift_api_url="https://api.test.com:6443")},
             network_security=NetworkSecurityConfig(
                 model="networkpolicy", default_isolation="namespace"
             ),

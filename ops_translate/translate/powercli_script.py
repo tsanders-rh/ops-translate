@@ -223,7 +223,7 @@ class PowerCLIScriptParser:
         if stmt.cmdlet == "New-TagAssignment":
             stmt.integration_type = "tagging"
             tag_value = stmt.parameters.get("Tag", "")
-            stmt.integration_evidence = f"New-TagAssignment -Tag \"{tag_value}\""
+            stmt.integration_evidence = f'New-TagAssignment -Tag "{tag_value}"'
             return
 
         # Snapshots
@@ -236,7 +236,7 @@ class PowerCLIScriptParser:
         if stmt.cmdlet == "New-NetworkAdapter":
             stmt.integration_type = "network"
             network_name = stmt.parameters.get("NetworkName", "")
-            stmt.integration_evidence = f"New-NetworkAdapter -NetworkName \"{network_name}\""
+            stmt.integration_evidence = f'New-NetworkAdapter -NetworkName "{network_name}"'
             return
 
 
@@ -262,9 +262,7 @@ class PowerShellToAnsibleTranslator:
         with open(mappings_file) as f:
             return yaml.safe_load(f) or {}
 
-    def translate_statements(
-        self, statements: list[PowerCLIStatement]
-    ) -> list[AnsibleTask]:
+    def translate_statements(self, statements: list[PowerCLIStatement]) -> list[AnsibleTask]:
         """Translate parsed statements to Ansible tasks."""
         tasks = []
 
@@ -394,9 +392,7 @@ class PowerShellToAnsibleTranslator:
             tags=["todo"],
         )
 
-    def _apply_cmdlet_mapping(
-        self, stmt: PowerCLIStatement, mapping: dict
-    ) -> AnsibleTask:
+    def _apply_cmdlet_mapping(self, stmt: PowerCLIStatement, mapping: dict) -> AnsibleTask:
         """Apply cmdlet mapping to create Ansible task."""
         module = mapping["ansible"]["module"]
         params_template = mapping["ansible"]["params"]
@@ -410,7 +406,8 @@ class PowerShellToAnsibleTranslator:
                 result = param_value
                 # Find all {ParamName} patterns
                 import re as param_re
-                for match in param_re.finditer(r'\{(\w+)\}', param_value):
+
+                for match in param_re.finditer(r"\{(\w+)\}", param_value):
                     powercli_param = match.group(1)
                     actual_value = stmt.parameters.get(powercli_param, "")
 
@@ -558,8 +555,7 @@ class PowerShellToAnsibleTranslator:
             return AnsibleTask(
                 name="BLOCKED - Network adapter creation requires configuration",
                 module="ansible.builtin.fail",
-                module_args={
-                    "msg": f"""BLOCKED: Network Adapter Creation
+                module_args={"msg": f"""BLOCKED: Network Adapter Creation
 
 This script requires network adapter creation.
 Configure profile.network_security to proceed.
@@ -570,8 +566,7 @@ TO FIX: Add to profile.yml:
   network_security:
     model: networkpolicy
 
-Then re-run: ops-translate generate --profile <profile>"""
-                },
+Then re-run: ops-translate generate --profile <profile>"""},
                 tags=["blocked", "network"],
             )
 
