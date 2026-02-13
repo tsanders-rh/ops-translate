@@ -21,16 +21,24 @@ except ImportError:
 
 
 def generate(
-    workspace: Workspace, profile: str, use_ai: bool = False, assume_existing_vms: bool = False
+    workspace: Workspace,
+    profile: str,
+    use_ai: bool = False,
+    assume_existing_vms: bool = False,
+    translation_profile=None,
 ):
     """
     Generate Ansible playbook and role.
 
     Outputs:
-    - output/ansible/site.yml
+    - output/ansible/site.yml (or ansible-project/ if translation_profile provided)
     - output/ansible/roles/provision_vm/tasks/main.yml
     - output/ansible/roles/provision_vm/defaults/main.yml
     - output/README.md
+
+    If translation_profile is provided:
+    - Generates full ansible-project/ structure with profile-driven adapters
+    - Uses generate_ansible_project() for deterministic generation
 
     If gap analysis data exists (intent/gaps.json):
     - Injects TODO tasks for PARTIAL/BLOCKED/MANUAL components
@@ -42,7 +50,23 @@ def generate(
         profile: Profile name
         use_ai: Whether to use AI generation (currently unused)
         assume_existing_vms: If True, generate validation tasks instead of VM creation
+        translation_profile: ProfileSchema for full project generation
     """
+    # If translation_profile is provided, use full project generator
+    if translation_profile:
+        from ops_translate.generate.ansible_project import generate_ansible_project
+
+        output_dir = workspace.root / "output"
+
+        # Collect workflow definitions from workspace
+        workflows = _collect_workflow_definitions(workspace)
+
+        # Generate full project
+        generate_ansible_project(workflows, translation_profile, output_dir)
+
+        # Also generate traditional artifacts for compatibility
+        # Fall through to standard generation
+
     output_dir = workspace.root / "output/ansible"
     ensure_dir(output_dir)
 
@@ -770,3 +794,44 @@ def _get_vrealize_translated_tasks(workspace: Workspace) -> list[dict[str, Any]]
             continue
 
     return all_tasks
+
+
+def _collect_workflow_definitions(workspace: Workspace) -> list[dict[str, Any]]:
+    """
+    Collect workflow definitions from workspace for project generation.
+
+    Args:
+        workspace: Workspace instance
+
+    Returns:
+        List of workflow definition dicts with name and metadata
+    """
+    workflows = []
+
+    # Check for vRealize workflows
+    vrealize_dir = workspace.root / "input/vrealize"
+    if vrealize_dir.exists():
+        workflow_files = list(vrealize_dir.glob("*.xml"))
+        for workflow_file in workflow_files:
+            # Extract workflow name from filename (without extension)
+            workflow_name = workflow_file.stem.replace("-", "_").replace(" ", "_").lower()
+
+            workflows.append(
+                {
+                    "name": workflow_name,
+                    "source": "vrealize",
+                    "source_file": str(workflow_file.relative_to(workspace.root)),
+                }
+            )
+
+    # If no workflows found, create a default placeholder
+    if not workflows:
+        workflows.append(
+            {
+                "name": "provision_vm",
+                "source": "template",
+                "source_file": "generated",
+            }
+        )
+
+    return workflows

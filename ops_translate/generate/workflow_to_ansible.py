@@ -12,6 +12,7 @@ from typing import Any
 
 import yaml
 
+from ops_translate.models.profile import ProfileSchema
 from ops_translate.translate.vrealize_workflow import (
     JavaScriptToAnsibleTranslator,
     WorkflowItem,
@@ -34,7 +35,7 @@ class AnsibleTask:
 
 def workflow_to_ansible_tasks(
     workflow_file: Path,
-    profile: dict | None = None,
+    profile: ProfileSchema | None = None,
     locking_backend: str = "redis",
     locking_enabled: bool = True,
 ) -> list[AnsibleTask]:
@@ -43,7 +44,7 @@ def workflow_to_ansible_tasks(
 
     Args:
         workflow_file: Path to workflow XML
-        profile: Profile configuration for adapter mapping
+        profile: ProfileSchema for adapter mapping and configuration
         locking_backend: Backend for distributed locking
         locking_enabled: Whether to generate locking tasks
 
@@ -71,7 +72,7 @@ def workflow_to_ansible_tasks(
 
 def _convert_item_to_tasks(
     item: WorkflowItem,
-    profile: dict | None,
+    profile: ProfileSchema | None,
     locking_backend: str,
     locking_enabled: bool,
 ) -> list[AnsibleTask]:
@@ -129,7 +130,7 @@ def _convert_item_to_tasks(
 
 def _convert_scriptable_task(
     item: WorkflowItem,
-    profile: dict | None,
+    profile: ProfileSchema | None,
     locking_backend: str,
     locking_enabled: bool,
 ) -> list[AnsibleTask]:
@@ -246,7 +247,9 @@ def _extract_decision_condition(script: str) -> str:
     return script.strip()
 
 
-def _convert_user_interaction(item: WorkflowItem, profile: dict | None) -> list[AnsibleTask]:
+def _convert_user_interaction(
+    item: WorkflowItem, profile: ProfileSchema | None
+) -> list[AnsibleTask]:
     """
     Convert UserInteraction (approval) to Ansible tasks.
 
@@ -255,12 +258,12 @@ def _convert_user_interaction(item: WorkflowItem, profile: dict | None) -> list[
 
     Args:
         item: WorkflowItem of type 'interaction'
-        profile: Profile configuration
+        profile: ProfileSchema configuration
 
     Returns:
         List of AnsibleTask objects for approval handling
     """
-    approval_model = profile.get("approval", {}).get("model") if profile else None
+    approval_model = profile.approval.model if (profile and profile.approval) else None
 
     if not approval_model or approval_model == "blocked":
         # Default: FAIL with guidance
@@ -275,32 +278,43 @@ def _convert_user_interaction(item: WorkflowItem, profile: dict | None) -> list[
             )
         ]
 
-    elif approval_model == "servicenow":
-        # ServiceNow adapter
+    elif approval_model == "servicenow_change":
+        # ServiceNow change request adapter
         return [
             AnsibleTask(
-                name=f"Request approval via ServiceNow: {item.display_name}",
+                name=f"Request approval via ServiceNow change request: {item.display_name}",
                 module="ansible.builtin.include_tasks",
-                module_args={"file": "{{ playbook_dir }}/adapters/snow/request_approval.yml"},
-                comment=f"Approval via ServiceNow: {item.display_name}",
+                module_args={"file": "{{ playbook_dir }}/adapters/servicenow/create_change.yml"},
+                comment=f"Approval via ServiceNow change request: {item.display_name}",
                 tags=["approval", "servicenow"],
             )
         ]
 
     elif approval_model == "aap_workflow":
-        # AAP approval node
+        # AAP workflow approval
         return [
             AnsibleTask(
-                name=f"AAP approval gate: {item.display_name}",
-                module="ansible.builtin.pause",
-                module_args={"prompt": f"Approve: {item.display_name}? (yes/no)"},
-                register="approval_response",
-                comment="AAP Workflow approval gate",
+                name=f"AAP workflow approval: {item.display_name}",
+                module="ansible.builtin.debug",
+                module_args={"msg": "AAP workflow approval configured - implement in AAP workflow"},
+                comment="AAP Workflow approval integration point",
                 tags=["approval", "aap"],
             )
         ]
 
-    elif approval_model == "pause":
+    elif approval_model == "gitops_pr":
+        # GitOps PR approval
+        return [
+            AnsibleTask(
+                name=f"GitOps PR approval: {item.display_name}",
+                module="ansible.builtin.debug",
+                module_args={"msg": "GitOps PR approval configured - deploy via pull request"},
+                comment="GitOps pull request approval integration point",
+                tags=["approval", "gitops"],
+            )
+        ]
+
+    elif approval_model == "manual_pause":
         # Simple pause (demo only)
         return [
             AnsibleTask(
@@ -331,21 +345,32 @@ def _convert_user_interaction(item: WorkflowItem, profile: dict | None) -> list[
 def _generate_approval_fail_message(item: WorkflowItem) -> str:
     """Generate helpful fail message for approval gate."""
     return f"""
-Approval workflow detected but not configured.
+═══════════════════════════════════════════════════════════════════════════════
+BLOCKED: Approval Workflow Required
+═══════════════════════════════════════════════════════════════════════════════
+
+This workflow requires approval before proceeding, but your profile does not
+have an approval mechanism configured.
 
 Evidence: Workflow item '{item.display_name}' (type: {item.item_type})
 
-To resolve, set profile.approval.model to one of:
-- servicenow: Integrate with ServiceNow approval workflow
-- aap_workflow: Use AAP Controller approval nodes
-- pause: Manual approval via pause (demo only)
-- blocked: Keep as BLOCKED (current behavior)
+TO FIX THIS:
+Add approval configuration to your profile.yml:
 
-Configure in: profile.yml
-
-Example:
   approval:
-    model: aap_workflow
+    model: servicenow_change        # or: aap_workflow, gitops_pr, manual_pause
+    endpoint: https://your-instance.service-now.com
+    username_var: snow_username     # Ansible variable name
+    password_var: snow_password     # Ansible variable name
+
+Supported approval models:
+  - servicenow_change: Create ServiceNow change request and wait for approval
+  - aap_workflow: Use Ansible Automation Platform workflow approval
+  - gitops_pr: Require pull request approval in Git repository
+  - manual_pause: Pause playbook for manual approval (interactive)
+
+Once configured, re-run the generator to produce functional adapter stubs.
+═══════════════════════════════════════════════════════════════════════════════
 
 Then re-run: ops-translate generate --profile <profile>
 """
@@ -467,7 +492,7 @@ def _convert_workflow_call(item: WorkflowItem) -> list[AnsibleTask]:
         ]
 
 
-def _convert_action_call(item: WorkflowItem, profile: dict | None) -> list[AnsibleTask]:
+def _convert_action_call(item: WorkflowItem, profile: ProfileSchema | None) -> list[AnsibleTask]:
     """
     Convert ActionCall to adapter stub.
 

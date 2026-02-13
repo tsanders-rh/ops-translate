@@ -1,0 +1,191 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Ansible Translation Profile",
+  "description": "Profile schema for deterministic vRealize-to-Ansible translation",
+  "type": "object",
+  "required": ["name", "environments"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Profile name identifier",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional profile description"
+    },
+    "environments": {
+      "type": "object",
+      "description": "Target environment configurations (dev, qa, prod, etc.)",
+      "minProperties": 1,
+      "patternProperties": {
+        "^[a-z0-9_-]+$": {
+          "type": "object",
+          "required": ["openshift_api_url"],
+          "properties": {
+            "openshift_api_url": {
+              "type": "string",
+              "description": "OpenShift API endpoint URL",
+              "pattern": "^https?://"
+            },
+            "namespace": {
+              "type": "string",
+              "description": "Target Kubernetes namespace"
+            },
+            "node_selectors": {
+              "type": "object",
+              "description": "Node selector labels for workload placement",
+              "patternProperties": {
+                "^[a-zA-Z0-9/_.-]+$": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "description": "Approval workflow configuration",
+      "required": ["model"],
+      "properties": {
+        "model": {
+          "type": "string",
+          "enum": [
+            "servicenow_change",
+            "aap_workflow",
+            "gitops_pr",
+            "manual_pause",
+            "blocked"
+          ],
+          "description": "Approval mechanism"
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "ITSM or workflow endpoint URL"
+        },
+        "username_var": {
+          "type": "string",
+          "description": "Ansible variable name for username/API key"
+        },
+        "password_var": {
+          "type": "string",
+          "description": "Ansible variable name for password/secret"
+        }
+      }
+    },
+    "network_security": {
+      "type": "object",
+      "description": "Network security policy configuration",
+      "required": ["model"],
+      "properties": {
+        "model": {
+          "type": "string",
+          "enum": [
+            "calico",
+            "networkpolicy",
+            "cilium",
+            "istio",
+            "hybrid",
+            "blocked"
+          ],
+          "description": "Network security policy type"
+        },
+        "default_isolation": {
+          "type": "string",
+          "enum": ["namespace", "pod", "none"],
+          "default": "namespace",
+          "description": "Default network isolation level"
+        }
+      }
+    },
+    "itsm": {
+      "type": "object",
+      "description": "ITSM (ticketing) integration configuration",
+      "required": ["provider"],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": ["servicenow", "jira", "manual"],
+          "description": "ITSM provider"
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "ITSM API endpoint URL"
+        },
+        "username_var": {
+          "type": "string",
+          "description": "Ansible variable name for username/API key"
+        },
+        "password_var": {
+          "type": "string",
+          "description": "Ansible variable name for password/secret"
+        }
+      }
+    },
+    "dns": {
+      "type": "object",
+      "description": "DNS provider configuration",
+      "required": ["provider"],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": ["infoblox", "externaldns", "coredns", "manual"],
+          "description": "DNS provider"
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "DNS provider API endpoint URL"
+        },
+        "credentials_var": {
+          "type": "string",
+          "description": "Ansible variable name for credentials"
+        }
+      }
+    },
+    "ipam": {
+      "type": "object",
+      "description": "IPAM provider configuration",
+      "required": ["provider"],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": ["infoblox", "whereabouts", "static"],
+          "description": "IPAM provider"
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "IPAM provider API endpoint URL"
+        },
+        "credentials_var": {
+          "type": "string",
+          "description": "Ansible variable name for credentials"
+        }
+      }
+    },
+    "storage_tiers": {
+      "type": "array",
+      "description": "Storage tier mappings from VMware to OpenShift",
+      "items": {
+        "type": "object",
+        "required": ["vmware_tier", "openshift_storage_class"],
+        "properties": {
+          "vmware_tier": {
+            "type": "string",
+            "enum": ["gold", "silver", "bronze"],
+            "description": "VMware storage tier"
+          },
+          "openshift_storage_class": {
+            "type": "string",
+            "description": "Target OpenShift storage class name"
+          }
+        }
+      }
+    },
+    "custom": {
+      "type": "object",
+      "description": "Custom profile properties for extensions"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+name: "minimal-profile"
+description: "Minimal profile with only required fields - will generate BLOCKED stubs"
+
+environments:
+  dev:
+    openshift_api_url: "https://api.ocp.example.com:6443"
+    namespace: "default"
