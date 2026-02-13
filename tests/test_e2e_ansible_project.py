@@ -367,5 +367,230 @@ class TestDeterministicGeneration:
         assert adapter_1 == adapter_2
 
 
+class TestPowerCLITranslation:
+    """Test PowerCLI script translation to Ansible tasks."""
+
+    def test_powercli_role_contains_translated_tasks(self, tmp_path):
+        """Verify PowerCLI role contains translated tasks, not placeholders."""
+        # Create simple PowerCLI script
+        script_content = """# Simple VM provisioning
+$Network = "dev-network"
+New-VM -Name TestVM -NumCpu 4 -MemoryGB 8
+Start-VM -VM TestVM
+"""
+        script_file = tmp_path / "input/powercli/provision.ps1"
+        script_file.parent.mkdir(parents=True)
+        script_file.write_text(script_content)
+
+        profile_path = Path(__file__).parent / "fixtures/profiles/complete_profile.yml"
+        profile = load_profile(profile_path)
+
+        workflows = [
+            {
+                "name": "provision",
+                "source": "powercli",
+                "source_file": "input/powercli/provision.ps1",
+            }
+        ]
+
+        output_dir = tmp_path / "output"
+        project_dir = generate_ansible_project(workflows, profile, output_dir)
+
+        # Read generated tasks
+        tasks_file = project_dir / "roles" / "provision" / "tasks" / "main.yml"
+        assert tasks_file.exists()
+        tasks_content = tasks_file.read_text()
+
+        # Should contain translated Ansible tasks, not placeholders
+        assert "kubevirt.core.kubevirt_vm" in tasks_content
+        assert "ansible.builtin.set_fact" in tasks_content
+        assert "TODO" not in tasks_content
+        assert "Placeholder" not in tasks_content
+
+    def test_powercli_tagging_translated_to_labels(self, tmp_path):
+        """Verify New-TagAssignment translates to Kubernetes labels."""
+        script_content = """New-VM -Name TestVM -NumCpu 2
+New-TagAssignment -Entity TestVM -Tag "Environment:Dev"
+"""
+        script_file = tmp_path / "input/powercli/tagging.ps1"
+        script_file.parent.mkdir(parents=True)
+        script_file.write_text(script_content)
+
+        profile_path = Path(__file__).parent / "fixtures/profiles/complete_profile.yml"
+        profile = load_profile(profile_path)
+
+        workflows = [
+            {
+                "name": "tagging",
+                "source": "powercli",
+                "source_file": "input/powercli/tagging.ps1",
+            }
+        ]
+
+        output_dir = tmp_path / "output"
+        project_dir = generate_ansible_project(workflows, profile, output_dir)
+
+        tasks_file = project_dir / "roles" / "tagging" / "tasks" / "main.yml"
+        tasks_content = tasks_file.read_text()
+
+        # Should translate to Kubernetes labels
+        assert "kubernetes.core.k8s" in tasks_content
+        assert "labels:" in tasks_content
+        assert "environment" in tasks_content
+
+    def test_powercli_snapshot_translated_to_volumesnapshot(self, tmp_path):
+        """Verify New-Snapshot translates to VolumeSnapshot."""
+        script_content = 'New-Snapshot -VM TestVM -Name "snap1"'
+        script_file = tmp_path / "input/powercli/snapshot.ps1"
+        script_file.parent.mkdir(parents=True)
+        script_file.write_text(script_content)
+
+        profile_path = Path(__file__).parent / "fixtures/profiles/complete_profile.yml"
+        profile = load_profile(profile_path)
+
+        workflows = [
+            {
+                "name": "snapshot",
+                "source": "powercli",
+                "source_file": "input/powercli/snapshot.ps1",
+            }
+        ]
+
+        output_dir = tmp_path / "output"
+        project_dir = generate_ansible_project(workflows, profile, output_dir)
+
+        tasks_file = project_dir / "roles" / "snapshot" / "tasks" / "main.yml"
+        tasks_content = tasks_file.read_text()
+
+        # Should translate to VolumeSnapshot
+        assert "kubevirt.core.kubevirt_vm_snapshot" in tasks_content
+        assert "snap1" in tasks_content
+
+    def test_powercli_validation_translated_to_assert(self, tmp_path):
+        """Verify throw statements translate to assert tasks."""
+        script_content = """if ($NumCPU -gt 16) {
+    throw "Production VMs limited to 16 CPUs"
+}
+New-VM -Name TestVM -NumCpu 8
+"""
+        script_file = tmp_path / "input/powercli/validate.ps1"
+        script_file.parent.mkdir(parents=True)
+        script_file.write_text(script_content)
+
+        profile_path = Path(__file__).parent / "fixtures/profiles/complete_profile.yml"
+        profile = load_profile(profile_path)
+
+        workflows = [
+            {
+                "name": "validate",
+                "source": "powercli",
+                "source_file": "input/powercli/validate.ps1",
+            }
+        ]
+
+        output_dir = tmp_path / "output"
+        project_dir = generate_ansible_project(workflows, profile, output_dir)
+
+        tasks_file = project_dir / "roles" / "validate" / "tasks" / "main.yml"
+        tasks_content = tasks_file.read_text()
+
+        # Should contain assert task
+        assert "ansible.builtin.assert" in tasks_content
+        assert "16 CPUs" in tasks_content
+
+    def test_powercli_network_adapter_blocked_without_profile(self, tmp_path):
+        """Verify New-NetworkAdapter generates BLOCKED stub without profile config."""
+        script_content = 'New-NetworkAdapter -VM TestVM -NetworkName "prod-net"'
+        script_file = tmp_path / "input/powercli/network.ps1"
+        script_file.parent.mkdir(parents=True)
+        script_file.write_text(script_content)
+
+        # Use minimal profile without network_security
+        profile_path = Path(__file__).parent / "fixtures/profiles/minimal_profile.yml"
+        profile = load_profile(profile_path)
+
+        workflows = [
+            {
+                "name": "network",
+                "source": "powercli",
+                "source_file": "input/powercli/network.ps1",
+            }
+        ]
+
+        output_dir = tmp_path / "output"
+        project_dir = generate_ansible_project(workflows, profile, output_dir)
+
+        tasks_file = project_dir / "roles" / "network" / "tasks" / "main.yml"
+        tasks_content = tasks_file.read_text()
+
+        # Should have BLOCKED stub
+        assert "BLOCKED" in tasks_content
+        assert "network_security" in tasks_content
+        assert "ansible.builtin.fail" in tasks_content
+
+    def test_powercli_network_adapter_functional_with_profile(self, tmp_path):
+        """Verify New-NetworkAdapter generates functional task with profile config."""
+        script_content = 'New-NetworkAdapter -VM TestVM -NetworkName "prod-net"'
+        script_file = tmp_path / "input/powercli/network.ps1"
+        script_file.parent.mkdir(parents=True)
+        script_file.write_text(script_content)
+
+        # Use complete profile with network_security
+        profile_path = Path(__file__).parent / "fixtures/profiles/complete_profile.yml"
+        profile = load_profile(profile_path)
+
+        workflows = [
+            {
+                "name": "network",
+                "source": "powercli",
+                "source_file": "input/powercli/network.ps1",
+            }
+        ]
+
+        output_dir = tmp_path / "output"
+        project_dir = generate_ansible_project(workflows, profile, output_dir)
+
+        tasks_file = project_dir / "roles" / "network" / "tasks" / "main.yml"
+        tasks_content = tasks_file.read_text()
+
+        # Should have functional adapter call
+        assert "ansible.builtin.include_role" in tasks_content
+        assert "adapters/nsx/create_segment" in tasks_content
+        assert "BLOCKED" not in tasks_content
+
+    def test_powercli_translation_deterministic(self, tmp_path):
+        """Verify PowerCLI translation is deterministic."""
+        script_content = """New-VM -Name TestVM -NumCpu 4
+Start-VM -VM TestVM
+"""
+        script_file = tmp_path / "input/powercli/test.ps1"
+        script_file.parent.mkdir(parents=True)
+        script_file.write_text(script_content)
+
+        profile_path = Path(__file__).parent / "fixtures/profiles/complete_profile.yml"
+        profile = load_profile(profile_path)
+
+        workflows = [
+            {
+                "name": "test",
+                "source": "powercli",
+                "source_file": "input/powercli/test.ps1",
+            }
+        ]
+
+        # Generate first time
+        output_dir_1 = tmp_path / "output1"
+        project_dir_1 = generate_ansible_project(workflows, profile, output_dir_1)
+        tasks_1 = (project_dir_1 / "roles" / "test" / "tasks" / "main.yml").read_text()
+
+        # Generate second time
+        output_dir_2 = tmp_path / "output2"
+        project_dir_2 = generate_ansible_project(workflows, profile, output_dir_2)
+        tasks_2 = (project_dir_2 / "roles" / "test" / "tasks" / "main.yml").read_text()
+
+        # Should be identical
+        assert tasks_1 == tasks_2
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

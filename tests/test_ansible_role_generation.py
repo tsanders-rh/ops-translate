@@ -153,7 +153,7 @@ class TestPowerCLIRoleGeneration:
         assert isinstance(metadata["parameters"], list)
 
     def test_tasks_main_contains_powercli_metadata(self, tmp_path):
-        """Verify tasks/main.yml includes PowerCLI parameter documentation."""
+        """Verify tasks/main.yml contains translated PowerCLI tasks."""
         script_file = Path(__file__).parent / "fixtures/powercli/simple-vm.ps1"
         project_dir = tmp_path / "project"
         project_dir.mkdir()
@@ -169,11 +169,9 @@ class TestPowerCLIRoleGeneration:
         tasks_file = project_dir / "roles" / "simple_vm" / "tasks" / "main.yml"
         tasks_content = tasks_file.read_text()
 
-        # Should contain metadata header
-        assert "# Ansible role: simple_vm" in tasks_content
-        assert "# Source: PowerCLI Script" in tasks_content
-        assert "# Original: input/powercli/simple-vm.ps1" in tasks_content
-        assert "# Inputs:" in tasks_content
+        # Should contain translated Ansible tasks, not placeholder comments
+        assert "ansible.builtin.set_fact" in tasks_content
+        assert "kubevirt.core.kubevirt_vm" in tasks_content or "TODO" in tasks_content
 
     def test_defaults_generated_from_powercli_parameters(self, tmp_path):
         """Verify defaults/main.yml generated from PowerCLI parameters."""
@@ -364,8 +362,16 @@ class TestErrorHandling:
             }
         ]
 
+        # Load a minimal profile for the test
+        from ops_translate.models.profile import EnvironmentConfig, ProfileSchema
+
+        profile = ProfileSchema(
+            name="test",
+            environments={"test": EnvironmentConfig(openshift_api_url="https://test.com")},
+        )
+
         # Should not raise, but create fallback
-        _generate_workflow_roles(workflows, output_dir, project_dir)
+        _generate_workflow_roles(workflows, output_dir, project_dir, profile)
 
         # Fallback role should exist
         role_dir = project_dir / "roles" / "invalid_workflow"
