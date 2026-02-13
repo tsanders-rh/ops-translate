@@ -128,13 +128,22 @@ All other commands are **deterministic** and **LLM-free**:
 - `ops-translate summarize` - Static pattern matching
 - `ops-translate intent merge` - YAML reconciliation
 - `ops-translate dry-run` - Schema validation
-- `ops-translate generate` - Template-based (Jinja2)
+- `ops-translate generate` - Template-based (Jinja2) + Direct translation
 
-**Visual breakdown:**
+**Visual breakdown - Two Translation Paths:**
 ```
+PATH 1: Direct Translation (Common Patterns - No LLM)
+PowerCLI/vRealize  ──[Parser]──>  Statements  ──[Mappings]──>  Ansible Tasks
+   (New-VM, etc.)    NO AI         (categorized)   NO AI          (kubevirt_vm)
+
+PATH 2: Intent Extraction (Complex Scenarios - LLM Optional)
 PowerCLI/vRealize  ──[LLM]──>  intent.yaml  ──[Templates]──>  Ansible + KubeVirt
-   (legacy)         NEEDS AI    (normalized)   NO AI NEEDED    (cloud-native)
+   (custom logic)    NEEDS AI    (normalized)   NO AI NEEDED    (cloud-native)
 ```
+
+**When each path is used:**
+- **Direct Translation**: Standard PowerCLI cmdlets (New-VM, Start-VM, New-TagAssignment) and vRO workflows with common patterns
+- **Intent Extraction**: Complex custom logic, multiple source merging, advanced scenarios
 
 ### Three Modes
 

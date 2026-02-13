@@ -92,9 +92,16 @@ Technical architecture and design documentation for ops-translate.
 7. **Generate Module** (`ops_translate/generate/`)
    - Ansible playbook generation
    - KubeVirt manifest generation
+   - Ansible role generation with translated tasks
    - Profile-based customization
 
-8. **LLM Module** (`ops_translate/llm/`)
+8. **Translate Module** (`ops_translate/translate/`)
+   - Deterministic PowerCLI → Ansible task translation
+   - vRealize workflow → Ansible task translation
+   - Cmdlet mapping and parameter substitution
+   - Profile-driven adapter generation
+
+9. **LLM Module** (`ops_translate/llm/`)
    - Provider abstraction (Anthropic, OpenAI, Mock)
    - Prompt management
    - Response parsing
@@ -617,16 +624,27 @@ def validate_intent(intent_path: Path) -> tuple[bool, List[str]]:
 
 ### Generate Module
 
-**Purpose**: Create Ansible playbooks and KubeVirt manifests from intent.
+**Purpose**: Create Ansible playbooks, roles, and KubeVirt manifests from intent or directly from PowerCLI/vRO workflows.
+
+**Two Generation Paths**:
+1. **Intent-based generation** - Transforms normalized intent.yaml to Ansible/KubeVirt
+2. **Direct translation** - Uses Translate Module for PowerCLI/vRO → Ansible tasks
 
 **Architecture**:
 ```
 generate/
 ├── __init__.py
-├── generator.py      # Main generation orchestrator
-├── ansible.py        # Ansible-specific generation
-└── kubevirt.py       # KubeVirt-specific generation
+├── generator.py            # Main generation orchestrator
+├── ansible.py              # Ansible-specific generation
+├── ansible_project.py      # Role skeleton and structure generation
+├── workflow_to_ansible.py  # AnsibleTask dataclass and YAML generation
+├── kubevirt.py             # KubeVirt-specific generation
+├── networkpolicy.py        # NetworkPolicy generation
+├── network_attachment.py   # NetworkAttachmentDefinition generation
+└── eda_rulebook.py         # Event-Driven Ansible rulebook generation
 ```
+
+**Note**: Role generation for PowerCLI and vRO workflows uses the Translate Module (see below) to produce deterministic Ansible tasks rather than LLM-generated skeletons.
 
 **Generation Flow**:
 
@@ -740,6 +758,264 @@ def write_ansible_structure(base_path: Path, content: dict):
     write_file(role_path / 'tasks' / 'main.yml', content['tasks'])
     write_file(role_path / 'defaults' / 'main.yml', content['defaults'])
 ```
+
+### Translate Module
+
+**Purpose**: Deterministically translate PowerCLI scripts and vRealize workflows into Ansible tasks without LLM intervention.
+
+**Key Distinction**: The Translate Module provides **deterministic, mapping-based translation** for supported cmdlets and workflow patterns, while the Extract/Generate modules use **LLM-based transformation** for complex scenarios.
+
+**Architecture**:
+```
+translate/
+├── __init__.py
+├── powercli_script.py             # PowerCLI → Ansible translation
+├── powercli_cmdlet_mappings.yaml  # Cmdlet mapping definitions
+├── vrealize_workflow.py           # vRO workflow → Ansible translation
+└── vro_integration_mappings.yaml  # vRO integration mappings
+```
+
+**Translation Flow**:
+
+```
+PowerCLI Script          vRealize Workflow
+     │                        │
+     ├─ Parser ───────────────┤
+     │                        │
+     ├─ Statement/Item List   │
+     │  (categorized)         │
+     │                        │
+     ├─ Translator ───────────┤
+     │  (mapping-based)       │
+     │                        │
+     └─ AnsibleTask objects ──┘
+              │
+              ├─ YAML Generator
+              │
+              └─ tasks/main.yml
+```
+
+**PowerCLI Translation** (`powercli_script.py`):
+
+**Components**:
+
+1. **PowerCLIStatement** - Structured representation of parsed PowerShell:
+```python
+@dataclass
+class PowerCLIStatement:
+    line_number: int
+    raw_text: str
+    statement_type: str  # param | assignment | cmdlet | control_flow | comment
+    category: str        # context | lookup | mutation | integration | gate
+    cmdlet: str | None
+    parameters: dict[str, str]
+    integration_type: str | None  # tagging | snapshot | network | nsx
+```
+
+2. **PowerCLIScriptParser** - Parses `.ps1` files sequentially:
+```python
+class PowerCLIScriptParser:
+    def parse_file(self, script_file: Path) -> list[PowerCLIStatement]:
+        """Parse PowerCLI script into categorized statements."""
+
+    def _categorize_statement(self, stmt: PowerCLIStatement) -> None:
+        """Categorize as context/lookup/mutation/integration/gate."""
+
+    def _detect_integration(self, stmt: PowerCLIStatement) -> None:
+        """Detect integration type (tagging/snapshot/network)."""
+```
+
+3. **PowerShellToAnsibleTranslator** - Maps cmdlets to Ansible tasks:
+```python
+class PowerShellToAnsibleTranslator:
+    def __init__(self, profile: ProfileSchema | None = None):
+        self.profile = profile
+        self.cmdlet_mappings = self._load_cmdlet_mappings()
+
+    def translate_statements(
+        self,
+        statements: list[PowerCLIStatement]
+    ) -> list[AnsibleTask]:
+        """Translate parsed statements to Ansible tasks."""
+
+    def _translate_cmdlet(self, stmt: PowerCLIStatement) -> AnsibleTask:
+        """Map cmdlet to Ansible module using mappings.yaml."""
+
+    def _translate_integration(self, stmt: PowerCLIStatement) -> AnsibleTask:
+        """Generate adapter call or BLOCKED stub based on profile."""
+```
+
+**Statement Categories**:
+
+- **context** - Environment setup: `$Network = "dev-network"` → `set_fact`
+- **lookup** - Read operations: `Get-VM` → `k8s_info`
+- **mutation** - State changes: `New-VM`, `Start-VM` → `kubevirt_vm`
+- **integration** - External systems: `New-TagAssignment` → labels, `New-Snapshot` → VolumeSnapshot
+- **gate** - Validations: `if ($x -gt 16) { throw }` → `assert`
+
+**Cmdlet Mappings** (`powercli_cmdlet_mappings.yaml`):
+
+```yaml
+vm_operations:
+  new_vm:
+    match:
+      cmdlet: New-VM
+    ansible:
+      module: kubevirt.core.kubevirt_vm
+      params:
+        state: present
+        name: "{Name}"
+        namespace: "{{ target_namespace }}"
+        cpu_cores: "{NumCpu}"
+        memory: "{MemoryGB}Gi"
+    category: mutation
+    tags: [mutation, vm]
+
+tagging:
+  new_tag_assignment:
+    match:
+      cmdlet: New-TagAssignment
+    ansible:
+      module: kubernetes.core.k8s
+      params:
+        state: patched
+        kind: VirtualMachine
+        name: "{Entity}"
+        definition:
+          metadata:
+            labels:
+              "{tag_key}": "{tag_value}"
+    category: integration
+    integration_type: tagging
+```
+
+**Parameter Substitution**:
+- `{ParamName}` - Replaced with cmdlet parameter value
+- `{ParamName}Gi` - Preserved suffix (e.g., `{MemoryGB}Gi` → `"8Gi"`)
+- PowerShell variables (`$VMName`) → Jinja2 templates (`{{ vmname }}`)
+
+**vRealize Workflow Translation** (`vrealize_workflow.py`):
+
+**Components**:
+
+1. **WorkflowParser** - Parses vRO XML workflows:
+```python
+class WorkflowParser:
+    def parse_workflow(self, xml_file: Path) -> list[WorkflowItem]:
+        """Parse vRO workflow XML into execution-ordered items."""
+
+    def _topological_sort(self, items: list[WorkflowItem]) -> list[WorkflowItem]:
+        """Sort workflow items by execution dependencies."""
+```
+
+2. **JavaScriptToAnsibleTranslator** - Translates scriptable tasks:
+```python
+class JavaScriptToAnsibleTranslator:
+    def translate_items(
+        self,
+        items: list[WorkflowItem]
+    ) -> list[AnsibleTask]:
+        """Translate workflow items to Ansible tasks."""
+
+    def _translate_scriptable_task(self, item: WorkflowItem) -> AnsibleTask:
+        """Convert JavaScript code to equivalent Ansible task."""
+
+    def _detect_integration_calls(self, code: str) -> dict:
+        """Detect NSX, ServiceNow, ITSM integration patterns."""
+```
+
+**Integration Detection** - Allowlist-based pattern matching:
+```python
+INTEGRATION_PATTERNS = {
+    "nsx": ["nsxClient", "logicalSwitch", "logicalRouter"],
+    "servicenow": ["RESTHost", "sys_id", "incident"],
+    "itsm": ["ticketCreate", "approvalRequest"],
+}
+```
+
+**Profile-Driven Decisions**:
+
+When the translator encounters integrations that require profile configuration:
+
+1. **Network Adapters** (`New-NetworkAdapter`):
+   - **With profile.network_security**: Generate NAD adapter call
+   - **Without profile**: Generate BLOCKED stub with guidance
+
+2. **Approval Gates** (vRO approval workflows):
+   - **With profile.approval.model**: Generate AAP approval adapter
+   - **Without profile**: Generate BLOCKED stub
+
+3. **Storage Tiers** (`$Datastore = "prod-ceph-rbd"`):
+   - **With profile.storage_tiers**: Map to storageClassName
+   - **Without profile**: Use default storage class
+
+**BLOCKED Stub Example**:
+```yaml
+- name: BLOCKED - Network adapter creation requires configuration
+  ansible.builtin.fail:
+    msg: |
+      BLOCKED: Network Adapter Creation
+
+      Evidence: New-NetworkAdapter -NetworkName "prod-network"
+
+      TO FIX: Add to profile.yml:
+        network_security:
+          model: networkpolicy
+
+      Then re-run: ops-translate generate --profile <profile>
+  tags: [blocked, network]
+```
+
+**Integration with Role Generation**:
+
+The Translate Module is called by `ansible_project.py` during role generation:
+
+```python
+def _generate_powercli_role(
+    workflow: dict,
+    source_file: Path,
+    project_dir: Path,
+    profile: ProfileSchema | None = None,
+) -> None:
+    from ops_translate.translate.powercli_script import (
+        PowerCLIScriptParser,
+        PowerShellToAnsibleTranslator,
+    )
+
+    # Parse script
+    parser = PowerCLIScriptParser()
+    statements = parser.parse_file(source_file)
+
+    # Translate to tasks
+    translator = PowerShellToAnsibleTranslator(profile=profile)
+    tasks = translator.translate_statements(statements)
+
+    # Generate YAML
+    tasks_yaml = generate_ansible_yaml(tasks)
+
+    # Write to role structure
+    (role_dir / "tasks" / "main.yml").write_text(tasks_yaml)
+```
+
+**Translation vs Intent Extraction**:
+
+| Approach | Use Case | Determinism | Profile-Aware | Coverage |
+|----------|----------|-------------|---------------|----------|
+| **Translate Module** | Supported cmdlets/workflows | ✅ Deterministic | ✅ Yes | Common patterns |
+| **Extract + Generate** | Complex/custom scenarios | ⚠️ LLM-based | ✅ Yes | All inputs |
+
+**When to Use Each**:
+
+- **Use Translate Module**: PowerCLI scripts with standard cmdlets (`New-VM`, `Start-VM`, `New-TagAssignment`)
+- **Use Intent Extraction**: Complex logic, custom functions, multi-source merging
+
+**Key Benefits**:
+
+1. **Deterministic Output** - Same input always produces identical output
+2. **No LLM Required** - Fast, offline translation for common patterns
+3. **Profile-Driven** - Adapts to target environment configuration
+4. **Transparent** - Clear mapping files, no "black box" translation
+5. **Extensible** - Add new cmdlet mappings via YAML
 
 ## Data Flow
 

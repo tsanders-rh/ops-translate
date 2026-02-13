@@ -1018,9 +1018,84 @@ output/ansible/
     └── provision_vm
         ├── defaults
         │   └── main.yml
+        ├── meta
+        │   └── main.yml
+        ├── README.md
         └── tasks
             └── main.yml
 ```
+
+**PowerCLI Translation Example**:
+
+If your PowerCLI script contains standard cmdlets, they are **automatically translated** to Ansible tasks:
+
+**PowerCLI Input** (`provision-vm.ps1`):
+```powershell
+# Set environment configuration
+$Network = "dev-network"
+
+# Create VM
+New-VM -Name $VMName -NumCpu 4 -MemoryGB 8
+
+# Apply tags
+New-TagAssignment -Entity $VMName -Tag "Environment:Dev"
+
+# Start VM
+Start-VM -VM $VMName
+```
+
+**Generated Ansible Tasks** (`roles/provision_vm/tasks/main.yml`):
+```yaml
+---
+# Ansible role: provision_vm
+# Source: PowerCLI Script
+# Original: input/powercli/provision-vm.ps1
+
+- name: Set network configuration
+  ansible.builtin.set_fact:
+    network: "dev-network"
+  tags: [context]
+
+- name: Create VM {{ vmname }}
+  kubevirt.core.kubevirt_vm:
+    state: present
+    name: "{{ vmname }}"
+    namespace: "{{ target_namespace }}"
+    cpu_cores: "4"
+    memory: "8Gi"
+  tags: [mutation, vm]
+
+- name: Apply environment label to {{ vmname }}
+  kubernetes.core.k8s:
+    state: patched
+    kind: VirtualMachine
+    name: "{{ vmname }}"
+    namespace: "{{ target_namespace }}"
+    definition:
+      metadata:
+        labels:
+          environment: "dev"
+  tags: [integration, tagging]
+
+- name: Start VM {{ vmname }}
+  kubevirt.core.kubevirt_vm:
+    state: running
+    name: "{{ vmname }}"
+    namespace: "{{ target_namespace }}"
+  tags: [mutation, vm]
+```
+
+**Key Points**:
+- **Direct translation**: PowerCLI cmdlets → Ansible modules (deterministic, no LLM)
+- **Variable conversion**: `$VMName` → `{{ vmname }}`
+- **Module mapping**:
+  - `New-VM` → `kubevirt.core.kubevirt_vm` (state: present)
+  - `Start-VM` → `kubevirt.core.kubevirt_vm` (state: running)
+  - `New-TagAssignment` → `kubernetes.core.k8s` (labels)
+- **Tags**: Categorize tasks (mutation, integration, context, lookup, gate)
+- **Profile-aware**: Uses `{{ target_namespace }}` from profile
+
+See [POWERCLI_MAPPINGS.md](../docs/POWERCLI_MAPPINGS.md) for complete cmdlet mapping reference.
 
 ### Step 21: Review Generation README
 

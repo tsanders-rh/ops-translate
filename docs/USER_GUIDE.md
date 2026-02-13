@@ -885,9 +885,16 @@ ops-translate generate --profile <profile_name> [--no-ai] [--assume-existing-vms
 **Output** (greenfield mode):
 - `output/kubevirt/vm.yaml`
 - `output/ansible/site.yml`
-- `output/ansible/roles/provision_vm/tasks/main.yml`
-- `output/ansible/roles/provision_vm/defaults/main.yml`
+- `output/ansible/roles/<role_name>/tasks/main.yml` - Translated tasks from PowerCLI/vRO workflows
+- `output/ansible/roles/<role_name>/defaults/main.yml` - Variables extracted from workflow parameters
+- `output/ansible/roles/<role_name>/meta/main.yml` - Role metadata for Ansible Galaxy
+- `output/ansible/roles/<role_name>/README.md` - Role documentation
 - `output/README.md`
+
+**Role Generation**:
+- **PowerCLI scripts**: Cmdlets are deterministically translated to Ansible tasks (New-VM → kubevirt_vm, New-TagAssignment → k8s labels)
+- **vRealize workflows**: Workflow items are translated to Ansible tasks with integration detection
+- **Skeleton roles**: Created for workflows without direct translation support
 
 **Output** (MTV mode with `--assume-existing-vms`):
 - `output/ansible/site.yml` - Playbook with validation tasks
