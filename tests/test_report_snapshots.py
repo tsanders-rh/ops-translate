@@ -6,8 +6,6 @@ and that changes to the report template are intentional and reviewed.
 """
 
 import json
-from pathlib import Path
-from tempfile import TemporaryDirectory
 
 from ops_translate.report.html import build_report_context, render_report_template
 from ops_translate.workspace import Workspace
