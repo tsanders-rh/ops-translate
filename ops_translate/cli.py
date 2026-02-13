@@ -788,6 +788,11 @@ def preview(target: str = typer.Option(..., "--target", help="Target platform (o
 @app.command()
 def generate(
     profile: str = typer.Option(..., "--profile", help="Profile to use (lab|prod)"),
+    translation_profile: str | None = typer.Option(
+        None,
+        "--translation-profile",
+        help="Path to translation profile YAML for deterministic adapter generation",
+    ),
     no_ai: bool = typer.Option(False, "--no-ai", help="Use templates only, no AI"),
     format: str = typer.Option(
         "yaml",
@@ -840,6 +845,25 @@ def generate(
     if profile not in config.get("profiles", {}):
         console.print(f"[red]Error: Profile '{profile}' not found in config[/red]")
         raise typer.Exit(1)
+
+    # Load translation profile if provided
+    translation_profile_schema = None
+    if translation_profile:
+        from ops_translate.intent.profile import load_profile
+
+        profile_path = Path(translation_profile)
+        if not profile_path.exists():
+            console.print(f"[red]Error: Translation profile not found: {translation_profile}[/red]")
+            raise typer.Exit(1)
+
+        try:
+            translation_profile_schema = load_profile(profile_path)
+            console.print(
+                f"[green]✓ Loaded translation profile:[/green] {translation_profile_schema.name}"
+            )
+        except ValueError as e:
+            console.print(f"[red]Error: Invalid translation profile:[/red]\n{e}")
+            raise typer.Exit(1)
 
     # Validate locking backend
     valid_backends = ["redis", "consul", "file"]
@@ -904,6 +928,7 @@ def generate(
         use_ai=not no_ai,
         output_format=format,
         assume_existing_vms=assume_existing,
+        translation_profile=translation_profile_schema,
     )
 
     # Generate locking setup documentation if vRealize workflows exist

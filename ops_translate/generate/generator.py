@@ -420,6 +420,7 @@ def generate_all(
     use_ai: bool = False,
     output_format: str = "yaml",
     assume_existing_vms: bool = False,
+    translation_profile=None,
 ):
     """
     Generate all artifacts (KubeVirt + Ansible) using AI or templates.
@@ -430,11 +431,12 @@ def generate_all(
         use_ai: If True, use LLM. If False, use templates.
         output_format: Output format (yaml, json, kustomize, argocd)
         assume_existing_vms: If True, assume VMs exist (MTV mode) - skip VM YAML generation
+        translation_profile: ProfileSchema for deterministic Ansible adapter generation
     """
     if use_ai:
-        generate_with_ai(workspace, profile, output_format, assume_existing_vms)
+        generate_with_ai(workspace, profile, output_format, assume_existing_vms, translation_profile)
     else:
-        generate_with_templates(workspace, profile, output_format, assume_existing_vms)
+        generate_with_templates(workspace, profile, output_format, assume_existing_vms, translation_profile)
 
 
 def generate_with_ai(
@@ -442,6 +444,7 @@ def generate_with_ai(
     profile: str,
     output_format: str = "yaml",
     assume_existing_vms: bool = False,
+    translation_profile=None,
 ):
     """
     Generate artifacts using LLM.
@@ -561,6 +564,7 @@ def generate_with_templates(
     profile: str,
     output_format: str = "yaml",
     assume_existing_vms: bool = False,
+    translation_profile=None,
 ):
     """
     Generate artifacts using Jinja2 templates or direct generation.
