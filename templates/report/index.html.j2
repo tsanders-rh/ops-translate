@@ -34,8 +34,8 @@
                 </button>
                 <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-architecture" data-tab="architecture">
                     Architecture & Gaps
-                    {% if gaps_data and gaps_data.components %}
-                    {% set blocked_count = gaps_data.components | selectattr('level', 'equalto', 'BLOCKED') | list | length %}
+                    {% if gaps and gaps.components %}
+                    {% set blocked_count = gaps.components | selectattr('level', 'equalto', 'BLOCKED') | list | length %}
                     {% if blocked_count > 0 %}
                     <span class="tab-badge">{{ blocked_count }}</span>
                     {% endif %}
@@ -238,9 +238,9 @@
     </section>
 
     <!-- Architectural Decisions Required -->
-    {% if gaps_data and gaps_data.components %}
-    {% set blocked_components = gaps_data.components | selectattr('level', 'equalto', 'BLOCKED') | list %}
-    {% set partial_components = gaps_data.components | selectattr('level', 'equalto', 'PARTIAL') | list %}
+    {% if gaps and gaps.components %}
+    {% set blocked_components = gaps.components | selectattr('level', 'equalto', 'BLOCKED') | list %}
+    {% set partial_components = gaps.components | selectattr('level', 'equalto', 'PARTIAL') | list %}
     {% if blocked_components or partial_components %}
     <section class="decisions-required-section">
         <div class="container">
