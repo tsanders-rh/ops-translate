@@ -6,6 +6,7 @@ artifacts for human review before deployment.
 """
 
 import logging
+import re
 from pathlib import Path
 from typing import Any, cast
 
@@ -24,6 +25,26 @@ logger = logging.getLogger(__name__)
 
 # Get project root to find templates
 PROJECT_ROOT = Path(__file__).parent.parent.parent
+
+# Pre-compiled regex patterns for performance
+_NORMALIZE_PATTERN = re.compile(r"[-\s_]+")
+_FILE_EXT_PATTERN = re.compile(r"\.(workflow\.xml|ps1)$")
+_TITLE_NORMALIZE_PATTERN = re.compile(r"[_-]")
+
+
+def _normalize_name(text: str) -> str:
+    """Normalize text by replacing hyphens, spaces, underscores with single underscore."""
+    return _NORMALIZE_PATTERN.sub("_", text.lower())
+
+
+def _strip_file_extensions(filename: str) -> str:
+    """Strip workflow.xml or .ps1 extensions from filename."""
+    return _FILE_EXT_PATTERN.sub("", filename)
+
+
+def _format_title(text: str) -> str:
+    """Format text for display as title (replace underscores/hyphens with spaces, title case)."""
+    return _TITLE_NORMALIZE_PATTERN.sub(" ", text).title()
 
 
 def generate_html_report(
@@ -359,29 +380,31 @@ def _load_source_files(
     """
     sources = []
 
-    # PowerCLI sources
+    # PowerCLI sources - cache stat results during iteration
     powercli_dir = workspace.root / "input/powercli"
     if powercli_dir.exists():
         for ps_file in powercli_dir.glob("*.ps1"):
+            stat_result = ps_file.stat()  # Cache stat call
             sources.append(
                 {
                     "name": ps_file.name,
                     "type": "PowerCLI",
                     "path": str(ps_file.relative_to(workspace.root)),
-                    "size": ps_file.stat().st_size,
+                    "size": stat_result.st_size,
                 }
             )
 
-    # vRealize sources
+    # vRealize sources - cache stat results during iteration
     vrealize_dir = workspace.root / "input/vrealize"
     if vrealize_dir.exists():
         for xml_file in vrealize_dir.glob("*.xml"):
+            stat_result = xml_file.stat()  # Cache stat call
             sources.append(
                 {
                     "name": xml_file.name,
                     "type": "vRealize",
                     "path": str(xml_file.relative_to(workspace.root)),
-                    "size": xml_file.stat().st_size,
+                    "size": stat_result.st_size,
                 }
             )
 
@@ -408,20 +431,26 @@ def _enrich_source_status(sources: list[dict[str, Any]], gaps_data: dict[str, An
     """
     components = gaps_data.get("components", [])
 
+    # Build location lookup dict for O(1) access (performance optimization)
+    components_by_location: dict[str, list[dict[str, Any]]] = {}
+    for comp in components:
+        location = comp.get("location", "")
+        if location:
+            # Extract base location (before any dot)
+            base_location = location.split(".")[0] if "." in location else location
+            if base_location not in components_by_location:
+                components_by_location[base_location] = []
+            components_by_location[base_location].append(comp)
+
     for source in sources:
         filename = source["name"]
         # Get filename without extension for matching
-        filename_base = filename.replace(".workflow.xml", "").replace(".ps1", "")
+        filename_base = _strip_file_extensions(filename)
 
-        # Find components from this file
+        # Find components from this file using lookup dict (O(1) instead of O(n))
         # Components have location like "provision-vm-with-nsx-firewall"
         # while source files have names like "provision-vm-with-nsx-firewall.workflow.xml"
-        file_components = [
-            comp
-            for comp in components
-            if comp.get("location", "") == filename_base
-            or comp.get("location", "").startswith(filename_base + ".")
-        ]
+        file_components = components_by_location.get(filename_base, [])
 
         if not file_components:
             # No gaps found - file is clean or fully supported
@@ -792,6 +821,11 @@ def _generate_integration_heatmap(
     for workflow_name in workflows.keys():
         workflow_integrations[workflow_name] = {cat: False for cat in integration_categories}
 
+    # Pre-normalize workflow names once (performance optimization)
+    normalized_workflows: dict[str, str] = {
+        name: _normalize_name(name) for name in workflow_integrations.keys()
+    }
+
     # Source 1: Detect integrations from gaps.json components
     if gaps_data:
         components = gaps_data.get("components", [])
@@ -800,12 +834,11 @@ def _generate_integration_heatmap(
             component_type = component.get("component_type", "").lower()
             component_name = component.get("name", "").lower()
 
-            # Find matching workflow
-            for workflow_name in workflow_integrations.keys():
-                # Normalize names for comparison (handle hyphens vs underscores)
-                normalized_location = location.lower().replace("-", "_").replace(" ", "_")
-                normalized_workflow = workflow_name.lower().replace("-", "_").replace(" ", "_")
+            # Normalize location once per component
+            normalized_location = _normalize_name(location)
 
+            # Find matching workflow using pre-normalized names
+            for workflow_name, normalized_workflow in normalized_workflows.items():
                 # Match by location field or workflow name substring
                 if (
                     normalized_location in normalized_workflow
@@ -939,18 +972,17 @@ def generate_docs_html(output_path: Path) -> None:
         logger.warning(f"Documentation directory not found: {source_docs_dir}")
         return
 
-    # Convert each markdown file to HTML
-    for md_file in source_docs_dir.glob("*.md"):
-        html_content = convert_markdown_to_html(md_file)
-        output_file = docs_dir / f"{md_file.stem}.html"
-        output_file.write_text(html_content)
-        logger.info(f"Generated documentation: {output_file.name}")
-
-    # Copy any images or assets from docs
-    for asset_file in source_docs_dir.glob("*.png"):
-        shutil.copy2(asset_file, docs_dir / asset_file.name)
-    for asset_file in source_docs_dir.glob("*.jpg"):
-        shutil.copy2(asset_file, docs_dir / asset_file.name)
+    # Process all files in single iteration (performance optimization)
+    for file_path in source_docs_dir.iterdir():
+        if file_path.suffix == ".md":
+            # Convert markdown to HTML
+            html_content = convert_markdown_to_html(file_path)
+            output_file = docs_dir / f"{file_path.stem}.html"
+            output_file.write_text(html_content)
+            logger.info(f"Generated documentation: {output_file.name}")
+        elif file_path.suffix in (".png", ".jpg", ".jpeg"):
+            # Copy images/assets
+            shutil.copy2(file_path, docs_dir / file_path.name)
 
 
 def convert_markdown_to_html(md_file: Path) -> str:
@@ -983,7 +1015,7 @@ def convert_markdown_to_html(md_file: Path) -> str:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{md_file.stem.replace('_', ' ').replace('-', ' ').title()}</title>
+    <title>{_format_title(md_file.stem)}</title>
     <link rel="stylesheet" href="../assets/style.css">
     <style>
         .doc-container {{
@@ -1093,7 +1125,7 @@ def convert_markdown_to_html(md_file: Path) -> str:
 <body>
     <div class="doc-container">
         <div class="doc-header">
-            <h1>{md_file.stem.replace('_', ' ').replace('-', ' ').title()}</h1>
+            <h1>{_format_title(md_file.stem)}</h1>
         </div>
         <div class="doc-nav">
             <a href="../index.html">← Back to Report</a>

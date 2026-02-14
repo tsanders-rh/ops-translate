@@ -281,6 +281,10 @@ def discover_classifiers() -> list:
     return classifiers
 
 
+# Module-level cache for classifiers (performance optimization)
+_CLASSIFIER_CACHE: list[Any] | None = None
+
+
 def classify_components(
     analysis: dict[str, Any], classifiers: list[Any] | None = None
 ) -> list[ClassifiedComponent]:
@@ -314,17 +318,26 @@ def classify_components(
     """
     import logging
 
+    global _CLASSIFIER_CACHE
+
     logger = logging.getLogger(__name__)
 
     if classifiers is None:
-        # Auto-discover all available classifiers
-        classifiers = discover_classifiers()
+        # Use cached classifiers if available (performance optimization)
+        if _CLASSIFIER_CACHE is not None:
+            classifiers = _CLASSIFIER_CACHE
+        else:
+            # Auto-discover all available classifiers
+            classifiers = discover_classifiers()
 
-        # Fallback to NSX classifier if discovery fails
-        if not classifiers:
-            from ops_translate.intent.classifiers.nsx import NsxClassifier
+            # Fallback to NSX classifier if discovery fails
+            if not classifiers:
+                from ops_translate.intent.classifiers.nsx import NsxClassifier
 
-            classifiers = [NsxClassifier()]
+                classifiers = [NsxClassifier()]
+
+            # Cache for future calls
+            _CLASSIFIER_CACHE = classifiers
 
     classified: list[ClassifiedComponent] = []
 
