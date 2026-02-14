@@ -61,6 +61,7 @@ workspace/
 /*/mapping/
 /*/output/
 /*/runs/
+/*/.ops-translate/
 # Don't ignore source code directories
 !ops_translate/intent/
 !ops_translate/input/
