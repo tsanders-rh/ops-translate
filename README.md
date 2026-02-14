@@ -67,11 +67,11 @@ Built for ops and infra engineers evaluating migration paths from VMware to Open
 
 After running ops-translate, you'll have:
 
-✅ **Migration Readiness Report** - Interactive HTML with classification, gaps, and recommendations
-✅ **KubeVirt Manifests** - Ready-to-deploy VirtualMachine YAML
-✅ **Ansible Playbooks** - Executable roles with TODO placeholders for manual work
-✅ **Gap Analysis** - Detailed migration paths for each component
-✅ **Decision Guidance** - Interactive questionnaire for missing context
+- ✅ **Migration Readiness Report** - Interactive HTML with classification, gaps, and recommendations
+- ✅ **KubeVirt Manifests** - Ready-to-deploy VirtualMachine YAML
+- ✅ **Ansible Playbooks** - Executable roles with TODO placeholders for manual work
+- ✅ **Gap Analysis** - Detailed migration paths for each component
+- ✅ **Decision Guidance** - Interactive questionnaire for missing context
 
 All generated artifacts are customizable via Jinja2 templates.
 
