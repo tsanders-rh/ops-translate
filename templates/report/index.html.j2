@@ -230,7 +230,7 @@
                         </div>
                     </div>
                     <p class="story-conclusion">
-                        This is not a research project. <strong>ops-translate</strong> provides production-grade automation for standard patterns and battle-tested guidance for complex scenarios—reducing migration risk and accelerating time-to-value.
+                        <strong>ops-translate</strong> provides automation for standard patterns and documented guidance for complex scenarios.
                     </p>
                 </div>
             </div>
@@ -350,7 +350,7 @@
                         <div class="card-label">Partial Translation</div>
                     </div>
                 </div>
-                <div class="card card-blocked" data-filter="BLOCKED" title="Components solved with production-grade patterns and expert guidance">
+                <div class="card card-blocked" data-filter="BLOCKED" title="Components requiring expert guidance">
                     <div class="card-icon">🎯</div>
                     <div class="card-content">
                         <div class="card-number">{{ summary.counts.BLOCKED }}</div>
@@ -405,7 +405,7 @@
             <!-- Expert Patterns Callout -->
             {% if summary.has_blocking_issues and gaps and gaps.components %}
             <div class="next-steps-callout">
-                <h3>🎯 Expert-Guided Migration (Production-Grade Patterns Available)</h3>
+                <h3>🎯 Expert-Guided Migration</h3>
                 {% for component in gaps.components %}
                     {% if component.level == "BLOCKED" %}
                     <div class="blocking-item">
@@ -414,7 +414,7 @@
                             {% if component.recommendations and component.recommendations|length > 0 %}
                             {{ component.recommendations[0] }}
                             {% else %}
-                            We provide production-grade patterns and expert guidance for this component.
+                            We provide documented patterns and expert guidance for this component.
                             {% endif %}
                         </p>
                         {% if component.pattern_link %}
@@ -472,7 +472,7 @@
                 <div class="architecture-card arch-expert">
                     <div class="arch-icon">🎯</div>
                     <h3>Expert-Guided Patterns</h3>
-                    <p class="arch-description">Production-grade patterns for complex scenarios</p>
+                    <p class="arch-description">Documented patterns for complex scenarios</p>
                     <ul class="arch-components">
                         <li>Approval Workflows → Ansible Automation Platform</li>
                         <li>Custom Orchestration → Ansible Playbooks</li>
@@ -485,7 +485,7 @@
 
             <!-- AAP Integration Note -->
             <div class="aap-integration-note">
-                <p><strong>🔧 Supported Automation Stack:</strong> Expert-guided patterns are delivered as Ansible roles and workflows, aligning with Red Hat's supported automation stack (Ansible Automation Platform). This ensures production-grade support, not DIY scripting.</p>
+                <p><strong>🔧 Supported Automation Stack:</strong> Expert-guided patterns are delivered as Ansible roles and workflows, aligning with Red Hat's supported automation stack (Ansible Automation Platform).</p>
             </div>
 
             <!-- Migration Journey -->
