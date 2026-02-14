@@ -131,7 +131,7 @@ clear
 # ============================================================================
 # Scene 0: Introduction
 # ============================================================================
-print_header "ops-translate: VMware to OpenShift Migration Planning"
+print_header "ops-translate: VMware Automation Translation & Migration"
 echo -e "${BOLD}https://github.com/tsanders-rh/ops-translate${NC}"
 echo ""
 print_narration "ops-translate helps you migrate VMware automation to OpenShift."
@@ -141,10 +141,6 @@ echo -e "${CYAN}It gives you:${NC}"
 echo -e "  ${BOLD}1.${NC} Gap analysis - what needs manual work"
 echo -e "  ${BOLD}2.${NC} Architecture guidance - how to handle NSX, approvals, etc."
 echo -e "  ${BOLD}3.${NC} Generated code - Ansible + KubeVirt to get started"
-echo ""
-wait_medium
-print_narration "This is a PLANNING tool. It won't magically migrate everything,"
-echo -e "${MAGENTA}but it will save you weeks of analysis and give you a clear path forward.${NC}"
 echo ""
 wait_medium
 echo -e "${BOLD}${CYAN}What we'll demo:${NC}"
