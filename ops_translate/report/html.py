@@ -14,6 +14,7 @@ import markdown
 import yaml
 from jinja2 import Environment, FileSystemLoader
 
+from ops_translate.decisions import DecisionManager
 from ops_translate.report.loaders import (
     ReportContextBuilder,
     ReportDataLoader,
@@ -189,6 +190,19 @@ def build_report_context(workspace: Workspace, profile: str | None = None) -> di
 
     # Calculate effort metrics for executive dashboard
     effort_metrics = _calculate_effort_metrics(analysis_data, gaps_data)
+
+    # Load and apply decisions if available
+    decision_manager = DecisionManager(workspace.root)
+    decisions_data = None
+    try:
+        decisions_data = decision_manager.load_decisions()
+        if decisions_data and gaps_data and "components" in gaps_data:
+            # Apply decisions to update component classifications
+            for i, component in enumerate(gaps_data["components"]):
+                gaps_data["components"][i] = decision_manager.apply_to_component(component)
+            logger.info("Applied decisions to component classifications")
+    except (ValueError, FileNotFoundError) as e:
+        logger.warning(f"Could not load decisions: {e}")
 
     # Enrich components with pattern links
     if gaps_data and "components" in gaps_data:
