@@ -128,12 +128,31 @@ trap cleanup EXIT
 # Main demo
 clear
 
-print_header "ops-translate Demo"
-echo -e "${BOLD}AI-assisted migration from VMware automation to OpenShift Virtualization${NC}"
-echo -e "${BOLD}https://github.com/tsanders-rh/ops-translate"
+# ============================================================================
+# Scene 0: Introduction
+# ============================================================================
+print_header "ops-translate: VMware to OpenShift Migration Planning"
+echo -e "${BOLD}https://github.com/tsanders-rh/ops-translate${NC}"
 echo ""
-print_narration "This demo shows the complete workflow:"
-echo -e "  ${CYAN}Initialize → Import → Summarize → Extract → Review → Merge → Validate → Generate${NC}"
+print_narration "ops-translate helps you migrate VMware automation to OpenShift."
+echo ""
+echo -e "${CYAN}You give it vRealize workflows or PowerCLI scripts.${NC}"
+echo -e "${CYAN}It gives you:${NC}"
+echo -e "  ${BOLD}1.${NC} Gap analysis - what needs manual work"
+echo -e "  ${BOLD}2.${NC} Architecture guidance - how to handle NSX, approvals, etc."
+echo -e "  ${BOLD}3.${NC} Generated code - Ansible + KubeVirt to get started"
+echo ""
+wait_medium
+print_narration "This is a PLANNING tool. It won't magically migrate everything,"
+echo -e "${MAGENTA}but it will save you weeks of analysis and give you a clear path forward.${NC}"
+echo ""
+wait_medium
+echo -e "${BOLD}${CYAN}What we'll demo:${NC}"
+echo -e "  • Initialize workspace and import vRealize workflows"
+echo -e "  • Analyze for gaps (pattern matching, no AI required)"
+echo -e "  • Generate HTML reports for stakeholders"
+echo -e "  • Extract operational intent with AI"
+echo -e "  • Generate Ansible + KubeVirt code with linting"
 echo ""
 
 press_enter
@@ -142,7 +161,9 @@ press_enter
 # Scene 1: Initialize & Import
 # ============================================================================
 print_header "Scene 1: Initialize & Import"
-print_narration "Initialize workspace and import multiple automation sources"
+print_narration "You don't migrate automation by rewriting everything blind."
+echo -e "${MAGENTA}You start by understanding what you have.${NC}"
+echo ""
 wait_short
 
 run_command "$OPS_CMD init demo-workspace"
@@ -158,41 +179,123 @@ else
 fi
 press_enter
 
-print_narration "Import dev provisioning script"
+print_narration "Import realistic workflow with NSX networking components"
 wait_short
-run_command "$OPS_CMD import --source powercli --file ../examples/merge-scenario/dev-provision.ps1"
-wait_short
-
-print_narration "Import prod provisioning script"
-wait_short
-run_command "$OPS_CMD import --source powercli --file ../examples/merge-scenario/prod-provision.ps1"
+run_command "$OPS_CMD import --source vrealize --file ../examples/virt-first-realworld/vrealize/provision-vm-with-nsx-firewall.workflow.xml"
 wait_short
 
-print_narration "Import approval workflow"
+print_narration "Import web application workflow with NSX load balancer"
 wait_short
-run_command "$OPS_CMD import --source vrealize --file ../examples/merge-scenario/approval.workflow.xml"
+run_command "$OPS_CMD import --source vrealize --file ../examples/virt-first-realworld/vrealize/provision-web-app-with-nsx-lb.workflow.xml"
 press_enter
 
 # ============================================================================
-# Scene 2: Summarize (No AI)
+# Scene 2: Analyze for Gaps
 # ============================================================================
-print_header "Scene 2: Static Analysis Summary"
-print_narration "Analyze all sources WITHOUT AI to detect structure"
+print_header "Scene 2: Analyze for Gaps"
+print_narration "The analyze command is where the magic happens."
+echo -e "${MAGENTA}It detects external dependencies: NSX networking, ServiceNow, custom plugins.${NC}"
+echo ""
 wait_short
 
-run_command "$OPS_CMD summarize"
+print_narration "Then classifies each component:"
+echo -e "  ${GREEN}SUPPORTED:${NC} Can translate automatically"
+echo -e "  ${YELLOW}PARTIAL:${NC} Needs manual configuration"
+echo -e "  ${RED}BLOCKED:${NC} No direct equivalent (check Architecture Patterns)"
+echo ""
 wait_medium
 
-print_narration "See what was detected across all sources:"
+print_narration "This is pattern matching - no AI needed, runs offline."
 wait_short
-run_command "cat intent/summary.md | head -40"
+
+run_command "$OPS_CMD analyze"
+wait_medium
+
+print_narration "Gap analysis created. Let's view the summary:"
+wait_short
+run_command "cat intent/gaps.md | head -50"
+press_enter
+
+print_narration "Full component details available in JSON format:"
+wait_short
+run_command "cat intent/gaps.json | head -30"
 press_enter
 
 # ============================================================================
-# Scene 3: Extract Intent
+# Scene 3: Incremental Analysis
 # ============================================================================
-print_header "Scene 3: Extract Operational Intent"
-print_narration "Extract normalized intent using AI (or mock provider)"
+print_header "Scene 3: Incremental Analysis (Caching)"
+print_narration "Once analyzed, ops-translate caches results for fast iteration."
+echo ""
+wait_short
+
+print_narration "Run analyze again - unchanged workflows are skipped:"
+wait_short
+run_command "$OPS_CMD analyze"
+wait_medium
+
+print_narration "Now let's modify one workflow to trigger re-analysis:"
+wait_short
+run_command "touch input/vrealize/provision-vm-with-nsx-firewall.workflow.xml"
+wait_short
+
+print_narration "Run analyze again - only changed file is processed:"
+wait_short
+run_command "$OPS_CMD analyze"
+wait_medium
+
+print_narration "Incremental analysis makes iteration 70-90% faster!"
+echo -e "${CYAN}Cache stored in .ops-translate/analysis-cache.json${NC}"
+echo ""
+press_enter
+
+# ============================================================================
+# Scene 4: Generate HTML Report
+# ============================================================================
+print_header "Scene 4: Generate HTML Report"
+print_narration "The HTML report is what you show to stakeholders."
+echo ""
+wait_short
+
+print_narration "It has:"
+echo -e "  • Executive Summary with percentages ('75% automatable')"
+echo -e "  • Migration Effort Dashboard (visual bars)"
+echo -e "  • Architecture Patterns guide (5 patterns with code examples)"
+echo -e "  • Component-level details with recommendations"
+echo ""
+wait_medium
+
+print_narration "This is self-contained - you can email it, no external dependencies."
+wait_short
+
+run_command "$OPS_CMD report"
+wait_medium
+
+print_narration "Report generated! Let's see what was created:"
+wait_short
+if command -v tree &> /dev/null; then
+    run_command "tree output/report/"
+else
+    run_command "ls -la output/report/"
+    echo ""
+fi
+wait_short
+
+print_narration "In a real demo, you would open output/report/index.html in a browser."
+echo -e "${YELLOW}For this terminal demo, here's what the report contains:${NC}"
+echo ""
+echo -e "  ${BOLD}Migration Effort Dashboard${NC} - Visual breakdown of migration complexity"
+echo -e "  ${BOLD}Executive Summary${NC} - High-level metrics for decision makers"
+echo -e "  ${BOLD}Component Analysis${NC} - Detailed breakdown with recommendations"
+echo -e "  ${BOLD}Architecture Patterns${NC} - How to handle NSX, approvals, ServiceNow, etc."
+echo ""
+press_enter
+
+# ============================================================================
+# Scene 5: Extract Operational Intent
+# ============================================================================
+print_header "Scene 5: Extract Operational Intent"
+print_narration "Extract normalized intent using AI (or mock provider for demo)"
 wait_short
 
 # Configure mock provider to avoid API costs
@@ -214,127 +317,63 @@ profiles:
 EOF
 
 run_command "$OPS_CMD intent extract"
-press_enter
+wait_medium
 
 print_narration "View one of the extracted intent files:"
 wait_short
-run_command "cat intent/dev-provision.intent.yaml | head -30"
+run_command "cat intent/provision-vm-with-nsx-firewall.intent.yaml | head -40"
 wait_short
 
-print_narration "Three intent files created (one per source):"
-run_command "ls -1 intent/*.intent.yaml"
-press_enter
-
-# ============================================================================
-# Scene 4: Review Gap Analysis
-# ============================================================================
-print_header "Scene 4: Gap Analysis Review"
-print_narration "View detected gaps and migration guidance"
-wait_short
-
-if [ -f "intent/gaps.md" ]; then
-    print_narration "Gap analysis report (shows what needs manual work):"
-    run_command "cat intent/gaps.md | head -40"
-else
-    print_narration "No gap analysis generated (mock provider or no complex components)"
-fi
-press_enter
-
-# ============================================================================
-# Scene 4.5: Interactive Interview (Optional)
-# ============================================================================
-print_header "Scene 4.5: Interactive Interview"
-print_narration "Generate targeted questions for PARTIAL/EXPERT-GUIDED components"
-wait_short
-
-# Check if there are any components requiring interview
-if [ -f "intent/gaps.json" ] && grep -q "PARTIAL\|BLOCKED" intent/gaps.json; then
-    print_narration "Generating interview questions for ambiguous components:"
-    run_command "$OPS_CMD intent interview-generate"
-    press_enter
-
-    if [ -f "intent/questions.json" ]; then
-        print_narration "Interview questions generated. Example questions:"
-        run_command "cat intent/questions.json | head -30"
-        wait_medium
-
-        print_narration "In a real workflow, you would:"
-        echo "  1. Review intent/questions.json"
-        echo "  2. Answer questions based on your VMware environment knowledge"
-        echo "  3. Save answers to intent/answers.yaml"
-        echo ""
-        wait_short
-
-        # For demo purposes, check if pre-created answers exist
-        if [ -f "../examples/merge-scenario/answers.yaml" ]; then
-            print_narration "Using pre-created answers for demo:"
-            run_command "cp ../examples/merge-scenario/answers.yaml intent/"
-            wait_short
-
-            print_narration "Applying interview answers to update classifications:"
-            run_command "$OPS_CMD intent interview-apply"
-            press_enter
-
-            print_narration "Updated gap analysis (classifications improved):"
-            run_command "cat intent/gaps.md | head -40"
-            wait_short
-        else
-            print_narration "Skipping interview application (no answers provided for demo)"
-            echo "  To use in production: ops-translate intent interview-apply"
-        fi
-    fi
-else
-    print_narration "No PARTIAL/EXPERT-GUIDED components detected - skipping interview"
-fi
-
-press_enter
-
-# ============================================================================
-# Scene 5: Merge Intent
-# ============================================================================
-print_header "Scene 5: Merge Intent Files"
-print_narration "Merge 3 intent files into single unified workflow"
-wait_short
-
-run_command "$OPS_CMD intent merge --force"
-wait_short
-
-print_narration "View the merged intent (combines dev, prod, and approval):"
-run_command "cat intent/intent.yaml | head -40"
-wait_short
-
-print_narration "Notice: unified inputs, governance rules, and environment profiles"
-press_enter
-
-# ============================================================================
-# Scene 6: Dry-Run Validation
-# ============================================================================
-print_header "Scene 6: Dry-Run Validation"
-print_narration "Validate intent structure before generating artifacts"
-wait_short
-
-run_command "$OPS_CMD dry-run || true"
+print_narration "Intent files normalize automation across different source formats."
+echo -e "${CYAN}vRealize workflows → normalized YAML intent${NC}"
+echo -e "${CYAN}PowerCLI scripts → same normalized YAML intent${NC}"
 echo ""
 press_enter
 
 # ============================================================================
-# Scene 7: Generate Artifacts
+# Scene 6: Generate with Linting
 # ============================================================================
-print_header "Scene 7: Generate Artifacts"
-print_narration "Generate KubeVirt manifests and Ansible playbooks"
+print_header "Scene 6: Generate Artifacts with Linting"
+print_narration "Generate KubeVirt manifests and Ansible playbooks with code quality checks"
 wait_short
 
-run_command "$OPS_CMD generate --profile lab --format yaml"
+run_command "$OPS_CMD generate --profile lab --format yaml --lint"
 wait_medium
+
+print_narration "Linting checks for Ansible best practices:"
+echo -e "  • Task naming conventions"
+echo -e "  • Deprecated module usage"
+echo -e "  • Security vulnerabilities"
+echo -e "  • YAML formatting issues"
+echo ""
+wait_short
+
+if [ -f "output/lint-report.md" ]; then
+    print_narration "Lint report generated. Let's view it:"
+    run_command "cat output/lint-report.md | head -40"
+    press_enter
+else
+    print_narration "No linting violations found (or ansible-lint not installed)."
+    echo -e "${CYAN}Install ansible-lint for code quality checks: pip install ansible-lint${NC}"
+    echo ""
+    press_enter
+fi
 
 print_narration "Show generated structure:"
 if command -v tree &> /dev/null; then
-    run_command "tree output/"
+    run_command "tree output/ansible/"
 else
-    run_command "ls -R output/"
+    run_command "ls -R output/ansible/"
     echo ""
 fi
 press_enter
+
+# ============================================================================
+# Scene 7: Review Generated Code
+# ============================================================================
+print_header "Scene 7: Review Generated Code"
+print_narration "Generated code includes links to Architecture Patterns for BLOCKED components"
+wait_short
 
 print_narration "KubeVirt VirtualMachine manifest:"
 run_command "cat output/kubevirt/vm.yaml | head -30"
@@ -344,9 +383,15 @@ print_narration "Ansible playbook structure:"
 run_command "cat output/ansible/site.yml"
 press_enter
 
-  print_narration "Ansible tasks with gap analysis TODOs:"
-  run_command "cat output/ansible/roles/provision_vm/tasks/main.yml | head -40"
-  press_enter
+print_narration "Ansible tasks with architecture pattern links:"
+run_command "cat output/ansible/roles/provision_vm/tasks/main.yml | head -50"
+wait_short
+
+print_narration "Notice: BLOCKED components include links to PATTERNS.md"
+echo -e "${CYAN}Example: NSX Security Groups → Pattern 5.1${NC}"
+echo -e "${CYAN}Example: NSX Tier Gateways → Pattern 5.2${NC}"
+echo ""
+press_enter
 
 # ============================================================================
 # Wrap-up
@@ -355,26 +400,32 @@ print_header "Demo Complete!"
 echo ""
 echo -e "${BOLD}${CYAN}Complete Workflow Demonstrated:${NC}"
 echo -e "${BOLD}${GREEN}✓ 1. Initialize${NC} workspace with organized structure"
-echo -e "${BOLD}${GREEN}✓ 2. Import${NC} multiple sources (PowerCLI + vRealize)"
-echo -e "${BOLD}${GREEN}✓ 3. Summarize${NC} with static analysis (no AI)"
-echo -e "${BOLD}${GREEN}✓ 4. Extract${NC} operational intent using AI (creates 3 intent files)"
-echo -e "${BOLD}${GREEN}✓ 5. Review${NC} gap analysis for migration guidance"
-echo -e "${BOLD}${GREEN}✓ 6. Merge${NC} 3 intent files into unified workflow"
-echo -e "${BOLD}${GREEN}✓ 7. Validate${NC} with enhanced dry-run checks"
-echo -e "${BOLD}${GREEN}✓ 8. Generate${NC} KubeVirt + Ansible artifacts"
+echo -e "${BOLD}${GREEN}✓ 2. Import${NC} realistic vRealize workflows with NSX components"
+echo -e "${BOLD}${GREEN}✓ 3. Analyze${NC} for gaps (SUPPORTED/PARTIAL/BLOCKED classification)"
+echo -e "${BOLD}${GREEN}✓ 4. Incremental analysis${NC} with caching (70-90% faster)"
+echo -e "${BOLD}${GREEN}✓ 5. HTML reports${NC} for stakeholders and decision makers"
+echo -e "${BOLD}${GREEN}✓ 6. Extract${NC} operational intent using AI"
+echo -e "${BOLD}${GREEN}✓ 7. Generate${NC} KubeVirt + Ansible artifacts with linting"
+echo -e "${BOLD}${GREEN}✓ 8. Review${NC} generated code with architecture pattern links"
 echo ""
 echo -e "${CYAN}${BOLD}Key Takeaways:${NC}"
-echo -e "  • ${BOLD}Multi-source merge${NC} - Combine dev, prod, approval into one workflow"
-echo -e "  • ${BOLD}Safe by design${NC} - Read-only operations, no live access"
-echo -e "  • ${BOLD}Transparent${NC} - Every step shows what's happening"
-echo -e "  • ${BOLD}AI only for intent${NC} - Everything else is template-based"
-echo -e "  • ${BOLD}Gap analysis${NC} - Know what needs manual work upfront"
+echo -e "  • ${BOLD}This is a PLANNING tool${NC} - not an automated migration button"
+echo -e "  • ${BOLD}Gap analysis shows what needs manual work UPFRONT${NC}"
+echo -e "  • ${BOLD}HTML reports${NC} are for execs, architects, and stakeholders"
+echo -e "  • ${BOLD}Incremental analysis${NC} = fast iteration (70-90% faster)"
+echo -e "  • ${BOLD}Architecture Patterns${NC} = your migration playbook"
+echo -e "  • ${BOLD}Linting${NC} = code quality built-in"
 echo ""
-echo -e "${CYAN}${BOLD}What was merged:${NC}"
-echo -e "  • dev-provision.ps1 - Quick provisioning for developers"
-echo -e "  • prod-provision.ps1 - Governed provisioning with strict requirements"
-echo -e "  • approval.workflow.xml - vRealize approval routing"
-echo -e "  → Single unified workflow handling both environments"
+echo -e "${BOLD}${CYAN}What was analyzed:${NC}"
+echo -e "  • provision-vm-with-nsx-firewall.workflow.xml - VM with NSX Security Groups"
+echo -e "  • provision-web-app-with-nsx-lb.workflow.xml - Web app with NSX Load Balancer"
+echo -e "  → Gap analysis identified BLOCKED NSX components"
+echo -e "  → Architecture Patterns provide migration guidance"
+echo ""
+echo -e "${BOLD}${MAGENTA}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${BOLD}${MAGENTA}  You don't start with rewriting automation.${NC}"
+echo -e "${BOLD}${MAGENTA}  You start with understanding it.${NC}"
+echo -e "${BOLD}${MAGENTA}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 echo -e "${MAGENTA}GitHub:${NC} github.com/tsanders-rh/ops-translate"
 echo -e "${MAGENTA}License:${NC} Apache-2.0"
