@@ -1016,5 +1016,3 @@ This is a v1 prototype focused on demonstrating the translation workflow. Not in
 - Production-grade correctness guarantees
 
 **Note**: NSX operations are now detected and analyzed via gap analysis, providing migration guidance even though automatic conversion is not always possible.
-
-See [SPEC.md](SPEC.md) for complete design details.
