@@ -15,12 +15,107 @@
     }
 
     function init() {
+        setupTabSwitching();
         setupCardFiltering();
         setupClearFilterButton();
         setupViewFindingsLinks();
         setupExportButtons();
         setupSupportedToggle();
         setupInterviewQuestions();
+    }
+
+    /**
+     * Setup tab switching functionality
+     */
+    function setupTabSwitching() {
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const tabPanels = document.querySelectorAll('.tab-panel');
+
+        if (tabButtons.length === 0 || tabPanels.length === 0) {
+            return;  // No tabs to set up
+        }
+
+        // Handle tab button clicks
+        tabButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const targetTab = this.dataset.tab;
+                switchToTab(targetTab);
+            });
+
+            // Keyboard navigation
+            button.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    const buttons = Array.from(tabButtons);
+                    const currentIndex = buttons.indexOf(this);
+                    let nextIndex;
+
+                    if (e.key === 'ArrowRight') {
+                        nextIndex = (currentIndex + 1) % buttons.length;
+                    } else {
+                        nextIndex = (currentIndex - 1 + buttons.length) % buttons.length;
+                    }
+
+                    buttons[nextIndex].focus();
+                    buttons[nextIndex].click();
+                }
+            });
+        });
+
+        // Handle hash navigation (e.g., #tab-architecture)
+        function handleHashChange() {
+            const hash = window.location.hash;
+            if (hash.startsWith('#tab-')) {
+                const tabName = hash.substring(5); // Remove '#tab-'
+                switchToTab(tabName);
+            } else if (hash) {
+                // Find which tab contains this anchor
+                const targetElement = document.querySelector(hash);
+                if (targetElement) {
+                    tabPanels.forEach(panel => {
+                        if (panel.contains(targetElement)) {
+                            const tabName = panel.id.substring(4); // Remove 'tab-'
+                            switchToTab(tabName);
+                        }
+                    });
+                }
+            }
+        }
+
+        // Switch to tab function
+        function switchToTab(tabName) {
+            // Update buttons
+            tabButtons.forEach(btn => {
+                if (btn.dataset.tab === tabName) {
+                    btn.classList.add('active');
+                    btn.setAttribute('aria-selected', 'true');
+                } else {
+                    btn.classList.remove('active');
+                    btn.setAttribute('aria-selected', 'false');
+                }
+            });
+
+            // Update panels
+            tabPanels.forEach(panel => {
+                if (panel.id === `tab-${tabName}`) {
+                    panel.classList.add('active');
+                } else {
+                    panel.classList.remove('active');
+                }
+            });
+
+            // Scroll to top of tab navigation
+            const tabNav = document.querySelector('.tab-navigation');
+            if (tabNav) {
+                tabNav.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        // Handle initial hash on load
+        handleHashChange();
+
+        // Listen for hash changes
+        window.addEventListener('hashchange', handleHashChange);
     }
 
     /**

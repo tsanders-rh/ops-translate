@@ -25,6 +25,34 @@
         </div>
     </header>
 
+    <!-- Tab Navigation -->
+    <nav class="tab-navigation" role="tablist">
+        <div class="container">
+            <div class="tab-buttons">
+                <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="tab-executive" data-tab="executive">
+                    Executive
+                </button>
+                <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-architecture" data-tab="architecture">
+                    Architecture & Gaps
+                    {% if gaps_data and gaps_data.components %}
+                    {% set blocked_count = gaps_data.components | selectattr('level', 'equalto', 'BLOCKED') | list | length %}
+                    {% if blocked_count > 0 %}
+                    <span class="tab-badge">{{ blocked_count }}</span>
+                    {% endif %}
+                    {% endif %}
+                </button>
+                <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-implementation" data-tab="implementation">
+                    Implementation
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Tab Panels -->
+    <div class="tab-panels">
+        <!-- Executive Tab -->
+        <div id="tab-executive" class="tab-panel active" role="tabpanel" aria-labelledby="tab-executive">
+
     <!-- Executive Summary -->
     {% if executive_summary %}
     <section class="executive-summary-section">
@@ -282,6 +310,12 @@
             </div>
         </div>
     </section>
+
+        </div>
+        <!-- End Executive Tab -->
+
+        <!-- Architecture & Gaps Tab -->
+        <div id="tab-architecture" class="tab-panel" role="tabpanel" aria-labelledby="tab-architecture">
 
     <!-- At a Glance Summary Cards -->
     <section class="summary-section">
@@ -1241,6 +1275,12 @@
     {% endif %}
     {% endif %}
 
+        </div>
+        <!-- End Architecture & Gaps Tab -->
+
+        <!-- Implementation Tab -->
+        <div id="tab-implementation" class="tab-panel" role="tabpanel" aria-labelledby="tab-implementation">
+
     <!-- Generated Artifacts -->
     {% if artifacts.kubevirt or artifacts.ansible %}
     <section class="artifacts-section layer-3">
@@ -1343,6 +1383,12 @@
         </div>
     </section>
     {% endif %}
+
+        </div>
+        <!-- End Implementation Tab -->
+
+    </div>
+    <!-- End Tab Panels -->
 
     <!-- Footer -->
     <footer class="report-footer">
