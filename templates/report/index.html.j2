@@ -986,45 +986,50 @@
 
             <!-- Component List -->
             <div class="gaps-list">
-                {# Create mapping from base filename to full source filename #}
-                {% set location_to_source = {} %}
-                {% for source in sources %}
-                    {% set base_name = source.name.replace('.workflow.xml', '').replace('.ps1', '') %}
-                    {% set _ = location_to_source.update({base_name: source.name}) %}
-                {% endfor %}
+                {# Group components by architectural domain instead of file #}
+                {% set domain_groups = {
+                    'Security & Segmentation': {'icon': '🔒', 'components': []},
+                    'Governance & Approvals': {'icon': '✅', 'components': []},
+                    'Networking': {'icon': '🌐', 'components': []},
+                    'Compute & Storage': {'icon': '💾', 'components': []},
+                    'Other Components': {'icon': '⚙️', 'components': []}
+                } %}
 
-                {# Sort components by file, then by severity (DESIGN REQUIRED → MANUAL → PARTIAL → SUPPORTED) #}
-                {% set severity_order = {'BLOCKED': 0, 'MANUAL': 1, 'PARTIAL': 2, 'SUPPORTED': 3} %}
-                {% set sorted_components = gaps.components | sort(attribute='location') %}
-                {% set sorted_components = sorted_components | sort(attribute='level', case_sensitive=False) %}
-
-                {# Group by file and sort within each group by severity #}
-                {% set file_groups = {} %}
                 {% for comp in gaps.components %}
-                    {% set file_name = comp.location.split(':')[0] if comp.location else 'unknown' %}
-                    {% if file_name not in file_groups %}
-                        {% set _ = file_groups.update({file_name: []}) %}
+                    {% set comp_type_lower = comp.component_type.lower() %}
+                    {% set comp_name_lower = comp.name.lower() %}
+                    {% if 'nsx' in comp_type_lower or 'security' in comp_type_lower or 'firewall' in comp_type_lower or 'nsx' in comp_name_lower %}
+                        {% set _ = domain_groups['Security & Segmentation']['components'].append(comp) %}
+                    {% elif 'approval' in comp_type_lower or 'governance' in comp_type_lower or 'itsm' in comp_type_lower or 'servicenow' in comp_name_lower %}
+                        {% set _ = domain_groups['Governance & Approvals']['components'].append(comp) %}
+                    {% elif 'network' in comp_type_lower or 'nic' in comp_type_lower or 'dns' in comp_type_lower or 'multus' in comp_name_lower %}
+                        {% set _ = domain_groups['Networking']['components'].append(comp) %}
+                    {% elif 'storage' in comp_type_lower or 'disk' in comp_type_lower or 'volume' in comp_type_lower %}
+                        {% set _ = domain_groups['Compute & Storage']['components'].append(comp) %}
+                    {% else %}
+                        {% set _ = domain_groups['Other Components']['components'].append(comp) %}
                     {% endif %}
-                    {% set _ = file_groups[file_name].append(comp) %}
                 {% endfor %}
 
-                {# Sort components within each file by severity #}
-                {% for file_name, components in file_groups.items() | sort %}
-                    {% set sorted_file_components = components | sort(attribute='level') %}
-
-                    {# Use full source filename for anchor if available #}
-                    {% set anchor_name = location_to_source.get(file_name, file_name) %}
-                    <div id="file-{{ anchor_name | replace('.', '-') }}" class="file-anchor"></div>
-
-                    {# Add visual file header for grouping #}
-                    <div class="file-section-header">
-                        <div class="file-icon">📄</div>
-                        <h3>{{ anchor_name }}</h3>
-                        {% set file_type = 'VREALIZE' if '.workflow.xml' in anchor_name else 'POWERCLI' if '.ps1' in anchor_name else 'UNKNOWN' %}
-                        <span class="badge badge-{{ file_type.lower() }}">{{ file_type }}</span>
+                {# Render components grouped by domain #}
+                {% for domain_name, domain_data in [
+                    ('Security & Segmentation', domain_groups['Security & Segmentation']),
+                    ('Governance & Approvals', domain_groups['Governance & Approvals']),
+                    ('Networking', domain_groups['Networking']),
+                    ('Compute & Storage', domain_groups['Compute & Storage']),
+                    ('Other Components', domain_groups['Other Components'])
+                ] %}
+                    {% if domain_data.components | length > 0 %}
+                    {# Domain header #}
+                    <div class="domain-section-header" id="domain-{{ domain_name | replace(' ', '-') | replace('&', 'and') | lower }}">
+                        <div class="domain-icon">{{ domain_data.icon }}</div>
+                        <h3>{{ domain_name }}</h3>
+                        <span class="domain-count">{{ domain_data.components | length }} component(s)</span>
                     </div>
 
-                    {% for component in sorted_file_components | sort(attribute='level') %}
+                    {# Sort components by severity within domain #}
+                    {% set sorted_domain_components = domain_data.components | sort(attribute='level') %}
+                    {% for component in sorted_domain_components %}
                     <div class="gap-item gap-{{ component.level.lower() }}{% if component.level == 'SUPPORTED' %} supported-hidden{% endif %}" data-level="{{ component.level }}">
                     <div class="gap-header">
                         <h3>
@@ -1234,8 +1239,10 @@
                 </div>
                 {% endfor %}
                 {# End of components loop #}
+
+                    {% endif %}
                 {% endfor %}
-                {# End of file_groups loop #}
+                {# End of domain groups loop #}
             </div>
         </div>
     </section>

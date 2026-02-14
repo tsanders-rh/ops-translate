@@ -965,6 +965,46 @@ section h3 {
     scroll-margin-top: 2rem;
 }
 
+/* Domain Section Headers */
+.domain-section-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg) var(--spacing-md);
+    margin: var(--spacing-xl) 0 var(--spacing-md) 0;
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border-left: 5px solid var(--rh-blue);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.domain-section-header:first-of-type {
+    margin-top: 0;
+}
+
+.domain-section-header .domain-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.domain-section-header h3 {
+    flex: 1;
+    font-size: 1.4rem;
+    color: var(--rh-dark);
+    margin: 0;
+    font-weight: 600;
+}
+
+.domain-count {
+    background: white;
+    color: var(--rh-gray);
+    padding: 0.4rem 0.8rem;
+    border-radius: 16px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
 .gap-item {
     border: 2px solid var(--rh-gray-light);
     border-radius: 8px;
