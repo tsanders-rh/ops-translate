@@ -212,7 +212,7 @@
                         {% if workspace.name == "sample-workspace" %}
                         This analysis represents a typical enterprise automation estate—years of vRealize workflows, PowerCLI scripts for provisioning, NSX security policies, and ServiceNow integrations. The kind of automation debt that accumulates when teams deliver value quarter after quarter.
                         {% else %}
-                        We analyzed <strong>{{ workspace.name }}</strong> — {{ summary.total_components }} components across your automation estate, including complex workflows with NSX integration, approval gates, and custom orchestration.
+                        We analyzed <strong>{{ workspace.name }}</strong> — {{ summary.total_components if summary.total_components is defined else ((summary.counts.SUPPORTED or 0) + (summary.counts.PARTIAL or 0) + (summary.counts.BLOCKED or 0) + (summary.counts.MANUAL or 0)) }} components across your automation estate, including complex workflows with NSX integration, approval gates, and custom orchestration.
                         {% endif %}
                     </p>
                     <div class="story-results">
@@ -303,9 +303,14 @@
             <div class="conclusion-box">
                 <h3>🎯 Executive Summary</h3>
                 <p class="conclusion-text">
+                    {% set total_comps = summary.total_components if summary.total_components is defined else ((summary.counts.SUPPORTED or 0) + (summary.counts.PARTIAL or 0) + (summary.counts.BLOCKED or 0) + (summary.counts.MANUAL or 0)) %}
                     <strong>This migration is achievable.</strong> With {{ summary.counts.SUPPORTED or 0 }} components auto-translatable and
                     {{ summary.counts.PARTIAL or 0 }} requiring configuration, your automation estate is
-                    <strong>{{ ((((summary.counts.SUPPORTED or 0) + (summary.counts.PARTIAL or 0)) / summary.total_components) * 100) | int }}% ready</strong>
+                    {% if total_comps > 0 %}
+                    <strong>{{ ((((summary.counts.SUPPORTED or 0) + (summary.counts.PARTIAL or 0)) / total_comps) * 100) | int }}% ready</strong>
+                    {% else %}
+                    <strong>ready</strong>
+                    {% endif %}
                     for OpenShift Virtualization.
                 </p>
                 <p class="conclusion-text">
@@ -334,7 +339,7 @@
     <section class="summary-section">
         <div class="container">
             <h2>Component-Level Translation Status</h2>
-            <p class="section-subtitle">Detailed component analysis showing {{ summary.total_components }} individual components detected across your workflows.</p>
+            <p class="section-subtitle">Detailed component analysis showing {{ summary.total_components if summary.total_components is defined else ((summary.counts.SUPPORTED or 0) + (summary.counts.PARTIAL or 0) + (summary.counts.BLOCKED or 0) + (summary.counts.MANUAL or 0)) }} individual components detected across your workflows.</p>
             <div class="summary-cards">
                 <div class="card card-supported" data-filter="SUPPORTED" title="Components that can be fully automatically translated to OpenShift-native equivalents">
                     <div class="card-icon">✅</div>
@@ -753,7 +758,7 @@
                 <div class="banner-icon">⚠️</div>
                 <div class="banner-content">
                     <strong>Legacy Drift Detected</strong>
-                    <p>Multiple naming conventions, parameter inconsistencies, and policy variations detected across workflows—common in mature automation estates. This analysis surfaced {{ summary.total_components }} individual patterns, revealing technical debt that would otherwise remain hidden until migration.</p>
+                    <p>Multiple naming conventions, parameter inconsistencies, and policy variations detected across workflows—common in mature automation estates. This analysis surfaced {{ summary.total_components if summary.total_components is defined else ((summary.counts.SUPPORTED or 0) + (summary.counts.PARTIAL or 0) + (summary.counts.BLOCKED or 0) + (summary.counts.MANUAL or 0)) }} individual patterns, revealing technical debt that would otherwise remain hidden until migration.</p>
                 </div>
             </div>
             {% endif %}
