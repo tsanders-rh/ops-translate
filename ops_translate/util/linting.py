@@ -163,9 +163,7 @@ def run_ansible_lint(
                     violations = lint_data
                 elif isinstance(lint_data, dict):
                     # Extract violations, defaulting to empty list
-                    violations = (
-                        lint_data.get("violations") or lint_data.get("results") or []
-                    )
+                    violations = lint_data.get("violations") or lint_data.get("results") or []
                     files_checked = lint_data.get("files_checked", 0)
 
             except json.JSONDecodeError:
