@@ -139,9 +139,10 @@ echo ""
 echo -e "${CYAN}You give it: vRealize workflows or PowerCLI scripts.${NC}"
 echo -e "${CYAN}It gives you:${NC}"
 echo ""
-echo -e "  ${BOLD}1.${NC} Gap analysis - what needs manual work"
-echo -e "  ${BOLD}2.${NC} Architecture guidance - how to handle NSX, approvals, etc."
-echo -e "  ${BOLD}3.${NC} Generated code - Ansible + KubeVirt to get started"
+echo -e "  ${BOLD}1.${NC} ${GREEN}Automated translation${NC} - Basic VM provisioning works automatically"
+echo -e "  ${BOLD}2.${NC} ${YELLOW}Gap analysis${NC} - What needs manual work (NSX, ServiceNow, etc.)"
+echo -e "  ${BOLD}3.${NC} ${CYAN}Architecture guidance${NC} - How to handle blocked components"
+echo -e "  ${BOLD}4.${NC} ${MAGENTA}Generated code${NC} - Ansible + KubeVirt to get started"
 echo ""
 wait_short
 echo -e "${BOLD}${CYAN}What we'll demo:${NC}"
@@ -177,7 +178,17 @@ else
 fi
 press_enter
 
-print_narration "Import vRealize workflows with NSX networking components"
+print_narration "Import simple PowerCLI script (basic VM provisioning)"
+wait_short
+run_command "$OPS_CMD import --source powercli --file ../examples/powercli/simple-vm.ps1"
+wait_short
+
+print_narration "Import environment-aware PowerCLI script (dev/prod branching)"
+wait_short
+run_command "$OPS_CMD import --source powercli --file ../examples/powercli/environment-aware.ps1"
+wait_short
+
+print_narration "Now import complex workflows with NSX networking..."
 wait_short
 run_command "$OPS_CMD import --source vrealize --file ../examples/virt-first-realworld/vrealize/provision-vm-with-nsx-firewall.workflow.xml"
 wait_short
@@ -185,16 +196,6 @@ wait_short
 print_narration "Import vRealize workflow for web app with NSX load balancer"
 wait_short
 run_command "$OPS_CMD import --source vrealize --file ../examples/virt-first-realworld/vrealize/provision-web-app-with-nsx-lb.workflow.xml"
-wait_short
-
-print_narration "Import PowerCLI script for standard VM provisioning"
-wait_short
-run_command "$OPS_CMD import --source powercli --file ../examples/virt-first-realworld/powercli/New-StandardVM.ps1"
-wait_short
-
-print_narration "Import PowerCLI script for web tier provisioning"
-wait_short
-run_command "$OPS_CMD import --source powercli --file ../examples/virt-first-realworld/powercli/Provision-WebTier.ps1"
 press_enter
 
 # ============================================================================
@@ -211,9 +212,14 @@ echo -e "  ${GREEN}SUPPORTED:${NC} Can translate automatically"
 echo -e "  ${YELLOW}PARTIAL:${NC} Needs manual configuration"
 echo -e "  ${RED}BLOCKED:${NC} No direct equivalent (check Architecture Patterns)"
 echo ""
-
+wait_short
 
 print_narration "This is pattern matching - no AI needed, runs offline."
+echo ""
+print_narration "We should see:"
+echo -e "  ${GREEN}SUPPORTED:${NC} Basic VM provisioning (CPU, memory, disk, tagging)"
+echo -e "  ${RED}BLOCKED:${NC} NSX Security Groups, Load Balancers"
+echo ""
 press_enter
 
 run_command "$OPS_CMD analyze"
@@ -263,10 +269,12 @@ fi
 wait_short
 
 print_narration "In a real demo, you would open output/report/index.html in a browser."
-echo -e "${YELLOW}For this terminal demo, here's what the report contains:${NC}"
+echo -e "${YELLOW}For this terminal demo, here's what the report shows:${NC}"
 echo ""
-echo -e "  ${BOLD}Migration Effort Dashboard${NC} - Visual breakdown of migration complexity"
 echo -e "  ${BOLD}Executive Summary${NC} - High-level metrics for decision makers"
+echo -e "  ${BOLD}Migration Effort Dashboard${NC} - Visual breakdown showing:"
+echo -e "    ${GREEN}GREEN (SUPPORTED)${NC} - VM provisioning, compute, storage, tagging"
+echo -e "    ${RED}RED (BLOCKED)${NC} - NSX Security Groups, Load Balancers"
 echo -e "  ${BOLD}Component Analysis${NC} - Detailed breakdown with recommendations"
 echo -e "  ${BOLD}Architecture Patterns${NC} - How to handle NSX, approvals, ServiceNow, etc."
 echo ""
@@ -399,24 +407,24 @@ echo -e "${BOLD}${GREEN}✓ 6. Generate${NC} KubeVirt + Ansible artifacts with l
 echo -e "${BOLD}${GREEN}✓ 7. Review${NC} generated code with architecture pattern links"
 echo ""
 echo -e "${CYAN}${BOLD}Key Takeaways:${NC}"
-echo -e "  • ${BOLD}This is a PLANNING tool${NC} - not an automated migration button"
-echo -e "  • ${BOLD}Gap analysis shows what needs manual work UPFRONT${NC}"
-echo -e "  • ${BOLD}HTML reports${NC} are for execs, architects, and stakeholders"
-echo -e "  • ${BOLD}Architecture Patterns${NC} = your migration playbook"
-echo -e "  • ${BOLD}Linting${NC} = code quality built-in"
-echo -e "  • ${BOLD}Multi-source support${NC} = handles vRealize and PowerCLI together"
+echo -e "  • ${GREEN}${BOLD}70-80% of VM provisioning auto-translates${NC} (compute, storage, networking)"
+echo -e "  • ${YELLOW}${BOLD}Gap analysis shows what needs manual work UPFRONT${NC}"
+echo -e "  • ${BOLD}Architecture Patterns${NC} provide guidance for NSX, approvals, custom integrations"
+echo -e "  • ${BOLD}HTML reports${NC} for execs, architects, and stakeholders"
+echo -e "  • ${BOLD}Linting${NC} ensures code quality for generated artifacts"
+echo -e "  • ${BOLD}Multi-source support${NC} handles vRealize and PowerCLI together"
 echo ""
 echo -e "${BOLD}${CYAN}What was analyzed:${NC}"
-echo -e "  ${BOLD}vRealize Workflows:${NC}"
-echo -e "    • provision-vm-with-nsx-firewall.workflow.xml - VM with NSX Security Groups"
-echo -e "    • provision-web-app-with-nsx-lb.workflow.xml - Web app with NSX Load Balancer"
-echo -e "  ${BOLD}PowerCLI Scripts:${NC}"
-echo -e "    • New-StandardVM.ps1 - Standard VM provisioning (conflicts with vRealize)"
-echo -e "    • Provision-WebTier.ps1 - Web tier with manual NSX steps"
+echo -e "  ${BOLD}PowerCLI Scripts (Simple):${NC}"
+echo -e "    • simple-vm.ps1 - Basic VM provisioning ${GREEN}(mostly SUPPORTED)${NC}"
+echo -e "    • environment-aware.ps1 - Dev/prod branching and tagging ${GREEN}(SUPPORTED)${NC}"
+echo -e "  ${BOLD}vRealize Workflows (Complex):${NC}"
+echo -e "    • provision-vm-with-nsx-firewall.workflow.xml ${RED}(NSX components BLOCKED)${NC}"
+echo -e "    • provision-web-app-with-nsx-lb.workflow.xml ${RED}(NSX load balancer BLOCKED)${NC}"
 echo -e "  ${BOLD}Results:${NC}"
-echo -e "    → Gap analysis identified BLOCKED NSX components"
-echo -e "    → Detected conflicts between vRealize and PowerCLI approaches"
-echo -e "    → Architecture Patterns provide migration guidance"
+echo -e "    → ${GREEN}Basic VM provisioning, compute, storage = auto-translates${NC}"
+echo -e "    → ${RED}NSX Security Groups and Load Balancers = need Architecture Patterns${NC}"
+echo -e "    → Gap analysis shows exactly what needs manual work vs automation"
 echo ""
 echo -e "${BOLD}${MAGENTA}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${BOLD}${MAGENTA}  You don't start with rewriting automation.${NC}"
