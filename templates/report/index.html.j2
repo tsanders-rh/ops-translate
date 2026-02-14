@@ -1382,8 +1382,16 @@
                         <li><input type="checkbox" disabled> NetworkPolicies reviewed and approved</li>
                         <li><input type="checkbox" disabled> RBAC permissions validated</li>
                         <li><input type="checkbox" disabled> Secret management strategy confirmed</li>
-                        {% if gaps and gaps.components | selectattr('component_type', 'search', 'approval') | list | length > 0 %}
+                        {% if gaps and gaps.components | selectattr('component_type', 'defined') | list | length > 0 %}
+                        {% set has_approval = namespace(found=false) %}
+                        {% for comp in gaps.components %}
+                            {% if 'approval' in comp.component_type.lower() %}
+                                {% set has_approval.found = true %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if has_approval.found %}
                         <li><input type="checkbox" disabled> Approval workflows configured and tested</li>
+                        {% endif %}
                         {% endif %}
                     </ul>
                 </div>
