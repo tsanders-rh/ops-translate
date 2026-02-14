@@ -25,6 +25,10 @@ test.describe("ops-translate HTML report demo", () => {
       page.getByRole("heading", { name: /ops-translate|Translation Report|Gap Analysis Report/i })
     ).toBeVisible();
 
+    // Navigate to Architecture tab where cards are located
+    await page.locator('[data-tab="architecture"]').click();
+    await page.waitForTimeout(300);
+
     // Verify summary cards are present
     const cards = page.locator(".card[data-filter]");
     await expect(cards).toHaveCount(4); // SUPPORTED, PARTIAL, BLOCKED, MANUAL
@@ -36,6 +40,10 @@ test.describe("ops-translate HTML report demo", () => {
 
   test("can filter gaps by BLOCKED classification", async ({ page }) => {
     await page.goto("/index.html", { waitUntil: "domcontentloaded" });
+
+    // Navigate to Architecture tab
+    await page.locator('[data-tab="architecture"]').click();
+    await page.waitForTimeout(300);
 
     // Filter indicator should start hidden
     const filterIndicator = page.locator("#filter-indicator");
@@ -67,6 +75,10 @@ test.describe("ops-translate HTML report demo", () => {
   test("can filter gaps by PARTIAL classification", async ({ page }) => {
     await page.goto("/index.html", { waitUntil: "domcontentloaded" });
 
+    // Navigate to Architecture tab
+    await page.locator('[data-tab="architecture"]').click();
+    await page.waitForTimeout(300);
+
     // Click the "PARTIAL" summary card to filter
     const partialCard = page.locator('.card[data-filter="PARTIAL"]');
     await partialCard.click();
@@ -93,6 +105,10 @@ test.describe("ops-translate HTML report demo", () => {
   test("can filter gaps by MANUAL classification", async ({ page }) => {
     await page.goto("/index.html", { waitUntil: "domcontentloaded" });
 
+    // Navigate to Architecture tab
+    await page.locator('[data-tab="architecture"]').click();
+    await page.waitForTimeout(300);
+
     // Click the "MANUAL" summary card to filter (now Custom Implementation)
     const manualCard = page.locator('.card[data-filter="MANUAL"]');
     await manualCard.click();
@@ -112,6 +128,10 @@ test.describe("ops-translate HTML report demo", () => {
 
   test("can clear filter and show all gaps again", async ({ page }) => {
     await page.goto("/index.html", { waitUntil: "domcontentloaded" });
+
+    // Navigate to Architecture tab
+    await page.locator('[data-tab="architecture"]').click();
+    await page.waitForTimeout(300);
 
     // First apply a filter
     await page.locator('.card[data-filter="BLOCKED"]').click();
@@ -140,6 +160,10 @@ test.describe("ops-translate HTML report demo", () => {
 
   test("can expand/collapse gap item details", async ({ page }) => {
     await page.goto("/index.html", { waitUntil: "domcontentloaded" });
+
+    // Navigate to Architecture tab
+    await page.locator('[data-tab="architecture"]').click();
+    await page.waitForTimeout(300);
 
     // Find first gap item header
     const firstGapHeader = page.locator(".gap-item .gap-header").first();
@@ -187,6 +211,10 @@ test.describe("HTML report demo mode (presentation)", () => {
     // Navigate with a pause for visibility
     await page.goto("/index.html", { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(1000);
+
+    // Navigate to Architecture tab
+    await page.locator('[data-tab="architecture"]').click();
+    await page.waitForTimeout(800);
 
     // Scroll to summary cards
     await page.locator(".card").first().scrollIntoViewIfNeeded();

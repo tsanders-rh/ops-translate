@@ -159,6 +159,10 @@ test.describe("HTML report annotated demo", () => {
     await showAnnotation(page, "📊 Translation Status Overview", 1800);
     await page.waitForTimeout(300);
 
+    // Navigate to Architecture tab
+    await page.locator('[data-tab="architecture"]').click();
+    await page.waitForTimeout(800);
+
     // Highlight and explain summary cards
     await page.locator(".card").first().scrollIntoViewIfNeeded();
     await page.waitForTimeout(500);
