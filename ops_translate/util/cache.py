@@ -36,7 +36,7 @@ class AnalysisCache:
             try:
                 with open(self.cache_file) as f:
                     self._cache = json.load(f)
-            except (json.JSONDecodeError, IOError):
+            except (json.JSONDecodeError, OSError):
                 # If cache is corrupt or unreadable, start fresh
                 self._cache = {}
 

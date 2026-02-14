@@ -1080,7 +1080,8 @@ def generate(
                         warning_count = len(by_severity["warning"])
 
                         console.print(
-                            f"[yellow]⚠ Found {lint_result.violation_count} linting issue(s)[/yellow]"
+                            f"[yellow]⚠ Found {lint_result.violation_count} linting "
+                            f"issue(s)[/yellow]"
                         )
                         if error_count > 0:
                             console.print(f"  [red]Errors: {error_count}[/red]")
@@ -1361,7 +1362,8 @@ def analyze(
                 # Keep components from unchanged files
                 unchanged_file_names = {f.stem for f in xml_files if f not in files_to_analyze}
                 for component in existing_components:
-                    # Extract base filename from location (e.g., "provision-vm" from "provision-vm.item1")
+                    # Extract base filename from location
+                    # (e.g., "provision-vm" from "provision-vm.item1")
                     location = component.get("location", "")
                     base_location = location.split(".")[0] if "." in location else location
                     if base_location in unchanged_file_names:
