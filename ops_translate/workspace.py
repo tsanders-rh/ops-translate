@@ -14,7 +14,13 @@ PROJECT_ROOT = Path(__file__).parent.parent
 
 
 class Workspace:
-    """Manages the ops-translate workspace structure and configuration."""
+    """Manages the ops-translate workspace structure and configuration.
+
+    Attributes:
+        root: Path to the workspace root directory
+        config_file: Path to ops-translate.yaml configuration file
+        _config_cache: Cached configuration dict for performance (internal use)
+    """
 
     REQUIRED_DIRS = [
         "input/powercli",
