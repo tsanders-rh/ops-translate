@@ -50,6 +50,7 @@ class Workspace:
     def __init__(self, root: Path):
         self.root = Path(root)
         self.config_file = self.root / "ops-translate.yaml"
+        self._config_cache: dict[str, Any] | None = None  # Performance: cache config
 
     def initialize(self) -> None:
         """Initialize workspace directory structure and config."""
@@ -62,7 +63,11 @@ class Workspace:
             yaml.dump(self.DEFAULT_CONFIG, f, default_flow_style=False, sort_keys=False)
 
     def load_config(self) -> dict[str, Any]:
-        """Load and validate workspace configuration."""
+        """Load and validate workspace configuration (with caching for performance)."""
+        # Return cached config if available
+        if self._config_cache is not None:
+            return self._config_cache
+
         if not self.config_file.exists():
             raise FileNotFoundError(f"Config file not found: {self.config_file}")
 
@@ -77,6 +82,9 @@ class Workspace:
 
         # Validate against schema
         self._validate_config_schema(config)
+
+        # Cache the config for subsequent calls
+        self._config_cache = config
 
         return config
 

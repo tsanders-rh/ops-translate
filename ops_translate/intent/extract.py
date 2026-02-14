@@ -19,6 +19,16 @@ console = Console()
 # Get project root to find prompts
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 
+# Pre-compiled regex patterns for performance
+_NSX_PATTERNS = [
+    re.compile(r'RESTHostManager\.createHost\(["\']nsx', re.IGNORECASE),
+    re.compile(r"/api/v1/(firewall|ns-groups|segments|lb-)", re.IGNORECASE),
+    re.compile(r"/policy/api/v1/infra/(segments|lb-|tier-)", re.IGNORECASE),
+    re.compile(r"security[_-]group", re.IGNORECASE),
+    re.compile(r"firewall.*rule", re.IGNORECASE),
+    re.compile(r"nsx[_-]manager", re.IGNORECASE),
+]
+
 
 def _normalize_intent_file(intent_file: Path) -> bool:
     """
@@ -102,11 +112,15 @@ def _run_gap_analysis_for_vrealize(workspace: Workspace, intent_files: list[Path
 
             # Show summary for this file
             if components:
-                supported = sum(1 for c in components if c.level.value == "SUPPORTED")
-                partial = sum(1 for c in components if c.level.value == "PARTIAL")
+                # Single-pass counting (performance optimization)
+                level_counts = {"SUPPORTED": 0, "PARTIAL": 0}
+                for c in components:
+                    if c.level.value in level_counts:
+                        level_counts[c.level.value] += 1
+
                 console.print(
                     f"    [dim]✓ Classified {len(components)} components "
-                    f"({supported} supported, {partial} partial)[/dim]"
+                    f"({level_counts['SUPPORTED']} supported, {level_counts['PARTIAL']} partial)[/dim]"
                 )
 
         except Exception as e:
@@ -120,10 +134,17 @@ def _run_gap_analysis_for_vrealize(workspace: Workspace, intent_files: list[Path
         "[dim]  ✓ Gap analysis reports written to intent/gaps.md and intent/gaps.json[/dim]"
     )
 
-    # Display summary
-    supported_count = sum(1 for c in all_components if c.level.value == "SUPPORTED")
-    partial_count = sum(1 for c in all_components if c.level.value == "PARTIAL")
-    blocking_count = sum(1 for c in all_components if c.is_blocking)
+    # Display summary - single-pass counting (performance optimization)
+    supported_count = 0
+    partial_count = 0
+    blocking_count = 0
+    for c in all_components:
+        if c.level.value == "SUPPORTED":
+            supported_count += 1
+        elif c.level.value == "PARTIAL":
+            partial_count += 1
+        if c.is_blocking:
+            blocking_count += 1
 
     if supported_count > 0:
         console.print(
@@ -241,10 +262,17 @@ def _run_gap_analysis_for_powercli(workspace: Workspace, intent_files: list[Path
         "[dim]  ✓ Gap analysis reports updated in intent/gaps.md and intent/gaps.json[/dim]"
     )
 
-    # Display summary
-    supported_count = sum(1 for c in all_components if c.level.value == "SUPPORTED")
-    partial_count = sum(1 for c in all_components if c.level.value == "PARTIAL")
-    blocking_count = sum(1 for c in all_components if c.is_blocking)
+    # Display summary - single-pass counting (performance optimization)
+    supported_count = 0
+    partial_count = 0
+    blocking_count = 0
+    for c in all_components:
+        if c.level.value == "SUPPORTED":
+            supported_count += 1
+        elif c.level.value == "PARTIAL":
+            partial_count += 1
+        if c.is_blocking:
+            blocking_count += 1
 
     if supported_count > 0:
         console.print(
@@ -501,24 +529,15 @@ def extract_vrealize_intent(llm, xml_file: Path) -> tuple[str, list]:
     # Load workflow XML content
     workflow_content = xml_file.read_text()
 
-    # Pre-detect NSX integration
-    nsx_patterns = [
-        r'RESTHostManager\.createHost\(["\']nsx',
-        r"/api/v1/(firewall|ns-groups|segments|lb-)",
-        r"/policy/api/v1/infra/(segments|lb-|tier-)",
-        r"security[_-]group",
-        r"firewall.*rule",
-        r"nsx[_-]manager",
-    ]
-
+    # Pre-detect NSX integration using pre-compiled patterns (performance optimization)
     nsx_indicators = []
     has_nsx = False
 
-    for pattern in nsx_patterns:
-        matches = re.findall(pattern, workflow_content, re.IGNORECASE)
+    for pattern in _NSX_PATTERNS:
+        matches = pattern.findall(workflow_content)
         if matches:
             has_nsx = True
-            nsx_indicators.append(f"- Found: {pattern} ({len(matches)} occurrence(s))")
+            nsx_indicators.append(f"- Found: {pattern.pattern} ({len(matches)} occurrence(s))")
 
     # Render prompt template with Jinja2
     prompt = template.render(
@@ -569,25 +588,16 @@ def extract_assumptions_from_yaml(yaml_content: str) -> list:
 
     Returns list of assumption strings.
     """
-    assumptions = []
+    # Use regex for efficient extraction (performance optimization)
+    # Match assumptions: followed by list items starting with "  - "
+    match = re.search(r'assumptions:\n((?:  - .*\n?)*)', yaml_content, re.MULTILINE)
+    if match:
+        assumptions_block = match.group(1)
+        # Extract each list item
+        assumptions = re.findall(r'^\s*-\s+(.+)$', assumptions_block, re.MULTILINE)
+        return assumptions if assumptions else ["Intent extracted via LLM"]
 
-    # Look for assumptions section in YAML
-    lines = yaml_content.split("\n")
-    in_assumptions = False
-
-    for line in lines:
-        if line.strip() == "assumptions:":
-            in_assumptions = True
-            continue
-
-        if in_assumptions:
-            if line and not line.startswith(" ") and not line.startswith("-"):
-                # End of assumptions section
-                break
-            if line.strip().startswith("- "):
-                assumptions.append(line.strip()[2:])
-
-    return assumptions if assumptions else ["Intent extracted via LLM"]
+    return ["Intent extracted via LLM"]
 
 
 def create_placeholder_intent(source_type: str, filename: str) -> str:
