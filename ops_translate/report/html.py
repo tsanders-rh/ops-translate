@@ -75,6 +75,9 @@ def generate_html_report(
     # Copy static assets
     copy_static_assets(output_path)
 
+    # Generate documentation HTML files
+    generate_docs_html(output_path)
+
     return report_file
 
 
@@ -165,6 +168,14 @@ def build_report_context(workspace: Workspace, profile: str | None = None) -> di
 
     # Calculate effort metrics for executive dashboard
     effort_metrics = _calculate_effort_metrics(analysis_data, gaps_data)
+
+    # Enrich components with pattern links
+    if gaps_data and "components" in gaps_data:
+        for component in gaps_data["components"]:
+            pattern_link = get_pattern_link(
+                component.get("component_type", ""), component.get("name", "")
+            )
+            component["pattern_link"] = pattern_link
 
     # Use ContextBuilder to assemble final context
     builder = ReportContextBuilder()
@@ -904,3 +915,287 @@ def copy_static_assets(output_path: Path) -> None:
     js_file = template_dir / "app.js"
     if js_file.exists():
         shutil.copy2(js_file, assets_dir / "app.js")
+
+
+def generate_docs_html(output_path: Path) -> None:
+    """
+    Generate HTML documentation files from markdown sources.
+
+    Converts docs/*.md files to styled HTML and includes them in the report
+    output for standalone viewing.
+
+    Args:
+        output_path: Output directory for report
+    """
+    import shutil
+
+    # Create docs directory in output
+    docs_dir = output_path / "docs"
+    docs_dir.mkdir(exist_ok=True)
+
+    # Find documentation markdown files
+    source_docs_dir = PROJECT_ROOT / "docs"
+    if not source_docs_dir.exists():
+        logger.warning(f"Documentation directory not found: {source_docs_dir}")
+        return
+
+    # Convert each markdown file to HTML
+    for md_file in source_docs_dir.glob("*.md"):
+        html_content = convert_markdown_to_html(md_file)
+        output_file = docs_dir / f"{md_file.stem}.html"
+        output_file.write_text(html_content)
+        logger.info(f"Generated documentation: {output_file.name}")
+
+    # Copy any images or assets from docs
+    for asset_file in source_docs_dir.glob("*.png"):
+        shutil.copy2(asset_file, docs_dir / asset_file.name)
+    for asset_file in source_docs_dir.glob("*.jpg"):
+        shutil.copy2(asset_file, docs_dir / asset_file.name)
+
+
+def convert_markdown_to_html(md_file: Path) -> str:
+    """
+    Convert markdown file to styled HTML.
+
+    Args:
+        md_file: Path to markdown file
+
+    Returns:
+        Complete HTML document with styling
+    """
+    # Read markdown content
+    md_content = md_file.read_text()
+
+    # Convert to HTML with extensions
+    md_converter = markdown.Markdown(
+        extensions=[
+            "fenced_code",  # Code blocks
+            "tables",  # Tables
+            "toc",  # Table of contents
+            "codehilite",  # Syntax highlighting
+        ]
+    )
+    body_html = md_converter.convert(md_content)
+
+    # Wrap in styled HTML template
+    html_template = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{md_file.stem.replace('_', ' ').replace('-', ' ').title()}</title>
+    <link rel="stylesheet" href="../assets/style.css">
+    <style>
+        .doc-container {{
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--spacing-xl);
+            background: white;
+        }}
+        .doc-header {{
+            margin-bottom: var(--spacing-xl);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 2px solid #0c4a6e;
+        }}
+        .doc-nav {{
+            margin-bottom: var(--spacing-lg);
+            padding: var(--spacing-md);
+            background: #f0f9ff;
+            border-radius: 8px;
+        }}
+        .doc-nav a {{
+            color: #0c4a6e;
+            text-decoration: none;
+            margin-right: var(--spacing-md);
+        }}
+        .doc-nav a:hover {{
+            text-decoration: underline;
+        }}
+        .doc-content {{
+            line-height: 1.8;
+        }}
+        .doc-content h2 {{
+            margin-top: var(--spacing-xl);
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid #e2e8f0;
+        }}
+        .doc-content h3 {{
+            margin-top: var(--spacing-lg);
+            color: #0c4a6e;
+        }}
+        .doc-content h4 {{
+            margin-top: var(--spacing-md);
+            color: #0369a1;
+            font-weight: 600;
+        }}
+        .doc-content code {{
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }}
+        .doc-content pre {{
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: var(--spacing-md);
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: var(--spacing-md) 0;
+        }}
+        .doc-content pre code {{
+            background: transparent;
+            color: inherit;
+            padding: 0;
+        }}
+        .doc-content table {{
+            width: 100%;
+            border-collapse: collapse;
+            margin: var(--spacing-md) 0;
+        }}
+        .doc-content th, .doc-content td {{
+            border: 1px solid #cbd5e1;
+            padding: var(--spacing-sm);
+            text-align: left;
+        }}
+        .doc-content th {{
+            background: #f1f5f9;
+            font-weight: 600;
+        }}
+        .doc-content ul, .doc-content ol {{
+            margin: var(--spacing-md) 0;
+            padding-left: var(--spacing-xl);
+        }}
+        .doc-content li {{
+            margin: var(--spacing-xs) 0;
+        }}
+        .doc-content blockquote {{
+            border-left: 4px solid #0c4a6e;
+            padding-left: var(--spacing-md);
+            margin: var(--spacing-md) 0;
+            color: #64748b;
+            font-style: italic;
+        }}
+        .back-to-report {{
+            display: inline-block;
+            margin-top: var(--spacing-xl);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: #0c4a6e;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }}
+        .back-to-report:hover {{
+            background: #075985;
+        }}
+    </style>
+</head>
+<body>
+    <div class="doc-container">
+        <div class="doc-header">
+            <h1>{md_file.stem.replace('_', ' ').replace('-', ' ').title()}</h1>
+        </div>
+        <div class="doc-nav">
+            <a href="../index.html">← Back to Report</a>
+            <a href="#table-of-contents">Table of Contents</a>
+        </div>
+        <div class="doc-content">
+            {body_html}
+        </div>
+        <div style="margin-top: var(--spacing-xl); text-align: center;">
+            <a href="../index.html" class="back-to-report">← Back to Migration Report</a>
+        </div>
+    </div>
+</body>
+</html>
+"""
+    return html_template
+
+
+def get_pattern_link(component_type: str, component_name: str) -> dict[str, str] | None:
+    """
+    Get pattern guide link for a component type.
+
+    Args:
+        component_type: Component type from gaps.json
+        component_name: Component name
+
+    Returns:
+        Dict with 'anchor' and 'description' keys, or None if no pattern applies
+    """
+    # Map component types to pattern guide anchors
+    pattern_mappings = {
+        # NSX Components
+        "nsx_security_groups": {
+            "anchor": "pattern-5-nsx-security-components",
+            "description": "NSX Security & Networking Alternatives",
+        },
+        "nsx_firewall_rules": {
+            "anchor": "pattern-5-nsx-security-components",
+            "description": "NSX Firewall Migration Patterns",
+        },
+        "nsx_distributed_firewall": {
+            "anchor": "pattern-5-nsx-security-components",
+            "description": "NSX Firewall Migration Patterns",
+        },
+        "nsx_load_balancers": {
+            "anchor": "pattern-5-nsx-security-components",
+            "description": "NSX Load Balancer Alternatives",
+        },
+        "nsx_segments": {
+            "anchor": "pattern-5-nsx-security-components",
+            "description": "NSX Networking Migration",
+        },
+        # Workflow patterns
+        "workflow_delay": {
+            "anchor": "pattern-1-long-running-stateful-workflows",
+            "description": "Long-Running Workflow Patterns",
+        },
+        "long_running_workflow": {
+            "anchor": "pattern-1-long-running-stateful-workflows",
+            "description": "Long-Running Workflow Patterns",
+        },
+        # Form patterns
+        "user_interaction": {
+            "anchor": "pattern-2-complex-interactive-forms",
+            "description": "Interactive Form Alternatives",
+        },
+        "approval": {
+            "anchor": "pattern-2-complex-interactive-forms",
+            "description": "Approval Workflow Patterns",
+        },
+        # Dynamic workflows
+        "dynamic_workflow": {
+            "anchor": "pattern-3-dynamic-workflow-generation",
+            "description": "Dynamic Workflow Patterns",
+        },
+        # State management
+        "workflow_state": {
+            "anchor": "pattern-4-state-management",
+            "description": "State Management Patterns",
+        },
+    }
+
+    # Try exact match first
+    if component_type in pattern_mappings:
+        return pattern_mappings[component_type]
+
+    # Try partial matches
+    component_type_lower = component_type.lower()
+    if "nsx" in component_type_lower:
+        return {
+            "anchor": "pattern-5-nsx-security-components",
+            "description": "NSX Migration Patterns",
+        }
+    elif "approval" in component_type_lower or "user_interaction" in component_type_lower:
+        return {
+            "anchor": "pattern-2-complex-interactive-forms",
+            "description": "Approval & Form Patterns",
+        }
+    elif "workflow" in component_type_lower and "state" in component_type_lower:
+        return {
+            "anchor": "pattern-4-state-management",
+            "description": "State Management Patterns",
+        }
+
+    return None

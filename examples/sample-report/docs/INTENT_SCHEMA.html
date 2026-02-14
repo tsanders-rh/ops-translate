@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intent Schema</title>
+    <link rel="stylesheet" href="../assets/style.css">
+    <style>
+        .doc-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--spacing-xl);
+            background: white;
+        }
+        .doc-header {
+            margin-bottom: var(--spacing-xl);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 2px solid #0c4a6e;
+        }
+        .doc-nav {
+            margin-bottom: var(--spacing-lg);
+            padding: var(--spacing-md);
+            background: #f0f9ff;
+            border-radius: 8px;
+        }
+        .doc-nav a {
+            color: #0c4a6e;
+            text-decoration: none;
+            margin-right: var(--spacing-md);
+        }
+        .doc-nav a:hover {
+            text-decoration: underline;
+        }
+        .doc-content {
+            line-height: 1.8;
+        }
+        .doc-content h2 {
+            margin-top: var(--spacing-xl);
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid #e2e8f0;
+        }
+        .doc-content h3 {
+            margin-top: var(--spacing-lg);
+            color: #0c4a6e;
+        }
+        .doc-content h4 {
+            margin-top: var(--spacing-md);
+            color: #0369a1;
+            font-weight: 600;
+        }
+        .doc-content code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .doc-content pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: var(--spacing-md);
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: var(--spacing-md) 0;
+        }
+        .doc-content pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        .doc-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: var(--spacing-md) 0;
+        }
+        .doc-content th, .doc-content td {
+            border: 1px solid #cbd5e1;
+            padding: var(--spacing-sm);
+            text-align: left;
+        }
+        .doc-content th {
+            background: #f1f5f9;
+            font-weight: 600;
+        }
+        .doc-content ul, .doc-content ol {
+            margin: var(--spacing-md) 0;
+            padding-left: var(--spacing-xl);
+        }
+        .doc-content li {
+            margin: var(--spacing-xs) 0;
+        }
+        .doc-content blockquote {
+            border-left: 4px solid #0c4a6e;
+            padding-left: var(--spacing-md);
+            margin: var(--spacing-md) 0;
+            color: #64748b;
+            font-style: italic;
+        }
+        .back-to-report {
+            display: inline-block;
+            margin-top: var(--spacing-xl);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: #0c4a6e;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+        .back-to-report:hover {
+            background: #075985;
+        }
+    </style>
+</head>
+<body>
+    <div class="doc-container">
+        <div class="doc-header">
+            <h1>Intent Schema</h1>
+        </div>
+        <div class="doc-nav">
+            <a href="../index.html">← Back to Report</a>
+            <a href="#table-of-contents">Table of Contents</a>
+        </div>
+        <div class="doc-content">
+            <h1 id="intent-schema-reference">Intent Schema Reference</h1>
+<p>Complete reference documentation for the ops-translate Operational Intent Schema (v1).</p>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#schema-structure">Schema Structure</a></li>
+<li><a href="#field-reference">Field Reference</a></li>
+<li><a href="#examples">Examples</a></li>
+<li><a href="#common-mistakes">Common Mistakes</a></li>
+<li><a href="#validation-tips">Validation Tips</a></li>
+</ol>
+<h2 id="overview">Overview</h2>
+<p>The intent schema is a normalized, platform-agnostic representation of operational workflows. It captures <strong>what</strong> should happen (intent) rather than <strong>how</strong> it happens (implementation).</p>
+<h3 id="purpose">Purpose</h3>
+<ul>
+<li><strong>Normalization</strong>: Convert various automation formats (PowerCLI, vRealize) into a common structure</li>
+<li><strong>Validation</strong>: Ensure extracted intent is complete and correct</li>
+<li><strong>Portability</strong>: Enable generation to multiple target formats (Ansible, KubeVirt, etc.)</li>
+<li><strong>Transparency</strong>: Make operational logic explicit and reviewable</li>
+</ul>
+<h3 id="schema-version">Schema Version</h3>
+<p>Current version: <strong>1</strong></p>
+<p>All intent files must include <code>schema_version: 1</code> at the root level.</p>
+<hr />
+<h2 id="schema-structure">Schema Structure</h2>
+<div class="codehilite"><pre><span></span><code><span class="nt">schema_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w">              </span><span class="c1"># Required: Always 1</span>
+<span class="nt">sources</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span><span class="w">                    </span><span class="c1"># Optional: Source file metadata</span>
+<span class="nt">intent</span><span class="p">:</span><span class="w">                        </span><span class="c1"># Required: Core intent data</span>
+<span class="w">  </span><span class="nt">workflow_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w">           </span><span class="c1"># Required: Workflow identifier</span>
+<span class="w">  </span><span class="nt">workload_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w">           </span><span class="c1"># Required: Type of workload</span>
+<span class="w">  </span><span class="nt">inputs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span><span class="w">                   </span><span class="c1"># Optional: Input parameters</span>
+<span class="w">  </span><span class="nt">governance</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span><span class="w">               </span><span class="c1"># Optional: Approval/policy rules</span>
+<span class="w">  </span><span class="nt">compute</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span><span class="w">                  </span><span class="c1"># Optional: Resource specifications</span>
+<span class="w">  </span><span class="nt">profiles</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span><span class="w">                 </span><span class="c1"># Optional: Environment profiles</span>
+<span class="w">  </span><span class="nt">metadata</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span><span class="w">                 </span><span class="c1"># Optional: Tags and labels</span>
+<span class="w">  </span><span class="nt">day2_operations</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span><span class="w">          </span><span class="c1"># Optional: Lifecycle operations</span>
+<span class="nt">assumptions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span><span class="w">                </span><span class="c1"># Optional: Documented inferences</span>
+</code></pre></div>
+
+<hr />
+<h2 id="field-reference">Field Reference</h2>
+<h3 id="schema_version">schema_version</h3>
+<p><strong>Type</strong>: <code>integer</code>
+<strong>Required</strong>: Yes
+<strong>Value</strong>: Must be <code>1</code></p>
+<p><strong>Description</strong>: Version number of the intent schema. Used for compatibility checks.</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">schema_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+</code></pre></div>
+
+<p><strong>Common Mistakes</strong>:
+- ❌ Using a string: <code>schema_version: "1"</code> (must be integer)
+- ❌ Omitting the field entirely
+- ✅ Correct: <code>schema_version: 1</code></p>
+<hr />
+<h3 id="sources">sources</h3>
+<p><strong>Type</strong>: <code>array of objects</code>
+<strong>Required</strong>: No
+<strong>Description</strong>: Metadata about source files that contributed to this intent.</p>
+<p><strong>Structure</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">sources</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">powercli | vrealize</span><span class="w">       </span><span class="c1"># Required: Source type</span>
+<span class="w">    </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span><span class="w">                    </span><span class="c1"># Required: Path to source file</span>
+<span class="w">    </span><span class="nt">sha256</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span><span class="w">                  </span><span class="c1"># Optional: File hash</span>
+</code></pre></div>
+
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">sources</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">powercli</span>
+<span class="w">    </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">input/powercli/provision-vm.ps1</span>
+<span class="w">    </span><span class="nt">sha256</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">a1b2c3d4...</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vrealize</span>
+<span class="w">    </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">input/vrealize/approval-workflow.xml</span>
+</code></pre></div>
+
+<hr />
+<h3 id="intent">intent</h3>
+<p><strong>Type</strong>: <code>object</code>
+<strong>Required</strong>: Yes
+<strong>Description</strong>: The core intent section containing all operational specifications.</p>
+<hr />
+<h4 id="intentworkflow_name">intent.workflow_name</h4>
+<p><strong>Type</strong>: <code>string</code>
+<strong>Required</strong>: Yes
+<strong>Pattern</strong>: <code>^[a-z][a-z0-9_]*$</code> (snake_case)</p>
+<p><strong>Description</strong>: Unique identifier for the workflow. Used to generate artifact names.</p>
+<p><strong>Examples</strong>:
+- ✅ <code>provision_vm</code>
+- ✅ <code>deploy_dev_environment</code>
+- ✅ <code>backup_database</code>
+- ❌ <code>Provision-VM</code> (not snake_case)
+- ❌ <code>Provision VM</code> (contains spaces)
+- ❌ <code>1st_workflow</code> (doesn't start with letter)</p>
+<p><strong>Conversion Guide</strong>:
+| Original | Correct |
+|----------|---------|
+| <code>Provision-VM</code> | <code>provision_vm</code> |
+| <code>Deploy Dev Environment</code> | <code>deploy_dev_environment</code> |
+| <code>BackupDatabase</code> | <code>backup_database</code> |</p>
+<hr />
+<h4 id="intentworkload_type">intent.workload_type</h4>
+<p><strong>Type</strong>: <code>string</code>
+<strong>Required</strong>: Yes
+<strong>Allowed Values</strong>: <code>virtual_machine</code>, <code>container</code>, <code>mixed</code></p>
+<p><strong>Description</strong>: Type of workload being provisioned or managed.</p>
+<p><strong>Values</strong>:
+- <code>virtual_machine</code>: VMware VMs → KubeVirt VirtualMachines
+- <code>container</code>: Container workloads
+- <code>mixed</code>: Workflows that provision both VMs and containers</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">intent</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">workflow_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provision_vm</span>
+<span class="w">  </span><span class="nt">workload_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">virtual_machine</span>
+</code></pre></div>
+
+<hr />
+<h4 id="intentinputs">intent.inputs</h4>
+<p><strong>Type</strong>: <code>object</code>
+<strong>Required</strong>: No
+<strong>Description</strong>: Input parameters for the workflow. Keys are parameter names in snake_case.</p>
+<p><strong>Parameter Structure</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">inputs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">param_name</span><span class="p">:</span><span class="w">                  </span><span class="c1"># Parameter name (snake_case)</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string | integer | boolean | enum | array</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true | false</span><span class="w">     </span><span class="c1"># Is this parameter required?</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">value</span><span class="w">             </span><span class="c1"># Default value (optional)</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span><span class="w">        </span><span class="c1"># Human-readable description (optional)</span>
+
+<span class="w">    </span><span class="c1"># For integer types:</span>
+<span class="w">    </span><span class="nt">min</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">integer</span><span class="w">               </span><span class="c1"># Minimum value (optional)</span>
+<span class="w">    </span><span class="nt">max</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">integer</span><span class="w">               </span><span class="c1"># Maximum value (optional)</span>
+
+<span class="w">    </span><span class="c1"># For enum types:</span>
+<span class="w">    </span><span class="nt">values</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">option1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">option2</span><span class="p p-Indicator">]</span><span class="w"> </span><span class="c1"># List of allowed values (required for enum)</span>
+</code></pre></div>
+
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">inputs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">vm_name</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Name of the virtual machine</span>
+
+<span class="w">  </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">enum</span>
+<span class="w">    </span><span class="nt">values</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">dev</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">staging</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">prod</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dev</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Target environment</span>
+
+<span class="w">  </span><span class="nt">cpu_count</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">integer</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">    </span><span class="nt">min</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">max</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Number of CPU cores</span>
+
+<span class="w">  </span><span class="nt">enable_monitoring</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">boolean</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Enable monitoring integration</span>
+</code></pre></div>
+
+<p><strong>Common Mistakes</strong>:
+- ❌ <code>required: yes</code> (must be boolean: <code>true</code> or <code>false</code>)
+- ❌ Enum without <code>values</code> array
+- ❌ Integer with string default: <code>default: "4"</code> (must be <code>default: 4</code>)</p>
+<hr />
+<h4 id="intentgovernance">intent.governance</h4>
+<p><strong>Type</strong>: <code>object</code>
+<strong>Required</strong>: No
+<strong>Description</strong>: Governance policies, approval requirements, and constraints.</p>
+<p><strong>Structure</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">governance</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">approval</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">required_when</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nv">condition</span><span class="p p-Indicator">}</span><span class="w">  </span><span class="c1"># Conditions that require approval</span>
+<span class="w">    </span><span class="nt">approvers</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">list</span><span class="p p-Indicator">]</span><span class="w">           </span><span class="c1"># List of approver emails/groups</span>
+
+<span class="w">  </span><span class="nt">quotas</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">max_instances</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">integer</span><span class="w">      </span><span class="c1"># Maximum instances allowed</span>
+<span class="w">    </span><span class="nt">max_cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">integer</span><span class="w">            </span><span class="c1"># Maximum total CPUs</span>
+<span class="w">    </span><span class="nt">max_memory_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">integer</span><span class="w">      </span><span class="c1"># Maximum total memory</span>
+</code></pre></div>
+
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">governance</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">approval</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">required_when</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">environment</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prod</span><span class="w">          </span><span class="c1"># Require approval for prod</span>
+<span class="w">    </span><span class="nt">approvers</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ops-team@example.com</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">manager@example.com</span>
+
+<span class="w">  </span><span class="nt">quotas</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">max_instances</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">    </span><span class="nt">max_cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">64</span>
+<span class="w">    </span><span class="nt">max_memory_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">256</span>
+</code></pre></div>
+
+<hr />
+<h4 id="intentcompute">intent.compute</h4>
+<p><strong>Type</strong>: <code>object</code>
+<strong>Required</strong>: No
+<strong>Description</strong>: Compute resource specifications (CPU, memory, storage).</p>
+<p><strong>Structure</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">compute</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cpu_count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">integer</span><span class="w">            </span><span class="c1"># Number of CPUs</span>
+<span class="w">  </span><span class="nt">memory_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">integer</span><span class="w">            </span><span class="c1"># Memory in GB</span>
+<span class="w">  </span><span class="nt">disk_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">integer</span><span class="w">              </span><span class="c1"># Disk size in GB</span>
+</code></pre></div>
+
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">compute</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cpu_count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="w">  </span><span class="nt">memory_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16</span>
+<span class="w">  </span><span class="nt">disk_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+</code></pre></div>
+
+<hr />
+<h4 id="intentprofiles">intent.profiles</h4>
+<p><strong>Type</strong>: <code>object</code>
+<strong>Required</strong>: No
+<strong>Description</strong>: Environment-specific configuration profiles (dev, staging, prod).</p>
+<p><strong>Structure</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">profiles</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">resource_name</span><span class="p">:</span><span class="w">               </span><span class="c1"># Network, storage, etc.</span>
+<span class="w">    </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nv">condition</span><span class="p p-Indicator">}</span><span class="w">          </span><span class="c1"># When to use this value</span>
+<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span><span class="w">              </span><span class="c1"># Value to use</span>
+<span class="w">  </span><span class="nt">resource_name_else</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span><span class="w">   </span><span class="c1"># Fallback value</span>
+</code></pre></div>
+
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">profiles</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">network</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> environment</span><span class="p">:</span><span class="w"> </span><span class="nv">prod</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prod-network</span>
+<span class="w">  </span><span class="nt">network_else</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dev-network</span>
+
+<span class="w">  </span><span class="nt">storage</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> environment</span><span class="p">:</span><span class="w"> </span><span class="nv">prod</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ceph-rbd</span>
+<span class="w">  </span><span class="nt">storage_else</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nfs</span>
+</code></pre></div>
+
+<p><strong>Notes</strong>:
+- <code>when</code> conditions are checked in order
+- <code>_else</code> suffix denotes the fallback value
+- Conditions can reference input parameters</p>
+<hr />
+<h4 id="intentmetadata">intent.metadata</h4>
+<p><strong>Type</strong>: <code>object</code>
+<strong>Required</strong>: No
+<strong>Description</strong>: Tags, labels, and custom metadata to apply to resources.</p>
+<p><strong>Structure</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">tags</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span><span class="w">              </span><span class="c1"># Tag key</span>
+<span class="w">      </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span><span class="w">            </span><span class="c1"># Static value</span>
+<span class="w">      </span><span class="c1"># OR</span>
+<span class="w">      </span><span class="nt">value_from</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">param_name</span><span class="w">   </span><span class="c1"># Dynamic value from input parameter</span>
+
+<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">value</span><span class="w">                 </span><span class="c1"># Static labels</span>
+
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">value</span><span class="w">                 </span><span class="c1"># Kubernetes annotations</span>
+</code></pre></div>
+
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">tags</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">environment</span>
+<span class="w">      </span><span class="nt">value_from</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">environment</span><span class="w">   </span><span class="c1"># Use value from input parameter</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cost-center</span>
+<span class="w">      </span><span class="nt">value_from</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cost_center</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">managed-by</span>
+<span class="w">      </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ops-translate</span><span class="w">     </span><span class="c1"># Static value</span>
+
+<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">team</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">platform</span>
+<span class="w">    </span><span class="nt">project</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">migration</span>
+
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">contact</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ops-team@example.com</span>
+</code></pre></div>
+
+<hr />
+<h4 id="intentday2_operations">intent.day2_operations</h4>
+<p><strong>Type</strong>: <code>object</code>
+<strong>Required</strong>: No
+<strong>Description</strong>: Supported Day 2 lifecycle operations beyond initial provisioning.</p>
+<p><strong>Structure</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">day2_operations</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">supported</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">operation1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">operation2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">...</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
+<p><strong>Common Operations</strong>:
+- <code>start</code>: Start/power on the workload
+- <code>stop</code>: Stop/power off the workload
+- <code>restart</code>: Restart the workload
+- <code>reconfigure</code>: Modify resource allocation
+- <code>backup</code>: Create backup/snapshot
+- <code>restore</code>: Restore from backup
+- <code>scale</code>: Scale resources up/down
+- <code>migrate</code>: Move to different host/cluster
+- <code>delete</code>: Remove the workload</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">day2_operations</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">supported</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">start</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stop</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">restart</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">reconfigure</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">backup</span>
+</code></pre></div>
+
+<hr />
+<h3 id="assumptions">assumptions</h3>
+<p><strong>Type</strong>: <code>array of strings</code>
+<strong>Required</strong>: No
+<strong>Description</strong>: Documented assumptions made during intent extraction.</p>
+<p><strong>Purpose</strong>: Transparency and auditability. Lists what was inferred vs. explicit.</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">assumptions</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Inferred day2_operations from New-VM command (start/stop are standard)</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">No explicit approval workflow detected in source</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CPU and memory limits set based on common VMware constraints</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Network profile derived from environment-based branching logic</span>
+</code></pre></div>
+
+<hr />
+<h2 id="examples">Examples</h2>
+<h3 id="minimal-valid-intent">Minimal Valid Intent</h3>
+<div class="codehilite"><pre><span></span><code><span class="nt">schema_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="nt">intent</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">workflow_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">minimal_example</span>
+<span class="w">  </span><span class="nt">workload_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">virtual_machine</span>
+</code></pre></div>
+
+<h3 id="simple-vm-provisioning">Simple VM Provisioning</h3>
+<div class="codehilite"><pre><span></span><code><span class="nt">schema_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="nt">sources</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">powercli</span>
+<span class="w">    </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">input/powercli/simple-vm.ps1</span>
+
+<span class="nt">intent</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">workflow_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provision_simple_vm</span>
+<span class="w">  </span><span class="nt">workload_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">virtual_machine</span>
+
+<span class="w">  </span><span class="nt">inputs</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">vm_name</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">      </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Name for the new VM</span>
+
+<span class="w">    </span><span class="nt">cpu_count</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">integer</span>
+<span class="w">      </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">      </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="nt">min</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">max</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16</span>
+
+<span class="w">    </span><span class="nt">memory_gb</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">integer</span>
+<span class="w">      </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">      </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="w">      </span><span class="nt">min</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">max</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">64</span>
+
+<span class="w">  </span><span class="nt">compute</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">cpu_count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">    </span><span class="nt">memory_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="w">    </span><span class="nt">disk_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+
+<span class="w">  </span><span class="nt">day2_operations</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">supported</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">start</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">stop</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
+<h3 id="environment-aware-workflow">Environment-Aware Workflow</h3>
+<div class="codehilite"><pre><span></span><code><span class="nt">schema_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="nt">sources</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">powercli</span>
+<span class="w">    </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">input/powercli/env-aware.ps1</span>
+
+<span class="nt">intent</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">workflow_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provision_vm_with_profiles</span>
+<span class="w">  </span><span class="nt">workload_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">virtual_machine</span>
+
+<span class="w">  </span><span class="nt">inputs</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">vm_name</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">      </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">enum</span>
+<span class="w">      </span><span class="nt">values</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">dev</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">staging</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">prod</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dev</span>
+
+<span class="w">    </span><span class="nt">owner_email</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">      </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">  </span><span class="nt">governance</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">approval</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">required_when</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">environment</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prod</span>
+<span class="w">      </span><span class="nt">approvers</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ops-manager@example.com</span>
+
+<span class="w">  </span><span class="nt">profiles</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">network</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> environment</span><span class="p">:</span><span class="w"> </span><span class="nv">prod</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">      </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prod-network</span>
+<span class="w">    </span><span class="nt">network</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> environment</span><span class="p">:</span><span class="w"> </span><span class="nv">staging</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">      </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">staging-network</span>
+<span class="w">    </span><span class="nt">network_else</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dev-network</span>
+
+<span class="w">    </span><span class="nt">storage</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> environment</span><span class="p">:</span><span class="w"> </span><span class="nv">prod</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">      </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ceph-rbd</span>
+<span class="w">    </span><span class="nt">storage_else</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nfs</span>
+
+<span class="w">  </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">tags</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">environment</span>
+<span class="w">        </span><span class="nt">value_from</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">environment</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">owner</span>
+<span class="w">        </span><span class="nt">value_from</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">owner_email</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">managed-by</span>
+<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ops-translate</span>
+
+<span class="w">  </span><span class="nt">day2_operations</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">supported</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">start</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">stop</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">restart</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">backup</span><span class="p p-Indicator">]</span>
+
+<span class="nt">assumptions</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Approval requirement inferred from environment checks in source</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Network and storage profiles derived from conditional logic</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Day 2 operations based on standard VM lifecycle</span>
+</code></pre></div>
+
+<hr />
+<h2 id="common-mistakes">Common Mistakes</h2>
+<h3 id="1-wrong-type-for-schema_version">1. Wrong Type for schema_version</h3>
+<p>❌ <strong>Incorrect</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">schema_version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span><span class="w">    </span><span class="c1"># String instead of integer</span>
+</code></pre></div>
+
+<p>✅ <strong>Correct</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">schema_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w">      </span><span class="c1"># Integer</span>
+</code></pre></div>
+
+<h3 id="2-workflow_name-not-in-snake_case">2. workflow_name Not in snake_case</h3>
+<p>❌ <strong>Incorrect</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">workflow_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Provision-VM&quot;</span><span class="w">      </span><span class="c1"># Kebab-case</span>
+<span class="nt">workflow_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Provision</span><span class="nv"> </span><span class="s">VM&quot;</span><span class="w">      </span><span class="c1"># Spaces</span>
+<span class="nt">workflow_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ProvisionVM&quot;</span><span class="w">       </span><span class="c1"># CamelCase</span>
+</code></pre></div>
+
+<p>✅ <strong>Correct</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">workflow_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provision_vm</span><span class="w">         </span><span class="c1"># snake_case</span>
+</code></pre></div>
+
+<h3 id="3-required-field-as-string">3. required Field as String</h3>
+<p>❌ <strong>Incorrect</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">inputs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">vm_name</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="w">    </span><span class="c1"># String instead of boolean</span>
+</code></pre></div>
+
+<p>✅ <strong>Correct</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">inputs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">vm_name</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">      </span><span class="c1"># Boolean</span>
+</code></pre></div>
+
+<h3 id="4-enum-type-without-values">4. enum Type Without values</h3>
+<p>❌ <strong>Incorrect</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">inputs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">enum</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="c1"># Missing: values array!</span>
+</code></pre></div>
+
+<p>✅ <strong>Correct</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">inputs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">enum</span>
+<span class="w">    </span><span class="nt">values</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">dev</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">prod</span><span class="p p-Indicator">]</span><span class="w">  </span><span class="c1"># Required for enum type</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+
+<h3 id="5-integer-with-string-default">5. Integer with String Default</h3>
+<p>❌ <strong>Incorrect</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">inputs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cpu_count</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">integer</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;4&quot;</span><span class="w">        </span><span class="c1"># String instead of integer</span>
+</code></pre></div>
+
+<p>✅ <strong>Correct</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">inputs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cpu_count</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">integer</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span><span class="w">          </span><span class="c1"># Integer</span>
+</code></pre></div>
+
+<h3 id="6-missing-required-fields">6. Missing Required Fields</h3>
+<p>❌ <strong>Incorrect</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">schema_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="nt">intent</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Missing workflow_name!</span>
+<span class="w">  </span><span class="nt">workload_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">virtual_machine</span>
+</code></pre></div>
+
+<p>✅ <strong>Correct</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">schema_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="nt">intent</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">workflow_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_workflow</span>
+<span class="w">  </span><span class="nt">workload_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">virtual_machine</span>
+</code></pre></div>
+
+<hr />
+<h2 id="validation-tips">Validation Tips</h2>
+<h3 id="running-validation">Running Validation</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Validate during extraction</span>
+ops-translate<span class="w"> </span>intent<span class="w"> </span>extract
+
+<span class="c1"># Validate merged intent</span>
+ops-translate<span class="w"> </span>intent<span class="w"> </span>merge
+
+<span class="c1"># Run comprehensive validation</span>
+ops-translate<span class="w"> </span>dry-run
+</code></pre></div>
+
+<h3 id="reading-validation-errors">Reading Validation Errors</h3>
+<p>Validation errors follow this format:</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">Validation</span><span class="w"> </span><span class="nv">error</span><span class="w"> </span><span class="nv">at</span><span class="w"> </span><span class="o">&#39;</span><span class="nv">intent</span><span class="o">.</span><span class="nv">workflow_name</span><span class="o">&#39;:</span><span class="w"> </span><span class="o">&#39;</span><span class="nv">Provision</span><span class="o">-</span><span class="nv">VM</span><span class="o">&#39;</span><span class="w"> </span><span class="k">do</span><span class="nv">es</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="nv">match</span><span class="w"> </span><span class="o">&#39;^</span><span class="p">[</span><span class="nv">a</span><span class="o">-</span><span class="nv">z</span><span class="p">][</span><span class="nv">a</span><span class="o">-</span><span class="nv">z0</span><span class="o">-</span><span class="mi">9</span><span class="nv">_</span><span class="p">]</span><span class="o">*</span><span class="p">$</span><span class="o">&#39;</span>
+<span class="w">  </span><span class="nv">Expected</span><span class="w"> </span><span class="nv">pattern</span><span class="o">:</span><span class="w"> </span><span class="o">^</span><span class="p">[</span><span class="nv">a</span><span class="o">-</span><span class="nv">z</span><span class="p">][</span><span class="nv">a</span><span class="o">-</span><span class="nv">z0</span><span class="o">-</span><span class="mi">9</span><span class="nv">_</span><span class="p">]</span><span class="o">*</span><span class="p">$</span>
+<span class="w">  </span><span class="nv">Got</span><span class="o">:</span><span class="w"> </span><span class="nv">Provision</span><span class="o">-</span><span class="nv">VM</span>
+<span class="w">  </span><span class="nv">Hint</span><span class="o">:</span><span class="w"> </span><span class="nv">Use</span><span class="w"> </span><span class="nv">snake_case</span><span class="w"> </span><span class="nf">naming</span><span class="w"> </span><span class="p">(</span><span class="nv">lowercase</span><span class="w"> </span><span class="nv">with</span><span class="w"> </span><span class="no">und</span><span class="nv">erscores</span><span class="p">)</span>
+<span class="w">  </span><span class="nv">Example</span><span class="o">:</span><span class="w"> </span><span class="nv">Provision</span><span class="o">-</span><span class="nv">VM</span><span class="w"> </span>→<span class="w"> </span><span class="nv">provision_vm</span>
+</code></pre></div>
+
+<p>Parts of the error:
+1. <strong>Location</strong>: <code>intent.workflow_name</code> - where the error is
+2. <strong>Message</strong>: What's wrong
+3. <strong>Expected</strong>: What was expected
+4. <strong>Got</strong>: What was actually found
+5. <strong>Hint</strong>: How to fix it
+6. <strong>Example</strong>: Concrete fix</p>
+<h3 id="quick-fix-checklist">Quick Fix Checklist</h3>
+<ul>
+<li>[ ] <code>schema_version</code> is integer <code>1</code> (not string <code>"1"</code>)</li>
+<li>[ ] <code>workflow_name</code> is snake_case (lowercase_with_underscores)</li>
+<li>[ ] <code>workload_type</code> is one of: <code>virtual_machine</code>, <code>container</code>, <code>mixed</code></li>
+<li>[ ] All <code>required</code> fields are boolean (<code>true</code>/<code>false</code>, not <code>yes</code>/<code>no</code>)</li>
+<li>[ ] All <code>enum</code> type inputs have <code>values</code> array</li>
+<li>[ ] Integer fields have integer values (not strings)</li>
+<li>[ ] Input parameter names are valid identifiers (no spaces, special chars)</li>
+</ul>
+<hr />
+<h2 id="schema-file-location">Schema File Location</h2>
+<p>The authoritative JSON schema is located at:</p>
+<div class="codehilite"><pre><span></span><code>schema/intent.schema.json
+</code></pre></div>
+
+<p>For programmatic validation:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.intent.validate</span><span class="w"> </span><span class="kn">import</span> <span class="n">validate_intent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="n">is_valid</span><span class="p">,</span> <span class="n">errors</span> <span class="o">=</span> <span class="n">validate_intent</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;intent/my-intent.yaml&quot;</span><span class="p">))</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">is_valid</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">errors</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+</code></pre></div>
+
+<hr />
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><strong>See examples</strong>: Check <code>examples/</code> directory for sample intent files</li>
+<li><strong>Read architecture</strong>: See <code>docs/ARCHITECTURE.md</code> for system design</li>
+<li><strong>Tutorial</strong>: Follow <code>docs/TUTORIAL.md</code> for step-by-step guide</li>
+<li><strong>API reference</strong>: See <code>docs/API_REFERENCE.md</code> for programmatic usage</li>
+</ul>
+<hr />
+<h2 id="support">Support</h2>
+<ul>
+<li><strong>Schema issues</strong>: https://github.com/tsanders-rh/ops-translate/issues</li>
+<li><strong>Documentation</strong>: https://github.com/tsanders-rh/ops-translate/tree/main/docs</li>
+<li><strong>Examples</strong>: https://github.com/tsanders-rh/ops-translate/tree/main/examples</li>
+</ul>
+        </div>
+        <div style="margin-top: var(--spacing-xl); text-align: center;">
+            <a href="../index.html" class="back-to-report">← Back to Migration Report</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -792,6 +792,17 @@ pip install -e .
   - Type hints and examples
   - **For developers and integrators**
 
+### Migration Patterns
+
+- **[Architecture Patterns Guide](docs/PATTERNS.md)** - Alternatives for complex vRO capabilities
+  - Long-running stateful workflows (AAP scheduled jobs, Temporal, Event-Driven Ansible)
+  - Complex interactive forms (AAP surveys, ServiceNow, custom portals)
+  - Dynamic workflow generation (dynamic includes, AAP API)
+  - State management patterns (Ansible facts, Redis, CMDB)
+  - NSX security components (NetworkPolicy, Calico, Service Mesh, hybrid)
+  - Decision trees and trade-off analysis
+  - **Essential for planning complex migrations**
+
 ### Additional Resources
 
 - [SPEC.md](SPEC.md) - Original design specification

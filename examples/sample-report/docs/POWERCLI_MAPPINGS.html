@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Powercli Mappings</title>
+    <link rel="stylesheet" href="../assets/style.css">
+    <style>
+        .doc-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--spacing-xl);
+            background: white;
+        }
+        .doc-header {
+            margin-bottom: var(--spacing-xl);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 2px solid #0c4a6e;
+        }
+        .doc-nav {
+            margin-bottom: var(--spacing-lg);
+            padding: var(--spacing-md);
+            background: #f0f9ff;
+            border-radius: 8px;
+        }
+        .doc-nav a {
+            color: #0c4a6e;
+            text-decoration: none;
+            margin-right: var(--spacing-md);
+        }
+        .doc-nav a:hover {
+            text-decoration: underline;
+        }
+        .doc-content {
+            line-height: 1.8;
+        }
+        .doc-content h2 {
+            margin-top: var(--spacing-xl);
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid #e2e8f0;
+        }
+        .doc-content h3 {
+            margin-top: var(--spacing-lg);
+            color: #0c4a6e;
+        }
+        .doc-content h4 {
+            margin-top: var(--spacing-md);
+            color: #0369a1;
+            font-weight: 600;
+        }
+        .doc-content code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .doc-content pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: var(--spacing-md);
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: var(--spacing-md) 0;
+        }
+        .doc-content pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        .doc-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: var(--spacing-md) 0;
+        }
+        .doc-content th, .doc-content td {
+            border: 1px solid #cbd5e1;
+            padding: var(--spacing-sm);
+            text-align: left;
+        }
+        .doc-content th {
+            background: #f1f5f9;
+            font-weight: 600;
+        }
+        .doc-content ul, .doc-content ol {
+            margin: var(--spacing-md) 0;
+            padding-left: var(--spacing-xl);
+        }
+        .doc-content li {
+            margin: var(--spacing-xs) 0;
+        }
+        .doc-content blockquote {
+            border-left: 4px solid #0c4a6e;
+            padding-left: var(--spacing-md);
+            margin: var(--spacing-md) 0;
+            color: #64748b;
+            font-style: italic;
+        }
+        .back-to-report {
+            display: inline-block;
+            margin-top: var(--spacing-xl);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: #0c4a6e;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+        .back-to-report:hover {
+            background: #075985;
+        }
+    </style>
+</head>
+<body>
+    <div class="doc-container">
+        <div class="doc-header">
+            <h1>Powercli Mappings</h1>
+        </div>
+        <div class="doc-nav">
+            <a href="../index.html">← Back to Report</a>
+            <a href="#table-of-contents">Table of Contents</a>
+        </div>
+        <div class="doc-content">
+            <h1 id="powercli-cmdlet-mappings-guide">PowerCLI Cmdlet Mappings Guide</h1>
+<p>This guide explains how ops-translate translates PowerCLI cmdlets to Ansible tasks using the deterministic mapping system.</p>
+<h2 id="overview">Overview</h2>
+<p>The PowerCLI translation system uses <strong>mapping-based translation</strong> to convert VMware PowerCLI cmdlets to Kubernetes/KubeVirt Ansible tasks. This provides:</p>
+<ul>
+<li><strong>Deterministic output</strong> - Same input always produces identical output</li>
+<li><strong>No LLM required</strong> - Fast, offline translation for common patterns</li>
+<li><strong>Profile-driven</strong> - Adapts to target environment configuration</li>
+<li><strong>Transparent</strong> - Clear mapping files, easy to understand and extend</li>
+</ul>
+<h2 id="how-it-works">How It Works</h2>
+<h3 id="translation-pipeline">Translation Pipeline</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">PowerCLI</span><span class="w"> </span><span class="n">Script</span>
+<span class="w">     </span><span class="err">│</span>
+<span class="w">     </span><span class="err">├─</span><span class="w"> </span><span class="n">PowerCLIScriptParser</span>
+<span class="w">     </span><span class="err">│</span><span class="w">  </span><span class="err">└─</span><span class="w"> </span><span class="n">Parses</span><span class="w"> </span><span class="o">.</span><span class="n">ps1</span><span class="w"> </span><span class="n">file</span><span class="w"> </span><span class="n">line</span><span class="o">-</span><span class="n">by</span><span class="o">-</span><span class="n">line</span>
+<span class="w">     </span><span class="err">│</span><span class="w">  </span><span class="err">└─</span><span class="w"> </span><span class="n">Extracts</span><span class="w"> </span><span class="n">cmdlets</span><span class="p">,</span><span class="w"> </span><span class="n">parameters</span><span class="p">,</span><span class="w"> </span><span class="n">variables</span>
+<span class="w">     </span><span class="err">│</span><span class="w">  </span><span class="err">└─</span><span class="w"> </span><span class="n">Categorizes</span><span class="w"> </span><span class="n">statements</span><span class="w"> </span><span class="p">(</span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">lookup</span><span class="p">,</span><span class="w"> </span><span class="n">mutation</span><span class="p">,</span><span class="w"> </span><span class="n">integration</span><span class="p">,</span><span class="w"> </span><span class="n">gate</span><span class="p">)</span>
+<span class="w">     </span><span class="err">│</span>
+<span class="w">     </span><span class="err">├─</span><span class="w"> </span><span class="n">PowerShellToAnsibleTranslator</span>
+<span class="w">     </span><span class="err">│</span><span class="w">  </span><span class="err">└─</span><span class="w"> </span><span class="n">Loads</span><span class="w"> </span><span class="n">powercli_cmdlet_mappings</span><span class="o">.</span><span class="n">yaml</span>
+<span class="w">     </span><span class="err">│</span><span class="w">  </span><span class="err">└─</span><span class="w"> </span><span class="n">Matches</span><span class="w"> </span><span class="n">cmdlets</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">Ansible</span><span class="w"> </span><span class="n">modules</span>
+<span class="w">     </span><span class="err">│</span><span class="w">  </span><span class="err">└─</span><span class="w"> </span><span class="n">Substitutes</span><span class="w"> </span><span class="n">parameters</span>
+<span class="w">     </span><span class="err">│</span><span class="w">  </span><span class="err">└─</span><span class="w"> </span><span class="n">Generates</span><span class="w"> </span><span class="n">profile</span><span class="o">-</span><span class="n">driven</span><span class="w"> </span><span class="n">adapters</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">BLOCKED</span><span class="w"> </span><span class="n">stubs</span>
+<span class="w">     </span><span class="err">│</span>
+<span class="w">     </span><span class="err">└─</span><span class="w"> </span><span class="n">AnsibleTask</span><span class="w"> </span><span class="n">objects</span>
+<span class="w">        </span><span class="err">└─</span><span class="w"> </span><span class="n">YAML</span><span class="w"> </span><span class="n">generator</span>
+<span class="w">        </span><span class="err">└─</span><span class="w"> </span><span class="n">tasks</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">yml</span>
+</code></pre></div>
+
+<h3 id="statement-categories">Statement Categories</h3>
+<p>PowerCLI statements are categorized to determine how they should be translated:</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>PowerCLI Examples</th>
+<th>Ansible Translation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>context</strong></td>
+<td><code>$Network = "dev-network"</code></td>
+<td><code>ansible.builtin.set_fact</code></td>
+</tr>
+<tr>
+<td><strong>lookup</strong></td>
+<td><code>Get-VM -Name MyVM</code></td>
+<td><code>kubernetes.core.k8s_info</code></td>
+</tr>
+<tr>
+<td><strong>mutation</strong></td>
+<td><code>New-VM</code>, <code>Start-VM</code>, <code>Set-VM</code></td>
+<td><code>kubevirt.core.kubevirt_vm</code></td>
+</tr>
+<tr>
+<td><strong>integration</strong></td>
+<td><code>New-TagAssignment</code>, <code>New-Snapshot</code></td>
+<td>Labels, VolumeSnapshot</td>
+</tr>
+<tr>
+<td><strong>gate</strong></td>
+<td><code>if ($x -gt 16) { throw "..." }</code></td>
+<td><code>ansible.builtin.assert</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="cmdlet-mapping-file">Cmdlet Mapping File</h2>
+<p>The cmdlet mappings are defined in <code>ops_translate/translate/powercli_cmdlet_mappings.yaml</code>.</p>
+<h3 id="mapping-structure">Mapping Structure</h3>
+<p>Each mapping contains:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">category_name</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">mapping_name</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">match</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">cmdlet</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;PowerCLI cmdlet name&gt;</span>
+<span class="w">    </span><span class="nt">ansible</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">module</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;Ansible module&gt;</span>
+<span class="w">      </span><span class="nt">params</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">&lt;param_name&gt;</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;value or template&gt;</span>
+<span class="w">    </span><span class="nt">category</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;statement category&gt;</span>
+<span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">tag1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">tag2</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">requires_profile</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">profile.path.to.config</span><span class="p p-Indicator">]</span><span class="w">  </span><span class="c1"># Optional</span>
+</code></pre></div>
+
+<h3 id="example-new-vm-cmdlet">Example: New-VM Cmdlet</h3>
+<div class="codehilite"><pre><span></span><code><span class="nt">vm_operations</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">new_vm</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">match</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">cmdlet</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">New-VM</span>
+<span class="w">    </span><span class="nt">ansible</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">module</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubevirt.core.kubevirt_vm</span>
+<span class="w">      </span><span class="nt">params</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">state</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">present</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{Name}&quot;</span>
+<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">target_namespace</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">cpu_cores</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{NumCpu}&quot;</span>
+<span class="w">        </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{MemoryGB}Gi&quot;</span>
+<span class="w">    </span><span class="nt">category</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mutation</span>
+<span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">mutation</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">vm</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
+<p><strong>PowerCLI Input:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="nb">New-VM</span> <span class="n">-Name</span> <span class="s2">&quot;test-vm&quot;</span> <span class="n">-NumCpu</span> <span class="n">4</span> <span class="n">-MemoryGB</span> <span class="n">8</span>
+</code></pre></div>
+
+<p><strong>Ansible Output:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Create VM test-vm</span>
+<span class="w">  </span><span class="nt">kubevirt.core.kubevirt_vm</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">state</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">present</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;test-vm&quot;</span>
+<span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">target_namespace</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">cpu_cores</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;4&quot;</span>
+<span class="w">    </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;8Gi&quot;</span>
+<span class="w">  </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">mutation</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">vm</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
+<h2 id="parameter-substitution">Parameter Substitution</h2>
+<p>The mapping system supports flexible parameter substitution:</p>
+<h3 id="simple-substitution">Simple Substitution</h3>
+<p>Template: <code>{ParamName}</code>
+- Replaced with the cmdlet parameter value
+- Example: <code>{Name}</code> → <code>"test-vm"</code></p>
+<h3 id="substitution-with-suffix">Substitution with Suffix</h3>
+<p>Template: <code>{ParamName}Gi</code>
+- Preserves suffix after substitution
+- Example: <code>{MemoryGB}Gi</code> → <code>"8Gi"</code></p>
+<h3 id="powershell-variables-to-jinja2">PowerShell Variables to Jinja2</h3>
+<p>PowerShell variables are automatically converted to Jinja2 templates:
+- <code>$VMName</code> → <code>{{ vmname }}</code> (lowercased)
+- <code>$NumCPU</code> → <code>{{ numcpu }}</code></p>
+<h2 id="integration-translations">Integration Translations</h2>
+<h3 id="tagging-kubernetes-labels">Tagging → Kubernetes Labels</h3>
+<p><strong>PowerCLI:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="nb">New-TagAssignment</span> <span class="n">-Entity</span> <span class="n">MyVM</span> <span class="n">-Tag</span> <span class="s2">&quot;Environment:Dev&quot;</span>
+</code></pre></div>
+
+<p><strong>Ansible:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Apply environment label to MyVM</span>
+<span class="w">  </span><span class="nt">kubernetes.core.k8s</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">state</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">patched</span>
+<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VirtualMachine</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;MyVM&quot;</span>
+<span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">target_namespace</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">definition</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">environment</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;dev&quot;</span>
+<span class="w">  </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">integration</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">tagging</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
+<p><strong>Mapping:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="nt">tagging</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">new_tag_assignment</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">match</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">cmdlet</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">New-TagAssignment</span>
+<span class="w">    </span><span class="nt">ansible</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">module</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubernetes.core.k8s</span>
+<span class="w">      </span><span class="nt">params</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">state</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">patched</span>
+<span class="w">        </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VirtualMachine</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{Entity}&quot;</span>
+<span class="w">        </span><span class="nt">definition</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">              </span><span class="s">&quot;{tag_key}&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;{tag_value}&quot;</span>
+<span class="w">    </span><span class="nt">category</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">integration</span>
+<span class="w">    </span><span class="nt">integration_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tagging</span>
+</code></pre></div>
+
+<h3 id="snapshots-volumesnapshot">Snapshots → VolumeSnapshot</h3>
+<p><strong>PowerCLI:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="nb">New-Snapshot</span> <span class="n">-VM</span> <span class="n">MyVM</span> <span class="n">-Name</span> <span class="n">snap1</span>
+</code></pre></div>
+
+<p><strong>Ansible:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Create snapshot snap1 for VM MyVM</span>
+<span class="w">  </span><span class="nt">kubevirt.core.kubevirt_vm_snapshot</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">state</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">present</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;snap1&quot;</span>
+<span class="w">    </span><span class="nt">vm_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;MyVM&quot;</span>
+<span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">target_namespace</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">  </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">integration</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">snapshot</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
+<h2 id="profile-driven-translation">Profile-Driven Translation</h2>
+<p>Some translations depend on profile configuration. When required profile sections are missing, ops-translate generates <strong>BLOCKED stubs</strong> with guidance.</p>
+<h3 id="network-adapters">Network Adapters</h3>
+<p><strong>PowerCLI:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="nb">New-NetworkAdapter</span> <span class="n">-VM</span> <span class="n">MyVM</span> <span class="n">-NetworkName</span> <span class="s2">&quot;prod-network&quot;</span>
+</code></pre></div>
+
+<p><strong>With profile.network_security configured:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Create network adapter for MyVM</span>
+<span class="w">  </span><span class="nt">ansible.builtin.include_role</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">adapters/nsx/create_segment</span>
+<span class="w">  </span><span class="nt">vars</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">vm_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;MyVM&quot;</span>
+<span class="w">    </span><span class="nt">network_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;prod-network&quot;</span>
+<span class="w">  </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">integration</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">network</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
+<p><strong>Without profile.network_security:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BLOCKED - Network adapter creation requires configuration</span>
+<span class="w">  </span><span class="nt">ansible.builtin.fail</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">msg</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">      </span><span class="no">BLOCKED: Network Adapter Creation</span>
+
+<span class="w">      </span><span class="no">This script requires network adapter creation.</span>
+<span class="w">      </span><span class="no">Configure profile.network_security to proceed.</span>
+
+<span class="w">      </span><span class="no">Evidence: New-NetworkAdapter -NetworkName &quot;prod-network&quot;</span>
+
+<span class="w">      </span><span class="no">TO FIX: Add to profile.yml:</span>
+<span class="w">        </span><span class="no">network_security:</span>
+<span class="w">          </span><span class="no">model: networkpolicy</span>
+
+<span class="w">      </span><span class="no">Then re-run: ops-translate generate --profile &lt;profile&gt;</span>
+<span class="w">  </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">blocked</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">network</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
+<h3 id="mapping-with-profile-requirement">Mapping with Profile Requirement</h3>
+<div class="codehilite"><pre><span></span><code><span class="nt">network</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">new_network_adapter</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">match</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">cmdlet</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">New-NetworkAdapter</span>
+<span class="w">    </span><span class="nt">ansible</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">module</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ansible.builtin.include_role</span>
+<span class="w">      </span><span class="nt">params</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;adapters/nsx/create_segment&quot;</span>
+<span class="w">    </span><span class="nt">category</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">integration</span>
+<span class="w">    </span><span class="nt">integration_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">network</span>
+<span class="w">    </span><span class="nt">requires_profile</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">profile.network_security.model</span>
+</code></pre></div>
+
+<h2 id="adding-new-cmdlet-mappings">Adding New Cmdlet Mappings</h2>
+<p>To add support for a new PowerCLI cmdlet:</p>
+<h3 id="1-identify-the-cmdlet-category">1. Identify the Cmdlet Category</h3>
+<p>Determine which category fits:
+- <strong>context</strong>: Environment setup, variable assignments
+- <strong>lookup</strong>: Read-only operations (Get-<em> cmdlets)
+- </em><em>mutation</em><em>: State-changing operations (New-</em>, Set-<em>, Start-</em>, Stop-<em>, Remove-</em>)
+- <strong>integration</strong>: External system interactions</p>
+<h3 id="2-add-mapping-to-yaml">2. Add Mapping to YAML</h3>
+<p>Edit <code>ops_translate/translate/powercli_cmdlet_mappings.yaml</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">category_name</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">mapping_name</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">match</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">cmdlet</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;Cmdlet-Name&gt;</span>
+<span class="w">    </span><span class="nt">ansible</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">module</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;ansible.module.name&gt;</span>
+<span class="w">      </span><span class="nt">params</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">param1</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{PowerCLIParam1}&quot;</span>
+<span class="w">        </span><span class="nt">param2</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;static_value&quot;</span>
+<span class="w">    </span><span class="nt">category</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;category&gt;</span>
+<span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">tag1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">tag2</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
+<h3 id="3-test-the-mapping">3. Test the Mapping</h3>
+<p>Create a test PowerCLI script:</p>
+<div class="codehilite"><pre><span></span><code><span class="c"># test.ps1</span>
+<span class="p">&lt;</span><span class="n">Cmdlet-Name</span><span class="p">&gt;</span> <span class="n">-Param1</span> <span class="s2">&quot;value1&quot;</span> <span class="n">-Param2</span> <span class="s2">&quot;value2&quot;</span>
+</code></pre></div>
+
+<p>Import and generate:</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>import<span class="w"> </span>--source<span class="w"> </span>powercli<span class="w"> </span>--file<span class="w"> </span>test.ps1
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>lab
+</code></pre></div>
+
+<p>Verify the generated <code>output/ansible/roles/*/tasks/main.yml</code> contains the expected Ansible task.</p>
+<h3 id="4-add-test-coverage">4. Add Test Coverage</h3>
+<p>Add a test in <code>tests/test_powershell_to_ansible_translator.py</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">test_translate_new_cmdlet</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test translation of New-Cmdlet to ansible_module.&quot;&quot;&quot;</span>
+    <span class="n">stmt</span> <span class="o">=</span> <span class="n">PowerCLIStatement</span><span class="p">(</span>
+        <span class="n">line_number</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">raw_text</span><span class="o">=</span><span class="s2">&quot;New-Cmdlet -Param1 Value1 -Param2 Value2&quot;</span><span class="p">,</span>
+        <span class="n">statement_type</span><span class="o">=</span><span class="s2">&quot;cmdlet&quot;</span><span class="p">,</span>
+        <span class="n">category</span><span class="o">=</span><span class="s2">&quot;mutation&quot;</span><span class="p">,</span>
+        <span class="n">cmdlet</span><span class="o">=</span><span class="s2">&quot;New-Cmdlet&quot;</span><span class="p">,</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Param1&quot;</span><span class="p">:</span> <span class="s2">&quot;Value1&quot;</span><span class="p">,</span> <span class="s2">&quot;Param2&quot;</span><span class="p">:</span> <span class="s2">&quot;Value2&quot;</span><span class="p">},</span>
+    <span class="p">)</span>
+
+    <span class="n">translator</span> <span class="o">=</span> <span class="n">PowerShellToAnsibleTranslator</span><span class="p">()</span>
+    <span class="n">task</span> <span class="o">=</span> <span class="n">translator</span><span class="o">.</span><span class="n">_translate_cmdlet</span><span class="p">(</span><span class="n">stmt</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="n">task</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="k">assert</span> <span class="n">task</span><span class="o">.</span><span class="n">module</span> <span class="o">==</span> <span class="s2">&quot;ansible.module.name&quot;</span>
+    <span class="k">assert</span> <span class="n">task</span><span class="o">.</span><span class="n">module_args</span><span class="p">[</span><span class="s2">&quot;param1&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Value1&quot;</span>
+    <span class="k">assert</span> <span class="n">task</span><span class="o">.</span><span class="n">module_args</span><span class="p">[</span><span class="s2">&quot;param2&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Value2&quot;</span>
+</code></pre></div>
+
+<h2 id="currently-supported-cmdlets">Currently Supported Cmdlets</h2>
+<h3 id="vm-operations">VM Operations</h3>
+<table>
+<thead>
+<tr>
+<th>PowerCLI Cmdlet</th>
+<th>Ansible Module</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>New-VM</code></td>
+<td><code>kubevirt.core.kubevirt_vm</code></td>
+<td>Create virtual machine</td>
+</tr>
+<tr>
+<td><code>Start-VM</code></td>
+<td><code>kubevirt.core.kubevirt_vm</code></td>
+<td>Start VM (state: running)</td>
+</tr>
+<tr>
+<td><code>Stop-VM</code></td>
+<td><code>kubevirt.core.kubevirt_vm</code></td>
+<td>Stop VM (state: stopped)</td>
+</tr>
+<tr>
+<td><code>Set-VM</code></td>
+<td><code>kubevirt.core.kubevirt_vm</code></td>
+<td>Update VM configuration</td>
+</tr>
+<tr>
+<td><code>Remove-VM</code></td>
+<td><code>kubevirt.core.kubevirt_vm</code></td>
+<td>Delete VM (state: absent)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="lookup-operations">Lookup Operations</h3>
+<table>
+<thead>
+<tr>
+<th>PowerCLI Cmdlet</th>
+<th>Ansible Module</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Get-VM</code></td>
+<td><code>kubernetes.core.k8s_info</code></td>
+<td>Query VM information</td>
+</tr>
+</tbody>
+</table>
+<h3 id="integration-operations">Integration Operations</h3>
+<table>
+<thead>
+<tr>
+<th>PowerCLI Cmdlet</th>
+<th>Ansible Module</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>New-TagAssignment</code></td>
+<td><code>kubernetes.core.k8s</code></td>
+<td>Apply labels to VMs</td>
+</tr>
+<tr>
+<td><code>New-Snapshot</code></td>
+<td><code>kubevirt.core.kubevirt_vm_snapshot</code></td>
+<td>Create VM snapshot</td>
+</tr>
+<tr>
+<td><code>New-NetworkAdapter</code></td>
+<td>Profile-driven</td>
+<td>Create network adapter (requires profile.network_security)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="control-flow">Control Flow</h3>
+<table>
+<thead>
+<tr>
+<th>PowerCLI Pattern</th>
+<th>Ansible Module</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>if ($x -gt N) { throw }</code></td>
+<td><code>ansible.builtin.assert</code></td>
+<td>Validation gate</td>
+</tr>
+<tr>
+<td><code>$Var = "value"</code></td>
+<td><code>ansible.builtin.set_fact</code></td>
+<td>Variable assignment</td>
+</tr>
+</tbody>
+</table>
+<h2 id="limitations">Limitations</h2>
+<h3 id="not-translated">Not Translated</h3>
+<p>The following PowerCLI features are <strong>not translated</strong> by the mapping system:</p>
+<ol>
+<li><strong>Complex PowerShell syntax</strong>:</li>
+<li>Classes, DSC, remoting</li>
+<li>Custom functions and modules</li>
+<li>
+<p>Advanced scripting constructs</p>
+</li>
+<li>
+<p><strong>Interactive cmdlets</strong>:</p>
+</li>
+<li>
+<p><code>Read-Host</code>, <code>Get-Credential</code>, <code>Write-Host</code> with prompts</p>
+</li>
+<li>
+<p><strong>GUI-specific cmdlets</strong>:</p>
+</li>
+<li>
+<p>No equivalent in Kubernetes/CLI environments</p>
+</li>
+<li>
+<p><strong>Custom cmdlet libraries</strong>:</p>
+</li>
+<li>Non-VMware PowerCLI modules</li>
+</ol>
+<p>For these scenarios, use the <strong>Intent Extraction</strong> path instead:</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>intent<span class="w"> </span>extract<span class="w"> </span>--profile<span class="w"> </span>lab
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>lab
+</code></pre></div>
+
+<p>This uses LLM to understand the semantic intent and generate appropriate Ansible tasks.</p>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="cmdlet-not-recognized">Cmdlet Not Recognized</h3>
+<p><strong>Symptom</strong>: PowerCLI cmdlet is skipped in translation</p>
+<p><strong>Solution</strong>: Check if cmdlet is in <code>powercli_cmdlet_mappings.yaml</code>. If not, add a mapping or use intent extraction.</p>
+<h3 id="blocked-stub-generated">BLOCKED Stub Generated</h3>
+<p><strong>Symptom</strong>: Task shows "BLOCKED - ... requires configuration"</p>
+<p><strong>Solution</strong>: Add the required profile section. The BLOCKED message includes specific guidance:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># profile.yml</span>
+<span class="nt">network_security</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">networkpolicy</span>
+<span class="w">  </span><span class="nt">default_isolation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">namespace</span>
+</code></pre></div>
+
+<h3 id="parameter-not-substituted">Parameter Not Substituted</h3>
+<p><strong>Symptom</strong>: <code>{ParamName}</code> appears in output instead of value</p>
+<p><strong>Solution</strong>: Check parameter name matches exactly (case-sensitive). PowerCLI parameter names are case-insensitive, but mapping substitution is exact.</p>
+<h3 id="variable-not-converted">Variable Not Converted</h3>
+<p><strong>Symptom</strong>: <code>$VMName</code> appears instead of <code>{{ vmname }}</code></p>
+<p><strong>Solution</strong>: Ensure variable is parsed correctly. Check <code>_parse_cmdlet_parameters()</code> regex handles the variable pattern.</p>
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Test incrementally</strong>: Add one cmdlet mapping at a time and test immediately</li>
+<li><strong>Use clear names</strong>: Mapping names should reflect the cmdlet purpose</li>
+<li><strong>Document requirements</strong>: Use <code>requires_profile</code> to document dependencies</li>
+<li><strong>Add test coverage</strong>: Every new mapping should have a test case</li>
+<li><strong>Follow conventions</strong>: Match existing mapping structure and naming</li>
+</ol>
+<h2 id="related-documentation">Related Documentation</h2>
+<ul>
+<li><a href="ARCHITECTURE.md#translate-module">ARCHITECTURE.md</a> - Translate Module architecture</li>
+<li><a href="USER_GUIDE.md">USER_GUIDE.md</a> - User guide for ops-translate commands</li>
+<li><a href="TUTORIAL.md">TUTORIAL.md</a> - Step-by-step tutorial with examples</li>
+</ul>
+<h2 id="contributing">Contributing</h2>
+<p>To contribute new cmdlet mappings:</p>
+<ol>
+<li>Fork the repository</li>
+<li>Add mapping to <code>ops_translate/translate/powercli_cmdlet_mappings.yaml</code></li>
+<li>Add test coverage in <code>tests/test_powershell_to_ansible_translator.py</code></li>
+<li>Submit pull request with example PowerCLI script and expected output</li>
+</ol>
+<p>For questions or suggestions, open an issue at https://github.com/tsanders-rh/ops-translate/issues</p>
+        </div>
+        <div style="margin-top: var(--spacing-xl); text-align: center;">
+            <a href="../index.html" class="back-to-report">← Back to Migration Report</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Api Reference</title>
+    <link rel="stylesheet" href="../assets/style.css">
+    <style>
+        .doc-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--spacing-xl);
+            background: white;
+        }
+        .doc-header {
+            margin-bottom: var(--spacing-xl);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 2px solid #0c4a6e;
+        }
+        .doc-nav {
+            margin-bottom: var(--spacing-lg);
+            padding: var(--spacing-md);
+            background: #f0f9ff;
+            border-radius: 8px;
+        }
+        .doc-nav a {
+            color: #0c4a6e;
+            text-decoration: none;
+            margin-right: var(--spacing-md);
+        }
+        .doc-nav a:hover {
+            text-decoration: underline;
+        }
+        .doc-content {
+            line-height: 1.8;
+        }
+        .doc-content h2 {
+            margin-top: var(--spacing-xl);
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid #e2e8f0;
+        }
+        .doc-content h3 {
+            margin-top: var(--spacing-lg);
+            color: #0c4a6e;
+        }
+        .doc-content h4 {
+            margin-top: var(--spacing-md);
+            color: #0369a1;
+            font-weight: 600;
+        }
+        .doc-content code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .doc-content pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: var(--spacing-md);
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: var(--spacing-md) 0;
+        }
+        .doc-content pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        .doc-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: var(--spacing-md) 0;
+        }
+        .doc-content th, .doc-content td {
+            border: 1px solid #cbd5e1;
+            padding: var(--spacing-sm);
+            text-align: left;
+        }
+        .doc-content th {
+            background: #f1f5f9;
+            font-weight: 600;
+        }
+        .doc-content ul, .doc-content ol {
+            margin: var(--spacing-md) 0;
+            padding-left: var(--spacing-xl);
+        }
+        .doc-content li {
+            margin: var(--spacing-xs) 0;
+        }
+        .doc-content blockquote {
+            border-left: 4px solid #0c4a6e;
+            padding-left: var(--spacing-md);
+            margin: var(--spacing-md) 0;
+            color: #64748b;
+            font-style: italic;
+        }
+        .back-to-report {
+            display: inline-block;
+            margin-top: var(--spacing-xl);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: #0c4a6e;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+        .back-to-report:hover {
+            background: #075985;
+        }
+    </style>
+</head>
+<body>
+    <div class="doc-container">
+        <div class="doc-header">
+            <h1>Api Reference</h1>
+        </div>
+        <div class="doc-nav">
+            <a href="../index.html">← Back to Report</a>
+            <a href="#table-of-contents">Table of Contents</a>
+        </div>
+        <div class="doc-content">
+            <h1 id="ops-translate-api-reference">ops-translate API Reference</h1>
+<p>Complete API reference for using ops-translate programmatically or extending its functionality.</p>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#workspace-api">Workspace API</a></li>
+<li><a href="#summarize-api">Summarize API</a></li>
+<li><a href="#intent-extraction-api">Intent Extraction API</a></li>
+<li><a href="#intent-merge-api">Intent Merge API</a></li>
+<li><a href="#validation-api">Validation API</a></li>
+<li><a href="#generation-api">Generation API</a></li>
+<li><a href="#llm-provider-api">LLM Provider API</a></li>
+<li><a href="#utility-functions">Utility Functions</a></li>
+<li><a href="#extending-ops-translate">Extending ops-translate</a></li>
+</ol>
+<h2 id="overview">Overview</h2>
+<h3 id="installation-for-development">Installation for Development</h3>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[dev]&quot;</span>
+</code></pre></div>
+
+<h3 id="basic-usage">Basic Usage</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.workspace</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_workspace</span><span class="p">,</span> <span class="n">import_file</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.intent.extract</span><span class="w"> </span><span class="kn">import</span> <span class="n">extract_all</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.intent.merge</span><span class="w"> </span><span class="kn">import</span> <span class="n">merge_intents</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.generate</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_all</span>
+
+<span class="c1"># Create workspace</span>
+<span class="n">workspace</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;./my-workspace&quot;</span><span class="p">)</span>
+<span class="n">create_workspace</span><span class="p">(</span><span class="n">workspace</span><span class="p">)</span>
+
+<span class="c1"># Import files</span>
+<span class="n">import_file</span><span class="p">(</span>
+    <span class="n">workspace</span><span class="o">=</span><span class="n">workspace</span><span class="p">,</span>
+    <span class="n">source_type</span><span class="o">=</span><span class="s2">&quot;powercli&quot;</span><span class="p">,</span>
+    <span class="n">file_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;/path/to/script.ps1&quot;</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="c1"># Extract intent</span>
+<span class="n">extract_all</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">use_ai</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># Merge intents</span>
+<span class="n">conflicts</span> <span class="o">=</span> <span class="n">merge_intents</span><span class="p">(</span><span class="n">workspace</span><span class="p">)</span>
+
+<span class="c1"># Generate artifacts</span>
+<span class="n">generate_all</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">profile_name</span><span class="o">=</span><span class="s2">&quot;lab&quot;</span><span class="p">,</span> <span class="n">use_ai</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+
+<h2 id="workspace-api">Workspace API</h2>
+<p>Module: <code>ops_translate.workspace</code></p>
+<h3 id="create_workspace">create_workspace</h3>
+<p>Create a new ops-translate workspace.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">create_workspace</span><span class="p">(</span><span class="n">workspace_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+<p><strong>Parameters</strong>:
+- <code>workspace_dir</code> (Path): Directory path for the workspace</p>
+<p><strong>Returns</strong>: None</p>
+<p><strong>Raises</strong>:
+- <code>FileExistsError</code>: If workspace already exists
+- <code>PermissionError</code>: If cannot create directory</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.workspace</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_workspace</span>
+
+<span class="n">workspace</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;./my-project&quot;</span><span class="p">)</span>
+<span class="n">create_workspace</span><span class="p">(</span><span class="n">workspace</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Created Structure</strong>:</p>
+<div class="codehilite"><pre><span></span><code>my-project/
+├── ops-translate.yaml
+├── input/
+│   ├── powercli/
+│   └── vrealize/
+├── intent/
+├── mapping/
+└── output/
+    ├── ansible/
+    └── kubevirt/
+</code></pre></div>
+
+<h3 id="get_workspace">get_workspace</h3>
+<p>Find the workspace directory from current location.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_workspace</span><span class="p">(</span><span class="n">start_path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">())</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span>
+</code></pre></div>
+
+<p><strong>Parameters</strong>:
+- <code>start_path</code> (Path, optional): Starting directory for search. Defaults to current directory.</p>
+<p><strong>Returns</strong>:
+- <code>Path</code>: Workspace directory if found
+- <code>None</code>: If no workspace found</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.workspace</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_workspace</span>
+
+<span class="n">workspace</span> <span class="o">=</span> <span class="n">get_workspace</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">workspace</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found workspace: </span><span class="si">{</span><span class="n">workspace</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Not in a workspace&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Search Logic</strong>:
+- Looks for <code>ops-translate.yaml</code> in current directory
+- Walks up directory tree if not found
+- Stops at filesystem root</p>
+<h3 id="import_file">import_file</h3>
+<p>Import a source file into the workspace.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">import_file</span><span class="p">(</span>
+    <span class="n">workspace</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+    <span class="n">source_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span>
+</code></pre></div>
+
+<p><strong>Parameters</strong>:
+- <code>workspace</code> (Path): Workspace directory
+- <code>source_type</code> (str): Type of source (<code>"powercli"</code> or <code>"vrealize"</code>)
+- <code>file_path</code> (Path): Path to file to import</p>
+<p><strong>Returns</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+    <span class="s2">&quot;file&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>            <span class="c1"># Filename</span>
+    <span class="s2">&quot;source_type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>     <span class="c1"># Source type</span>
+    <span class="s2">&quot;sha256&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>          <span class="c1"># SHA-256 hash</span>
+    <span class="s2">&quot;imported_at&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>     <span class="c1"># ISO timestamp</span>
+    <span class="s2">&quot;original_path&quot;</span><span class="p">:</span> <span class="nb">str</span>    <span class="c1"># Original file path</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Raises</strong>:
+- <code>ValueError</code>: If source_type not in <code>["powercli", "vrealize"]</code>
+- <code>FileNotFoundError</code>: If file_path doesn't exist
+- <code>PermissionError</code>: If cannot read source or write destination</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.workspace</span><span class="w"> </span><span class="kn">import</span> <span class="n">import_file</span>
+
+<span class="n">metadata</span> <span class="o">=</span> <span class="n">import_file</span><span class="p">(</span>
+    <span class="n">workspace</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;./my-workspace&quot;</span><span class="p">),</span>
+    <span class="n">source_type</span><span class="o">=</span><span class="s2">&quot;powercli&quot;</span><span class="p">,</span>
+    <span class="n">file_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;/path/to/script.ps1&quot;</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Imported </span><span class="si">{</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;file&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> with hash </span><span class="si">{</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;sha256&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="load_config">load_config</h3>
+<p>Load workspace configuration.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_config</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span>
+</code></pre></div>
+
+<p><strong>Parameters</strong>:
+- <code>workspace</code> (Path): Workspace directory</p>
+<p><strong>Returns</strong>: Configuration dictionary</p>
+<p><strong>Raises</strong>:
+- <code>FileNotFoundError</code>: If ops-translate.yaml not found
+- <code>yaml.YAMLError</code>: If config file invalid</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.workspace</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_config</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;./my-workspace&quot;</span><span class="p">))</span>
+<span class="n">llm_provider</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;llm&#39;</span><span class="p">][</span><span class="s1">&#39;provider&#39;</span><span class="p">]</span>
+<span class="n">profiles</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;profiles&#39;</span><span class="p">]</span>
+</code></pre></div>
+
+<h2 id="summarize-api">Summarize API</h2>
+<p>Module: <code>ops_translate.summarize</code></p>
+<h3 id="powercli-summarization">PowerCLI Summarization</h3>
+<p>Module: <code>ops_translate.summarize.powercli</code></p>
+<h4 id="summarize">summarize</h4>
+<p>Summarize a PowerCLI script.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">summarize</span><span class="p">(</span><span class="n">script_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span>
+</code></pre></div>
+
+<p><strong>Parameters</strong>:
+- <code>script_path</code> (Path): Path to PowerCLI script (.ps1)</p>
+<p><strong>Returns</strong>: Markdown summary string</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.summarize.powercli</span><span class="w"> </span><span class="kn">import</span> <span class="n">summarize</span>
+
+<span class="n">summary</span> <span class="o">=</span> <span class="n">summarize</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;./input/powercli/provision.ps1&quot;</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">summary</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Output Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="gs">**File**</span>: provision.ps1
+
+<span class="gs">**Parameters**</span>:
+<span class="k">-</span><span class="w"> </span>VMName (string, required)
+<span class="k">-</span><span class="w"> </span>CPUCount (int, optional)
+
+<span class="gs">**Environment Branching**</span>: Detected
+<span class="gs">**Tagging/Metadata**</span>: Detected
+<span class="gs">**Network/Storage Selection**</span>: Detected
+</code></pre></div>
+
+<h4 id="extract_parameters">extract_parameters</h4>
+<p>Extract parameters from PowerCLI script.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extract_parameters</span><span class="p">(</span><span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span>
+</code></pre></div>
+
+<p><strong>Parameters</strong>:
+- <code>content</code> (str): PowerCLI script content</p>
+<p><strong>Returns</strong>: List of parameter dictionaries</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.summarize.powercli</span><span class="w"> </span><span class="kn">import</span> <span class="n">extract_parameters</span>
+
+<span class="n">content</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">param(</span>
+<span class="s2">    [Parameter(Mandatory=$true)]</span>
+<span class="s2">    [string]$VMName,</span>
+
+<span class="s2">    [Parameter(Mandatory=$false)]</span>
+<span class="s2">    [int]$CPUCount = 2</span>
+<span class="s2">)</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+<span class="n">params</span> <span class="o">=</span> <span class="n">extract_parameters</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+<span class="c1"># [</span>
+<span class="c1">#     {&quot;name&quot;: &quot;VMName&quot;, &quot;type&quot;: &quot;string&quot;, &quot;required&quot;: True},</span>
+<span class="c1">#     {&quot;name&quot;: &quot;CPUCount&quot;, &quot;type&quot;: &quot;int&quot;, &quot;required&quot;: False}</span>
+<span class="c1"># ]</span>
+</code></pre></div>
+
+<h4 id="detect_environment_branching">detect_environment_branching</h4>
+<p>Detect environment branching logic.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">detect_environment_branching</span><span class="p">(</span><span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
+</code></pre></div>
+
+<p><strong>Parameters</strong>:
+- <code>content</code> (str): PowerCLI script content</p>
+<p><strong>Returns</strong>: True if environment branching detected</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.summarize.powercli</span><span class="w"> </span><span class="kn">import</span> <span class="n">detect_environment_branching</span>
+
+<span class="n">content</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">[ValidateSet(&quot;dev&quot;, &quot;prod&quot;)]</span>
+<span class="s2">[string]$Environment</span>
+
+<span class="s2">if ($Environment -eq &quot;prod&quot;) {</span>
+<span class="s2">    $CPUCount = 4</span>
+<span class="s2">} else {</span>
+<span class="s2">    $CPUCount = 2</span>
+<span class="s2">}</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+<span class="n">has_branching</span> <span class="o">=</span> <span class="n">detect_environment_branching</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+<span class="c1"># True</span>
+</code></pre></div>
+
+<h4 id="detect_tagging">detect_tagging</h4>
+<p>Detect tagging/metadata operations.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">detect_tagging</span><span class="p">(</span><span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
+</code></pre></div>
+
+<h4 id="detect_network_storage">detect_network_storage</h4>
+<p>Detect network/storage selection logic.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">detect_network_storage</span><span class="p">(</span><span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
+</code></pre></div>
+
+<h3 id="vrealize-summarization">vRealize Summarization</h3>
+<p>Module: <code>ops_translate.summarize.vrealize</code></p>
+<h4 id="summarize_1">summarize</h4>
+<p>Summarize a vRealize workflow.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">summarize</span><span class="p">(</span><span class="n">workflow_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span>
+</code></pre></div>
+
+<p><strong>Parameters</strong>:
+- <code>workflow_path</code> (Path): Path to vRealize workflow XML</p>
+<p><strong>Returns</strong>: Markdown summary string</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.summarize.vrealize</span><span class="w"> </span><span class="kn">import</span> <span class="n">summarize</span>
+
+<span class="n">summary</span> <span class="o">=</span> <span class="n">summarize</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;./input/vrealize/workflow.xml&quot;</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">summary</span><span class="p">)</span>
+</code></pre></div>
+
+<h4 id="detect_approval">detect_approval</h4>
+<p>Detect approval requirements in workflow.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">detect_approval</span><span class="p">(</span><span class="n">root</span><span class="p">:</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
+</code></pre></div>
+
+<p><strong>Parameters</strong>:
+- <code>root</code> (ET.Element): Parsed XML root element</p>
+<p><strong>Returns</strong>: True if approval detected</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">xml.etree.ElementTree</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ET</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.summarize.vrealize</span><span class="w"> </span><span class="kn">import</span> <span class="n">detect_approval</span>
+
+<span class="n">tree</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s2">&quot;workflow.xml&quot;</span><span class="p">)</span>
+<span class="n">root</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">getroot</span><span class="p">()</span>
+
+<span class="n">has_approval</span> <span class="o">=</span> <span class="n">detect_approval</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+</code></pre></div>
+
+<h2 id="intent-extraction-api">Intent Extraction API</h2>
+<p>Module: <code>ops_translate.intent.extract</code></p>
+<h3 id="extract_all">extract_all</h3>
+<p>Extract intent from all imported sources.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extract_all</span><span class="p">(</span>
+    <span class="n">workspace</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+    <span class="n">use_ai</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span>
+</code></pre></div>
+
+<p><strong>Parameters</strong>:
+- <code>workspace</code> (Path): Workspace directory
+- <code>use_ai</code> (bool, optional): Use AI for extraction. Defaults to True.</p>
+<p><strong>Returns</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+    <span class="s2">&quot;powercli&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>     <span class="c1"># Extracted PowerCLI intent</span>
+    <span class="s2">&quot;vrealize&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>     <span class="c1"># Extracted vRealize intent</span>
+    <span class="s2">&quot;assumptions&quot;</span><span class="p">:</span> <span class="nb">str</span>    <span class="c1"># Assumptions log</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.intent.extract</span><span class="w"> </span><span class="kn">import</span> <span class="n">extract_all</span>
+
+<span class="n">results</span> <span class="o">=</span> <span class="n">extract_all</span><span class="p">(</span>
+    <span class="n">workspace</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;./my-workspace&quot;</span><span class="p">),</span>
+    <span class="n">use_ai</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+
+<span class="n">powercli_intent</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s1">&#39;powercli&#39;</span><span class="p">]</span>
+<span class="n">assumptions</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s1">&#39;assumptions&#39;</span><span class="p">]</span>
+</code></pre></div>
+
+<p><strong>Side Effects</strong>:
+- Writes <code>intent/powercli.intent.yaml</code>
+- Writes <code>intent/vrealize.intent.yaml</code>
+- Writes <code>intent/assumptions.md</code></p>
+<h3 id="extract_from_powercli">extract_from_powercli</h3>
+<p>Extract intent from a PowerCLI script.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extract_from_powercli</span><span class="p">(</span>
+    <span class="n">script_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+    <span class="n">llm_provider</span><span class="p">:</span> <span class="n">LLMProvider</span><span class="p">,</span>
+    <span class="n">use_ai</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+</code></pre></div>
+
+<p><strong>Parameters</strong>:
+- <code>script_path</code> (Path): Path to PowerCLI script
+- <code>llm_provider</code> (LLMProvider): LLM provider instance
+- <code>use_ai</code> (bool, optional): Use AI. Defaults to True.</p>
+<p><strong>Returns</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">(</span>
+    <span class="n">intent_dict</span><span class="p">,</span>      <span class="c1"># Intent dictionary</span>
+    <span class="n">assumptions_str</span>   <span class="c1"># Assumptions markdown</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.intent.extract</span><span class="w"> </span><span class="kn">import</span> <span class="n">extract_from_powercli</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.llm</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_provider</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;llm&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;provider&quot;</span><span class="p">:</span> <span class="s2">&quot;mock&quot;</span><span class="p">}}</span>
+<span class="n">provider</span> <span class="o">=</span> <span class="n">get_provider</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+<span class="n">intent</span><span class="p">,</span> <span class="n">assumptions</span> <span class="o">=</span> <span class="n">extract_from_powercli</span><span class="p">(</span>
+    <span class="n">script_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;./script.ps1&quot;</span><span class="p">),</span>
+    <span class="n">llm_provider</span><span class="o">=</span><span class="n">provider</span><span class="p">,</span>
+    <span class="n">use_ai</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<h3 id="extract_from_vrealize">extract_from_vrealize</h3>
+<p>Extract intent from a vRealize workflow.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extract_from_vrealize</span><span class="p">(</span>
+    <span class="n">workflow_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+    <span class="n">llm_provider</span><span class="p">:</span> <span class="n">LLMProvider</span><span class="p">,</span>
+    <span class="n">use_ai</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+</code></pre></div>
+
+<p><strong>Parameters</strong>: Same as <code>extract_from_powercli</code></p>
+<p><strong>Returns</strong>: Same as <code>extract_from_powercli</code></p>
+<h2 id="intent-merge-api">Intent Merge API</h2>
+<p>Module: <code>ops_translate.intent.merge</code></p>
+<h3 id="merge_intents">merge_intents</h3>
+<p>Merge multiple intent sources into unified intent.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">merge_intents</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+</code></pre></div>
+
+<p><strong>Parameters</strong>:
+- <code>workspace</code> (Path): Workspace directory</p>
+<p><strong>Returns</strong>: List of conflict strings (empty if no conflicts)</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.intent.merge</span><span class="w"> </span><span class="kn">import</span> <span class="n">merge_intents</span>
+
+<span class="n">conflicts</span> <span class="o">=</span> <span class="n">merge_intents</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;./my-workspace&quot;</span><span class="p">))</span>
+
+<span class="k">if</span> <span class="n">conflicts</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Conflicts detected:&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">conflict</span> <span class="ow">in</span> <span class="n">conflicts</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - </span><span class="si">{</span><span class="n">conflict</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Merged successfully&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Side Effects</strong>:
+- Writes <code>intent/intent.yaml</code>
+- Writes <code>intent/conflicts.md</code> (if conflicts)</p>
+<h3 id="smart_merge">smart_merge</h3>
+<p>Perform smart merge of intent dictionaries.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">smart_merge</span><span class="p">(</span><span class="n">intents</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
+</code></pre></div>
+
+<p><strong>Parameters</strong>:
+- <code>intents</code> (List[dict]): List of intent dictionaries to merge</p>
+<p><strong>Returns</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">(</span>
+    <span class="n">merged_intent</span><span class="p">,</span>  <span class="c1"># Merged intent dictionary</span>
+    <span class="n">conflicts</span>       <span class="c1"># List of conflict descriptions</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.intent.merge</span><span class="w"> </span><span class="kn">import</span> <span class="n">smart_merge</span>
+
+<span class="n">intent1</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;schema_version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;powercli&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;workflow_name&quot;</span><span class="p">:</span> <span class="s2">&quot;provision_vm&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;compute&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;cpu_count&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;memory_gb&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="n">intent2</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;schema_version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;vrealize&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;workflow_name&quot;</span><span class="p">:</span> <span class="s2">&quot;vm_workflow&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;compute&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;cpu_count&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s2">&quot;memory_gb&quot;</span><span class="p">:</span> <span class="mi">16</span><span class="p">},</span>
+    <span class="s2">&quot;governance&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;approval_required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="n">merged</span><span class="p">,</span> <span class="n">conflicts</span> <span class="o">=</span> <span class="n">smart_merge</span><span class="p">([</span><span class="n">intent1</span><span class="p">,</span> <span class="n">intent2</span><span class="p">])</span>
+
+<span class="c1"># merged = {</span>
+<span class="c1">#     &quot;schema_version&quot;: 1,</span>
+<span class="c1">#     &quot;workflow_name&quot;: &quot;provision_vm&quot;,</span>
+<span class="c1">#     &quot;compute&quot;: {&quot;cpu_count&quot;: 4, &quot;memory_gb&quot;: 16},  # Max values</span>
+<span class="c1">#     &quot;governance&quot;: {&quot;approval_required&quot;: True}</span>
+<span class="c1"># }</span>
+</code></pre></div>
+
+<h3 id="detect_conflicts">detect_conflicts</h3>
+<p>Detect conflicts between intent sources.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">detect_conflicts</span><span class="p">(</span><span class="n">intent1</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">intent2</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+</code></pre></div>
+
+<p><strong>Parameters</strong>:
+- <code>intent1</code> (dict): First intent
+- <code>intent2</code> (dict): Second intent</p>
+<p><strong>Returns</strong>: List of conflict descriptions</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.intent.merge</span><span class="w"> </span><span class="kn">import</span> <span class="n">detect_conflicts</span>
+
+<span class="n">intent1</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;networking&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;network&quot;</span><span class="p">:</span> <span class="s2">&quot;prod-net&quot;</span><span class="p">}}</span>
+<span class="n">intent2</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;networking&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;network&quot;</span><span class="p">:</span> <span class="s2">&quot;production-network&quot;</span><span class="p">}}</span>
+
+<span class="n">conflicts</span> <span class="o">=</span> <span class="n">detect_conflicts</span><span class="p">(</span><span class="n">intent1</span><span class="p">,</span> <span class="n">intent2</span><span class="p">)</span>
+<span class="c1"># [&quot;Network mapping differs: prod-net vs production-network&quot;]</span>
+</code></pre></div>
+
+<h2 id="validation-api">Validation API</h2>
+<p>Module: <code>ops_translate.intent.validate</code></p>
+<h3 id="validate_intent">validate_intent</h3>
+<p>Validate intent YAML against schema.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">validate_intent</span><span class="p">(</span><span class="n">intent_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
+</code></pre></div>
+
+<p><strong>Parameters</strong>:
+- <code>intent_path</code> (Path): Path to intent YAML file</p>
+<p><strong>Returns</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">(</span>
+    <span class="n">is_valid</span><span class="p">,</span>  <span class="c1"># True if valid</span>
+    <span class="n">errors</span>     <span class="c1"># List of error messages</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.intent.validate</span><span class="w"> </span><span class="kn">import</span> <span class="n">validate_intent</span>
+
+<span class="n">valid</span><span class="p">,</span> <span class="n">errors</span> <span class="o">=</span> <span class="n">validate_intent</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;./intent/intent.yaml&quot;</span><span class="p">))</span>
+
+<span class="k">if</span> <span class="n">valid</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Intent is valid&quot;</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Validation errors:&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">errors</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="validate_artifacts">validate_artifacts</h3>
+<p>Validate generated artifacts.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">validate_artifacts</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
+</code></pre></div>
+
+<p><strong>Parameters</strong>:
+- <code>workspace</code> (Path): Workspace directory</p>
+<p><strong>Returns</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">(</span>
+    <span class="n">is_valid</span><span class="p">,</span>  <span class="c1"># True if all valid</span>
+    <span class="n">messages</span>   <span class="c1"># List of validation messages</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.intent.validate</span><span class="w"> </span><span class="kn">import</span> <span class="n">validate_artifacts</span>
+
+<span class="n">valid</span><span class="p">,</span> <span class="n">messages</span> <span class="o">=</span> <span class="n">validate_artifacts</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;./my-workspace&quot;</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">messages</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Checks</strong>:
+- YAML syntax in generated files
+- Ansible playbook structure
+- KubeVirt manifest structure
+- Required files presence</p>
+<h2 id="generation-api">Generation API</h2>
+<p>Module: <code>ops_translate.generate</code></p>
+<h3 id="generate_all">generate_all</h3>
+<p>Generate all artifacts from intent.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">generate_all</span><span class="p">(</span>
+    <span class="n">workspace</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+    <span class="n">profile_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">use_ai</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+<p><strong>Parameters</strong>:
+- <code>workspace</code> (Path): Workspace directory
+- <code>profile_name</code> (str): Profile name from config
+- <code>use_ai</code> (bool, optional): Use AI for generation. Defaults to True.</p>
+<p><strong>Returns</strong>: None</p>
+<p><strong>Raises</strong>:
+- <code>FileNotFoundError</code>: If intent file not found
+- <code>KeyError</code>: If profile not found in config
+- <code>ValueError</code>: If intent validation fails</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.generate</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_all</span>
+
+<span class="n">generate_all</span><span class="p">(</span>
+    <span class="n">workspace</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;./my-workspace&quot;</span><span class="p">),</span>
+    <span class="n">profile_name</span><span class="o">=</span><span class="s2">&quot;lab&quot;</span><span class="p">,</span>
+    <span class="n">use_ai</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Side Effects</strong>:
+- Writes <code>output/kubevirt/vm.yaml</code>
+- Writes <code>output/ansible/site.yml</code>
+- Writes <code>output/ansible/roles/provision_vm/tasks/main.yml</code>
+- Writes <code>output/ansible/roles/provision_vm/defaults/main.yml</code>
+- Writes <code>output/README.md</code></p>
+<h3 id="kubevirt-generation">KubeVirt Generation</h3>
+<p>Module: <code>ops_translate.generate.kubevirt</code></p>
+<h4 id="generate_kubevirt_manifest">generate_kubevirt_manifest</h4>
+<p>Generate KubeVirt VirtualMachine manifest.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">generate_kubevirt_manifest</span><span class="p">(</span>
+    <span class="n">intent</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">profile</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">llm_provider</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LLMProvider</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span>
+</code></pre></div>
+
+<p><strong>Parameters</strong>:
+- <code>intent</code> (dict): Intent dictionary
+- <code>profile</code> (dict): Profile configuration
+- <code>llm_provider</code> (LLMProvider, optional): LLM provider for AI generation</p>
+<p><strong>Returns</strong>: YAML manifest string</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.generate.kubevirt</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_kubevirt_manifest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.llm</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_provider</span>
+
+<span class="n">intent</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;schema_version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">&quot;workflow_name&quot;</span><span class="p">:</span> <span class="s2">&quot;my-vm&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;compute&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;cpu_count&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s2">&quot;memory_gb&quot;</span><span class="p">:</span> <span class="mi">16</span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="n">profile</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;default_namespace&quot;</span><span class="p">:</span> <span class="s2">&quot;virt-lab&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;default_network&quot;</span><span class="p">:</span> <span class="s2">&quot;lab-network&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;default_storage_class&quot;</span><span class="p">:</span> <span class="s2">&quot;nfs&quot;</span>
+<span class="p">}</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;llm&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;provider&quot;</span><span class="p">:</span> <span class="s2">&quot;mock&quot;</span><span class="p">}}</span>
+<span class="n">provider</span> <span class="o">=</span> <span class="n">get_provider</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+<span class="n">manifest</span> <span class="o">=</span> <span class="n">generate_kubevirt_manifest</span><span class="p">(</span><span class="n">intent</span><span class="p">,</span> <span class="n">profile</span><span class="p">,</span> <span class="n">provider</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">manifest</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="ansible-generation">Ansible Generation</h3>
+<p>Module: <code>ops_translate.generate.ansible</code></p>
+<h4 id="generate_ansible_playbook">generate_ansible_playbook</h4>
+<p>Generate Ansible playbook and role.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">generate_ansible_playbook</span><span class="p">(</span>
+    <span class="n">intent</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">profile</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">llm_provider</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LLMProvider</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span>
+</code></pre></div>
+
+<p><strong>Parameters</strong>:
+- <code>intent</code> (dict): Intent dictionary
+- <code>profile</code> (dict): Profile configuration
+- <code>llm_provider</code> (LLMProvider, optional): LLM provider for AI generation</p>
+<p><strong>Returns</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+    <span class="s2">&quot;site.yml&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>           <span class="c1"># Main playbook</span>
+    <span class="s2">&quot;tasks/main.yml&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>     <span class="c1"># Role tasks</span>
+    <span class="s2">&quot;defaults/main.yml&quot;</span><span class="p">:</span> <span class="nb">str</span>   <span class="c1"># Role defaults</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.generate.ansible</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_ansible_playbook</span>
+
+<span class="n">ansible_files</span> <span class="o">=</span> <span class="n">generate_ansible_playbook</span><span class="p">(</span><span class="n">intent</span><span class="p">,</span> <span class="n">profile</span><span class="p">,</span> <span class="n">provider</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">ansible_files</span><span class="p">[</span><span class="s1">&#39;site.yml&#39;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ansible_files</span><span class="p">[</span><span class="s1">&#39;tasks/main.yml&#39;</span><span class="p">])</span>
+</code></pre></div>
+
+<h2 id="llm-provider-api">LLM Provider API</h2>
+<p>Module: <code>ops_translate.llm</code></p>
+<h3 id="get_provider">get_provider</h3>
+<p>Get LLM provider instance from configuration.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_provider</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LLMProvider</span>
+</code></pre></div>
+
+<p><strong>Parameters</strong>:
+- <code>config</code> (dict): Configuration dictionary</p>
+<p><strong>Returns</strong>: LLMProvider instance</p>
+<p><strong>Raises</strong>:
+- <code>ValueError</code>: If provider not supported</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.llm</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_provider</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;llm&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;provider&quot;</span><span class="p">:</span> <span class="s2">&quot;anthropic&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="s2">&quot;claude-sonnet-4-5&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;api_key_env&quot;</span><span class="p">:</span> <span class="s2">&quot;OPS_TRANSLATE_LLM_API_KEY&quot;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="n">provider</span> <span class="o">=</span> <span class="n">get_provider</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="llmprovider-base-class">LLMProvider (Base Class)</h3>
+<p>Abstract base class for LLM providers.</p>
+<p><strong>Methods</strong>:</p>
+<h4 id="generate">generate</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">system_prompt</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">max_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4096</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span>
+</code></pre></div>
+
+<p><strong>Parameters</strong>:
+- <code>prompt</code> (str): User prompt
+- <code>system_prompt</code> (str, optional): System prompt
+- <code>max_tokens</code> (int, optional): Maximum tokens. Defaults to 4096.
+- <code>temperature</code> (float, optional): Temperature. Defaults to 0.0.</p>
+<p><strong>Returns</strong>: Generated text</p>
+<h4 id="is_available">is_available</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_available</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
+</code></pre></div>
+
+<p><strong>Returns</strong>: True if provider is available (API key set, etc.)</p>
+<h3 id="anthropicprovider">AnthropicProvider</h3>
+<p>Anthropic Claude provider.</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.llm.anthropic</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnthropicProvider</span>
+
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;ANTHROPIC_API_KEY&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;sk-ant-...&#39;</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;provider&quot;</span><span class="p">:</span> <span class="s2">&quot;anthropic&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="s2">&quot;claude-sonnet-4-5&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;api_key_env&quot;</span><span class="p">:</span> <span class="s2">&quot;ANTHROPIC_API_KEY&quot;</span>
+<span class="p">}</span>
+
+<span class="n">provider</span> <span class="o">=</span> <span class="n">AnthropicProvider</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">provider</span><span class="o">.</span><span class="n">is_available</span><span class="p">():</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">provider</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="s2">&quot;Extract intent from this script...&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="openaiprovider">OpenAIProvider</h3>
+<p>OpenAI provider.</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.llm.openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAIProvider</span>
+
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;OPENAI_API_KEY&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;sk-...&#39;</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;provider&quot;</span><span class="p">:</span> <span class="s2">&quot;openai&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="s2">&quot;gpt-4-turbo-preview&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;api_key_env&quot;</span><span class="p">:</span> <span class="s2">&quot;OPENAI_API_KEY&quot;</span>
+<span class="p">}</span>
+
+<span class="n">provider</span> <span class="o">=</span> <span class="n">OpenAIProvider</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+<span class="n">response</span> <span class="o">=</span> <span class="n">provider</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="s2">&quot;Extract intent...&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="mockprovider">MockProvider</h3>
+<p>Mock provider for testing.</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.llm.mock</span><span class="w"> </span><span class="kn">import</span> <span class="n">MockProvider</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;provider&quot;</span><span class="p">:</span> <span class="s2">&quot;mock&quot;</span><span class="p">,</span> <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="s2">&quot;mock-model&quot;</span><span class="p">}</span>
+
+<span class="n">provider</span> <span class="o">=</span> <span class="n">MockProvider</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+<span class="c1"># Always available, returns predefined responses</span>
+<span class="k">assert</span> <span class="n">provider</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="o">==</span> <span class="kc">True</span>
+
+<span class="n">response</span> <span class="o">=</span> <span class="n">provider</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="s2">&quot;PowerCLI script here&quot;</span><span class="p">)</span>
+<span class="c1"># Returns mock PowerCLI intent YAML</span>
+</code></pre></div>
+
+<h2 id="utility-functions">Utility Functions</h2>
+<p>Module: <code>ops_translate.util</code></p>
+<h3 id="file-utilities">File Utilities</h3>
+<p>Module: <code>ops_translate.util.files</code></p>
+<h4 id="ensure_dir">ensure_dir</h4>
+<p>Ensure directory exists, creating if necessary.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">ensure_dir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.util.files</span><span class="w"> </span><span class="kn">import</span> <span class="n">ensure_dir</span>
+
+<span class="n">ensure_dir</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;./output/ansible/roles/provision_vm/tasks&quot;</span><span class="p">))</span>
+</code></pre></div>
+
+<h4 id="write_text">write_text</h4>
+<p>Write text to file, creating parent directories.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">write_text</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.util.files</span><span class="w"> </span><span class="kn">import</span> <span class="n">write_text</span>
+
+<span class="n">write_text</span><span class="p">(</span>
+    <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;./output/kubevirt/vm.yaml&quot;</span><span class="p">),</span>
+    <span class="s2">&quot;apiVersion: kubevirt.io/v1</span><span class="se">\n</span><span class="s2">...&quot;</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<h3 id="hashing-utilities">Hashing Utilities</h3>
+<p>Module: <code>ops_translate.util.hashing</code></p>
+<h4 id="sha256_file">sha256_file</h4>
+<p>Compute SHA-256 hash of a file.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">sha256_file</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span>
+</code></pre></div>
+
+<p><strong>Parameters</strong>:
+- <code>path</code> (Path): File path</p>
+<p><strong>Returns</strong>: Hex-encoded SHA-256 hash</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.util.hashing</span><span class="w"> </span><span class="kn">import</span> <span class="n">sha256_file</span>
+
+<span class="n">hash_value</span> <span class="o">=</span> <span class="n">sha256_file</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;./script.ps1&quot;</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SHA-256: </span><span class="si">{</span><span class="n">hash_value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h4 id="sha256_string">sha256_string</h4>
+<p>Compute SHA-256 hash of a string.</p>
+<p><strong>Signature</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">sha256_string</span><span class="p">(</span><span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span>
+</code></pre></div>
+
+<p><strong>Parameters</strong>:
+- <code>content</code> (str): String content</p>
+<p><strong>Returns</strong>: Hex-encoded SHA-256 hash</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.util.hashing</span><span class="w"> </span><span class="kn">import</span> <span class="n">sha256_string</span>
+
+<span class="n">hash_value</span> <span class="o">=</span> <span class="n">sha256_string</span><span class="p">(</span><span class="s2">&quot;hello world&quot;</span><span class="p">)</span>
+<span class="c1"># &quot;b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9&quot;</span>
+</code></pre></div>
+
+<h2 id="extending-ops-translate">Extending ops-translate</h2>
+<h3 id="adding-a-custom-llm-provider">Adding a Custom LLM Provider</h3>
+<p>Create a new provider class:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># my_provider.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.llm.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLMProvider</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MyProvider</span><span class="p">(</span><span class="n">LLMProvider</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Custom LLM provider.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;model&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;api_key_env&#39;</span><span class="p">))</span>
+        <span class="c1"># Initialize your client</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">system_prompt</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4096</span><span class="p">,</span>
+        <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate text using custom provider.&quot;&quot;&quot;</span>
+        <span class="c1"># Your implementation</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">complete</span><span class="p">(</span>
+            <span class="n">prompt</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span>
+            <span class="n">max_tokens</span><span class="o">=</span><span class="n">max_tokens</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">text</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_available</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if provider is available.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+</code></pre></div>
+
+<p>Register the provider:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># ops_translate/llm/__init__.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.llm.my_provider</span><span class="w"> </span><span class="kn">import</span> <span class="n">MyProvider</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_provider</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LLMProvider</span><span class="p">:</span>
+    <span class="n">provider</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;llm&#39;</span><span class="p">][</span><span class="s1">&#39;provider&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">provider</span> <span class="o">==</span> <span class="s1">&#39;myprovider&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">MyProvider</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;llm&#39;</span><span class="p">])</span>
+    <span class="c1"># ... existing providers</span>
+</code></pre></div>
+
+<p>Use the provider:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># ops-translate.yaml</span>
+<span class="nt">llm</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myprovider</span>
+<span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-model-name</span>
+<span class="w">  </span><span class="nt">api_key_env</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MY_PROVIDER_API_KEY</span>
+</code></pre></div>
+
+<h3 id="adding-a-custom-merge-strategy">Adding a Custom Merge Strategy</h3>
+<p>Register custom merge logic:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.intent.merge</span><span class="w"> </span><span class="kn">import</span> <span class="n">MERGE_STRATEGIES</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">merge_custom_field</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Custom merge logic for specific field.&quot;&quot;&quot;</span>
+    <span class="c1"># Your merge logic</span>
+    <span class="k">return</span> <span class="n">merged_value</span>
+
+<span class="c1"># Register strategy</span>
+<span class="n">MERGE_STRATEGIES</span><span class="p">[</span><span class="s1">&#39;custom.field.path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">merge_custom_field</span>
+</code></pre></div>
+
+<h3 id="adding-a-custom-generator">Adding a Custom Generator</h3>
+<p>Create a new generator module:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># ops_translate/generate/custom.py</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">generate_custom_artifact</span><span class="p">(</span>
+    <span class="n">intent</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">profile</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">llm_provider</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LLMProvider</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate custom artifact from intent.&quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">llm_provider</span> <span class="ow">and</span> <span class="n">llm_provider</span><span class="o">.</span><span class="n">is_available</span><span class="p">():</span>
+        <span class="c1"># AI-powered generation</span>
+        <span class="n">prompt</span> <span class="o">=</span> <span class="n">build_custom_prompt</span><span class="p">(</span><span class="n">intent</span><span class="p">,</span> <span class="n">profile</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">llm_provider</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Template-based generation</span>
+        <span class="k">return</span> <span class="n">render_custom_template</span><span class="p">(</span><span class="n">intent</span><span class="p">,</span> <span class="n">profile</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">build_custom_prompt</span><span class="p">(</span><span class="n">intent</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">profile</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build prompt for custom artifact generation.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">Generate a custom artifact for:</span>
+<span class="s2">Workflow: </span><span class="si">{</span><span class="n">intent</span><span class="p">[</span><span class="s1">&#39;workflow_name&#39;</span><span class="p">]</span><span class="si">}</span>
+<span class="s2">Profile: </span><span class="si">{</span><span class="n">profile</span><span class="si">}</span>
+
+<span class="s2">Intent:</span>
+<span class="si">{</span><span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">intent</span><span class="p">)</span><span class="si">}</span>
+
+<span class="s2">Output should be...</span>
+<span class="s2">&quot;&quot;&quot;</span>
+</code></pre></div>
+
+<p>Use the custom generator:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.generate.custom</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_custom_artifact</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.llm</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_provider</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">(</span><span class="n">workspace</span><span class="p">)</span>
+<span class="n">provider</span> <span class="o">=</span> <span class="n">get_provider</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+<span class="n">intent</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">((</span><span class="n">workspace</span> <span class="o">/</span> <span class="s2">&quot;intent/intent.yaml&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">())</span>
+<span class="n">profile</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;profiles&#39;</span><span class="p">][</span><span class="s1">&#39;lab&#39;</span><span class="p">]</span>
+
+<span class="n">custom_artifact</span> <span class="o">=</span> <span class="n">generate_custom_artifact</span><span class="p">(</span><span class="n">intent</span><span class="p">,</span> <span class="n">profile</span><span class="p">,</span> <span class="n">provider</span><span class="p">)</span>
+
+<span class="p">(</span><span class="n">workspace</span> <span class="o">/</span> <span class="s2">&quot;output/custom/artifact.yaml&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">custom_artifact</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="creating-custom-validators">Creating Custom Validators</h3>
+<p>Add custom validation logic:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.intent.validate</span><span class="w"> </span><span class="kn">import</span> <span class="n">VALIDATORS</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">validate_custom_field</span><span class="p">(</span><span class="n">intent</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate custom field in intent.&quot;&quot;&quot;</span>
+    <span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="s1">&#39;custom_field&#39;</span> <span class="ow">in</span> <span class="n">intent</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">intent</span><span class="p">[</span><span class="s1">&#39;custom_field&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;custom_field must be a string&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">errors</span>
+
+<span class="c1"># Register validator</span>
+<span class="n">VALIDATORS</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">validate_custom_field</span><span class="p">)</span>
+</code></pre></div>
+
+<h2 id="error-handling">Error Handling</h2>
+<h3 id="common-exceptions">Common Exceptions</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">WorkspaceNotFoundError</span><span class="p">,</span>
+    <span class="n">IntentValidationError</span><span class="p">,</span>
+    <span class="n">LLMError</span><span class="p">,</span>
+    <span class="n">MergeConflictError</span>
+<span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">workspace</span> <span class="o">=</span> <span class="n">get_workspace</span><span class="p">()</span>
+<span class="k">except</span> <span class="n">WorkspaceNotFoundError</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Not in a workspace. Run ops-translate init first.&quot;</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">extract_all</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">use_ai</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">LLMError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;LLM error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="c1"># Fall back to template mode</span>
+    <span class="n">extract_all</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">use_ai</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">conflicts</span> <span class="o">=</span> <span class="n">merge_intents</span><span class="p">(</span><span class="n">workspace</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">conflicts</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">MergeConflictError</span><span class="p">(</span><span class="n">conflicts</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">MergeConflictError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Merge conflicts: </span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">conflicts</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="c1"># Handle conflicts</span>
+</code></pre></div>
+
+<h2 id="type-hints">Type Hints</h2>
+<p>All public APIs include type hints:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">example_function</span><span class="p">(</span>
+    <span class="n">required_param</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">optional_param</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">list_param</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Example function with type hints.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">list_param</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">list_param</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="p">[]</span>
+</code></pre></div>
+
+<p>Use mypy for type checking:</p>
+<div class="codehilite"><pre><span></span><code>mypy<span class="w"> </span>ops_translate/
+</code></pre></div>
+
+<h2 id="testing-your-extensions">Testing Your Extensions</h2>
+<p>Test custom providers:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># test_my_provider.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">my_provider</span><span class="w"> </span><span class="kn">import</span> <span class="n">MyProvider</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_my_provider</span><span class="p">():</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;provider&quot;</span><span class="p">:</span> <span class="s2">&quot;myprovider&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="s2">&quot;test-model&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;api_key_env&quot;</span><span class="p">:</span> <span class="s2">&quot;TEST_KEY&quot;</span>
+    <span class="p">}</span>
+
+    <span class="n">provider</span> <span class="o">=</span> <span class="n">MyProvider</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+    <span class="c1"># Test availability</span>
+    <span class="k">assert</span> <span class="n">provider</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span>
+
+    <span class="c1"># Test generation</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">provider</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="s2">&quot;test prompt&quot;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+</code></pre></div>
+
+<p>Test custom generators:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># test_custom_generator.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.generate.custom</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_custom_artifact</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ops_translate.llm.mock</span><span class="w"> </span><span class="kn">import</span> <span class="n">MockProvider</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_custom_generator</span><span class="p">():</span>
+    <span class="n">intent</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;schema_version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s2">&quot;workflow_name&quot;</span><span class="p">:</span> <span class="s2">&quot;test&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;compute&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;cpu_count&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="n">profile</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;default_namespace&quot;</span><span class="p">:</span> <span class="s2">&quot;test&quot;</span><span class="p">}</span>
+
+    <span class="n">provider</span> <span class="o">=</span> <span class="n">MockProvider</span><span class="p">({})</span>
+
+    <span class="n">artifact</span> <span class="o">=</span> <span class="n">generate_custom_artifact</span><span class="p">(</span><span class="n">intent</span><span class="p">,</span> <span class="n">profile</span><span class="p">,</span> <span class="n">provider</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="n">artifact</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="k">assert</span> <span class="s2">&quot;test&quot;</span> <span class="ow">in</span> <span class="n">artifact</span>
+</code></pre></div>
+
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li>Read the <a href="USER_GUIDE.md">User Guide</a> for usage instructions</li>
+<li>Review the <a href="ARCHITECTURE.md">Architecture</a> for system design</li>
+<li>Follow the <a href="TUTORIAL.md">Tutorial</a> for hands-on examples</li>
+<li>Check the <a href="../ops_translate/">source code</a> for implementation details</li>
+</ul>
+        </div>
+        <div style="margin-top: var(--spacing-xl); text-align: center;">
+            <a href="../index.html" class="back-to-report">← Back to Migration Report</a>
+        </div>
+    </div>
+</body>
+</html>

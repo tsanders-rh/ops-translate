@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Translation Report - sample-workspace</title>
+    <title>Translation Report - test-patterns</title>
     <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -13,11 +13,13 @@
             <div class="header-content">
                 <h1>ops-translate</h1>
                 <div class="header-meta">
-                    <span class="workspace-name">sample-workspace</span>
+                    <span class="workspace-name">test-patterns</span>
                     <span class="separator">|</span>
                     <span class="profile-name">Profile: default</span>
                     <span class="separator">|</span>
-                    <span class="timestamp">2026-02-13T16:44:13</span>
+                    <span class="timestamp">2026-02-13T20:02:46</span>
+                    <span class="separator">|</span>
+                    <a href="docs/PATTERNS.html" class="header-docs-link">📚 Architecture Patterns</a>
                 </div>
             </div>
         </div>
@@ -61,7 +63,7 @@
                     <div class="stat-label">Total Workflows</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">~340</div>
+                    <div class="stat-value">~460</div>
                     <div class="stat-label">Lines of Code</div>
                 </div>
                 <div class="stat-card">
@@ -205,12 +207,12 @@
                 <div class="story-content">
                     <p class="story-intro">
                         
-                        This analysis represents a typical enterprise automation estate—years of vRealize workflows, PowerCLI scripts for provisioning, NSX security policies, and ServiceNow integrations. The kind of automation debt that accumulates when teams deliver value quarter after quarter.
+                        We analyzed <strong>test-patterns</strong> — 28 components across your automation estate, including complex workflows with NSX integration, approval gates, and custom orchestration.
                         
                     </p>
                     <div class="story-results">
                         <div class="story-stat">
-                            <div class="stat-number">22</div>
+                            <div class="stat-number">21</div>
                             <div class="stat-label">Components<br>Auto-Translated</div>
                         </div>
                         <div class="story-stat">
@@ -260,12 +262,12 @@
     <section class="summary-section">
         <div class="container">
             <h2>Component-Level Translation Status</h2>
-            <p class="section-subtitle">Detailed component analysis showing 29 individual components detected across your workflows.</p>
+            <p class="section-subtitle">Detailed component analysis showing 28 individual components detected across your workflows.</p>
             <div class="summary-cards">
                 <div class="card card-supported" data-filter="SUPPORTED" title="Components that can be fully automatically translated to OpenShift-native equivalents">
                     <div class="card-icon">✅</div>
                     <div class="card-content">
-                        <div class="card-number">22</div>
+                        <div class="card-number">21</div>
                         <div class="card-label">Supported</div>
                     </div>
                 </div>
@@ -348,8 +350,6 @@
                     
                 
                     
-                
-                    
                     <div class="blocking-item">
                         <p class="blocking-component"><strong>NSX Security Groups</strong> is solved with proven migration patterns.</p>
                         <p class="blocking-guidance">
@@ -357,6 +357,13 @@
                             Security groups have no direct OpenShift equivalent
                             
                         </p>
+                        
+                        <p class="pattern-link">
+                            <a href="docs/PATTERNS.html#pattern-5-nsx-security-components" class="btn-pattern-link">
+                                📖 NSX Security &amp; Networking Alternatives
+                            </a>
+                        </p>
+                        
                     </div>
                     
                 
@@ -418,7 +425,7 @@
                         <li>Lifecycle Operations → <code>virtctl</code> commands</li>
                         <li>Metadata → Labels & Annotations</li>
                     </ul>
-                    <div class="arch-badge badge-success">22 components auto-translate</div>
+                    <div class="arch-badge badge-success">21 components auto-translate</div>
                 </div>
 
                 <!-- Cloud-Native Networking -->
@@ -921,11 +928,11 @@
                     <div class="pattern-header">
                         <span class="pattern-icon">✅</span>
                         <h3>Compute Allocation</h3>
-                        <span class="pattern-count">5 instances</span>
+                        <span class="pattern-count">4 instances</span>
                     </div>
                     <div class="pattern-body">
                         <p class="pattern-description">
-                            Found across 5 files
+                            Found across 4 files
                             
                         </p>
                     </div>
@@ -1152,7 +1159,7 @@
                 <div class="banner-icon">⚠️</div>
                 <div class="banner-content">
                     <strong>Legacy Drift Detected</strong>
-                    <p>Multiple naming conventions, parameter inconsistencies, and policy variations detected across workflows—common in mature automation estates. This analysis surfaced 29 individual patterns, revealing technical debt that would otherwise remain hidden until migration.</p>
+                    <p>Multiple naming conventions, parameter inconsistencies, and policy variations detected across workflows—common in mature automation estates. This analysis surfaced 28 individual patterns, revealing technical debt that would otherwise remain hidden until migration.</p>
                 </div>
             </div>
             
@@ -1163,7 +1170,7 @@
                 
                 <div class="intent-block">
                     <h3>Workflow</h3>
-                    <p><strong>Name:</strong> database_vm_provisioning</p>
+                    <p><strong>Name:</strong> old_db_provisioning_v3_working</p>
                     
                     <p><strong>Workload Type:</strong> mixed</p>
                     
@@ -1457,7 +1464,6 @@
     "day2_operations": {
       "supported": [
         "cleanup_snapshots",
-        "clone",
         "create_snapshot",
         "delete",
         "reconfigure",
@@ -1512,7 +1518,7 @@
         "type": "string"
       },
       "cost_center": {
-        "description": "Cost center for billing (PascalCase format)",
+        "description": "Cost center for billing (PascalCase notation)",
         "required": true,
         "type": "string"
       },
@@ -1540,17 +1546,14 @@
         "type": "integer"
       },
       "db_name": {
-        "description": "Database name (underscore format, conflicts with legacy \u0027dbname\u0027)",
+        "description": "Database name (underscore notation, conflicts with legacy \u0027dbname\u0027)",
         "required": true,
         "type": "string"
       },
       "dbname": {
         "description": "Database name (no spaces)",
         "required": true,
-        "type": "string",
-        "validation": {
-          "pattern": "^[^\\s]+$"
-        }
+        "type": "string"
       },
       "description": {
         "default": "Automated snapshot",
@@ -1615,7 +1618,7 @@
         "type": "string"
       },
       "mem": {
-        "description": "Memory GB parameter (deprecated - ignored by workflow)",
+        "description": "Memory GB parameter (ignored - always 16GB)",
         "required": false,
         "type": "string"
       },
@@ -1793,7 +1796,7 @@
         }
       ]
     },
-    "workflow_name": "database_vm_provisioning",
+    "workflow_name": "old_db_provisioning_v3_working",
     "workload_type": "mixed"
   },
   "schema_version": 1,
@@ -1883,7 +1886,7 @@
                 <button id="toggle-supported" class="toggle-supported-btn">
                     <span class="toggle-icon">▶</span>
                     <span class="toggle-text">Show Supported Patterns</span>
-                    <span class="supported-count">(22 hidden)</span>
+                    <span class="supported-count">(21 hidden)</span>
                 </button>
                 <p class="toggle-note">Supported patterns are hidden by default. See "Standard Supported Patterns" section above for summary.</p>
             </div>
@@ -1951,10 +1954,6 @@
                     
                     
                         
-                    
-                    
-                
-                    
                     
                     
                 
@@ -2817,63 +2816,6 @@
                                 <li>Map workflow inputs to VM spec fields</li>
                                 
                                 <li>Configure default pod networking</li>
-                                
-                            </ul>
-                        </div>
-                        
-
-                        
-
-                        
-                        
-
-                        
-                        
-                    </div>
-                </div>
-                
-                    <div class="gap-item gap-supported supported-hidden" data-level="SUPPORTED">
-                    <div class="gap-header">
-                        <h3>
-                            Compute Resources
-                            
-                            
-                            
-                            
-                            
-                        </h3>
-                        <span class="badge badge-supported">SUPPORTED</span>
-                    </div>
-                    <div class="gap-body">
-                        <p><strong>Type:</strong> compute_allocation</p>
-                        
-                        <p><strong>Location:</strong> <code>old-db-provisioning-DO-NOT-MODIFY</code></p>
-                        
-                        <p><strong>Reason:</strong> CPU and memory allocation fully supported in KubeVirt</p>
-
-                        
-                        <p><strong>OpenShift Equivalent:</strong> spec.template.spec.domain.resources</p>
-                        
-
-                        
-                        <p><strong>Migration Path:</strong>
-                            
-                            <span class="badge badge-path-a">PATH A</span>
-                            <span class="path-description">OpenShift-native replacement available</span>
-                            
-                        </p>
-                        
-
-                        
-                        <div class="recommendations">
-                            <strong>Recommendations:</strong>
-                            <ul>
-                                
-                                <li>Map CPU cores to spec.template.spec.domain.cpu.cores</li>
-                                
-                                <li>Map memory to spec.template.spec.domain.resources.requests.memory</li>
-                                
-                                <li>Consider setting resource limits for production</li>
                                 
                             </ul>
                         </div>
@@ -4286,8 +4228,6 @@
     
         
     
-        
-    
     
     <section class="hybrid-section layer-3">
         <div class="container">
@@ -4442,10 +4382,10 @@
 </ul>
 <h2>old-db-provisioning-DO-NOT-MODIFY.workflow.xml</h2>
 <ul>
-<li>Memory input parameter is accepted but ignored - workflow enforces 16GB based on hardcoded value in script</li>
+<li>Memory input parameter is accepted but ignored - workflow enforces 16GB for all database VMs based on operational requirements</li>
 <li>vCenter connection retrieved dynamically via getAllSdkConnections()[0] - assumes first connection is target</li>
-<li>Storage configuration not specified in workflow - delegated to vSphere defaults or cluster policy</li>
-<li>Day 2 operations are manual processes documented in comments rather than automated workflow steps</li>
+<li>Post-provisioning steps documented as manual procedures - automation was attempted but removed due to production issues</li>
+<li>No Day 2 operations explicitly implemented in workflow</li>
 </ul>
 <h2>provision-vm-with-nsx-firewall.workflow.xml</h2>
 <ul>
@@ -4455,8 +4395,8 @@
 <ul>
 <li>VM IP addresses are simulated in workflow logic rather than obtained from actual DHCP allocation</li>
 <li>First available vCenter cluster is automatically selected for VM placement</li>
-<li>NSX transport zone and Tier-1 gateway paths are hard-coded to default values</li>
-<li>Health monitoring uses default HTTP profile without custom configuration</li>
+<li>NSX REST host configuration 'nsx-api' must be pre-configured in vRO</li>
+<li>Load balancer health monitoring uses default HTTP profile without customization</li>
 </ul>
                 </div>
             </details>
@@ -4477,7 +4417,7 @@
                     <h1>Intent Merge Conflicts</h1>
 <h2>Workflow Name Conflict</h2>
 <p>Different workflow names found:
-- <code>database_vm_provisioning</code> (from old-db-provisioning-DO-NOT-MODIFY.workflow.intent.yaml)
+- <code>old_db_provisioning_v3_working</code> (from old-db-provisioning-DO-NOT-MODIFY.workflow.intent.yaml)
 - <code>deploy_database_vm</code> (from Deploy-DatabaseVM.intent.yaml)
 - <code>provision_vm_with_governance_and_approval</code> (from provision-vm-with-approval.workflow.intent.yaml)
 - <code>provision_web_tier</code> (from Provision-WebTier.intent.yaml)
@@ -4514,8 +4454,8 @@
 - <code>[{'when': {'environment': 'prod'}, 'datastore': 'PROD-SSD-NVME-01', 'disk_size_gb_from': 'disk_size_gb'}, {'when': {'environment': 'uat'}, 'datastore': 'UAT-SSD-01', 'disk_size_gb_from': 'disk_size_gb'}, {'when': {'environment': 'dev'}, 'datastore': 'DEV-SSD-01', 'disk_size_gb_from': 'disk_size_gb'}]</code> (from Deploy-DatabaseVM.intent.yaml)</p>
 <h3>Profile: <code>network</code></h3>
 <p>Different values found:
-- <code>[{'when': {'environment': 'prod'}, 'network_name': 'VLAN-250-DB'}, {'when': {'environment': 'uat'}, 'network_name': 'VLAN-260-DB'}, {'when': {'environment': 'dev'}, 'network_name': 'VLAN-300-DB'}]</code> (from Deploy-DatabaseVM.intent.yaml)
-- <code>[{'when': {'environment': 'Production'}, 'network_name': 'Production-Network'}, {'when': {'environment': 'Staging'}, 'network_name': 'Staging_Network'}, {'when': {'environment': 'Development'}, 'network_name': 'Dev-Net'}]</code> (from New-StandardVM.intent.yaml)</p>
+- <code>[{'when': {'environment': 'Production'}, 'network_name': 'Production-Network'}, {'when': {'environment': 'Staging'}, 'network_name': 'Staging_Network'}, {'when': {'environment': 'Development'}, 'network_name': 'Dev-Net'}]</code> (from New-StandardVM.intent.yaml)
+- <code>[{'when': {'environment': 'prod'}, 'network_name': 'VLAN-250-DB'}, {'when': {'environment': 'uat'}, 'network_name': 'VLAN-260-DB'}, {'when': {'environment': 'dev'}, 'network_name': 'VLAN-300-DB'}]</code> (from Deploy-DatabaseVM.intent.yaml)</p>
 <h3>Profile: <code>placement</code></h3>
 <p>Different values found:
 - <code>[{'when': {'environment': 'prod'}, 'cluster': 'PROD-DB-Cluster-New'}, {'when': {'environment': 'uat'}, 'cluster': 'UAT-Cluster'}, {'when': {'environment': 'dev'}, 'cluster': 'DEV-Cluster-03'}]</code> (from Deploy-DatabaseVM.intent.yaml)
@@ -4530,7 +4470,7 @@
     <!-- Footer -->
     <footer class="report-footer">
         <div class="container">
-            <p>Generated by <strong>ops-translate</strong> at 2026-02-13T16:44:13</p>
+            <p>Generated by <strong>ops-translate</strong> at 2026-02-13T20:02:46</p>
             <p class="disclaimer">This report is read-only and for review purposes. No changes will be applied automatically.</p>
         </div>
     </footer>
@@ -4538,9 +4478,9 @@
     <script>
         // Pass gaps data to JavaScript for CSV export
         window.reportData = {
-            workspace: "sample-workspace",
-            timestamp: "2026-02-13T16:44:13",
-            gaps: {"components": [{"component_type": "vm_creation", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-approval", "migration_path": "PATH_A", "name": "VM Provisioning", "openshift_equivalent": "VirtualMachine (KubeVirt)", "reason": "VM creation maps directly to KubeVirt VirtualMachine resource", "recommendations": ["Generate KubeVirt VirtualMachine manifest", "Map workflow inputs to VM spec fields", "Configure default pod networking"]}, {"component_type": "compute_allocation", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-approval", "migration_path": "PATH_A", "name": "Compute Resources", "openshift_equivalent": "spec.template.spec.domain.resources", "reason": "CPU and memory allocation fully supported in KubeVirt", "recommendations": ["Map CPU cores to spec.template.spec.domain.cpu.cores", "Map memory to spec.template.spec.domain.resources.requests.memory", "Consider setting resource limits for production"]}, {"component_type": "approval", "evidence": null, "level": "PARTIAL", "location": "provision-vm-with-approval", "migration_path": "PATH_B", "name": "Approval Workflow", "openshift_equivalent": "Custom operator or external approval system", "reason": "Approval logic requires custom integration with existing approval systems", "recommendations": ["Integrate with existing approval system (ServiceNow, Jira, etc.)", "Consider using Kubernetes admission controllers", "May require custom operator development", "Document approval requirements in runbook"]}, {"component_type": "day2_ops", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-approval", "migration_path": "PATH_A", "name": "VM Lifecycle Operations", "openshift_equivalent": "VirtualMachine running field", "reason": "Start/stop/restart operations supported via VirtualMachine spec", "recommendations": ["Map start/stop to spec.running: true/false", "Use virtctl for CLI operations", "Consider using Ansible for automation"]}, {"component_type": "metadata", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-approval", "migration_path": "PATH_A", "name": "Tags and Metadata", "openshift_equivalent": "metadata.labels", "reason": "Tags and custom attributes map to Kubernetes labels", "recommendations": ["Map vSphere tags to Kubernetes labels", "Convert custom attributes to annotations", "Follow label naming conventions (kubernetes.io/*)"]}, {"component_type": "vm_creation", "evidence": null, "level": "SUPPORTED", "location": "old-db-provisioning-DO-NOT-MODIFY", "migration_path": "PATH_A", "name": "VM Provisioning", "openshift_equivalent": "VirtualMachine (KubeVirt)", "reason": "VM creation maps directly to KubeVirt VirtualMachine resource", "recommendations": ["Generate KubeVirt VirtualMachine manifest", "Map workflow inputs to VM spec fields", "Configure default pod networking"]}, {"component_type": "compute_allocation", "evidence": null, "level": "SUPPORTED", "location": "old-db-provisioning-DO-NOT-MODIFY", "migration_path": "PATH_A", "name": "Compute Resources", "openshift_equivalent": "spec.template.spec.domain.resources", "reason": "CPU and memory allocation fully supported in KubeVirt", "recommendations": ["Map CPU cores to spec.template.spec.domain.cpu.cores", "Map memory to spec.template.spec.domain.resources.requests.memory", "Consider setting resource limits for production"]}, {"component_type": "vm_creation", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-nsx-firewall", "migration_path": "PATH_A", "name": "VM Provisioning", "openshift_equivalent": "VirtualMachine (KubeVirt)", "reason": "VM creation maps directly to KubeVirt VirtualMachine resource", "recommendations": ["Generate KubeVirt VirtualMachine manifest", "Map workflow inputs to VM spec fields", "Configure default pod networking"]}, {"component_type": "compute_allocation", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-nsx-firewall", "migration_path": "PATH_A", "name": "Compute Resources", "openshift_equivalent": "spec.template.spec.domain.resources", "reason": "CPU and memory allocation fully supported in KubeVirt", "recommendations": ["Map CPU cores to spec.template.spec.domain.cpu.cores", "Map memory to spec.template.spec.domain.resources.requests.memory", "Consider setting resource limits for production"]}, {"component_type": "day2_ops", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-nsx-firewall", "migration_path": "PATH_A", "name": "VM Lifecycle Operations", "openshift_equivalent": "VirtualMachine running field", "reason": "Start/stop/restart operations supported via VirtualMachine spec", "recommendations": ["Map start/stop to spec.running: true/false", "Use virtctl for CLI operations", "Consider using Ansible for automation"]}, {"component_type": "metadata", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-nsx-firewall", "migration_path": "PATH_A", "name": "Tags and Metadata", "openshift_equivalent": "metadata.labels", "reason": "Tags and custom attributes map to Kubernetes labels", "recommendations": ["Map vSphere tags to Kubernetes labels", "Convert custom attributes to annotations", "Follow label naming conventions (kubernetes.io/*)"]}, {"component_type": "nsx_security_groups", "evidence": null, "level": "BLOCKED", "location": "provision-vm-with-nsx-firewall", "migration_path": "PATH_C", "name": "NSX Security Groups", "openshift_equivalent": null, "reason": "Security Groups cannot be automatically translated - no direct OpenShift equivalent", "recommendations": ["Security groups have no direct OpenShift equivalent", "Option 1: Model as pod selectors in NetworkPolicy", "Option 2: Use labels to group pods logically", "Option 3: Keep NSX for security groups (hybrid)", "Requires specialist review of security requirements"]}, {"component_type": "nsx_firewall_rules", "evidence": null, "level": "PARTIAL", "location": "provision-vm-with-nsx-firewall", "migration_path": "PATH_A", "name": "NSX Distributed Firewall", "openshift_equivalent": "NetworkPolicy", "reason": "Firewall Rules can be partially translated to NetworkPolicy with manual configuration", "recommendations": ["Convert firewall rules to NetworkPolicy manifests", "Note: NetworkPolicy is L3/L4 only (no L7 filtering)", "Consider using Calico for advanced features", "Test egress/ingress rules in dev environment", "Document any unsupported rule types"]}, {"component_type": "vm_creation", "evidence": null, "level": "SUPPORTED", "location": "provision-web-app-with-nsx-lb", "migration_path": "PATH_A", "name": "VM Provisioning", "openshift_equivalent": "VirtualMachine (KubeVirt)", "reason": "VM creation maps directly to KubeVirt VirtualMachine resource", "recommendations": ["Generate KubeVirt VirtualMachine manifest", "Map workflow inputs to VM spec fields", "Configure default pod networking"]}, {"component_type": "compute_allocation", "evidence": null, "level": "SUPPORTED", "location": "provision-web-app-with-nsx-lb", "migration_path": "PATH_A", "name": "Compute Resources", "openshift_equivalent": "spec.template.spec.domain.resources", "reason": "CPU and memory allocation fully supported in KubeVirt", "recommendations": ["Map CPU cores to spec.template.spec.domain.cpu.cores", "Map memory to spec.template.spec.domain.resources.requests.memory", "Consider setting resource limits for production"]}, {"component_type": "day2_ops", "evidence": null, "level": "SUPPORTED", "location": "provision-web-app-with-nsx-lb", "migration_path": "PATH_A", "name": "VM Lifecycle Operations", "openshift_equivalent": "VirtualMachine running field", "reason": "Start/stop/restart operations supported via VirtualMachine spec", "recommendations": ["Map start/stop to spec.running: true/false", "Use virtctl for CLI operations", "Consider using Ansible for automation"]}, {"component_type": "nsx_segments", "evidence": null, "level": "PARTIAL", "location": "provision-web-app-with-nsx-lb", "migration_path": "PATH_A", "name": "NSX Overlay Segments", "openshift_equivalent": "NetworkAttachmentDefinition (Multus CNI)", "reason": "Segments can be partially translated to NetworkAttachmentDefinition (Multus CNI) with manual configuration", "recommendations": ["Create NetworkAttachmentDefinition for each segment", "Configure Multus CNI plugin", "Update pod specs to reference NAD", "Map VLAN/overlay IDs to bridge/macvlan config", "Test pod-to-pod networking"]}, {"component_type": "nsx_load_balancers", "evidence": null, "level": "PARTIAL", "location": "provision-web-app-with-nsx-lb", "migration_path": "PATH_A", "name": "NSX Load Balancer", "openshift_equivalent": "OpenShift Router / Ingress", "reason": "Load Balancers can be partially translated to OpenShift Router / Ingress with manual configuration", "recommendations": ["Map NSX load balancer to OpenShift Route/Ingress", "Note: Limited to HTTP/HTTPS traffic", "For TCP/UDP: Use MetalLB or external load balancer", "Configure health checks as readiness probes", "Test failover and session persistence"]}, {"component_type": "vm_creation", "evidence": null, "level": "SUPPORTED", "location": "Provision-WebTier", "migration_path": "PATH_A", "name": "VM Provisioning", "openshift_equivalent": "VirtualMachine (KubeVirt)", "reason": "VM creation maps directly to KubeVirt VirtualMachine resource", "recommendations": ["Generate KubeVirt VirtualMachine manifest", "Map inputs to VM spec fields", "Configure default pod networking"]}, {"component_type": "day2_ops", "evidence": null, "level": "SUPPORTED", "location": "Provision-WebTier", "migration_path": "PATH_A", "name": "VM Lifecycle Operations", "openshift_equivalent": "VirtualMachine running field", "reason": "Start/stop/restart operations supported via VirtualMachine spec", "recommendations": ["Map start/stop to spec.running: true/false", "Use virtctl for CLI operations", "Consider using Ansible for automation"]}, {"component_type": "vm_creation", "evidence": null, "level": "SUPPORTED", "location": "New-StandardVM", "migration_path": "PATH_A", "name": "VM Provisioning", "openshift_equivalent": "VirtualMachine (KubeVirt)", "reason": "VM creation maps directly to KubeVirt VirtualMachine resource", "recommendations": ["Generate KubeVirt VirtualMachine manifest", "Map inputs to VM spec fields", "Configure default pod networking"]}, {"component_type": "compute_allocation", "evidence": null, "level": "SUPPORTED", "location": "New-StandardVM", "migration_path": "PATH_A", "name": "Compute Resources", "openshift_equivalent": "spec.template.spec.domain.resources", "reason": "CPU and memory allocation fully supported in KubeVirt", "recommendations": ["Map CPU cores to spec.template.spec.domain.cpu.cores", "Map memory to spec.template.spec.domain.resources.requests.memory", "Consider setting resource limits for production"]}, {"component_type": "multi_nic", "evidence": null, "level": "PARTIAL", "location": "New-StandardVM", "migration_path": "PATH_A", "name": "Multi-NIC Networking", "openshift_equivalent": "NetworkAttachmentDefinition (Multus)", "reason": "Multiple network interfaces require Multus CNI configuration", "recommendations": ["Create NetworkAttachmentDefinition for each network", "Configure Multus CNI plugin if not already installed", "Update VM spec to reference NADs", "Test network connectivity between pods"]}, {"component_type": "day2_ops", "evidence": null, "level": "SUPPORTED", "location": "New-StandardVM", "migration_path": "PATH_A", "name": "VM Lifecycle Operations", "openshift_equivalent": "VirtualMachine running field", "reason": "Start/stop/restart operations supported via VirtualMachine spec", "recommendations": ["Map start/stop to spec.running: true/false", "Use virtctl for CLI operations", "Consider using Ansible for automation"]}, {"component_type": "day2_ops", "evidence": null, "level": "SUPPORTED", "location": "Manage-VMSnapshots", "migration_path": "PATH_A", "name": "VM Lifecycle Operations", "openshift_equivalent": "VirtualMachine running field", "reason": "Start/stop/restart operations supported via VirtualMachine spec", "recommendations": ["Map start/stop to spec.running: true/false", "Use virtctl for CLI operations", "Consider using Ansible for automation"]}, {"component_type": "vm_creation", "evidence": null, "level": "SUPPORTED", "location": "Deploy-DatabaseVM", "migration_path": "PATH_A", "name": "VM Provisioning", "openshift_equivalent": "VirtualMachine (KubeVirt)", "reason": "VM creation maps directly to KubeVirt VirtualMachine resource", "recommendations": ["Generate KubeVirt VirtualMachine manifest", "Map inputs to VM spec fields", "Configure default pod networking"]}, {"component_type": "multi_nic", "evidence": null, "level": "PARTIAL", "location": "Deploy-DatabaseVM", "migration_path": "PATH_A", "name": "Multi-NIC Networking", "openshift_equivalent": "NetworkAttachmentDefinition (Multus)", "reason": "Multiple network interfaces require Multus CNI configuration", "recommendations": ["Create NetworkAttachmentDefinition for each network", "Configure Multus CNI plugin if not already installed", "Update VM spec to reference NADs", "Test network connectivity between pods"]}, {"component_type": "day2_ops", "evidence": null, "level": "SUPPORTED", "location": "Deploy-DatabaseVM", "migration_path": "PATH_A", "name": "VM Lifecycle Operations", "openshift_equivalent": "VirtualMachine running field", "reason": "Start/stop/restart operations supported via VirtualMachine spec", "recommendations": ["Map start/stop to spec.running: true/false", "Use virtctl for CLI operations", "Consider using Ansible for automation"]}, {"component_type": "metadata", "evidence": null, "level": "SUPPORTED", "location": "Deploy-DatabaseVM", "migration_path": "PATH_A", "name": "Tags and Metadata", "openshift_equivalent": "metadata.labels", "reason": "Tags and custom attributes map to Kubernetes labels", "recommendations": ["Map vSphere tags to Kubernetes labels", "Convert custom attributes to annotations", "Follow label naming conventions (kubernetes.io/*)"]}], "migration_guidance": {"has_blocking_issues": true, "overall_assessment": "HAS_BLOCKING_ISSUES", "recommended_paths": ["PATH_A", "PATH_B", "PATH_C"], "requires_manual_work": true}, "summary": {"counts": {"BLOCKED": 1, "MANUAL": 0, "PARTIAL": 6, "SUPPORTED": 22}, "has_blocking_issues": true, "migration_paths": {"NONE": 0, "PATH_A": 27, "PATH_B": 1, "PATH_C": 1}, "overall_assessment": "HAS_BLOCKING_ISSUES", "requires_manual_work": true, "total_components": 29}, "workflow_name": "PowerCLI and vRealize"}
+            workspace: "test-patterns",
+            timestamp: "2026-02-13T20:02:46",
+            gaps: {"components": [{"component_type": "vm_creation", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-approval", "migration_path": "PATH_A", "name": "VM Provisioning", "openshift_equivalent": "VirtualMachine (KubeVirt)", "pattern_link": null, "reason": "VM creation maps directly to KubeVirt VirtualMachine resource", "recommendations": ["Generate KubeVirt VirtualMachine manifest", "Map workflow inputs to VM spec fields", "Configure default pod networking"]}, {"component_type": "compute_allocation", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-approval", "migration_path": "PATH_A", "name": "Compute Resources", "openshift_equivalent": "spec.template.spec.domain.resources", "pattern_link": null, "reason": "CPU and memory allocation fully supported in KubeVirt", "recommendations": ["Map CPU cores to spec.template.spec.domain.cpu.cores", "Map memory to spec.template.spec.domain.resources.requests.memory", "Consider setting resource limits for production"]}, {"component_type": "approval", "evidence": null, "level": "PARTIAL", "location": "provision-vm-with-approval", "migration_path": "PATH_B", "name": "Approval Workflow", "openshift_equivalent": "Custom operator or external approval system", "pattern_link": {"anchor": "pattern-2-complex-interactive-forms", "description": "Approval Workflow Patterns"}, "reason": "Approval logic requires custom integration with existing approval systems", "recommendations": ["Integrate with existing approval system (ServiceNow, Jira, etc.)", "Consider using Kubernetes admission controllers", "May require custom operator development", "Document approval requirements in runbook"]}, {"component_type": "day2_ops", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-approval", "migration_path": "PATH_A", "name": "VM Lifecycle Operations", "openshift_equivalent": "VirtualMachine running field", "pattern_link": null, "reason": "Start/stop/restart operations supported via VirtualMachine spec", "recommendations": ["Map start/stop to spec.running: true/false", "Use virtctl for CLI operations", "Consider using Ansible for automation"]}, {"component_type": "metadata", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-approval", "migration_path": "PATH_A", "name": "Tags and Metadata", "openshift_equivalent": "metadata.labels", "pattern_link": null, "reason": "Tags and custom attributes map to Kubernetes labels", "recommendations": ["Map vSphere tags to Kubernetes labels", "Convert custom attributes to annotations", "Follow label naming conventions (kubernetes.io/*)"]}, {"component_type": "vm_creation", "evidence": null, "level": "SUPPORTED", "location": "old-db-provisioning-DO-NOT-MODIFY", "migration_path": "PATH_A", "name": "VM Provisioning", "openshift_equivalent": "VirtualMachine (KubeVirt)", "pattern_link": null, "reason": "VM creation maps directly to KubeVirt VirtualMachine resource", "recommendations": ["Generate KubeVirt VirtualMachine manifest", "Map workflow inputs to VM spec fields", "Configure default pod networking"]}, {"component_type": "vm_creation", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-nsx-firewall", "migration_path": "PATH_A", "name": "VM Provisioning", "openshift_equivalent": "VirtualMachine (KubeVirt)", "pattern_link": null, "reason": "VM creation maps directly to KubeVirt VirtualMachine resource", "recommendations": ["Generate KubeVirt VirtualMachine manifest", "Map workflow inputs to VM spec fields", "Configure default pod networking"]}, {"component_type": "compute_allocation", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-nsx-firewall", "migration_path": "PATH_A", "name": "Compute Resources", "openshift_equivalent": "spec.template.spec.domain.resources", "pattern_link": null, "reason": "CPU and memory allocation fully supported in KubeVirt", "recommendations": ["Map CPU cores to spec.template.spec.domain.cpu.cores", "Map memory to spec.template.spec.domain.resources.requests.memory", "Consider setting resource limits for production"]}, {"component_type": "day2_ops", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-nsx-firewall", "migration_path": "PATH_A", "name": "VM Lifecycle Operations", "openshift_equivalent": "VirtualMachine running field", "pattern_link": null, "reason": "Start/stop/restart operations supported via VirtualMachine spec", "recommendations": ["Map start/stop to spec.running: true/false", "Use virtctl for CLI operations", "Consider using Ansible for automation"]}, {"component_type": "metadata", "evidence": null, "level": "SUPPORTED", "location": "provision-vm-with-nsx-firewall", "migration_path": "PATH_A", "name": "Tags and Metadata", "openshift_equivalent": "metadata.labels", "pattern_link": null, "reason": "Tags and custom attributes map to Kubernetes labels", "recommendations": ["Map vSphere tags to Kubernetes labels", "Convert custom attributes to annotations", "Follow label naming conventions (kubernetes.io/*)"]}, {"component_type": "nsx_security_groups", "evidence": null, "level": "BLOCKED", "location": "provision-vm-with-nsx-firewall", "migration_path": "PATH_C", "name": "NSX Security Groups", "openshift_equivalent": null, "pattern_link": {"anchor": "pattern-5-nsx-security-components", "description": "NSX Security \u0026 Networking Alternatives"}, "reason": "Security Groups cannot be automatically translated - no direct OpenShift equivalent", "recommendations": ["Security groups have no direct OpenShift equivalent", "Option 1: Model as pod selectors in NetworkPolicy", "Option 2: Use labels to group pods logically", "Option 3: Keep NSX for security groups (hybrid)", "Requires specialist review of security requirements"]}, {"component_type": "nsx_firewall_rules", "evidence": null, "level": "PARTIAL", "location": "provision-vm-with-nsx-firewall", "migration_path": "PATH_A", "name": "NSX Distributed Firewall", "openshift_equivalent": "NetworkPolicy", "pattern_link": {"anchor": "pattern-5-nsx-security-components", "description": "NSX Firewall Migration Patterns"}, "reason": "Firewall Rules can be partially translated to NetworkPolicy with manual configuration", "recommendations": ["Convert firewall rules to NetworkPolicy manifests", "Note: NetworkPolicy is L3/L4 only (no L7 filtering)", "Consider using Calico for advanced features", "Test egress/ingress rules in dev environment", "Document any unsupported rule types"]}, {"component_type": "vm_creation", "evidence": null, "level": "SUPPORTED", "location": "provision-web-app-with-nsx-lb", "migration_path": "PATH_A", "name": "VM Provisioning", "openshift_equivalent": "VirtualMachine (KubeVirt)", "pattern_link": null, "reason": "VM creation maps directly to KubeVirt VirtualMachine resource", "recommendations": ["Generate KubeVirt VirtualMachine manifest", "Map workflow inputs to VM spec fields", "Configure default pod networking"]}, {"component_type": "compute_allocation", "evidence": null, "level": "SUPPORTED", "location": "provision-web-app-with-nsx-lb", "migration_path": "PATH_A", "name": "Compute Resources", "openshift_equivalent": "spec.template.spec.domain.resources", "pattern_link": null, "reason": "CPU and memory allocation fully supported in KubeVirt", "recommendations": ["Map CPU cores to spec.template.spec.domain.cpu.cores", "Map memory to spec.template.spec.domain.resources.requests.memory", "Consider setting resource limits for production"]}, {"component_type": "day2_ops", "evidence": null, "level": "SUPPORTED", "location": "provision-web-app-with-nsx-lb", "migration_path": "PATH_A", "name": "VM Lifecycle Operations", "openshift_equivalent": "VirtualMachine running field", "pattern_link": null, "reason": "Start/stop/restart operations supported via VirtualMachine spec", "recommendations": ["Map start/stop to spec.running: true/false", "Use virtctl for CLI operations", "Consider using Ansible for automation"]}, {"component_type": "nsx_segments", "evidence": null, "level": "PARTIAL", "location": "provision-web-app-with-nsx-lb", "migration_path": "PATH_A", "name": "NSX Overlay Segments", "openshift_equivalent": "NetworkAttachmentDefinition (Multus CNI)", "pattern_link": {"anchor": "pattern-5-nsx-security-components", "description": "NSX Networking Migration"}, "reason": "Segments can be partially translated to NetworkAttachmentDefinition (Multus CNI) with manual configuration", "recommendations": ["Create NetworkAttachmentDefinition for each segment", "Configure Multus CNI plugin", "Update pod specs to reference NAD", "Map VLAN/overlay IDs to bridge/macvlan config", "Test pod-to-pod networking"]}, {"component_type": "nsx_load_balancers", "evidence": null, "level": "PARTIAL", "location": "provision-web-app-with-nsx-lb", "migration_path": "PATH_A", "name": "NSX Load Balancer", "openshift_equivalent": "OpenShift Router / Ingress", "pattern_link": {"anchor": "pattern-5-nsx-security-components", "description": "NSX Load Balancer Alternatives"}, "reason": "Load Balancers can be partially translated to OpenShift Router / Ingress with manual configuration", "recommendations": ["Map NSX load balancer to OpenShift Route/Ingress", "Note: Limited to HTTP/HTTPS traffic", "For TCP/UDP: Use MetalLB or external load balancer", "Configure health checks as readiness probes", "Test failover and session persistence"]}, {"component_type": "vm_creation", "evidence": null, "level": "SUPPORTED", "location": "Provision-WebTier", "migration_path": "PATH_A", "name": "VM Provisioning", "openshift_equivalent": "VirtualMachine (KubeVirt)", "pattern_link": null, "reason": "VM creation maps directly to KubeVirt VirtualMachine resource", "recommendations": ["Generate KubeVirt VirtualMachine manifest", "Map inputs to VM spec fields", "Configure default pod networking"]}, {"component_type": "day2_ops", "evidence": null, "level": "SUPPORTED", "location": "Provision-WebTier", "migration_path": "PATH_A", "name": "VM Lifecycle Operations", "openshift_equivalent": "VirtualMachine running field", "pattern_link": null, "reason": "Start/stop/restart operations supported via VirtualMachine spec", "recommendations": ["Map start/stop to spec.running: true/false", "Use virtctl for CLI operations", "Consider using Ansible for automation"]}, {"component_type": "vm_creation", "evidence": null, "level": "SUPPORTED", "location": "New-StandardVM", "migration_path": "PATH_A", "name": "VM Provisioning", "openshift_equivalent": "VirtualMachine (KubeVirt)", "pattern_link": null, "reason": "VM creation maps directly to KubeVirt VirtualMachine resource", "recommendations": ["Generate KubeVirt VirtualMachine manifest", "Map inputs to VM spec fields", "Configure default pod networking"]}, {"component_type": "compute_allocation", "evidence": null, "level": "SUPPORTED", "location": "New-StandardVM", "migration_path": "PATH_A", "name": "Compute Resources", "openshift_equivalent": "spec.template.spec.domain.resources", "pattern_link": null, "reason": "CPU and memory allocation fully supported in KubeVirt", "recommendations": ["Map CPU cores to spec.template.spec.domain.cpu.cores", "Map memory to spec.template.spec.domain.resources.requests.memory", "Consider setting resource limits for production"]}, {"component_type": "multi_nic", "evidence": null, "level": "PARTIAL", "location": "New-StandardVM", "migration_path": "PATH_A", "name": "Multi-NIC Networking", "openshift_equivalent": "NetworkAttachmentDefinition (Multus)", "pattern_link": null, "reason": "Multiple network interfaces require Multus CNI configuration", "recommendations": ["Create NetworkAttachmentDefinition for each network", "Configure Multus CNI plugin if not already installed", "Update VM spec to reference NADs", "Test network connectivity between pods"]}, {"component_type": "day2_ops", "evidence": null, "level": "SUPPORTED", "location": "New-StandardVM", "migration_path": "PATH_A", "name": "VM Lifecycle Operations", "openshift_equivalent": "VirtualMachine running field", "pattern_link": null, "reason": "Start/stop/restart operations supported via VirtualMachine spec", "recommendations": ["Map start/stop to spec.running: true/false", "Use virtctl for CLI operations", "Consider using Ansible for automation"]}, {"component_type": "day2_ops", "evidence": null, "level": "SUPPORTED", "location": "Manage-VMSnapshots", "migration_path": "PATH_A", "name": "VM Lifecycle Operations", "openshift_equivalent": "VirtualMachine running field", "pattern_link": null, "reason": "Start/stop/restart operations supported via VirtualMachine spec", "recommendations": ["Map start/stop to spec.running: true/false", "Use virtctl for CLI operations", "Consider using Ansible for automation"]}, {"component_type": "vm_creation", "evidence": null, "level": "SUPPORTED", "location": "Deploy-DatabaseVM", "migration_path": "PATH_A", "name": "VM Provisioning", "openshift_equivalent": "VirtualMachine (KubeVirt)", "pattern_link": null, "reason": "VM creation maps directly to KubeVirt VirtualMachine resource", "recommendations": ["Generate KubeVirt VirtualMachine manifest", "Map inputs to VM spec fields", "Configure default pod networking"]}, {"component_type": "multi_nic", "evidence": null, "level": "PARTIAL", "location": "Deploy-DatabaseVM", "migration_path": "PATH_A", "name": "Multi-NIC Networking", "openshift_equivalent": "NetworkAttachmentDefinition (Multus)", "pattern_link": null, "reason": "Multiple network interfaces require Multus CNI configuration", "recommendations": ["Create NetworkAttachmentDefinition for each network", "Configure Multus CNI plugin if not already installed", "Update VM spec to reference NADs", "Test network connectivity between pods"]}, {"component_type": "day2_ops", "evidence": null, "level": "SUPPORTED", "location": "Deploy-DatabaseVM", "migration_path": "PATH_A", "name": "VM Lifecycle Operations", "openshift_equivalent": "VirtualMachine running field", "pattern_link": null, "reason": "Start/stop/restart operations supported via VirtualMachine spec", "recommendations": ["Map start/stop to spec.running: true/false", "Use virtctl for CLI operations", "Consider using Ansible for automation"]}, {"component_type": "metadata", "evidence": null, "level": "SUPPORTED", "location": "Deploy-DatabaseVM", "migration_path": "PATH_A", "name": "Tags and Metadata", "openshift_equivalent": "metadata.labels", "pattern_link": null, "reason": "Tags and custom attributes map to Kubernetes labels", "recommendations": ["Map vSphere tags to Kubernetes labels", "Convert custom attributes to annotations", "Follow label naming conventions (kubernetes.io/*)"]}], "migration_guidance": {"has_blocking_issues": true, "overall_assessment": "HAS_BLOCKING_ISSUES", "recommended_paths": ["PATH_A", "PATH_B", "PATH_C"], "requires_manual_work": true}, "summary": {"counts": {"BLOCKED": 1, "MANUAL": 0, "PARTIAL": 6, "SUPPORTED": 21}, "has_blocking_issues": true, "migration_paths": {"NONE": 0, "PATH_A": 26, "PATH_B": 1, "PATH_C": 1}, "overall_assessment": "HAS_BLOCKING_ISSUES", "requires_manual_work": true, "total_components": 28}, "workflow_name": "PowerCLI and vRealize"}
         };
     </script>
     <script src="assets/app.js"></script>

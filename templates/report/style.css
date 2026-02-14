@@ -2810,3 +2810,40 @@ pre code {
     margin: 0;
     line-height: 1.6;
 }
+
+/* Header Documentation Link */
+.header-docs-link {
+    color: #0ea5e9;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.header-docs-link:hover {
+    color: #0284c7;
+    text-decoration: underline;
+}
+
+/* Pattern Link Button */
+.pattern-link {
+    margin-top: var(--spacing-sm);
+}
+
+.btn-pattern-link {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-md);
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(14, 165, 233, 0.2);
+}
+
+.btn-pattern-link:hover {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+    box-shadow: 0 4px 8px rgba(14, 165, 233, 0.3);
+    transform: translateY(-1px);
+}
