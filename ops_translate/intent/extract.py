@@ -590,11 +590,11 @@ def extract_assumptions_from_yaml(yaml_content: str) -> list:
     """
     # Use regex for efficient extraction (performance optimization)
     # Match assumptions: followed by list items starting with "  - "
-    match = re.search(r'assumptions:\n((?:  - .*\n?)*)', yaml_content, re.MULTILINE)
+    match = re.search(r"assumptions:\n((?:  - .*\n?)*)", yaml_content, re.MULTILINE)
     if match:
         assumptions_block = match.group(1)
         # Extract each list item
-        assumptions = re.findall(r'^\s*-\s+(.+)$', assumptions_block, re.MULTILINE)
+        assumptions = re.findall(r"^\s*-\s+(.+)$", assumptions_block, re.MULTILINE)
         return assumptions if assumptions else ["Intent extracted via LLM"]
 
     return ["Intent extracted via LLM"]

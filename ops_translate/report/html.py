@@ -27,24 +27,24 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 
 # Pre-compiled regex patterns for performance
-_NORMALIZE_PATTERN = re.compile(r'[-\s_]+')
-_FILE_EXT_PATTERN = re.compile(r'\.(workflow\.xml|ps1)$')
-_TITLE_NORMALIZE_PATTERN = re.compile(r'[_-]')
+_NORMALIZE_PATTERN = re.compile(r"[-\s_]+")
+_FILE_EXT_PATTERN = re.compile(r"\.(workflow\.xml|ps1)$")
+_TITLE_NORMALIZE_PATTERN = re.compile(r"[_-]")
 
 
 def _normalize_name(text: str) -> str:
     """Normalize text by replacing hyphens, spaces, underscores with single underscore."""
-    return _NORMALIZE_PATTERN.sub('_', text.lower())
+    return _NORMALIZE_PATTERN.sub("_", text.lower())
 
 
 def _strip_file_extensions(filename: str) -> str:
     """Strip workflow.xml or .ps1 extensions from filename."""
-    return _FILE_EXT_PATTERN.sub('', filename)
+    return _FILE_EXT_PATTERN.sub("", filename)
 
 
 def _format_title(text: str) -> str:
     """Format text for display as title (replace underscores/hyphens with spaces, title case)."""
-    return _TITLE_NORMALIZE_PATTERN.sub(' ', text).title()
+    return _TITLE_NORMALIZE_PATTERN.sub(" ", text).title()
 
 
 def generate_html_report(
