@@ -1,0 +1,136 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ops-translate Decision Interview Responses",
+  "description": "Schema for decision interview responses that provide missing context for BLOCKED/PARTIAL components",
+  "type": "object",
+  "required": ["schema_version", "decisions"],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "description": "Schema version for forward compatibility",
+      "const": 1
+    },
+    "decisions": {
+      "type": "object",
+      "description": "Decision responses grouped by domain",
+      "properties": {
+        "security": {
+          "type": "object",
+          "description": "Security-related decisions for NSX groups and labels",
+          "properties": {
+            "label_key": {
+              "type": "string",
+              "description": "Primary label key for security segmentation (e.g., security.zone)"
+            },
+            "namespace_model": {
+              "type": "string",
+              "enum": ["single", "per-app", "per-env", "per-tier"],
+              "description": "Namespace organization strategy"
+            },
+            "default_policy": {
+              "type": "string",
+              "enum": ["deny", "allow"],
+              "description": "Default NetworkPolicy stance"
+            },
+            "group_mapping": {
+              "type": "string",
+              "description": "NSX group to label selector mapping (multiline)"
+            }
+          }
+        },
+        "firewall": {
+          "type": "object",
+          "description": "Firewall policy translation decisions",
+          "properties": {
+            "l7_features": {
+              "type": "string",
+              "enum": ["yes", "no", "unknown"],
+              "description": "Whether L7/stateful firewall features are used"
+            },
+            "calico_available": {
+              "type": "string",
+              "enum": ["yes", "no", "planned"],
+              "description": "Availability of Calico for advanced policies"
+            },
+            "egress_model": {
+              "type": "string",
+              "enum": ["netpol", "egressfirewall", "calico", "none"],
+              "description": "Egress control implementation approach"
+            },
+            "allowed_destinations": {
+              "type": "string",
+              "description": "External destinations allow-list (CIDR/FQDN, multiline)"
+            }
+          }
+        },
+        "governance": {
+          "type": "object",
+          "description": "Governance and approval workflow decisions",
+          "properties": {
+            "approval_system": {
+              "type": "string",
+              "enum": ["aap", "servicenow", "jira", "email", "manual"],
+              "description": "Approval system of record"
+            },
+            "approver_source": {
+              "type": "string",
+              "description": "How approvers are identified (LDAP group, email list, etc.)"
+            },
+            "timeout_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10080,
+              "description": "Approval timeout in minutes (max 7 days)"
+            },
+            "notify_email": {
+              "type": "array",
+              "items": { "type": "string", "const": "true" },
+              "description": "Email notification enabled"
+            },
+            "notify_slack": {
+              "type": "array",
+              "items": { "type": "string", "const": "true" },
+              "description": "Slack notification enabled"
+            },
+            "notify_teams": {
+              "type": "array",
+              "items": { "type": "string", "const": "true" },
+              "description": "Microsoft Teams notification enabled"
+            },
+            "notify_webhook": {
+              "type": "array",
+              "items": { "type": "string", "const": "true" },
+              "description": "Custom webhook notification enabled"
+            }
+          }
+        },
+        "networking": {
+          "type": "object",
+          "description": "Network attachment and Multus decisions",
+          "properties": {
+            "multinic_strategy": {
+              "type": "string",
+              "enum": ["retain", "collapse", "selective"],
+              "description": "Multi-NIC handling strategy"
+            },
+            "nad_naming": {
+              "type": "string",
+              "description": "NetworkAttachmentDefinition naming convention"
+            },
+            "attachment_rules": {
+              "type": "string",
+              "enum": ["env", "tier", "static", "vlan"],
+              "description": "Network attachment selection rules"
+            },
+            "vlan_mapping": {
+              "type": "string",
+              "description": "VLAN/PortGroup to NAD mapping (multiline)"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
