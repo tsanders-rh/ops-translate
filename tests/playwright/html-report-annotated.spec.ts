@@ -145,7 +145,7 @@ test.describe("HTML report annotated demo", () => {
   });
 
   test("annotated: complete walkthrough with explanations", async ({ page }) => {
-    test.setTimeout(120000); // 2 minutes for annotated demo
+    test.setTimeout(180000); // 3 minutes for annotated demo
     // Navigate to report
     await page.goto("/index.html", { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(1000);
@@ -216,21 +216,58 @@ test.describe("HTML report annotated demo", () => {
     await page.locator("#clear-filter").click();
     await page.waitForTimeout(1000);
 
-    // Scroll to show source files section (optional - skip to save time)
-    // await page.evaluate(() => {
-    //   const heading = Array.from(document.querySelectorAll('h2'))
-    //     .find(h => h.textContent?.includes('Source Files'));
-    //   if (heading) {
-    //     heading.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    //   }
-    // });
-    // await page.waitForTimeout(800);
-    // await showAnnotation(page, "📂 Source Files Analyzed<br/><small>Original VMware automation scripts</small>", 2000);
+    // Show Decision Interview tab
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(500);
+    await showAnnotation(page, "🧠 Decision Interview Tab<br/><small>Provide context for BLOCKED/PARTIAL components</small>", 2500);
+
+    // Click Decision Interview tab
+    await page.locator('[data-tab="decisions"]').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(300);
+    await highlightElement(page, '[data-tab="decisions"]', 1200);
+    await page.locator('[data-tab="decisions"]').click();
+    await page.waitForTimeout(1500);
+
+    // Show overview section
+    await page.locator('.decision-overview-section').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(500);
+    await showAnnotation(page, "📊 Decision Overview<br/><small>8 components need your input</small>", 2500);
+    await highlightElement(page, '.decision-summary-cards', 1500);
+    await page.waitForTimeout(500);
+
+    // Scroll to question packs
+    await page.locator('.question-pack').first().scrollIntoViewIfNeeded();
+    await page.waitForTimeout(500);
+    await showAnnotation(page, "📝 Question Packs<br/><small>Domain-specific questions for missing context</small>", 2500);
+    await highlightElement(page, '.question-pack', 1500);
+    await page.waitForTimeout(500);
+
+    // Show a specific question pack (if available)
+    const questionPacks = page.locator('.question-pack');
+    if ((await questionPacks.count()) > 0) {
+      await questionPacks.first().scrollIntoViewIfNeeded();
+      await page.waitForTimeout(300);
+
+      // Try to highlight a form field
+      const firstInput = questionPacks.first().locator('select, input[type="text"]').first();
+      if (await firstInput.isVisible()) {
+        await showAnnotation(page, "💡 Fill Out Questions<br/><small>Your decisions upgrade component classifications</small>", 2500);
+        await highlightElement(page, '.question-pack select, .question-pack input[type="text"]', 1500);
+      }
+    }
+    await page.waitForTimeout(500);
+
+    // Show save button
+    await page.locator('#save-decisions-btn').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(500);
+    await showAnnotation(page, "💾 Save Decisions<br/><small>Download YAML file to apply decisions</small>", 2500);
+    await highlightElement(page, '#save-decisions-btn', 1500);
+    await page.waitForTimeout(500);
 
     // Final message
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(500);
-    await showAnnotation(page, "✨ Interactive HTML Report<br/><small>Filter, review, and export migration insights</small>", 3000);
+    await showAnnotation(page, "✨ Interactive HTML Report<br/><small>Filter, review, and provide migration context</small>", 3000);
 
     await page.waitForTimeout(1000);
   });
