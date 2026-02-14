@@ -136,18 +136,20 @@ echo -e "${BOLD}https://github.com/tsanders-rh/ops-translate${NC}"
 echo ""
 print_narration "ops-translate helps you migrate VMware automation to OpenShift."
 echo ""
-echo -e "${CYAN}You give it vRealize workflows or PowerCLI scripts.${NC}"
+echo -e "${CYAN}You give it: vRealize workflows or PowerCLI scripts.${NC}"
 echo -e "${CYAN}It gives you:${NC}"
+echo ""
 echo -e "  ${BOLD}1.${NC} Gap analysis - what needs manual work"
 echo -e "  ${BOLD}2.${NC} Architecture guidance - how to handle NSX, approvals, etc."
 echo -e "  ${BOLD}3.${NC} Generated code - Ansible + KubeVirt to get started"
 echo ""
-wait_medium
+wait_short
 echo -e "${BOLD}${CYAN}What we'll demo:${NC}"
+echo ""
 echo -e "  • Initialize workspace and import vRealize workflows + PowerCLI scripts"
 echo -e "  • Analyze for gaps (pattern matching, no AI required)"
 echo -e "  • Generate HTML reports for stakeholders"
-echo -e "  • Extract operational intent with AI"
+echo -e "  • Extract and merge operational intent with AI"
 echo -e "  • Generate Ansible + KubeVirt code with linting"
 echo ""
 
@@ -164,7 +166,7 @@ wait_short
 
 run_command "$OPS_CMD init demo-workspace"
 run_command "cd demo-workspace"
-
+press_enter
 print_narration "Workspace created with organized directory structure:"
 wait_short
 if command -v tree &> /dev/null; then
@@ -175,7 +177,7 @@ else
 fi
 press_enter
 
-print_narration "Import vRealize workflow with NSX networking components"
+print_narration "Import vRealize workflows with NSX networking components"
 wait_short
 run_command "$OPS_CMD import --source vrealize --file ../examples/virt-first-realworld/vrealize/provision-vm-with-nsx-firewall.workflow.xml"
 wait_short
@@ -209,17 +211,18 @@ echo -e "  ${GREEN}SUPPORTED:${NC} Can translate automatically"
 echo -e "  ${YELLOW}PARTIAL:${NC} Needs manual configuration"
 echo -e "  ${RED}BLOCKED:${NC} No direct equivalent (check Architecture Patterns)"
 echo ""
-wait_medium
+
 
 print_narration "This is pattern matching - no AI needed, runs offline."
-wait_short
+press_enter
 
 run_command "$OPS_CMD analyze"
 wait_medium
+press_enter
 
 print_narration "Gap analysis created. Let's view the summary:"
 wait_short
-run_command "cat intent/gaps.md | head -50"
+run_command "cat intent/gaps.md | head -40"
 press_enter
 
 print_narration "Full component details available in JSON format:"
@@ -228,37 +231,9 @@ run_command "cat intent/gaps.json | head -30"
 press_enter
 
 # ============================================================================
-# Scene 3: Incremental Analysis
+# Scene 3: Generate HTML Report
 # ============================================================================
-print_header "Scene 3: Incremental Analysis (Caching)"
-print_narration "Once analyzed, ops-translate caches results for fast iteration."
-echo ""
-wait_short
-
-print_narration "Run analyze again - unchanged workflows are skipped:"
-wait_short
-run_command "$OPS_CMD analyze"
-wait_medium
-
-print_narration "Now let's modify one file to trigger re-analysis:"
-wait_short
-run_command "touch input/powercli/New-StandardVM.ps1"
-wait_short
-
-print_narration "Run analyze again - only changed file is processed:"
-wait_short
-run_command "$OPS_CMD analyze"
-wait_medium
-
-print_narration "Incremental analysis makes iteration 70-90% faster!"
-echo -e "${CYAN}Cache stored in .ops-translate/analysis-cache.json${NC}"
-echo ""
-press_enter
-
-# ============================================================================
-# Scene 4: Generate HTML Report
-# ============================================================================
-print_header "Scene 4: Generate HTML Report"
+print_header "Scene 3: Generate HTML Report"
 print_narration "The HTML report is what you show to stakeholders."
 echo ""
 wait_short
@@ -334,6 +309,16 @@ print_narration "Intent files normalize automation across different source forma
 echo -e "${CYAN}vRealize workflows → normalized YAML intent${NC}"
 echo -e "${CYAN}PowerCLI scripts → same normalized YAML intent${NC}"
 echo ""
+wait_short
+
+print_narration "Now merge individual intent files into unified intent:"
+wait_short
+run_command "$OPS_CMD intent merge"
+wait_medium
+
+print_narration "Merged intent file created at intent/intent.yaml"
+echo -e "${CYAN}This unified intent is used for artifact generation${NC}"
+echo ""
 press_enter
 
 # ============================================================================
@@ -408,19 +393,18 @@ echo -e "${BOLD}${CYAN}Complete Workflow Demonstrated:${NC}"
 echo -e "${BOLD}${GREEN}✓ 1. Initialize${NC} workspace with organized structure"
 echo -e "${BOLD}${GREEN}✓ 2. Import${NC} vRealize workflows + PowerCLI scripts with NSX components"
 echo -e "${BOLD}${GREEN}✓ 3. Analyze${NC} for gaps (SUPPORTED/PARTIAL/BLOCKED classification)"
-echo -e "${BOLD}${GREEN}✓ 4. Incremental analysis${NC} with caching (70-90% faster)"
-echo -e "${BOLD}${GREEN}✓ 5. HTML reports${NC} for stakeholders and decision makers"
-echo -e "${BOLD}${GREEN}✓ 6. Extract${NC} operational intent using AI"
-echo -e "${BOLD}${GREEN}✓ 7. Generate${NC} KubeVirt + Ansible artifacts with linting"
-echo -e "${BOLD}${GREEN}✓ 8. Review${NC} generated code with architecture pattern links"
+echo -e "${BOLD}${GREEN}✓ 4. HTML reports${NC} for stakeholders and decision makers"
+echo -e "${BOLD}${GREEN}✓ 5. Extract and merge${NC} operational intent using AI"
+echo -e "${BOLD}${GREEN}✓ 6. Generate${NC} KubeVirt + Ansible artifacts with linting"
+echo -e "${BOLD}${GREEN}✓ 7. Review${NC} generated code with architecture pattern links"
 echo ""
 echo -e "${CYAN}${BOLD}Key Takeaways:${NC}"
 echo -e "  • ${BOLD}This is a PLANNING tool${NC} - not an automated migration button"
 echo -e "  • ${BOLD}Gap analysis shows what needs manual work UPFRONT${NC}"
 echo -e "  • ${BOLD}HTML reports${NC} are for execs, architects, and stakeholders"
-echo -e "  • ${BOLD}Incremental analysis${NC} = fast iteration (70-90% faster)"
 echo -e "  • ${BOLD}Architecture Patterns${NC} = your migration playbook"
 echo -e "  • ${BOLD}Linting${NC} = code quality built-in"
+echo -e "  • ${BOLD}Multi-source support${NC} = handles vRealize and PowerCLI together"
 echo ""
 echo -e "${BOLD}${CYAN}What was analyzed:${NC}"
 echo -e "  ${BOLD}vRealize Workflows:${NC}"
