@@ -860,11 +860,15 @@ Do you need distributed state (multi-host)?
 
 ---
 
-## Pattern 5: NSX Security Components
+## Pattern 5: NSX Networking & Infrastructure Components
 
-### vRO Capability
+### Overview
 
-vRO integrates with NSX for network virtualization and security:
+vRO integrates with NSX-T for network virtualization, security, and infrastructure. This pattern covers migration strategies for NSX components that are classified as **BLOCKED** or **MANUAL** because OpenShift doesn't provide direct equivalents.
+
+### 5.1 NSX Security Groups
+
+#### vRO Capability
 
 ```javascript
 // NSX Security Group with dynamic membership
@@ -882,16 +886,11 @@ firewallRule.setSource(securityGroup("WebTier"));
 firewallRule.setDestination(securityGroup("DBTier"));
 firewallRule.setService("MySQL");
 firewallRule.setAction("ALLOW");
-
-// NSX Load Balancer
-var lb = nsxManager.createLoadBalancer("WebApp-LB");
-lb.addPool("WebServers", getVMsByTag("app:web"));
-lb.configureHealthCheck("/health", 80);
 ```
 
-### Alternative Patterns
+#### Alternative Patterns
 
-#### Option A: Kubernetes NetworkPolicy (Native)
+##### Option A: Kubernetes NetworkPolicy (Native)
 
 **When to use:** Workloads running as containers/pods in OpenShift
 
@@ -926,7 +925,7 @@ spec:
 - ❌ Doesn't apply to VMs (only pods)
 - ❌ No dynamic membership (labels are static)
 
-#### Option B: Calico NetworkPolicy (Advanced)
+##### Option B: Calico NetworkPolicy (Advanced)
 
 **When to use:** Need L7 filtering, global policies, or VM integration
 
@@ -978,7 +977,7 @@ spec:
 - ❌ Requires Calico installation
 - ❌ More complex than Kubernetes NetworkPolicy
 
-#### Option C: Hybrid Architecture (NSX + OpenShift)
+##### Option C: Hybrid Architecture (NSX + OpenShift)
 
 **When to use:** Gradual migration, need NSX features during transition
 
@@ -1030,7 +1029,7 @@ resource "nsxt_policy_group" "web_tier" {
 - ❌ Operational complexity
 - ❌ Licensing costs
 
-#### Option D: OpenShift Service Mesh (Istio)
+##### Option D: OpenShift Service Mesh (Istio)
 
 **When to use:** Microservices architecture, need L7 features, service-to-service auth
 
@@ -1096,7 +1095,7 @@ spec:
 - ❌ Adds latency (sidecar proxies)
 - ❌ Increased operational complexity
 
-### NSX Migration Decision Tree
+#### Security Groups Decision Tree
 
 ```
 What workloads are you migrating?
@@ -1109,6 +1108,715 @@ What workloads are you migrating?
     └─ NO → Do you need advanced features (global policies, VM integration)?
         ├─ YES → Use Calico NetworkPolicy
         └─ NO → Use native Kubernetes NetworkPolicy
+```
+
+---
+
+### 5.2 Tier Gateways (T0/T1)
+
+#### The Problem
+
+NSX-T Tier-0 and Tier-1 gateways provide critical networking functions:
+- **North-south routing** (datacenter ↔ external networks)
+- **East-west routing** between network segments
+- **Dynamic routing** with BGP/OSPF
+- **High availability** with active/standby failover
+- **Stateful services** (firewall, load balancing, NAT)
+
+**OpenShift has no equivalent for Tier gateways.**
+
+#### Alternative Patterns
+
+##### Option A: Hybrid Architecture (Keep NSX for Gateways)
+
+**When to use:**
+- Complex north-south routing requirements
+- Need BGP/OSPF peering with physical network infrastructure
+- Existing NSX investment and expertise
+- Transitional migration (migrate workloads first, networking later)
+
+**Architecture:**
+
+```
+┌─────────────────────────────────────────┐
+│  External Network / Physical Datacenter │
+└─────────────┬───────────────────────────┘
+              │
+      ┌───────▼────────┐
+      │ NSX Tier-0 GW  │ ← Keep NSX for north-south
+      │  (BGP/OSPF)    │
+      └───────┬────────┘
+              │
+      ┌───────▼────────┐
+      │ NSX Tier-1 GW  │ ← Keep NSX for tenant routing
+      │ (per tenant)   │
+      └───────┬────────┘
+              │
+    ┌─────────▼──────────┐
+    │ OpenShift Cluster  │
+    │                    │
+    │  ┌──────────────┐  │
+    │  │ Pods/VMs     │  │ ← Workloads in OpenShift
+    │  │ (KubeVirt)   │  │
+    │  └──────────────┘  │
+    └────────────────────┘
+```
+
+**Ansible implementation:**
+
+```yaml
+# Configure OpenShift node network to use NSX segment
+- name: Configure node interface for NSX segment
+  community.general.nmcli:
+    conn_name: nsx-overlay
+    type: ethernet
+    ifname: ens224
+    ip4: "{{ node_ip }}/24"
+    gw4: "{{ nsx_t1_gateway }}"  # NSX Tier-1 gateway IP
+    state: present
+
+# Add route to NSX-managed networks
+- name: Add route to NSX networks
+  ansible.builtin.command:
+    cmd: ip route add 10.0.0.0/8 via {{ nsx_t1_gateway }}
+  when: not ansible_check_mode
+```
+
+**Trade-offs:**
+| Pros | Cons |
+|------|------|
+| ✅ Preserves all NSX gateway features | ❌ Ongoing NSX licensing costs |
+| ✅ No redesign required | ❌ Dual network management platforms |
+| ✅ Proven routing and HA capabilities | ❌ Delayed NSX decommissioning |
+| ✅ Lower migration risk | ❌ Team needs skills for both platforms |
+
+##### Option B: External Load Balancer (Replace NSX Gateway)
+
+**When to use:**
+- Simple north-south routing (ingress traffic only)
+- Don't need BGP/OSPF dynamic routing
+- Want to eliminate NSX completely
+- Have budget for external load balancer (F5, HAProxy, MetalLB)
+
+**Architecture:**
+
+```
+┌─────────────────────────────────────────┐
+│  External Network                       │
+└─────────────┬───────────────────────────┘
+              │
+      ┌───────▼────────┐
+      │ F5 BIG-IP or   │ ← Replace NSX T0/T1
+      │ MetalLB        │
+      └───────┬────────┘
+              │
+    ┌─────────▼──────────┐
+    │ OpenShift Cluster  │
+    │                    │
+    │  ┌──────────────┐  │
+    │  │ OpenShift    │  │ ← Ingress Controller
+    │  │ Router       │  │
+    │  └──────┬───────┘  │
+    │         │          │
+    │  ┌──────▼───────┐  │
+    │  │ Pods/VMs     │  │
+    │  └──────────────┘  │
+    └────────────────────┘
+```
+
+**MetalLB implementation:**
+
+```yaml
+# Install MetalLB operator
+- name: Deploy MetalLB operator
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: metallb-system
+
+- name: Create MetalLB instance
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: metallb.io/v1beta1
+      kind: MetalLB
+      metadata:
+        name: metallb
+        namespace: metallb-system
+
+- name: Configure MetalLB IP address pool
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: metallb.io/v1beta1
+      kind: IPAddressPool
+      metadata:
+        name: external-pool
+        namespace: metallb-system
+      spec:
+        addresses:
+          - 192.168.1.240-192.168.1.250  # External IP range
+
+- name: Configure L2 advertisement
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: metallb.io/v1beta1
+      kind: L2Advertisement
+      metadata:
+        name: external-l2
+        namespace: metallb-system
+      spec:
+        ipAddressPools:
+          - external-pool
+```
+
+**Trade-offs:**
+| Pros | Cons |
+|------|------|
+| ✅ Eliminates NSX dependency | ❌ Requires new product/expertise |
+| ✅ Simplified management (single platform) | ❌ May lack NSX advanced features |
+| ✅ Lower total cost (if using MetalLB) | ❌ No BGP/OSPF in MetalLB L2 mode |
+| ✅ Cloud-native approach | ❌ MetalLB BGP mode has limitations vs NSX |
+
+##### Option C: Cloud-Native Redesign (No Gateway)
+
+**When to use:**
+- Greenfield deployment on public cloud
+- Simple connectivity requirements
+- Pod-to-pod communication only
+- Using cloud provider's load balancer
+
+**Architecture:**
+
+```
+┌─────────────────────────────────────────┐
+│  Cloud Provider Load Balancer (AWS ELB)│
+└─────────────┬───────────────────────────┘
+              │
+    ┌─────────▼──────────┐
+    │ OpenShift on AWS   │
+    │                    │
+    │  ┌──────────────┐  │
+    │  │ Service      │  │ ← LoadBalancer type service
+    │  │ (type: LB)   │  │
+    │  └──────┬───────┘  │
+    │         │          │
+    │  ┌──────▼───────┐  │
+    │  │ Pods         │  │
+    │  └──────────────┘  │
+    └────────────────────┘
+```
+
+**Implementation:**
+
+```yaml
+# Expose service with cloud load balancer
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-frontend
+  namespace: production
+spec:
+  type: LoadBalancer  # Cloud provider creates external LB
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: web
+```
+
+**Trade-offs:**
+| Pros | Cons |
+|------|------|
+| ✅ Fully cloud-native | ❌ Requires architecture redesign |
+| ✅ No gateway infrastructure to manage | ❌ Cloud provider lock-in |
+| ✅ Auto-scaling load balancer | ❌ Not suitable for on-premises |
+| ✅ Integrated with cloud networking | ❌ Limited control vs dedicated gateway |
+
+#### Tier Gateway Decision Matrix
+
+| Requirement | Hybrid NSX | External LB | Cloud-Native |
+|-------------|------------|-------------|--------------|
+| BGP/OSPF routing | ✅ | ⚠️ F5 only | ❌ |
+| Complex north-south | ✅ | ⚠️ Product-dependent | ❌ |
+| HA failover | ✅ | ✅ | ✅ |
+| Zero NSX cost | ❌ | ✅ | ✅ |
+| On-premises support | ✅ | ✅ | ❌ |
+| Quick migration | ✅ | ⚠️ Moderate | ❌ |
+
+---
+
+### 5.3 NAT Rules
+
+#### The Problem
+
+NSX-T provides NAT capabilities:
+- **Source NAT (SNAT)** for outbound traffic
+- **Destination NAT (DNAT)** for inbound traffic
+- **1:1 NAT mappings** for specific VMs
+- **Port-based NAT (PAT)** for address conservation
+
+**OpenShift has no built-in NAT capability.**
+
+#### Alternative Patterns
+
+##### Option A: Keep NSX for NAT (Hybrid)
+
+**When to use:**
+- Complex NAT requirements (1:1 mappings, custom rules)
+- Already using hybrid architecture for Tier Gateways
+- Need centralized NAT management
+
+This approach uses the same hybrid architecture as Tier Gateways (Section 5.2, Option A).
+
+**NSX NAT configuration remains in place:**
+
+```javascript
+// vRO workflow configures NSX NAT (unchanged)
+var nat = nsxManager.createNATRule("WebApp-SNAT");
+nat.setAction("SNAT");
+nat.setSourceNetwork("10.244.0.0/16");  // OpenShift pods
+nat.setTranslatedNetwork("192.168.1.100");  // Public IP
+```
+
+**Trade-offs:**
+- ✅ Preserves all NSX NAT features
+- ✅ No redesign required
+- ❌ Ongoing NSX costs
+- ❌ Dual management platforms
+
+##### Option B: External Router/Firewall NAT
+
+**When to use:**
+- Want to eliminate NSX but need NAT
+- Have existing physical/virtual router
+- Simple NAT requirements
+
+**Products:**
+- Cisco ASA
+- Palo Alto Networks
+- pfSense
+- Linux gateway with iptables
+
+**iptables NAT example:**
+
+```yaml
+# Configure Linux gateway for OpenShift NAT
+- name: Configure SNAT for OpenShift egress traffic
+  ansible.builtin.iptables:
+    table: nat
+    chain: POSTROUTING
+    source: 10.244.0.0/16  # OpenShift pod network
+    out_interface: eth0
+    jump: MASQUERADE
+    comment: "OpenShift egress SNAT"
+
+- name: Configure DNAT for ingress
+  ansible.builtin.iptables:
+    table: nat
+    chain: PREROUTING
+    protocol: tcp
+    destination_port: 443
+    to_destination: 192.168.1.50:443  # OpenShift router
+    jump: DNAT
+    comment: "HTTPS ingress to OpenShift"
+
+- name: Save iptables rules
+  ansible.builtin.command:
+    cmd: iptables-save > /etc/iptables/rules.v4
+```
+
+**Trade-offs:**
+- ✅ Eliminates NSX dependency
+- ✅ Uses existing network infrastructure
+- ❌ Requires router/firewall management
+- ❌ NAT rules separate from OpenShift
+
+##### Option C: Cloud Provider NAT Gateway
+
+**When to use:**
+- Deploying on public cloud (AWS, Azure, GCP)
+- Need egress NAT for outbound traffic
+- Want cloud-native solution
+
+**AWS NAT Gateway example:**
+
+```yaml
+# Ansible to provision AWS NAT Gateway
+- name: Create NAT Gateway for OpenShift egress
+  amazon.aws.ec2_vpc_nat_gateway:
+    subnet_id: "{{ public_subnet_id }}"
+    allocation_id: "{{ elastic_ip_allocation_id }}"
+    region: us-east-1
+    tags:
+      Name: "openshift-nat-gateway"
+  register: nat_gateway
+
+- name: Update route table for private subnets
+  amazon.aws.ec2_vpc_route_table:
+    vpc_id: "{{ vpc_id }}"
+    region: us-east-1
+    subnets:
+      - "{{ openshift_private_subnet_id }}"
+    routes:
+      - dest: 0.0.0.0/0
+        gateway_id: "{{ nat_gateway.nat_gateway_id }}"
+    tags:
+      Name: "openshift-private-routes"
+```
+
+**Trade-offs:**
+- ✅ Fully managed by cloud provider
+- ✅ High availability built-in
+- ✅ No NAT infrastructure to manage
+- ❌ Cloud provider lock-in
+- ❌ Not available for on-premises
+- ❌ Ongoing cloud costs
+
+##### Option D: Redesign to Eliminate NAT
+
+**When to use:**
+- Cloud-native deployment
+- Can use LoadBalancer services for ingress
+- Don't need address hiding/conservation
+
+**Best practice for Kubernetes:**
+
+```yaml
+# Ingress: Use LoadBalancer services (no DNAT needed)
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-app
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 443
+      targetPort: 8443
+  selector:
+    app: web
+
+# Egress: Pods use direct routing or egress IPs
+# OpenShift EgressIP for predictable source addressing
+apiVersion: k8s.ovn.org/v1
+kind: EgressIP
+metadata:
+  name: web-app-egress
+spec:
+  egressIPs:
+    - 192.168.1.200
+  namespaceSelector:
+    matchLabels:
+      name: production
+  podSelector:
+    matchLabels:
+      app: web
+```
+
+**Trade-offs:**
+- ✅ Cloud-native approach
+- ✅ No NAT infrastructure
+- ✅ Simplified networking
+- ❌ Requires architecture changes
+- ❌ May not meet compliance requirements (source IP hiding)
+
+#### NAT Decision Tree
+
+```
+What is your deployment environment?
+├─ On-premises → Do you have existing router/firewall?
+│   ├─ YES → Use external router NAT
+│   └─ NO → Already using hybrid NSX?
+│       ├─ YES → Keep NSX for NAT
+│       └─ NO → Consider redesign or add router/firewall
+│
+└─ Public cloud → Can you eliminate NAT requirement?
+    ├─ YES → Redesign with LoadBalancer + EgressIP
+    └─ NO → Use cloud provider NAT Gateway
+```
+
+---
+
+### 5.4 VPN Services
+
+#### The Problem
+
+NSX-T provides VPN services:
+- **IPSec site-to-site VPN** for datacenter connectivity
+- **SSL VPN** for remote user access
+- **L2 VPN** for stretched Layer 2 networks
+
+**OpenShift has no built-in VPN service.**
+
+#### Alternative Patterns
+
+##### Option A: External VPN Appliance
+
+**When to use:**
+- Enterprise VPN requirements
+- Need compliance/certification (FIPS, etc.)
+- Already have VPN infrastructure
+- Site-to-site connectivity critical
+
+**Products:**
+- Cisco ASA
+- Palo Alto Networks
+- Fortinet FortiGate
+- pfSense/OPNsense
+
+**Ansible configuration example (pfSense):**
+
+```yaml
+# Configure IPSec site-to-site VPN via pfSense API
+- name: Create IPSec Phase 1 configuration
+  ansible.builtin.uri:
+    url: "https://{{ pfsense_host }}/api/v1/services/ipsec/phase1"
+    method: POST
+    headers:
+      Authorization: "{{ pfsense_api_token }}"
+    body_format: json
+    body:
+      iketype: ikev2
+      protocol: inet
+      interface: wan
+      remote_gateway: "{{ remote_vpn_endpoint }}"
+      authentication_method: pre_shared_key
+      preshared_key: "{{ vpn_psk }}"
+      encryption_algorithm: aes256
+      hash_algorithm: sha256
+      dhgroup: 14
+
+- name: Create IPSec Phase 2 configuration
+  ansible.builtin.uri:
+    url: "https://{{ pfsense_host }}/api/v1/services/ipsec/phase2"
+    method: POST
+    headers:
+      Authorization: "{{ pfsense_api_token }}"
+    body_format: json
+    body:
+      mode: tunnel
+      local_subnet: "10.244.0.0/16"  # OpenShift pod network
+      remote_subnet: "{{ remote_network }}"
+      protocol: esp
+      encryption_algorithm: aes256
+      hash_algorithm: sha256
+```
+
+**Trade-offs:**
+- ✅ Enterprise-grade features
+- ✅ Compliance certifications
+- ✅ Centralized VPN management
+- ✅ Proven reliability
+- ❌ Additional hardware/licensing costs
+- ❌ Separate VPN infrastructure to manage
+
+##### Option B: Containerized VPN (Cloud-Native)
+
+**When to use:**
+- Simple VPN requirements
+- Want Kubernetes-native solution
+- Don't need enterprise VPN features
+- Development/testing environments
+
+**WireGuard in OpenShift:**
+
+```yaml
+# Deploy WireGuard VPN server as a pod
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wireguard-vpn
+  namespace: vpn
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wireguard
+  template:
+    metadata:
+      labels:
+        app: wireguard
+    spec:
+      containers:
+      - name: wireguard
+        image: linuxserver/wireguard:latest
+        securityContext:
+          capabilities:
+            add:
+              - NET_ADMIN
+              - SYS_MODULE
+          privileged: true
+        env:
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
+        - name: TZ
+          value: "America/New_York"
+        - name: SERVERURL
+          value: "vpn.example.com"
+        - name: PEERS
+          value: "10"  # Number of VPN clients
+        - name: PEERDNS
+          value: "auto"
+        - name: INTERNAL_SUBNET
+          value: "10.13.13.0/24"
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: modules
+          mountPath: /lib/modules
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: wireguard-config
+      - name: modules
+        hostPath:
+          path: /lib/modules
+
+---
+# Expose WireGuard with LoadBalancer
+apiVersion: v1
+kind: Service
+metadata:
+  name: wireguard-vpn
+  namespace: vpn
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 51820
+      targetPort: 51820
+      protocol: UDP
+      name: wireguard
+  selector:
+    app: wireguard
+```
+
+**Trade-offs:**
+- ✅ Kubernetes-native deployment
+- ✅ No separate infrastructure
+- ✅ Open source (no licensing)
+- ✅ Modern WireGuard protocol
+- ❌ Limited enterprise features
+- ❌ Manual certificate management
+- ❌ Not suitable for compliance-heavy environments
+
+##### Option C: Redesign to Eliminate VPN
+
+**When to use:**
+- VPN was used for remote access → Replace with OAuth/SSO
+- VPN was for site-to-site → Replace with direct routing/SD-WAN
+- VPN was for L2 stretch → Redesign for L3 routing
+
+**Remote access redesign:**
+
+```yaml
+# Replace SSL VPN with OpenShift OAuth + Identity Provider
+apiVersion: config.openshift.io/v1
+kind: OAuth
+metadata:
+  name: cluster
+spec:
+  identityProviders:
+  - name: corporate_ldap
+    type: LDAP
+    ldap:
+      attributes:
+        id: ["dn"]
+        email: ["mail"]
+        name: ["cn"]
+        preferredUsername: ["uid"]
+      bindDN: "cn=admin,dc=example,dc=com"
+      bindPassword:
+        name: ldap-secret
+      url: "ldaps://ldap.example.com:636/ou=users,dc=example,dc=com?uid"
+
+---
+# Users access via OpenShift Console (HTTPS) instead of VPN
+# Multi-factor authentication via identity provider
+# No VPN client needed
+```
+
+**Site-to-site connectivity redesign:**
+
+```yaml
+# Replace VPN with direct routing or SD-WAN
+# Configure BGP peering between datacenters
+- name: Configure BGP on OpenShift cluster
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: metallb.io/v1beta1
+      kind: BGPAdvertisement
+      metadata:
+        name: datacenter-peering
+        namespace: metallb-system
+      spec:
+        ipAddressPools:
+          - openshift-services
+        peers:
+          - 192.168.100.1  # Remote datacenter router
+        communities:
+          - 65000:100
+
+- name: Configure BGP peer
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: metallb.io/v1beta2
+      kind: BGPPeer
+      metadata:
+        name: remote-datacenter
+        namespace: metallb-system
+      spec:
+        peerAddress: 192.168.100.1
+        peerASN: 65001
+        myASN: 65000
+```
+
+**Trade-offs:**
+- ✅ No VPN infrastructure
+- ✅ Modern authentication (OAuth/SSO)
+- ✅ Better performance (no VPN overhead)
+- ✅ Simplified architecture
+- ❌ Requires network redesign
+- ❌ May need routing changes
+- ❌ Not always feasible (compliance, legacy systems)
+
+#### VPN Decision Tree
+
+```
+Why was VPN needed in vRO workflows?
+├─ Remote user access → Can you use OAuth/SSO instead?
+│   ├─ YES → Redesign with OpenShift OAuth + identity provider
+│   └─ NO (compliance requires VPN) → Use external VPN appliance
+│
+├─ Site-to-site connectivity → Can you use direct routing/SD-WAN?
+│   ├─ YES → Redesign with BGP or SD-WAN
+│   └─ NO → Use external VPN appliance
+│
+└─ L2 network stretch → Can you redesign for L3 routing?
+    ├─ YES → Redesign for Layer 3 networking (better for cloud-native)
+    └─ NO → Use external VPN appliance or keep NSX L2 VPN
+
+Special case: Simple dev/test VPN → Use containerized WireGuard
+```
+
+---
+
+### NSX Components: Overall Migration Decision Tree
+
+```
+What NSX component is your vRO workflow using?
+├─ Security Groups → See Section 5.1 decision tree
+├─ Tier Gateways (T0/T1) → See Section 5.2 decision matrix
+├─ NAT Rules → See Section 5.3 decision tree
+└─ VPN Services → See Section 5.4 decision tree
 ```
 
 ---

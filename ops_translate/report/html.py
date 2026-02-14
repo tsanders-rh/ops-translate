@@ -1127,24 +1127,36 @@ def get_pattern_link(component_type: str, component_name: str) -> dict[str, str]
     pattern_mappings = {
         # NSX Components
         "nsx_security_groups": {
-            "anchor": "pattern-5-nsx-security-components",
-            "description": "NSX Security & Networking Alternatives",
+            "anchor": "51-nsx-security-groups",
+            "description": "NSX Security Groups Migration",
         },
         "nsx_firewall_rules": {
-            "anchor": "pattern-5-nsx-security-components",
+            "anchor": "51-nsx-security-groups",
             "description": "NSX Firewall Migration Patterns",
         },
         "nsx_distributed_firewall": {
-            "anchor": "pattern-5-nsx-security-components",
+            "anchor": "51-nsx-security-groups",
             "description": "NSX Firewall Migration Patterns",
         },
         "nsx_load_balancers": {
-            "anchor": "pattern-5-nsx-security-components",
+            "anchor": "51-nsx-security-groups",
             "description": "NSX Load Balancer Alternatives",
         },
         "nsx_segments": {
-            "anchor": "pattern-5-nsx-security-components",
+            "anchor": "51-nsx-security-groups",
             "description": "NSX Networking Migration",
+        },
+        "nsx_tier_gateways": {
+            "anchor": "52-tier-gateways-t0t1",
+            "description": "NSX Tier Gateway Alternatives",
+        },
+        "nsx_nat_rules": {
+            "anchor": "53-nat-rules",
+            "description": "NAT Migration Patterns",
+        },
+        "nsx_vpn": {
+            "anchor": "54-vpn-services",
+            "description": "VPN Architecture Options",
         },
         # Workflow patterns
         "workflow_delay": {
@@ -1184,7 +1196,7 @@ def get_pattern_link(component_type: str, component_name: str) -> dict[str, str]
     component_type_lower = component_type.lower()
     if "nsx" in component_type_lower:
         return {
-            "anchor": "pattern-5-nsx-security-components",
+            "anchor": "pattern-5-nsx-networking--infrastructure-components",
             "description": "NSX Migration Patterns",
         }
     elif "approval" in component_type_lower or "user_interaction" in component_type_lower:
