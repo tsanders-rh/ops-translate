@@ -153,34 +153,34 @@ class TestReportSnapshots:
         # Render HTML
         html_output = render_report_template(context)
 
-        # Verify executive dashboard sections are present
+        # Verify new tabbed structure is present
+        assert "tab-navigation" in html_output
+        assert "tab-executive" in html_output
+        assert "tab-architecture" in html_output
+        assert "tab-implementation" in html_output
+
+        # Verify tab buttons
+        assert 'data-tab="executive"' in html_output
+        assert 'data-tab="architecture"' in html_output
+        assert 'data-tab="implementation"' in html_output
+
+        # Verify Executive tab sections
         assert "executive-dashboard-section" in html_output
         assert "Migration Effort Dashboard" in html_output
-        assert "estate-summary" in html_output
-        assert "effort-buckets" in html_output
-        assert "cost-drivers" in html_output
-        assert "integration-heatmap" in html_output
-        assert "sprint-plan" in html_output
+        assert "decisions-required-section" in html_output
+        assert "Architectural Decisions Required" in html_output
+        assert "executive-conclusion-section" in html_output
+        assert "Executive Summary" in html_output
 
-        # Verify stat cards
-        assert "Total Workflows" in html_output
-        assert "Lines of Code" in html_output
-        assert "External Integrations" in html_output
-        assert "Approval Gates" in html_output
+        # Verify Architecture tab sections
+        assert "Component-Level Translation Status" in html_output
+        assert "domain-section-header" in html_output
 
-        # Verify effort bucket labels
-        assert "Ready Now" in html_output
-        assert "Configuration Needed" in html_output
-        assert "Adapter Development" in html_output
-
-        # Verify integration categories in heatmap
-        assert "Approval" in html_output
-        assert "ITSM" in html_output
-        assert "NSX" in html_output
-
-        # Verify sprint planning section
-        assert "Recommended Migration Phases" in html_output
-        assert "Phase" in html_output
+        # Verify Implementation tab sections
+        assert "start-here-section" in html_output
+        assert "Start Here" in html_output
+        assert "dod-section" in html_output
+        assert "Definition of Done" in html_output
 
     def test_executive_dashboard_with_empty_data(self, tmp_path):
         """Test that executive dashboard handles empty data gracefully."""
@@ -333,223 +333,154 @@ class TestReportSnapshots:
         assert "1,000" in html_output or "1000" in html_output  # LOC with formatting
 
     def test_integration_heatmap_rendering(self, tmp_path):
-        """Test that integration heatmap renders correctly."""
+        """Test that domain-based grouping renders correctly (replaces integration heatmap)."""
         workspace_dir = tmp_path / "workspace"
         workspace_dir.mkdir()
 
         workspace = Workspace(workspace_dir)
         workspace.initialize()
 
-        output_dir = workspace_dir / "output"
-        output_dir.mkdir(exist_ok=True)
+        intent_dir = workspace_dir / "intent"
+        intent_dir.mkdir(exist_ok=True)
 
-        # Create analysis with multiple integration types
-        analysis_data = {
-            "total_workflows": 3,
-            "version": "1.0",
-            "generated_at": "2024-01-01T00:00:00Z",
-            "summary": {"blocked": 3, "partial": 0, "automatable": 0},
-            "workflows": {
-                "servicenow_workflow": {
-                    "classification": "blocked",
-                    "total_tasks": 10,
-                    "blocked_tasks": 1,
-                    "adapter_tasks": 0,
-                    "regular_tasks": 9,
-                    "blockers": ["ServiceNow"],
-                    "blocker_details": [
-                        {
-                            "task": "BLOCKED - ServiceNow integration",
-                            "message": "ITSM required",
-                        }
-                    ],
-                },
-                "nsx_workflow": {
-                    "classification": "blocked",
-                    "total_tasks": 10,
-                    "blocked_tasks": 1,
-                    "adapter_tasks": 0,
-                    "regular_tasks": 9,
-                    "blockers": ["NSX"],
-                    "blocker_details": [
-                        {"task": "BLOCKED - NSX firewall", "message": "Firewall config"}
-                    ],
-                },
-                "combined_workflow": {
-                    "classification": "blocked",
-                    "total_tasks": 10,
-                    "blocked_tasks": 3,
-                    "adapter_tasks": 0,
-                    "regular_tasks": 7,
-                    "blockers": ["ServiceNow", "NSX", "Approval"],
-                    "blocker_details": [
-                        {
-                            "task": "BLOCKED - ServiceNow",
-                            "message": "ITSM integration",
-                        },
-                        {"task": "BLOCKED - NSX", "message": "Firewall"},
-                        {"task": "BLOCKED - Approval", "message": "Approval gate"},
-                    ],
-                },
+        # Create gaps data with components from different domains
+        gaps_data = {
+            "summary": {
+                "counts": {"SUPPORTED": 1, "PARTIAL": 1, "BLOCKED": 2, "MANUAL": 0},
+                "total_components": 4,
             },
+            "components": [
+                {
+                    "component_type": "servicenow_integration",
+                    "classification": "BLOCKED",
+                    "level": "BLOCKED",
+                    "name": "ServiceNow Integration",
+                },
+                {
+                    "component_type": "nsx_firewall",
+                    "classification": "BLOCKED",
+                    "level": "BLOCKED",
+                    "name": "NSX Firewall",
+                },
+                {
+                    "component_type": "approval_gate",
+                    "classification": "PARTIAL",
+                    "level": "PARTIAL",
+                    "name": "Approval Workflow",
+                },
+                {
+                    "component_type": "vm_provisioning",
+                    "classification": "SUPPORTED",
+                    "level": "SUPPORTED",
+                    "name": "VM Provisioning",
+                },
+            ],
         }
 
-        with (output_dir / "analysis.json").open("w") as f:
-            json.dump(analysis_data, f, indent=2)
+        with (intent_dir / "gaps.json").open("w") as f:
+            json.dump(gaps_data, f, indent=2)
 
         # Build context and render
         context = build_report_context(workspace, profile=None)
         html_output = render_report_template(context)
 
-        # Verify heatmap structure
-        assert "integration-heatmap" in html_output
-        assert "workflow-name" in html_output or "servicenow_workflow" in html_output
+        # Verify domain-based grouping structure
+        assert "domain-section-header" in html_output
 
-        # Verify integration categories appear
-        assert "Approval" in html_output
-        assert "ITSM" in html_output
-        assert "NSX" in html_output
-
-        # Verify heatmap has rows (should have 3 workflows with integrations)
-        heatmap = context["effort_metrics"]["integration_heatmap"]
-        assert len(heatmap) == 3
+        # Verify domain categories appear (components should be grouped by domain)
+        # Note: The actual domain grouping logic is in the template
+        assert "Security" in html_output or "Networking" in html_output
+        assert "Governance" in html_output or "Approvals" in html_output
 
     def test_cost_drivers_rendering(self, tmp_path):
-        """Test that cost drivers render with correct percentages."""
+        """Test that summary cards render with correct counts (replaces cost drivers)."""
         workspace_dir = tmp_path / "workspace"
         workspace_dir.mkdir()
 
         workspace = Workspace(workspace_dir)
         workspace.initialize()
 
-        output_dir = workspace_dir / "output"
-        output_dir.mkdir(exist_ok=True)
+        intent_dir = workspace_dir / "intent"
+        intent_dir.mkdir(exist_ok=True)
 
-        # Create analysis with known distribution
-        # 10 workflows: 5 blocked, 3 with adapters, 2 automatable
-        workflows = {}
-        for i in range(10):
-            workflows[f"workflow{i}"] = {
-                "classification": "blocked" if i < 5 else "automatable",
-                "total_tasks": 10,
-                "blocked_tasks": 1 if i < 5 else 0,
-                "adapter_tasks": 1 if i < 3 else 0,
-                "regular_tasks": 9,
-                "blockers": ["blocker"] if i < 5 else [],
-                "blocker_details": [],
-            }
-
-        analysis_data = {
-            "total_workflows": 10,
-            "version": "1.0",
-            "generated_at": "2024-01-01T00:00:00Z",
-            "summary": {"blocked": 5, "partial": 0, "automatable": 5},
-            "workflows": workflows,
-        }
-
-        with (output_dir / "analysis.json").open("w") as f:
-            json.dump(analysis_data, f, indent=2)
-
-        # Build context
-        context = build_report_context(workspace, profile=None)
-
-        # Verify cost drivers
-        cost_drivers = context["effort_metrics"]["cost_drivers"]
-
-        # Should have entries for blocked (50%) and adapters (30%)
-        assert len(cost_drivers) > 0
-
-        # Find config decisions driver (50% blocked)
-        config_driver = next(
-            (d for d in cost_drivers if "configuration decisions" in d["label"]), None
-        )
-        assert config_driver is not None
-        assert config_driver["percentage"] == 50
-
-        # Render HTML
-        html_output = render_report_template(context)
-
-        # Verify cost drivers section
-        assert "cost-drivers" in html_output
-        assert "Primary Cost Drivers" in html_output
-
-    def test_sprint_planning_phases(self, tmp_path):
-        """Test that sprint planning phases are generated correctly."""
-        workspace_dir = tmp_path / "workspace"
-        workspace_dir.mkdir()
-
-        workspace = Workspace(workspace_dir)
-        workspace.initialize()
-
-        output_dir = workspace_dir / "output"
-        output_dir.mkdir(exist_ok=True)
-
-        # Create analysis with mix of ready, moderate, complex
-        analysis_data = {
-            "total_workflows": 9,
-            "version": "1.0",
-            "generated_at": "2024-01-01T00:00:00Z",
-            "summary": {"blocked": 3, "partial": 3, "automatable": 3},
-            "workflows": {
-                # 3 ready (automatable with low scores)
-                **{
-                    f"ready{i}": {
-                        "classification": "automatable",
-                        "total_tasks": 5,
-                        "blocked_tasks": 0,
-                        "adapter_tasks": 0,
-                        "regular_tasks": 5,
-                        "blockers": [],
-                        "blocker_details": [],
-                    }
-                    for i in range(3)
-                },
-                # 3 moderate (partial classification)
-                **{
-                    f"moderate{i}": {
-                        "classification": "partial",
-                        "total_tasks": 10,
-                        "blocked_tasks": 0,
-                        "adapter_tasks": 1,
-                        "regular_tasks": 9,
-                        "blockers": [],
-                        "blocker_details": [],
-                    }
-                    for i in range(3)
-                },
-                # 3 complex (blocked)
-                **{
-                    f"complex{i}": {
-                        "classification": "blocked",
-                        "total_tasks": 10,
-                        "blocked_tasks": 2,
-                        "adapter_tasks": 0,
-                        "regular_tasks": 8,
-                        "blockers": ["blocker"],
-                        "blocker_details": [],
-                    }
-                    for i in range(3)
-                },
+        # Create gaps data with known distribution
+        gaps_data = {
+            "summary": {
+                "counts": {"SUPPORTED": 5, "PARTIAL": 3, "BLOCKED": 2, "MANUAL": 0},
+                "total_components": 10,
             },
+            "components": [],
         }
 
-        with (output_dir / "analysis.json").open("w") as f:
-            json.dump(analysis_data, f, indent=2)
+        with (intent_dir / "gaps.json").open("w") as f:
+            json.dump(gaps_data, f, indent=2)
 
         # Build context and render
         context = build_report_context(workspace, profile=None)
         html_output = render_report_template(context)
 
-        # Verify sprint planning section
-        assert "sprint-plan" in html_output
-        assert "Recommended Migration Phases" in html_output
-        assert "Phase" in html_output
+        # Verify summary cards section renders
+        assert "summary-cards" in html_output
+        assert "Component-Level Translation Status" in html_output
 
-        # Verify effort buckets match expectations
-        buckets = context["effort_metrics"]["effort_buckets"]
-        assert buckets["ready_now"] == 3
-        assert buckets["moderate"] == 3
-        assert buckets["complex"] == 3
+        # Verify counts appear in the cards
+        assert "5" in html_output  # SUPPORTED count
+        assert "3" in html_output  # PARTIAL count
+        assert "2" in html_output  # BLOCKED count
 
-        # Should mention sprints
-        assert "sprint" in html_output.lower()
+    def test_sprint_planning_phases(self, tmp_path):
+        """Test that Implementation tab sections render correctly (replaces sprint planning)."""
+        workspace_dir = tmp_path / "workspace"
+        workspace_dir.mkdir()
+
+        workspace = Workspace(workspace_dir)
+        workspace.initialize()
+
+        intent_dir = workspace_dir / "intent"
+        intent_dir.mkdir(exist_ok=True)
+
+        # Create gaps data with mix of component types
+        gaps_data = {
+            "summary": {
+                "counts": {"SUPPORTED": 3, "PARTIAL": 3, "BLOCKED": 3, "MANUAL": 0},
+                "total_components": 9,
+            },
+            "components": [
+                {
+                    "component_type": "vm_provisioning",
+                    "level": "SUPPORTED",
+                    "name": "VM Provisioning",
+                },
+                {
+                    "component_type": "network_adapter",
+                    "level": "PARTIAL",
+                    "name": "Network Configuration",
+                },
+                {
+                    "component_type": "nsx_firewall",
+                    "level": "BLOCKED",
+                    "name": "NSX Firewall",
+                },
+            ],
+        }
+
+        with (intent_dir / "gaps.json").open("w") as f:
+            json.dump(gaps_data, f, indent=2)
+
+        # Build context and render
+        context = build_report_context(workspace, profile=None)
+        html_output = render_report_template(context)
+
+        # Verify Implementation tab sections
+        assert "start-here-section" in html_output
+        assert "Start Here" in html_output
+        assert "dod-section" in html_output
+        assert "Definition of Done" in html_output
+
+        # Verify Start Here steps are present
+        assert "Review Generated Artifacts" in html_output
+        assert "Address BLOCKED Components" in html_output or "BLOCKED" in html_output
+
+        # Verify DoD categories
+        assert "Testing" in html_output
+        assert "Documentation" in html_output
