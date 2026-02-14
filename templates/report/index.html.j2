@@ -1301,6 +1301,106 @@
         <!-- Implementation Tab -->
         <div id="tab-implementation" class="tab-panel" role="tabpanel" aria-labelledby="tab-implementation">
 
+    <!-- Start Here Section -->
+    <section class="start-here-section">
+        <div class="container">
+            <div class="start-here-box">
+                <h2>🚀 Start Here</h2>
+                <p class="start-here-intro">
+                    This tab contains everything you need to implement the migration. Follow these steps in order.
+                </p>
+
+                <div class="implementation-steps-grid">
+                    <div class="impl-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h3>Review Generated Artifacts</h3>
+                            <p>Examine the Ansible playbooks and KubeVirt manifests below</p>
+                        </div>
+                    </div>
+                    <div class="impl-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h3>Validate Configuration</h3>
+                            <p>Run <code>ops-translate dry-run</code> to check for issues</p>
+                        </div>
+                    </div>
+                    <div class="impl-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h3>Deploy to Lab</h3>
+                            <p>Apply manifests in a non-production environment first</p>
+                        </div>
+                    </div>
+                    <div class="impl-step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h3>Verify & Test</h3>
+                            <p>Use the Definition-of-Done checklist below</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Definition of Done -->
+    <section class="dod-section">
+        <div class="container">
+            <h2>✅ Definition of Done</h2>
+            <p class="section-subtitle">Check off these items before promoting to production:</p>
+
+            <div class="dod-checklist">
+                <div class="dod-category">
+                    <h3>🧪 Testing</h3>
+                    <ul class="dod-items">
+                        <li><input type="checkbox" disabled> VMs boot successfully in lab environment</li>
+                        <li><input type="checkbox" disabled> Network connectivity verified (all NICs functional)</li>
+                        <li><input type="checkbox" disabled> Storage volumes attached and accessible</li>
+                        <li><input type="checkbox" disabled> Ansible playbooks execute without errors</li>
+                        {% if gaps and gaps.components | selectattr('level', 'equalto', 'BLOCKED') | list | length > 0 %}
+                        <li><input type="checkbox" disabled> Custom implementations tested for BLOCKED components</li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <div class="dod-category">
+                    <h3>📋 Documentation</h3>
+                    <ul class="dod-items">
+                        <li><input type="checkbox" disabled> Runbooks created for operational tasks</li>
+                        <li><input type="checkbox" disabled> Architectural decisions documented</li>
+                        <li><input type="checkbox" disabled> Custom role implementations documented</li>
+                        {% if assumptions_md %}
+                        <li><input type="checkbox" disabled> Assumptions validated with stakeholders</li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <div class="dod-category">
+                    <h3>🔒 Security & Compliance</h3>
+                    <ul class="dod-items">
+                        <li><input type="checkbox" disabled> NetworkPolicies reviewed and approved</li>
+                        <li><input type="checkbox" disabled> RBAC permissions validated</li>
+                        <li><input type="checkbox" disabled> Secret management strategy confirmed</li>
+                        {% if gaps and gaps.components | selectattr('component_type', 'search', 'approval') | list | length > 0 %}
+                        <li><input type="checkbox" disabled> Approval workflows configured and tested</li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <div class="dod-category">
+                    <h3>🎯 Acceptance Criteria</h3>
+                    <ul class="dod-items">
+                        <li><input type="checkbox" disabled> All functional requirements met</li>
+                        <li><input type="checkbox" disabled> Performance acceptable (CPU, memory, I/O)</li>
+                        <li><input type="checkbox" disabled> Monitoring and alerting configured</li>
+                        <li><input type="checkbox" disabled> Rollback plan tested and documented</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Generated Artifacts -->
     {% if artifacts.kubevirt or artifacts.ansible %}
     <section class="artifacts-section layer-3">
