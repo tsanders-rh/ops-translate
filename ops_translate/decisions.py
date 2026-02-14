@@ -96,9 +96,7 @@ class DecisionManager:
         """
         schema_file = PROJECT_ROOT / "schema/decisions.schema.json"
         if not schema_file.exists():
-            logger.warning(
-                f"Decisions schema file not found: {schema_file}. Skipping validation."
-            )
+            logger.warning(f"Decisions schema file not found: {schema_file}. Skipping validation.")
             return
 
         schema = json.loads(schema_file.read_text())
@@ -210,9 +208,7 @@ class DecisionManager:
 
         # NSX Security Groups → Check for label taxonomy decisions
         if "nsx" in comp_type and "group" in comp_type:
-            if security_decisions.get("label_key") and security_decisions.get(
-                "namespace_model"
-            ):
+            if security_decisions.get("label_key") and security_decisions.get("namespace_model"):
                 # Upgrade BLOCKED → PARTIAL (still need manual NetworkPolicy creation)
                 if current_level == "BLOCKED":
                     updated["level"] = "PARTIAL"
@@ -279,9 +275,7 @@ class DecisionManager:
             summary["categories"][category] = {
                 "total_fields": len(fields),
                 "filled_fields": filled_fields,
-                "completion_pct": int((filled_fields / len(fields)) * 100)
-                if fields
-                else 0,
+                "completion_pct": int((filled_fields / len(fields)) * 100) if fields else 0,
             }
 
         return summary
