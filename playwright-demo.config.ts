@@ -13,10 +13,11 @@ export default defineConfig({
     trace: "on",
     video: {
       mode: "on",
-      size: { width: 1920, height: 1080 }, // Force full HD video recording
+      size: { width: 2560, height: 1440 }, // Record at 2K for supersampling
     },
     screenshot: "on",
-    viewport: { width: 1920, height: 1080 }, // Full HD viewport
+    viewport: { width: 2560, height: 1440 }, // 2K viewport
+    deviceScaleFactor: 1, // Standard DPI (viewport already large enough)
     // Slow down interactions for better visibility
     launchOptions: {
       slowMo: 500, // 500ms delay between actions
@@ -33,7 +34,8 @@ export default defineConfig({
       name: "chromium-demo",
       use: {
         browserName: "chromium",
-        viewport: { width: 1920, height: 1080 },
+        viewport: { width: 2560, height: 1440 },
+        deviceScaleFactor: 1,
       },
     },
   ],

@@ -71,10 +71,25 @@ if [ -n "$LATEST_VIDEO" ]; then
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             MP4_VIDEO="${DEMO_VIDEO%.webm}.mp4"
-            echo -e "${YELLOW}Converting to MP4 (high quality)...${NC}"
-            # Use high quality settings: CRF 18 (visually lossless), slow preset
-            ffmpeg -i "$DEMO_VIDEO" -c:v libx264 -preset slow -crf 18 -c:a aac -b:a 192k "$MP4_VIDEO" -y
-            echo -e "${GREEN}MP4 saved to:${NC} $MP4_VIDEO"
+            echo -e "${YELLOW}Converting to MP4 (1920x1080, high quality)...${NC}"
+            # High quality settings optimized for laptop screens:
+            # - Downscale from 2560x1440 to 1920x1080 using lanczos (best quality)
+            # - CRF 17 (near-lossless quality)
+            # - slower preset (best compression efficiency)
+            # - High profile H.264 for better quality
+            # - pix_fmt yuv420p for broad compatibility
+            # - faststart for web streaming
+            ffmpeg -i "$DEMO_VIDEO" \
+                -vf "scale=1920:1080:flags=lanczos" \
+                -c:v libx264 \
+                -preset slower \
+                -crf 17 \
+                -profile:v high \
+                -pix_fmt yuv420p \
+                -movflags +faststart \
+                -c:a aac -b:a 192k \
+                "$MP4_VIDEO" -y
+            echo -e "${GREEN}MP4 saved to:${NC} $MP4_VIDEO (1920x1080)"
 
             # Show comparison
             MP4_SIZE=$(du -h "$MP4_VIDEO" | cut -f1)

@@ -141,7 +141,8 @@ async function highlightElement(page: any, selector: string, duration: number = 
 
 test.describe("HTML report annotated demo", () => {
   test.use({
-    viewport: { width: 1920, height: 1080 },
+    viewport: { width: 2560, height: 1440 },
+    deviceScaleFactor: 1,
   });
 
   test("annotated: complete walkthrough with explanations", async ({ page }) => {

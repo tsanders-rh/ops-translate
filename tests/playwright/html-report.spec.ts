@@ -204,7 +204,8 @@ test.describe("ops-translate HTML report demo", () => {
  */
 test.describe("HTML report demo mode (presentation)", () => {
   test.use({
-    viewport: { width: 1920, height: 1080 },
+    viewport: { width: 2560, height: 1440 },
+    deviceScaleFactor: 1,
   });
 
   test("demo mode: interactive filtering walkthrough", async ({ page }) => {
