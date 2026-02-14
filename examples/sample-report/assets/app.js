@@ -15,12 +15,108 @@
     }
 
     function init() {
+        setupTabSwitching();
         setupCardFiltering();
         setupClearFilterButton();
         setupViewFindingsLinks();
         setupExportButtons();
         setupSupportedToggle();
         setupInterviewQuestions();
+        setupDecisionInterview();
+    }
+
+    /**
+     * Setup tab switching functionality
+     */
+    function setupTabSwitching() {
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const tabPanels = document.querySelectorAll('.tab-panel');
+
+        if (tabButtons.length === 0 || tabPanels.length === 0) {
+            return;  // No tabs to set up
+        }
+
+        // Handle tab button clicks
+        tabButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const targetTab = this.dataset.tab;
+                switchToTab(targetTab);
+            });
+
+            // Keyboard navigation
+            button.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    const buttons = Array.from(tabButtons);
+                    const currentIndex = buttons.indexOf(this);
+                    let nextIndex;
+
+                    if (e.key === 'ArrowRight') {
+                        nextIndex = (currentIndex + 1) % buttons.length;
+                    } else {
+                        nextIndex = (currentIndex - 1 + buttons.length) % buttons.length;
+                    }
+
+                    buttons[nextIndex].focus();
+                    buttons[nextIndex].click();
+                }
+            });
+        });
+
+        // Handle hash navigation (e.g., #tab-architecture)
+        function handleHashChange() {
+            const hash = window.location.hash;
+            if (hash.startsWith('#tab-')) {
+                const tabName = hash.substring(5); // Remove '#tab-'
+                switchToTab(tabName);
+            } else if (hash) {
+                // Find which tab contains this anchor
+                const targetElement = document.querySelector(hash);
+                if (targetElement) {
+                    tabPanels.forEach(panel => {
+                        if (panel.contains(targetElement)) {
+                            const tabName = panel.id.substring(4); // Remove 'tab-'
+                            switchToTab(tabName);
+                        }
+                    });
+                }
+            }
+        }
+
+        // Switch to tab function
+        function switchToTab(tabName) {
+            // Update buttons
+            tabButtons.forEach(btn => {
+                if (btn.dataset.tab === tabName) {
+                    btn.classList.add('active');
+                    btn.setAttribute('aria-selected', 'true');
+                } else {
+                    btn.classList.remove('active');
+                    btn.setAttribute('aria-selected', 'false');
+                }
+            });
+
+            // Update panels
+            tabPanels.forEach(panel => {
+                if (panel.id === `tab-${tabName}`) {
+                    panel.classList.add('active');
+                } else {
+                    panel.classList.remove('active');
+                }
+            });
+
+            // Scroll to top of tab navigation
+            const tabNav = document.querySelector('.tab-navigation');
+            if (tabNav) {
+                tabNav.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        // Handle initial hash on load
+        handleHashChange();
+
+        // Listen for hash changes
+        window.addEventListener('hashchange', handleHashChange);
     }
 
     /**
@@ -415,6 +511,143 @@
             button.textContent = originalText;
             button.classList.remove('copied');
         }, 2000);
+    }
+
+    /**
+     * Setup Decision Interview functionality
+     */
+    function setupDecisionInterview() {
+        const saveBtn = document.getElementById('save-decisions-btn');
+        const rerunBtn = document.getElementById('rerun-translate-btn');
+        const statusDiv = document.getElementById('decision-save-status');
+
+        if (!saveBtn) {
+            return;  // Decision Interview tab not present
+        }
+
+        // Collect all form inputs
+        function collectDecisions() {
+            const decisions = {};
+            const questionPacks = document.querySelectorAll('.question-pack');
+
+            questionPacks.forEach(pack => {
+                const packId = pack.getAttribute('data-pack');
+                const inputs = pack.querySelectorAll('input, select, textarea');
+
+                inputs.forEach(input => {
+                    const name = input.getAttribute('name');
+                    if (!name) return;
+
+                    let value;
+                    if (input.type === 'checkbox') {
+                        // For checkboxes, collect all checked values
+                        if (input.checked) {
+                            if (!decisions[name]) {
+                                decisions[name] = [];
+                            }
+                            decisions[name].push(input.value);
+                        }
+                    } else {
+                        value = input.value.trim();
+                        if (value) {
+                            decisions[name] = value;
+                        }
+                    }
+                });
+            });
+
+            return decisions;
+        }
+
+        // Generate YAML from decisions
+        function generateDecisionsYAML(decisions) {
+            const lines = ['# ops-translate Decision Interview Responses'];
+            lines.push('# Generated: ' + new Date().toISOString());
+            lines.push('# Workspace: ' + (window.reportData?.workspace || 'unknown'));
+            lines.push('');
+            lines.push('schema_version: 1');
+            lines.push('decisions:');
+
+            // Group by category (security, governance, networking, firewall)
+            const categories = {};
+            for (const [key, value] of Object.entries(decisions)) {
+                const category = key.split('.')[0];
+                if (!categories[category]) {
+                    categories[category] = {};
+                }
+                categories[category][key] = value;
+            }
+
+            for (const [category, fields] of Object.entries(categories)) {
+                lines.push(`  ${category}:`);
+                for (const [key, value] of Object.entries(fields)) {
+                    const fieldName = key.split('.').slice(1).join('.');
+                    if (Array.isArray(value)) {
+                        lines.push(`    ${fieldName}:`);
+                        value.forEach(v => lines.push(`      - ${v}`));
+                    } else if (typeof value === 'string' && value.includes('\n')) {
+                        // Multi-line string
+                        lines.push(`    ${fieldName}: |`);
+                        value.split('\n').forEach(line => lines.push(`      ${line}`));
+                    } else {
+                        lines.push(`    ${fieldName}: ${value}`);
+                    }
+                }
+            }
+
+            return lines.join('\n');
+        }
+
+        // Save decisions handler
+        saveBtn.addEventListener('click', function() {
+            const decisions = collectDecisions();
+
+            if (Object.keys(decisions).length === 0) {
+                showStatus('error', '❌ No decisions to save. Please answer at least one question.');
+                return;
+            }
+
+            const yaml = generateDecisionsYAML(decisions);
+
+            // Create a downloadable file
+            const blob = new Blob([yaml], { type: 'text/yaml;charset=utf-8;' });
+            const link = document.createElement('a');
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+            const filename = `decisions-${timestamp}.yaml`;
+
+            if (navigator.msSaveBlob) {
+                // IE 10+
+                navigator.msSaveBlob(blob, filename);
+            } else {
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            showStatus('success', `✅ Decisions saved to ${filename}. Move this file to your workspace/.ops-translate/ directory.`);
+
+            // Enable re-run button
+            rerunBtn.disabled = false;
+        });
+
+        // Re-run translation handler
+        rerunBtn.addEventListener('click', function() {
+            showStatus('error', '⚠️ Re-run requires CLI command. Run: ops-translate analyze --use-decisions');
+        });
+
+        function showStatus(type, message) {
+            statusDiv.className = `save-status ${type}`;
+            statusDiv.textContent = message;
+            statusDiv.classList.remove('hidden');
+
+            // Auto-hide after 10 seconds
+            setTimeout(() => {
+                statusDiv.classList.add('hidden');
+            }, 10000);
+        }
     }
 
 })();

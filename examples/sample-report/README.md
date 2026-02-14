@@ -9,6 +9,7 @@ An interactive HTML report demonstrating ops-translate's analysis capabilities:
 - **Translation status** across multiple PowerCLI scripts and vRealize workflows
 - **Expert recommendations** for complex migration scenarios
 - **Gap analysis** with migration paths and OpenShift equivalents
+- **Decision Interview** - Interactive questionnaire for BLOCKED/PARTIAL components
 - **Progressive disclosure** layers (Executive → Architecture → Implementation)
 - **Interactive features** including filters, collapsible sections, and exports
 
@@ -77,13 +78,14 @@ When viewing the report, notice:
 1. **Executive Summary Cards** - Quick overview of translation status
 2. **Migration Story** - Real counts from this workspace analysis
 3. **Target Architecture** - Explicit end-state mappings
-4. **Expert Recommendations** - Production-grade patterns organized by team
-5. **Gap Analysis** - Detailed component-by-component breakdown
-6. **Interactive Filters** - Click cards to filter, use team filters
-7. **Collapsible Sections** - Layer 3 details expand on demand
-8. **SUPPORTED Toggle** - Show/hide fully-supported patterns
-9. **Evidence Links** - Source file locations with line numbers
-10. **Export Options** - PDF print and CSV download
+4. **Decision Interview Tab** - Interactive forms to provide missing context for BLOCKED/PARTIAL components
+5. **Expert Recommendations** - Production-grade patterns organized by team
+6. **Gap Analysis** - Detailed component-by-component breakdown
+7. **Interactive Filters** - Click cards to filter, use team filters
+8. **Collapsible Sections** - Layer 3 details expand on demand
+9. **SUPPORTED Toggle** - Show/hide fully-supported patterns
+10. **Evidence Links** - Source file locations with line numbers
+11. **Export Options** - PDF print and CSV download
 
 ## Multi-Audience Design
 
@@ -97,9 +99,9 @@ The report serves different stakeholders:
 
 This sample workspace contains:
 - **8 source files** (4 PowerCLI, 4 vRealize)
-- **31 classified components** analyzed
-- **23 SUPPORTED** components (auto-translatable)
+- **30 classified components** analyzed
+- **22 SUPPORTED** components (auto-translatable)
 - **7 PARTIAL** components (need configuration)
-- **1 EXPERT-GUIDED** component (production pattern available)
+- **1 BLOCKED** component (needs decision input)
 
 These numbers demonstrate ops-translate's ability to analyze complex real-world scenarios and provide actionable migration guidance.
