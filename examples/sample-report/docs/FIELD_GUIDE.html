@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Field Guide</title>
+    <link rel="stylesheet" href="../assets/style.css">
+    <style>
+        .doc-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--spacing-xl);
+            background: white;
+        }
+        .doc-header {
+            margin-bottom: var(--spacing-xl);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 2px solid #0c4a6e;
+        }
+        .doc-nav {
+            margin-bottom: var(--spacing-lg);
+            padding: var(--spacing-md);
+            background: #f0f9ff;
+            border-radius: 8px;
+        }
+        .doc-nav a {
+            color: #0c4a6e;
+            text-decoration: none;
+            margin-right: var(--spacing-md);
+        }
+        .doc-nav a:hover {
+            text-decoration: underline;
+        }
+        .doc-content {
+            line-height: 1.8;
+        }
+        .doc-content h2 {
+            margin-top: var(--spacing-xl);
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid #e2e8f0;
+        }
+        .doc-content h3 {
+            margin-top: var(--spacing-lg);
+            color: #0c4a6e;
+        }
+        .doc-content h4 {
+            margin-top: var(--spacing-md);
+            color: #0369a1;
+            font-weight: 600;
+        }
+        .doc-content code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .doc-content pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: var(--spacing-md);
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: var(--spacing-md) 0;
+        }
+        .doc-content pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        .doc-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: var(--spacing-md) 0;
+        }
+        .doc-content th, .doc-content td {
+            border: 1px solid #cbd5e1;
+            padding: var(--spacing-sm);
+            text-align: left;
+        }
+        .doc-content th {
+            background: #f1f5f9;
+            font-weight: 600;
+        }
+        .doc-content ul, .doc-content ol {
+            margin: var(--spacing-md) 0;
+            padding-left: var(--spacing-xl);
+        }
+        .doc-content li {
+            margin: var(--spacing-xs) 0;
+        }
+        .doc-content blockquote {
+            border-left: 4px solid #0c4a6e;
+            padding-left: var(--spacing-md);
+            margin: var(--spacing-md) 0;
+            color: #64748b;
+            font-style: italic;
+        }
+        .back-to-report {
+            display: inline-block;
+            margin-top: var(--spacing-xl);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: #0c4a6e;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+        .back-to-report:hover {
+            background: #075985;
+        }
+    </style>
+</head>
+<body>
+    <div class="doc-container">
+        <div class="doc-header">
+            <h1>Field Guide</h1>
+        </div>
+        <div class="doc-nav">
+            <a href="../index.html">← Back to Report</a>
+            <a href="#table-of-contents">Table of Contents</a>
+        </div>
+        <div class="doc-content">
+            <h1 id="migration-field-guide">Migration Field Guide</h1>
+<p>A comprehensive guide to common migration patterns when translating VMware/vRealize workflows to OpenShift Virtualization and Ansible.</p>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#nsx-migration-patterns">NSX Migration Patterns</a></li>
+<li><a href="#approval--governance-workflows">Approval &amp; Governance Workflows</a></li>
+<li><a href="#storage--datastore-management">Storage &amp; Datastore Management</a></li>
+<li><a href="#network-configuration">Network Configuration</a></li>
+<li><a href="#day-2-operations">Day 2 Operations</a></li>
+<li><a href="#custom-logic--integrations">Custom Logic &amp; Integrations</a></li>
+<li><a href="#best-practices">Best Practices</a></li>
+</ol>
+<hr />
+<h2 id="introduction">Introduction</h2>
+<p>This field guide provides expert-backed patterns for migrating common VMware automation workflows to OpenShift-native equivalents. Each pattern includes:</p>
+<ul>
+<li><strong>Why it's challenging</strong>: Understanding the fundamental differences</li>
+<li><strong>Recommended approach</strong>: Proven strategies that work</li>
+<li><strong>Implementation steps</strong>: Actionable guidance</li>
+<li><strong>Testing strategy</strong>: How to validate the migration</li>
+<li><strong>Common pitfalls</strong>: What to avoid</li>
+</ul>
+<p><strong>Key Principle</strong>: These patterns prioritize safety, reviewability, and maintainability over feature parity. The goal is sustainable cloud-native automation, not pixel-perfect replication.</p>
+<hr />
+<h2 id="nsx-migration-patterns">NSX Migration Patterns</h2>
+<h3 id="pattern-nsx-distributed-firewall-networkpolicy">Pattern: NSX Distributed Firewall → NetworkPolicy</h3>
+<p><strong>Challenge</strong>: NSX DFW provides L7 filtering, stateful inspection, and micro-segmentation that NetworkPolicy cannot replicate.</p>
+<p><strong>Recommended Approach</strong>: Allow-list NetworkPolicy with Calico for advanced features</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Step 1: Design label taxonomy</span>
+<span class="c1"># Define security zones as labels</span>
+<span class="c1"># security.zone: dmz | internal | external</span>
+<span class="c1"># app.tier: web | app | data</span>
+<span class="c1"># team.owner: platform | security</span>
+
+<span class="c1"># Step 2: Create baseline NetworkPolicy (deny-all default)</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">networking.k8s.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NetworkPolicy</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default-deny-all</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">podSelector</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">  </span><span class="nt">policyTypes</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ingress</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Egress</span>
+
+<span class="c1"># Step 3: Create allow-list policies</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">networking.k8s.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NetworkPolicy</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-web-to-app</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">podSelector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">app.tier</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app</span>
+<span class="w">  </span><span class="nt">policyTypes</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ingress</span>
+<span class="w">  </span><span class="nt">ingress</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">podSelector</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">app.tier</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">web</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TCP</span>
+<span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8080</span>
+</code></pre></div>
+
+<p><strong>Implementation Steps</strong>:</p>
+<ol>
+<li><strong>Inventory NSX rules</strong>: Export all DFW rules and document their purpose</li>
+<li><strong>Design label taxonomy</strong>: Create security.zone, app.tier labels that map to your security zones</li>
+<li><strong>Create deny-all default</strong>: Start with a default-deny NetworkPolicy in each namespace</li>
+<li><strong>Build allow-list incrementally</strong>: Add NetworkPolicy rules for legitimate traffic patterns</li>
+<li><strong>Test with real traffic</strong>: Deploy to dev, monitor denied connections, iterate</li>
+<li><strong>Document gaps</strong>: Clearly document L7/stateful features that cannot be replicated</li>
+<li><strong>Plan compensating controls</strong>: Consider Calico, service mesh, or keeping NSX hybrid</li>
+</ol>
+<p><strong>Testing Strategy</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Test connectivity between pods</span>
+kubectl<span class="w"> </span>run<span class="w"> </span>test-web<span class="w"> </span>--image<span class="o">=</span>busybox<span class="w"> </span>--labels<span class="o">=</span><span class="s2">&quot;app.tier=web&quot;</span><span class="w"> </span>--<span class="w"> </span>sleep<span class="w"> </span><span class="m">3600</span>
+kubectl<span class="w"> </span>run<span class="w"> </span>test-app<span class="w"> </span>--image<span class="o">=</span>busybox<span class="w"> </span>--labels<span class="o">=</span><span class="s2">&quot;app.tier=app&quot;</span><span class="w"> </span>--<span class="w"> </span>sleep<span class="w"> </span><span class="m">3600</span>
+
+<span class="c1"># Test allowed connection</span>
+kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>test-web<span class="w"> </span>--<span class="w"> </span>wget<span class="w"> </span>-O-<span class="w"> </span>test-app:8080
+
+<span class="c1"># Test denied connection (should fail)</span>
+kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>test-web<span class="w"> </span>--<span class="w"> </span>wget<span class="w"> </span>-O-<span class="w"> </span>test-db:5432
+</code></pre></div>
+
+<p><strong>Common Pitfalls</strong>:</p>
+<ul>
+<li>❌ <strong>Trying to replicate all NSX features</strong>: NetworkPolicy is intentionally simpler - accept the gaps</li>
+<li>❌ <strong>Starting with allow-all</strong>: Begin restrictive and open up based on actual traffic patterns</li>
+<li>❌ <strong>Ignoring egress</strong>: Egress rules are just as important as ingress for zero-trust</li>
+<li>❌ <strong>Not testing blocked traffic</strong>: Verify that unwanted traffic is actually denied</li>
+</ul>
+<hr />
+<h3 id="pattern-nsx-security-groups-label-selectors">Pattern: NSX Security Groups → Label Selectors</h3>
+<p><strong>Challenge</strong>: NSX Security Groups support dynamic membership based on tags, network properties, and complex criteria. Kubernetes labels are static.</p>
+<p><strong>Recommended Approach</strong>: Kubernetes label taxonomy + automation to apply labels</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Example: Ansible task to auto-label pods based on NSX group criteria</span>
+<span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="n">Apply</span> <span class="n">security</span> <span class="n">zone</span> <span class="n">labels</span> <span class="n">based</span> <span class="n">on</span> <span class="n">namespace</span>
+  <span class="n">kubernetes</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">k8s</span><span class="p">:</span>
+    <span class="n">state</span><span class="p">:</span> <span class="n">patched</span>
+    <span class="n">kind</span><span class="p">:</span> <span class="n">Pod</span>
+    <span class="n">namespace</span><span class="p">:</span> <span class="s2">&quot;{{ item.namespace }}&quot;</span>
+    <span class="n">name</span><span class="p">:</span> <span class="s2">&quot;{{ item.name }}&quot;</span>
+    <span class="n">definition</span><span class="p">:</span>
+      <span class="n">metadata</span><span class="p">:</span>
+        <span class="n">labels</span><span class="p">:</span>
+          <span class="n">security</span><span class="o">.</span><span class="n">zone</span><span class="p">:</span> <span class="s2">&quot;{</span><span class="si">% i</span><span class="s2">f item.namespace == &#39;production&#39; %}dmz{</span><span class="si">% e</span><span class="s2">lif item.namespace == &#39;internal&#39; %}internal{</span><span class="si">% e</span><span class="s2">lse %}external{</span><span class="si">% e</span><span class="s2">ndif %}&quot;</span>
+  <span class="n">loop</span><span class="p">:</span> <span class="s2">&quot;{{ pods }}&quot;</span>
+</code></pre></div>
+
+<p><strong>Implementation Steps</strong>:</p>
+<ol>
+<li><strong>Document NSX group membership rules</strong>: Export all security group definitions</li>
+<li><strong>Map to label criteria</strong>: Design label schema that approximates NSX group logic</li>
+<li><strong>Implement label automation</strong>: Use Ansible, admission webhooks, or policy agents to auto-label</li>
+<li><strong>Reference in NetworkPolicy</strong>: Use label selectors in podSelector and namespaceSelector</li>
+<li><strong>Audit label assignments</strong>: Regularly verify labels match intended security posture</li>
+<li><strong>Require SecOps sign-off</strong>: Security boundary changes need security team approval</li>
+</ol>
+<p><strong>Testing Strategy</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Verify label assignments</span>
+kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>--all-namespaces<span class="w"> </span>--show-labels
+
+<span class="c1"># Verify NetworkPolicy uses correct selectors</span>
+kubectl<span class="w"> </span>describe<span class="w"> </span>networkpolicy<span class="w"> </span>-n<span class="w"> </span>production<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A5<span class="w"> </span><span class="s2">&quot;Pod Selector&quot;</span>
+
+<span class="c1"># Test policy enforcement</span>
+kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>test-pod<span class="w"> </span>--<span class="w"> </span>curl<span class="w"> </span>-m<span class="w"> </span><span class="m">5</span><span class="w"> </span>other-pod.svc
+</code></pre></div>
+
+<p><strong>Common Pitfalls</strong>:</p>
+<ul>
+<li>❌ <strong>Manual labeling</strong>: Labels drift without automation - use admission controllers or operators</li>
+<li>❌ <strong>Complex label logic</strong>: Keep taxonomy simple - security.zone, app.tier, team.owner</li>
+<li>❌ <strong>Not documenting mappings</strong>: Document how NSX groups map to label combinations</li>
+<li>❌ <strong>Ignoring namespace boundaries</strong>: Namespaces provide hard isolation - use them strategically</li>
+</ul>
+<hr />
+<h2 id="approval-governance-workflows">Approval &amp; Governance Workflows</h2>
+<h3 id="pattern-vrealize-approval-aap-workflow-with-approval-node">Pattern: vRealize Approval → AAP Workflow with Approval Node</h3>
+<p><strong>Challenge</strong>: Approval workflows involve human decision-making, SLAs, and organizational processes that vary by company.</p>
+<p><strong>Recommended Approach</strong>: Ansible Automation Platform workflow templates with approval nodes</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># AAP Workflow Template Structure:</span>
+<span class="c1"># 1. Pre-approval validation</span>
+<span class="c1"># 2. Approval node (waits for human decision)</span>
+<span class="c1"># 3. Post-approval provisioning</span>
+<span class="c1"># 4. Notification</span>
+
+<span class="c1"># Example approval node configuration (via AAP UI/API):</span>
+<span class="nt">approval_node</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Production</span><span class="nv"> </span><span class="s">VM</span><span class="nv"> </span><span class="s">Approval&quot;</span>
+<span class="w">  </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">86400</span><span class="w">  </span><span class="c1"># 24 hours</span>
+<span class="w">  </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Approve</span><span class="nv"> </span><span class="s">provisioning</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">vm_name</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">production&quot;</span>
+<span class="w">  </span><span class="nt">approvers</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">role</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Production</span><span class="nv"> </span><span class="s">Approvers&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">email</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ops-lead@example.com&quot;</span>
+</code></pre></div>
+
+<p><strong>Implementation Steps</strong>:</p>
+<ol>
+<li><strong>Map approval decision points</strong>: Identify where approvals are needed (environment, cost, etc.)</li>
+<li><strong>Design AAP workflow</strong>: Create workflow template with approval nodes</li>
+<li><strong>Configure notifications</strong>: Set up email/Slack notifications for approvers</li>
+<li><strong>Implement fallback logic</strong>: Define what happens on timeout (auto-reject or escalate)</li>
+<li><strong>Integrate ticketing</strong>: Connect to ServiceNow/Jira for audit trail</li>
+<li><strong>Test approval scenarios</strong>: Test approve, reject, timeout, escalation paths</li>
+<li><strong>Document SLAs</strong>: Clear SLAs for approval response times</li>
+</ol>
+<p><strong>Testing Strategy</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Launch workflow and test approval</span>
+awx-cli<span class="w"> </span>job_template<span class="w"> </span>launch<span class="w"> </span>--name<span class="o">=</span><span class="s2">&quot;VM Provisioning&quot;</span><span class="w"> </span>--extra_vars<span class="o">=</span><span class="s2">&quot;...&quot;</span>
+
+<span class="c1"># Check approval status</span>
+awx-cli<span class="w"> </span>workflow_approval<span class="w"> </span>list
+
+<span class="c1"># Approve/reject via CLI</span>
+awx-cli<span class="w"> </span>workflow_approval<span class="w"> </span>approve<span class="w"> </span>&lt;approval-id&gt;
+awx-cli<span class="w"> </span>workflow_approval<span class="w"> </span>deny<span class="w"> </span>&lt;approval-id&gt;
+</code></pre></div>
+
+<p><strong>Common Pitfalls</strong>:</p>
+<ul>
+<li>❌ <strong>No timeout handling</strong>: Always define what happens when approval times out</li>
+<li>❌ <strong>Skipping audit trail</strong>: Integrate with ticketing for compliance</li>
+<li>❌ <strong>Hardcoding approvers</strong>: Use roles/groups, not individual emails</li>
+<li>❌ <strong>Not testing rejection</strong>: Ensure rejected requests don't provision anything</li>
+</ul>
+<hr />
+<h3 id="pattern-cost-center-validation-pre-task-validation">Pattern: Cost Center Validation → Pre-Task Validation</h3>
+<p><strong>Challenge</strong>: vRealize often validates cost centers against external systems before provisioning.</p>
+<p><strong>Recommended Approach</strong>: Ansible pre-flight validation tasks with external API calls</p>
+<div class="codehilite"><pre><span></span><code><span class="nn">---</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Validate cost center before provisioning</span>
+<span class="w">  </span><span class="nt">block</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Call cost center validation API</span>
+<span class="w">      </span><span class="nt">ansible.builtin.uri</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://finance-api.example.com/validate-cost-center&quot;</span>
+<span class="w">        </span><span class="nt">method</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">POST</span>
+<span class="w">        </span><span class="nt">body_format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
+<span class="w">        </span><span class="nt">body</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">cost_center</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">cost_center</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">          </span><span class="nt">amount</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">estimated_cost</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">Authorization</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Bearer</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">finance_api_token</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">status_code</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">200</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">201</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">register</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validation_result</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Fail if cost center invalid</span>
+<span class="w">      </span><span class="nt">ansible.builtin.fail</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">msg</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Invalid</span><span class="nv"> </span><span class="s">cost</span><span class="nv"> </span><span class="s">center:</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">validation_result.json.error</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">not validation_result.json.valid</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Proceed with provisioning</span>
+<span class="w">      </span><span class="c1"># ... rest of playbook</span>
+</code></pre></div>
+
+<p><strong>Implementation Steps</strong>:</p>
+<ol>
+<li><strong>Identify validation requirements</strong>: What needs validation? Cost center, budget, quota?</li>
+<li><strong>Map to external systems</strong>: Which APIs provide validation? Finance, CMDB, ITSM?</li>
+<li><strong>Implement pre-flight tasks</strong>: Add validation tasks at start of playbook</li>
+<li><strong>Handle errors gracefully</strong>: Clear error messages when validation fails</li>
+<li><strong>Add retries for transient failures</strong>: Use <code>retries</code> and <code>until</code> for API calls</li>
+<li><strong>Test failure scenarios</strong>: Verify playbook stops when validation fails</li>
+</ol>
+<p><strong>Common Pitfalls</strong>:</p>
+<ul>
+<li>❌ <strong>Continuing on validation failure</strong>: Always <code>fail</code> task when validation fails</li>
+<li>❌ <strong>No retries for API calls</strong>: External APIs can have transient failures</li>
+<li>❌ <strong>Not caching validation results</strong>: Cache results to avoid repeated API calls</li>
+<li>❌ <strong>Hardcoding API endpoints</strong>: Use variables for environment-specific endpoints</li>
+</ul>
+<hr />
+<h2 id="storage-datastore-management">Storage &amp; Datastore Management</h2>
+<h3 id="pattern-datastore-selection-storageclass-selection">Pattern: Datastore Selection → StorageClass Selection</h3>
+<p><strong>Challenge</strong>: vRealize selects datastores based on capacity, performance tier, and availability.</p>
+<p><strong>Recommended Approach</strong>: StorageClass with performance tiers + dynamic provisioning</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Define StorageClasses for different performance tiers</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage.k8s.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">StorageClass</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nvme-performance</span>
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">storageclass.kubernetes.io/is-default-class</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;false&quot;</span>
+<span class="nt">provisioner</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubernetes.io/cinder</span>
+<span class="nt">parameters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nvme-ssd</span>
+<span class="w">  </span><span class="nt">replication</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;3&quot;</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage.k8s.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">StorageClass</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ssd-balanced</span>
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">storageclass.kubernetes.io/is-default-class</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="nt">provisioner</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubernetes.io/cinder</span>
+<span class="nt">parameters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ssd</span>
+<span class="w">  </span><span class="nt">replication</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2&quot;</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage.k8s.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">StorageClass</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hdd-capacity</span>
+<span class="nt">provisioner</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubernetes.io/cinder</span>
+<span class="nt">parameters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hdd</span>
+<span class="w">  </span><span class="nt">replication</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span>
+</code></pre></div>
+
+<p><strong>Ansible Selection Logic</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Select StorageClass based on environment</span>
+<span class="w">  </span><span class="nt">ansible.builtin.set_fact</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">storage_class</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{%</span><span class="nv"> </span><span class="s">if</span><span class="nv"> </span><span class="s">environment</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">&#39;prod&#39;</span><span class="nv"> </span><span class="s">%}nvme-performance{%</span><span class="nv"> </span><span class="s">elif</span><span class="nv"> </span><span class="s">environment</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">&#39;uat&#39;</span><span class="nv"> </span><span class="s">%}ssd-balanced{%</span><span class="nv"> </span><span class="s">else</span><span class="nv"> </span><span class="s">%}hdd-capacity{%</span><span class="nv"> </span><span class="s">endif</span><span class="nv"> </span><span class="s">%}&quot;</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Create PVC with selected StorageClass</span>
+<span class="w">  </span><span class="nt">kubernetes.core.k8s</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">definition</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PersistentVolumeClaim</span>
+<span class="w">      </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vm_name</span><span class="nv"> </span><span class="s">}}-disk&quot;</span>
+<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">namespace</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">accessModes</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ReadWriteOnce</span>
+<span class="w">        </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">requests</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">storage</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">disk_size_gb</span><span class="nv"> </span><span class="s">}}Gi&quot;</span>
+<span class="w">        </span><span class="nt">storageClassName</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">storage_class</span><span class="nv"> </span><span class="s">}}&quot;</span>
+</code></pre></div>
+
+<p><strong>Implementation Steps</strong>:</p>
+<ol>
+<li><strong>Define performance tiers</strong>: Map VMware datastore tiers to StorageClass tiers</li>
+<li><strong>Create StorageClasses</strong>: Define StorageClass for each performance/cost tier</li>
+<li><strong>Implement selection logic</strong>: Use Ansible variables to select appropriate StorageClass</li>
+<li><strong>Test dynamic provisioning</strong>: Verify PVCs are provisioned with correct StorageClass</li>
+<li><strong>Monitor capacity</strong>: Set up alerts for storage capacity thresholds</li>
+<li><strong>Document tier criteria</strong>: Clear criteria for when to use each tier</li>
+</ol>
+<p><strong>Common Pitfalls</strong>:</p>
+<ul>
+<li>❌ <strong>Too many StorageClasses</strong>: Keep it simple - 3-4 tiers max (performance, balanced, capacity)</li>
+<li>❌ <strong>Not setting default</strong>: Always have a sensible default StorageClass</li>
+<li>❌ <strong>Ignoring access modes</strong>: Use ReadWriteOnce for VMs, not ReadWriteMany</li>
+<li>❌ <strong>Not monitoring capacity</strong>: StorageClass capacity should be monitored</li>
+</ul>
+<hr />
+<h2 id="network-configuration">Network Configuration</h2>
+<h3 id="pattern-environment-based-network-assignment-multus-networkattachmentdefinition">Pattern: Environment-Based Network Assignment → Multus NetworkAttachmentDefinition</h3>
+<p><strong>Challenge</strong>: vRealize assigns VMs to different networks based on environment (dev/staging/prod).</p>
+<p><strong>Recommended Approach</strong>: Multus with per-environment NetworkAttachmentDefinitions</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Production network definition</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k8s.cni.cncf.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NetworkAttachmentDefinition</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prod-network</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">virt-prod</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">{</span>
+<span class="w">      </span><span class="no">&quot;cniVersion&quot;: &quot;0.3.1&quot;,</span>
+<span class="w">      </span><span class="no">&quot;type&quot;: &quot;bridge&quot;,</span>
+<span class="w">      </span><span class="no">&quot;bridge&quot;: &quot;br-prod&quot;,</span>
+<span class="w">      </span><span class="no">&quot;vlan&quot;: 100,</span>
+<span class="w">      </span><span class="no">&quot;ipam&quot;: {</span>
+<span class="w">        </span><span class="no">&quot;type&quot;: &quot;whereabouts&quot;,</span>
+<span class="w">        </span><span class="no">&quot;range&quot;: &quot;10.100.0.0/16&quot;</span>
+<span class="w">      </span><span class="no">}</span>
+<span class="w">    </span><span class="no">}</span>
+</code></pre></div>
+
+<p><strong>Ansible Network Selection</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Select network based on environment</span>
+<span class="w">  </span><span class="nt">ansible.builtin.set_fact</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">network_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{%</span><span class="nv"> </span><span class="s">if</span><span class="nv"> </span><span class="s">environment</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">&#39;prod&#39;</span><span class="nv"> </span><span class="s">%}prod-network{%</span><span class="nv"> </span><span class="s">elif</span><span class="nv"> </span><span class="s">environment</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">&#39;staging&#39;</span><span class="nv"> </span><span class="s">%}staging-network{%</span><span class="nv"> </span><span class="s">else</span><span class="nv"> </span><span class="s">%}dev-network{%</span><span class="nv"> </span><span class="s">endif</span><span class="nv"> </span><span class="s">%}&quot;</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Create VM with selected network</span>
+<span class="w">  </span><span class="nt">kubernetes.core.k8s</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">definition</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubevirt.io/v1</span>
+<span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VirtualMachine</span>
+<span class="w">      </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vm_name</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">domain</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">devices</span><span class="p">:</span>
+<span class="w">                </span><span class="nt">interfaces</span><span class="p">:</span>
+<span class="w">                </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="w">                  </span><span class="nt">masquerade</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">                </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secondary</span>
+<span class="w">                  </span><span class="nt">bridge</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">            </span><span class="nt">networks</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="w">              </span><span class="nt">pod</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secondary</span>
+<span class="w">              </span><span class="nt">multus</span><span class="p">:</span>
+<span class="w">                </span><span class="nt">networkName</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">network_name</span><span class="nv"> </span><span class="s">}}&quot;</span>
+</code></pre></div>
+
+<p><strong>Implementation Steps</strong>:</p>
+<ol>
+<li><strong>Define network requirements</strong>: What networks exist? VLANs? IP ranges?</li>
+<li><strong>Create NetworkAttachmentDefinitions</strong>: One per network/environment</li>
+<li><strong>Implement selection logic</strong>: Map environment to network name</li>
+<li><strong>Test connectivity</strong>: Verify VMs can communicate on assigned networks</li>
+<li><strong>Document network topology</strong>: Clear documentation of network assignments</li>
+<li><strong>Plan IP management</strong>: Use Whereabouts or external IPAM</li>
+</ol>
+<p><strong>Common Pitfalls</strong>:</p>
+<ul>
+<li>❌ <strong>Hardcoding network names</strong>: Use variables for environment-based selection</li>
+<li>❌ <strong>Not testing cross-network</strong>: Test connectivity between networks</li>
+<li>❌ <strong>Ignoring IP conflicts</strong>: Use proper IPAM solution (Whereabouts, Infoblox)</li>
+<li>❌ <strong>No network policy</strong>: Apply NetworkPolicy even with Multus networks</li>
+</ul>
+<hr />
+<h2 id="day-2-operations">Day 2 Operations</h2>
+<h3 id="pattern-vm-lifecycle-operations-kubevirt-virtctl-commands">Pattern: VM Lifecycle Operations → KubeVirt virtctl Commands</h3>
+<p><strong>Challenge</strong>: vRealize provides start/stop/restart operations for VMs.</p>
+<p><strong>Recommended Approach</strong>: Ansible tasks using <code>virtctl</code> or Kubernetes API</p>
+<div class="codehilite"><pre><span></span><code><span class="nn">---</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Start VM</span>
+<span class="w">  </span><span class="nt">kubernetes.core.k8s</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">api_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubevirt.io/v1</span>
+<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VirtualMachine</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vm_name</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">namespace</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">state</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">patched</span>
+<span class="w">    </span><span class="nt">definition</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">running</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Stop VM</span>
+<span class="w">  </span><span class="nt">kubernetes.core.k8s</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">api_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubevirt.io/v1</span>
+<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VirtualMachine</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vm_name</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">namespace</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">state</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">patched</span>
+<span class="w">    </span><span class="nt">definition</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">running</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Restart VM</span>
+<span class="w">  </span><span class="nt">block</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Stop VM</span>
+<span class="w">      </span><span class="nt">kubernetes.core.k8s</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">api_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubevirt.io/v1</span>
+<span class="w">        </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VirtualMachine</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vm_name</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">namespace</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">state</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">patched</span>
+<span class="w">        </span><span class="nt">definition</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">running</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Wait for VM to stop</span>
+<span class="w">      </span><span class="nt">kubernetes.core.k8s_info</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">api_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubevirt.io/v1</span>
+<span class="w">        </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VirtualMachineInstance</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vm_name</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">namespace</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">register</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vmi</span>
+<span class="w">      </span><span class="nt">until</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vmi.resources | length == 0</span>
+<span class="w">      </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
+<span class="w">      </span><span class="nt">delay</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Start VM</span>
+<span class="w">      </span><span class="nt">kubernetes.core.k8s</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">api_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubevirt.io/v1</span>
+<span class="w">        </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VirtualMachine</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vm_name</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">namespace</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">state</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">patched</span>
+<span class="w">        </span><span class="nt">definition</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">running</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+
+<p><strong>Implementation Steps</strong>:</p>
+<ol>
+<li><strong>Map vRealize operations</strong>: List all Day 2 operations (start, stop, snapshot, etc.)</li>
+<li><strong>Find KubeVirt equivalents</strong>: Map each operation to KubeVirt API or virtctl</li>
+<li><strong>Create Ansible tasks</strong>: Implement each operation as Ansible task</li>
+<li><strong>Add idempotency checks</strong>: Ensure tasks are idempotent (can run multiple times)</li>
+<li><strong>Test each operation</strong>: Verify start, stop, restart work correctly</li>
+<li><strong>Add error handling</strong>: Handle cases where VM doesn't exist, is already running, etc.</li>
+</ol>
+<p><strong>Common Pitfalls</strong>:</p>
+<ul>
+<li>❌ <strong>Not waiting for state changes</strong>: Always wait for VM/VMI to reach desired state</li>
+<li>❌ <strong>Not handling edge cases</strong>: What if VM is already running when you try to start?</li>
+<li>❌ <strong>Using virtctl in automation</strong>: Prefer Kubernetes API over CLI tools in automation</li>
+<li>❌ <strong>No timeout handling</strong>: Always set retries and timeout for wait tasks</li>
+</ul>
+<hr />
+<h2 id="custom-logic-integrations">Custom Logic &amp; Integrations</h2>
+<h3 id="pattern-rest-api-calls-ansiblebuiltinuri-module">Pattern: REST API Calls → ansible.builtin.uri Module</h3>
+<p><strong>Challenge</strong>: vRealize workflows often call external REST APIs for CMDB, ITSM, or custom systems.</p>
+<p><strong>Recommended Approach</strong>: Ansible <code>uri</code> module with proper auth and error handling</p>
+<div class="codehilite"><pre><span></span><code><span class="nn">---</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Call CMDB to register VM</span>
+<span class="w">  </span><span class="nt">ansible.builtin.uri</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://cmdb.example.com/api/v1/servers&quot;</span>
+<span class="w">    </span><span class="nt">method</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">POST</span>
+<span class="w">    </span><span class="nt">body_format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
+<span class="w">    </span><span class="nt">body</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vm_name</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">environment</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">environment</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">owner</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">owner_email</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">cost_center</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">cost_center</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">Authorization</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Bearer</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">cmdb_api_token</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">Content-Type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;application/json&quot;</span>
+<span class="w">    </span><span class="nt">status_code</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">200</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">201</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">return_content</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">register</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cmdb_result</span>
+<span class="w">  </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">  </span><span class="nt">delay</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class="w">  </span><span class="nt">until</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cmdb_result.status in [200, 201]</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Store CMDB ID as VM annotation</span>
+<span class="w">  </span><span class="nt">kubernetes.core.k8s</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">api_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubevirt.io/v1</span>
+<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VirtualMachine</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vm_name</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">namespace</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">state</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">patched</span>
+<span class="w">    </span><span class="nt">definition</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">cmdb.id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">cmdb_result.json.id</span><span class="nv"> </span><span class="s">}}&quot;</span>
+</code></pre></div>
+
+<p><strong>Implementation Steps</strong>:</p>
+<ol>
+<li><strong>Document API requirements</strong>: Endpoint, method, auth, payload format</li>
+<li><strong>Implement authentication</strong>: Bearer token, basic auth, OAuth, API key</li>
+<li><strong>Add retry logic</strong>: Use <code>retries</code>, <code>delay</code>, <code>until</code> for transient failures</li>
+<li><strong>Handle errors</strong>: Check status codes, parse error messages</li>
+<li><strong>Add idempotency check</strong>: GET before POST to check if resource exists</li>
+<li><strong>Test failure scenarios</strong>: Test 404, 401, 500 responses</li>
+<li><strong>Store results</strong>: Save API response IDs as VM annotations for tracking</li>
+</ol>
+<p><strong>Common Pitfalls</strong>:</p>
+<ul>
+<li>❌ <strong>No retries</strong>: External APIs can be flaky - always add retries</li>
+<li>❌ <strong>Not checking status codes</strong>: Always validate <code>status_code</code> is in expected range</li>
+<li>❌ <strong>Hardcoding credentials</strong>: Use Ansible Vault or AAP credentials</li>
+<li>❌ <strong>Not testing error paths</strong>: Test what happens when API returns errors</li>
+</ul>
+<hr />
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="general-migration-principles">General Migration Principles</h3>
+<ol>
+<li><strong>Start with deny-all</strong>: Begin restrictive and open up based on actual needs</li>
+<li><strong>Use label taxonomy</strong>: Design labels early - they're the foundation of Kubernetes policy</li>
+<li><strong>Separate concerns</strong>: Provisioning, networking, storage, security are separate playbooks</li>
+<li><strong>Document gaps</strong>: Be honest about what can't be migrated - compensating controls are valid</li>
+<li><strong>Test incrementally</strong>: Migrate one workflow at a time, test thoroughly</li>
+<li><strong>Keep it simple</strong>: Don't over-engineer - Kubernetes is simpler than vRealize by design</li>
+</ol>
+<h3 id="ansible-best-practices">Ansible Best Practices</h3>
+<ol>
+<li><strong>Use roles for reusability</strong>: Common patterns (networking, storage) belong in roles</li>
+<li><strong>Idempotency is critical</strong>: All tasks should be safe to run multiple times</li>
+<li><strong>Error handling</strong>: Use <code>block</code>/<code>rescue</code> for graceful failures</li>
+<li><strong>Variables over hardcoding</strong>: Environment-specific values in group_vars</li>
+<li><strong>Retries for external calls</strong>: APIs, Kubernetes operations can be transient</li>
+<li><strong>Meaningful names</strong>: Task names should describe what and why, not how</li>
+</ol>
+<h3 id="security-considerations">Security Considerations</h3>
+<ol>
+<li><strong>Default deny NetworkPolicy</strong>: Start with deny-all, allow incrementally</li>
+<li><strong>Namespace isolation</strong>: Use namespaces as hard security boundaries</li>
+<li><strong>RBAC for automation</strong>: Service accounts with minimal permissions</li>
+<li><strong>Secrets management</strong>: Vault, Sealed Secrets, or AAP credentials</li>
+<li><strong>Audit trails</strong>: Log all provisioning, changes, approvals</li>
+<li><strong>SecOps approval</strong>: Security boundary changes need security team sign-off</li>
+</ol>
+<h3 id="testing-strategy">Testing Strategy</h3>
+<ol>
+<li><strong>Dev environment first</strong>: Test all workflows in dev before staging/prod</li>
+<li><strong>Synthetic traffic</strong>: Generate realistic traffic patterns for testing</li>
+<li><strong>Negative testing</strong>: Test what happens when things fail (validation, API errors)</li>
+<li><strong>Load testing</strong>: Verify automation works under load</li>
+<li><strong>Rollback plan</strong>: Document how to rollback if migration fails</li>
+<li><strong>Monitoring</strong>: Prometheus metrics, alerts for automation failures</li>
+</ol>
+<hr />
+<h2 id="conclusion">Conclusion</h2>
+<p>Migration is a journey, not a destination. These patterns provide proven approaches, but every organization has unique requirements. The key is to:</p>
+<ul>
+<li><strong>Embrace the differences</strong>: Kubernetes is not vRealize - that's a feature, not a bug</li>
+<li><strong>Start small</strong>: Migrate simple workflows first, learn, then tackle complex ones</li>
+<li><strong>Iterate</strong>: Continuous improvement based on operational feedback</li>
+<li><strong>Document everything</strong>: Future you (and your team) will thank you</li>
+</ul>
+<p><strong>Need help?</strong> Consult the generated <code>intent/recommendations.md</code> file for workflow-specific guidance based on your actual vRealize/PowerCLI scripts.</p>
+<hr />
+<p><em>Generated by ops-translate - Expert-guided VMware to OpenShift migration</em></p>
+        </div>
+        <div style="margin-top: var(--spacing-xl); text-align: center;">
+            <a href="../index.html" class="back-to-report">← Back to Migration Report</a>
+        </div>
+    </div>
+</body>
+</html>

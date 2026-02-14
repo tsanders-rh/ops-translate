@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patterns</title>
+    <link rel="stylesheet" href="../assets/style.css">
+    <style>
+        .doc-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--spacing-xl);
+            background: white;
+        }
+        .doc-header {
+            margin-bottom: var(--spacing-xl);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 2px solid #0c4a6e;
+        }
+        .doc-nav {
+            margin-bottom: var(--spacing-lg);
+            padding: var(--spacing-md);
+            background: #f0f9ff;
+            border-radius: 8px;
+        }
+        .doc-nav a {
+            color: #0c4a6e;
+            text-decoration: none;
+            margin-right: var(--spacing-md);
+        }
+        .doc-nav a:hover {
+            text-decoration: underline;
+        }
+        .doc-content {
+            line-height: 1.8;
+        }
+        .doc-content h2 {
+            margin-top: var(--spacing-xl);
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid #e2e8f0;
+        }
+        .doc-content h3 {
+            margin-top: var(--spacing-lg);
+            color: #0c4a6e;
+        }
+        .doc-content h4 {
+            margin-top: var(--spacing-md);
+            color: #0369a1;
+            font-weight: 600;
+        }
+        .doc-content code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .doc-content pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: var(--spacing-md);
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: var(--spacing-md) 0;
+        }
+        .doc-content pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        .doc-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: var(--spacing-md) 0;
+        }
+        .doc-content th, .doc-content td {
+            border: 1px solid #cbd5e1;
+            padding: var(--spacing-sm);
+            text-align: left;
+        }
+        .doc-content th {
+            background: #f1f5f9;
+            font-weight: 600;
+        }
+        .doc-content ul, .doc-content ol {
+            margin: var(--spacing-md) 0;
+            padding-left: var(--spacing-xl);
+        }
+        .doc-content li {
+            margin: var(--spacing-xs) 0;
+        }
+        .doc-content blockquote {
+            border-left: 4px solid #0c4a6e;
+            padding-left: var(--spacing-md);
+            margin: var(--spacing-md) 0;
+            color: #64748b;
+            font-style: italic;
+        }
+        .back-to-report {
+            display: inline-block;
+            margin-top: var(--spacing-xl);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: #0c4a6e;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+        .back-to-report:hover {
+            background: #075985;
+        }
+    </style>
+</head>
+<body>
+    <div class="doc-container">
+        <div class="doc-header">
+            <h1>Patterns</h1>
+        </div>
+        <div class="doc-nav">
+            <a href="../index.html">← Back to Report</a>
+            <a href="#table-of-contents">Table of Contents</a>
+        </div>
+        <div class="doc-content">
+            <h1 id="architecture-patterns-guide">Architecture Patterns Guide</h1>
+<p>This guide documents architectural patterns and alternative approaches for vRealize Orchestrator (vRO) capabilities that don't have direct Ansible Automation Platform (AAP) equivalents.</p>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ul>
+<li><a href="#pattern-1-long-running-stateful-workflows">Pattern 1: Long-Running Stateful Workflows</a></li>
+<li><a href="#pattern-2-complex-interactive-forms">Pattern 2: Complex Interactive Forms</a></li>
+<li><a href="#pattern-3-dynamic-workflow-generation">Pattern 3: Dynamic Workflow Generation</a></li>
+<li><a href="#pattern-4-state-management">Pattern 4: State Management</a></li>
+<li><a href="#pattern-5-nsx-security-components">Pattern 5: NSX Security Components</a></li>
+<li><a href="#migration-decision-tree">Migration Decision Tree</a></li>
+</ul>
+<hr />
+<h2 id="pattern-1-long-running-stateful-workflows">Pattern 1: Long-Running Stateful Workflows</h2>
+<h3 id="vro-capability">vRO Capability</h3>
+<p>vRO workflows can run for extended periods (days or weeks) with built-in state persistence:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Workflow runs for days/weeks with state persistence</span>
+<span class="nx">provisionVM</span><span class="p">();</span>
+<span class="nx">System</span><span class="p">.</span><span class="nx">sleep</span><span class="p">(</span><span class="mf">86400000</span><span class="p">);</span><span class="w"> </span><span class="c1">// Sleep 24 hours</span>
+<span class="nx">checkQuota</span><span class="p">();</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">quotaExceeded</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">System</span><span class="p">.</span><span class="nx">sleep</span><span class="p">(</span><span class="mf">604800000</span><span class="p">);</span><span class="w"> </span><span class="c1">// Sleep 7 days</span>
+<span class="w">    </span><span class="nx">checkQuotaAgain</span><span class="p">();</span>
+<span class="p">}</span>
+<span class="nx">completeProvisioning</span><span class="p">();</span>
+</code></pre></div>
+
+<h3 id="alternative-patterns">Alternative Patterns</h3>
+<h4 id="option-a-aap-scheduled-jobs-simple">Option A: AAP Scheduled Jobs (Simple)</h4>
+<p><strong>When to use:</strong> Predictable delays, simple state requirements</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Job 1: Initial provisioning</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Provision VM</span>
+<span class="w">  </span><span class="c1"># ... provisioning tasks ...</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Schedule quota check for tomorrow</span>
+<span class="w">  </span><span class="nt">ansible.builtin.uri</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">aap_url</span><span class="nv"> </span><span class="s">}}/api/v2/job_templates/{{</span><span class="nv"> </span><span class="s">quota_check_template_id</span><span class="nv"> </span><span class="s">}}/launch/&quot;</span>
+<span class="w">    </span><span class="nt">method</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">POST</span>
+<span class="w">    </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">Authorization</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Bearer</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">aap_token</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">body_format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
+<span class="w">    </span><span class="nt">body</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">extra_vars</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">vm_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vm_result.id</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">check_type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;quota&quot;</span>
+</code></pre></div>
+
+<p><strong>Trade-offs:</strong>
+- ✅ Simple to implement
+- ✅ Uses native AAP features
+- ✅ No additional infrastructure
+- ❌ No complex state persistence
+- ❌ Limited to scheduled intervals
+- ❌ Difficult to track multi-step workflows</p>
+<h4 id="option-b-external-workflow-engine-advanced">Option B: External Workflow Engine (Advanced)</h4>
+<p><strong>When to use:</strong> Complex state, long delays, conditional logic, multi-step orchestration</p>
+<p>Use <strong>Temporal.io</strong>, <strong>Conductor</strong>, or <strong>Apache Airflow</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Temporal workflow example</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">temporalio</span><span class="w"> </span><span class="kn">import</span> <span class="n">workflow</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">timedelta</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+
+<span class="nd">@workflow</span><span class="o">.</span><span class="n">defn</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">VMProvisioningWorkflow</span><span class="p">:</span>
+    <span class="nd">@workflow</span><span class="o">.</span><span class="n">run</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vm_params</span><span class="p">):</span>
+        <span class="c1"># Provision VM</span>
+        <span class="n">vm</span> <span class="o">=</span> <span class="k">await</span> <span class="n">workflow</span><span class="o">.</span><span class="n">execute_activity</span><span class="p">(</span>
+            <span class="n">provision_vm</span><span class="p">,</span>
+            <span class="n">vm_params</span><span class="p">,</span>
+            <span class="n">start_to_close_timeout</span><span class="o">=</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Sleep 24 hours (Temporal handles state persistence)</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">86400</span><span class="p">)</span>
+
+        <span class="c1"># Check quota</span>
+        <span class="n">quota</span> <span class="o">=</span> <span class="k">await</span> <span class="n">workflow</span><span class="o">.</span><span class="n">execute_activity</span><span class="p">(</span>
+            <span class="n">check_quota</span><span class="p">,</span>
+            <span class="n">vm</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="n">start_to_close_timeout</span><span class="o">=</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">quota</span><span class="o">.</span><span class="n">exceeded</span><span class="p">:</span>
+            <span class="c1"># Sleep 7 days</span>
+            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">604800</span><span class="p">)</span>
+            <span class="n">quota</span> <span class="o">=</span> <span class="k">await</span> <span class="n">workflow</span><span class="o">.</span><span class="n">execute_activity</span><span class="p">(</span><span class="n">check_quota_again</span><span class="p">,</span> <span class="n">vm</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+        <span class="c1"># Complete provisioning via Ansible</span>
+        <span class="k">await</span> <span class="n">workflow</span><span class="o">.</span><span class="n">execute_activity</span><span class="p">(</span>
+            <span class="n">run_ansible_playbook</span><span class="p">,</span>
+            <span class="p">{</span><span class="s2">&quot;playbook&quot;</span><span class="p">:</span> <span class="s2">&quot;complete_provisioning.yml&quot;</span><span class="p">,</span> <span class="s2">&quot;vm_id&quot;</span><span class="p">:</span> <span class="n">vm</span><span class="o">.</span><span class="n">id</span><span class="p">}</span>
+        <span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Trade-offs:</strong>
+- ✅ Full state persistence across arbitrary delays
+- ✅ Complex conditional logic
+- ✅ Automatic retry handling
+- ✅ Workflow versioning
+- ❌ Additional infrastructure (Temporal cluster)
+- ❌ More operational complexity
+- ❌ Team needs to learn new tooling</p>
+<h4 id="option-c-event-driven-ansible-reactive">Option C: Event-Driven Ansible (Reactive)</h4>
+<p><strong>When to use:</strong> Event-triggered continuations, not time-based delays</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># EDA rulebook waits for external event</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VM Provisioning Continuation</span>
+<span class="w">  </span><span class="nt">sources</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">ansible.eda.webhook</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0.0.0</span>
+<span class="w">        </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5000</span>
+
+<span class="w">  </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Continue provisioning when quota available</span>
+<span class="w">      </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">event.type == &quot;quota_available&quot; and event.vm_id == vm_id</span>
+<span class="w">      </span><span class="nt">action</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">run_job_template</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Complete VM Provisioning</span>
+<span class="w">          </span><span class="nt">organization</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Default</span>
+<span class="w">          </span><span class="nt">extra_vars</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">vm_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">event.vm_id</span><span class="nv"> </span><span class="s">}}&quot;</span>
+</code></pre></div>
+
+<p><strong>Trade-offs:</strong>
+- ✅ True reactive automation
+- ✅ No polling or sleeping
+- ✅ Scales well for event-driven architectures
+- ❌ Requires external event source
+- ❌ Not suitable for pure time-based delays
+- ❌ Event delivery must be reliable</p>
+<h3 id="decision-tree">Decision Tree</h3>
+<div class="codehilite"><pre><span></span><code><span class="nx">Is</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">delay</span><span class="w"> </span><span class="nx">predictable</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">short</span><span class="w"> </span><span class="p">(&lt;</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="nx">hour</span><span class="p">)?</span>
+<span class="err">├─</span><span class="w"> </span><span class="nx">YES</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">Use</span><span class="w"> </span><span class="nx">AAP</span><span class="w"> </span><span class="nx">scheduled</span><span class="w"> </span><span class="nx">jobs</span>
+<span class="err">└─</span><span class="w"> </span><span class="nx">NO</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">Is</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">workflow</span><span class="w"> </span><span class="nx">event</span><span class="o">-</span><span class="nx">driven</span><span class="w"> </span><span class="k">or</span><span class="w"> </span><span class="nx">time</span><span class="o">-</span><span class="nx">driven</span><span class="p">?</span>
+<span class="w">    </span><span class="err">├─</span><span class="w"> </span><span class="nx">EVENT</span><span class="o">-</span><span class="nx">DRIVEN</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">Use</span><span class="w"> </span><span class="nx">Event</span><span class="o">-</span><span class="nx">Driven</span><span class="w"> </span><span class="nx">Ansible</span>
+<span class="w">    </span><span class="err">└─</span><span class="w"> </span><span class="nx">TIME</span><span class="o">-</span><span class="nx">DRIVEN</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">Need</span><span class="w"> </span><span class="nx">complex</span><span class="w"> </span><span class="nx">state</span><span class="w"> </span><span class="nx">management</span><span class="p">?</span>
+<span class="w">        </span><span class="err">├─</span><span class="w"> </span><span class="nx">YES</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">Use</span><span class="w"> </span><span class="kd">external</span><span class="w"> </span><span class="nx">workflow</span><span class="w"> </span><span class="nx">engine</span><span class="w"> </span><span class="p">(</span><span class="nx">Temporal</span><span class="o">/</span><span class="nx">Conductor</span><span class="p">)</span>
+<span class="w">        </span><span class="err">└─</span><span class="w"> </span><span class="nx">NO</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">Chain</span><span class="w"> </span><span class="nx">AAP</span><span class="w"> </span><span class="nx">scheduled</span><span class="w"> </span><span class="nx">jobs</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">simple</span><span class="w"> </span><span class="nx">state</span>
+</code></pre></div>
+
+<hr />
+<h2 id="pattern-2-complex-interactive-forms">Pattern 2: Complex Interactive Forms</h2>
+<h3 id="vro-capability_1">vRO Capability</h3>
+<p>vRO supports complex forms with conditional visibility, dynamic choices, and complex validation:</p>
+<div class="codehilite"><pre><span></span><code><span class="cm">&lt;!-- Conditional fields: show approvers only if environment == &quot;prod&quot; --&gt;</span>
+<span class="nt">&lt;form&gt;</span>
+<span class="w">  </span><span class="nt">&lt;field</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;environment&quot;</span><span class="w"> </span><span class="na">type=</span><span class="s">&quot;dropdown&quot;</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nt">&lt;choices&gt;</span>dev,staging,prod<span class="nt">&lt;/choices&gt;</span>
+<span class="w">  </span><span class="nt">&lt;/field&gt;</span>
+
+<span class="w">  </span><span class="nt">&lt;field</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;approvers&quot;</span><span class="w"> </span><span class="na">type=</span><span class="s">&quot;multiselect&quot;</span>
+<span class="w">         </span><span class="na">visible-when=</span><span class="s">&quot;environment == &#39;prod&#39;&quot;</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nt">&lt;choices</span><span class="w"> </span><span class="na">dynamic=</span><span class="s">&quot;true&quot;</span><span class="w"> </span><span class="na">source=</span><span class="s">&quot;getApproverList()&quot;</span><span class="nt">/&gt;</span>
+<span class="w">  </span><span class="nt">&lt;/field&gt;</span>
+
+<span class="w">  </span><span class="nt">&lt;field</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;cpu_count&quot;</span><span class="w"> </span><span class="na">type=</span><span class="s">&quot;integer&quot;</span><span class="w"> </span><span class="na">min=</span><span class="s">&quot;1&quot;</span><span class="w"> </span><span class="na">max=</span><span class="s">&quot;16&quot;</span>
+<span class="w">         </span><span class="na">default-when=</span><span class="s">&quot;environment == &#39;dev&#39;: 2,</span>
+<span class="s">                      environment == &#39;staging&#39;: 4,</span>
+<span class="s">                      environment == &#39;prod&#39;: 8&quot;</span><span class="nt">/&gt;</span>
+
+<span class="w">  </span><span class="nt">&lt;field</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;compliance_required&quot;</span><span class="w"> </span><span class="na">type=</span><span class="s">&quot;boolean&quot;</span>
+<span class="w">         </span><span class="na">readonly-when=</span><span class="s">&quot;environment == &#39;prod&#39;&quot;</span>
+<span class="w">         </span><span class="na">default-when=</span><span class="s">&quot;environment == &#39;prod&#39;: true&quot;</span><span class="nt">/&gt;</span>
+<span class="nt">&lt;/form&gt;</span>
+</code></pre></div>
+
+<h3 id="alternative-patterns_1">Alternative Patterns</h3>
+<h4 id="option-a-aap-surveys-limited">Option A: AAP Surveys (Limited)</h4>
+<p><strong>When to use:</strong> Simple forms with no conditional logic</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">survey_spec</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">question_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Environment</span>
+<span class="w">    </span><span class="nt">variable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">environment</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">multiplechoice</span>
+<span class="w">    </span><span class="nt">choices</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dev</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">staging</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prod</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">question_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Approvers (required for prod)</span>
+<span class="w">    </span><span class="nt">variable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">approvers</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">text</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">  </span><span class="c1"># Cannot conditionally require</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">question_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CPU Count</span>
+<span class="w">    </span><span class="nt">variable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cpu_count</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">integer</span>
+<span class="w">    </span><span class="nt">min</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">max</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+
+<p><strong>Trade-offs:</strong>
+- ✅ Native AAP feature
+- ✅ Simple to configure
+- ✅ No development required
+- ❌ No conditional visibility
+- ❌ No dynamic choice population
+- ❌ Limited validation rules
+- ❌ Cannot compute defaults based on other fields</p>
+<h4 id="option-b-service-catalog-integration">Option B: Service Catalog Integration</h4>
+<p><strong>When to use:</strong> Complex forms, enterprise ITSM already in place</p>
+<p>Integrate with <strong>ServiceNow Service Catalog</strong> or <strong>Red Hat Service Catalog</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// ServiceNow catalog item with full conditional logic</span>
+<span class="kd">var</span><span class="w"> </span><span class="nx">CatalogItem</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">Class</span><span class="p">.</span><span class="nx">create</span><span class="p">();</span>
+<span class="nx">CatalogItem</span><span class="p">.</span><span class="nx">prototype</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">initialize</span><span class="o">:</span><span class="w"> </span><span class="kd">function</span><span class="p">()</span><span class="w"> </span><span class="p">{},</span>
+
+<span class="w">    </span><span class="nx">onLoad</span><span class="o">:</span><span class="w"> </span><span class="kd">function</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// Hide approvers field initially</span>
+<span class="w">        </span><span class="nx">g_form</span><span class="p">.</span><span class="nx">setDisplay</span><span class="p">(</span><span class="s1">&#39;approvers&#39;</span><span class="p">,</span><span class="w"> </span><span class="kc">false</span><span class="p">);</span>
+<span class="w">        </span><span class="nx">g_form</span><span class="p">.</span><span class="nx">setDisplay</span><span class="p">(</span><span class="s1">&#39;compliance_required&#39;</span><span class="p">,</span><span class="w"> </span><span class="kc">false</span><span class="p">);</span>
+<span class="w">    </span><span class="p">},</span>
+
+<span class="w">    </span><span class="nx">onChangeEnvironment</span><span class="o">:</span><span class="w"> </span><span class="kd">function</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">var</span><span class="w"> </span><span class="nx">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">g_form</span><span class="p">.</span><span class="nx">getValue</span><span class="p">(</span><span class="s1">&#39;environment&#39;</span><span class="p">);</span>
+
+<span class="w">        </span><span class="c1">// Show approvers for prod</span>
+<span class="w">        </span><span class="nx">g_form</span><span class="p">.</span><span class="nx">setDisplay</span><span class="p">(</span><span class="s1">&#39;approvers&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">env</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;prod&#39;</span><span class="p">);</span>
+<span class="w">        </span><span class="nx">g_form</span><span class="p">.</span><span class="nx">setMandatory</span><span class="p">(</span><span class="s1">&#39;approvers&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">env</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;prod&#39;</span><span class="p">);</span>
+
+<span class="w">        </span><span class="c1">// Set CPU defaults</span>
+<span class="w">        </span><span class="kd">var</span><span class="w"> </span><span class="nx">cpuDefaults</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="s1">&#39;dev&#39;</span><span class="o">:</span><span class="w"> </span><span class="mf">2</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;staging&#39;</span><span class="o">:</span><span class="w"> </span><span class="mf">4</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;prod&#39;</span><span class="o">:</span><span class="w"> </span><span class="mf">8</span>
+<span class="w">        </span><span class="p">};</span>
+<span class="w">        </span><span class="nx">g_form</span><span class="p">.</span><span class="nx">setValue</span><span class="p">(</span><span class="s1">&#39;cpu_count&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">cpuDefaults</span><span class="p">[</span><span class="nx">env</span><span class="p">]);</span>
+
+<span class="w">        </span><span class="c1">// Compliance required for prod</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">env</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;prod&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">g_form</span><span class="p">.</span><span class="nx">setValue</span><span class="p">(</span><span class="s1">&#39;compliance_required&#39;</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">);</span>
+<span class="w">            </span><span class="nx">g_form</span><span class="p">.</span><span class="nx">setReadOnly</span><span class="p">(</span><span class="s1">&#39;compliance_required&#39;</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">},</span>
+
+<span class="w">    </span><span class="nx">onSubmit</span><span class="o">:</span><span class="w"> </span><span class="kd">function</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// Call AAP API to launch job</span>
+<span class="w">        </span><span class="kd">var</span><span class="w"> </span><span class="nx">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">sn_ws</span><span class="p">.</span><span class="nx">RESTMessageV2</span><span class="p">();</span>
+<span class="w">        </span><span class="nx">r</span><span class="p">.</span><span class="nx">setEndpoint</span><span class="p">(</span><span class="nx">g_form</span><span class="p">.</span><span class="nx">getValue</span><span class="p">(</span><span class="s1">&#39;aap_url&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s1">&#39;/api/v2/job_templates/provision_vm/launch/&#39;</span><span class="p">);</span>
+<span class="w">        </span><span class="nx">r</span><span class="p">.</span><span class="nx">setHttpMethod</span><span class="p">(</span><span class="s1">&#39;POST&#39;</span><span class="p">);</span>
+<span class="w">        </span><span class="nx">r</span><span class="p">.</span><span class="nx">setRequestBody</span><span class="p">(</span><span class="nb">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span>
+<span class="w">            </span><span class="nx">extra_vars</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="nx">environment</span><span class="o">:</span><span class="w"> </span><span class="nx">g_form</span><span class="p">.</span><span class="nx">getValue</span><span class="p">(</span><span class="s1">&#39;environment&#39;</span><span class="p">),</span>
+<span class="w">                </span><span class="nx">approvers</span><span class="o">:</span><span class="w"> </span><span class="nx">g_form</span><span class="p">.</span><span class="nx">getValue</span><span class="p">(</span><span class="s1">&#39;approvers&#39;</span><span class="p">),</span>
+<span class="w">                </span><span class="nx">cpu_count</span><span class="o">:</span><span class="w"> </span><span class="nx">g_form</span><span class="p">.</span><span class="nx">getValue</span><span class="p">(</span><span class="s1">&#39;cpu_count&#39;</span><span class="p">)</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}));</span>
+<span class="w">        </span><span class="kd">var</span><span class="w"> </span><span class="nx">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">r</span><span class="p">.</span><span class="nx">execute</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">};</span>
+</code></pre></div>
+
+<p><strong>Trade-offs:</strong>
+- ✅ Full conditional logic
+- ✅ Dynamic choice loading
+- ✅ Complex validation
+- ✅ Approval workflows built-in
+- ✅ Audit trail and CMDB integration
+- ❌ Requires ServiceNow or similar ITSM platform
+- ❌ Additional licensing cost
+- ❌ ServiceNow-specific development</p>
+<h4 id="option-c-custom-web-portal">Option C: Custom Web Portal</h4>
+<p><strong>When to use:</strong> Unique requirements, full control needed, modern UX desired</p>
+<p>Build a React/Vue app that calls AAP API:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// React component with conditional form logic</span>
+<span class="k">import</span><span class="w"> </span><span class="nx">React</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">useState</span><span class="p">,</span><span class="w"> </span><span class="nx">useEffect</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;react&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">launchAAP</span><span class="w"> </span><span class="nx">Job</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;./api/aap&#39;</span><span class="p">;</span>
+
+<span class="kd">function</span><span class="w"> </span><span class="nx">VMProvisionForm</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">[</span><span class="nx">environment</span><span class="p">,</span><span class="w"> </span><span class="nx">setEnvironment</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useState</span><span class="p">(</span><span class="s1">&#39;dev&#39;</span><span class="p">);</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">[</span><span class="nx">approvers</span><span class="p">,</span><span class="w"> </span><span class="nx">setApprovers</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useState</span><span class="p">([]);</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">[</span><span class="nx">cpuCount</span><span class="p">,</span><span class="w"> </span><span class="nx">setCpuCount</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useState</span><span class="p">(</span><span class="mf">2</span><span class="p">);</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">[</span><span class="nx">complianceRequired</span><span class="p">,</span><span class="w"> </span><span class="nx">setComplianceRequired</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useState</span><span class="p">(</span><span class="kc">false</span><span class="p">);</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">[</span><span class="nx">approverList</span><span class="p">,</span><span class="w"> </span><span class="nx">setApproverList</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useState</span><span class="p">([]);</span>
+
+<span class="w">  </span><span class="c1">// Load approvers from AD/LDAP when environment changes</span>
+<span class="w">  </span><span class="nx">useEffect</span><span class="p">(()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">environment</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">&#39;prod&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">fetch</span><span class="p">(</span><span class="s1">&#39;/api/approvers&#39;</span><span class="p">)</span>
+<span class="w">        </span><span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="nx">res</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">())</span>
+<span class="w">        </span><span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="nx">data</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">setApproverList</span><span class="p">(</span><span class="nx">data</span><span class="p">));</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">},</span><span class="w"> </span><span class="p">[</span><span class="nx">environment</span><span class="p">]);</span>
+
+<span class="w">  </span><span class="c1">// Update defaults when environment changes</span>
+<span class="w">  </span><span class="nx">useEffect</span><span class="p">(()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">cpuDefaults</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">dev</span><span class="o">:</span><span class="w"> </span><span class="mf">2</span><span class="p">,</span><span class="w"> </span><span class="nx">staging</span><span class="o">:</span><span class="w"> </span><span class="mf">4</span><span class="p">,</span><span class="w"> </span><span class="nx">prod</span><span class="o">:</span><span class="w"> </span><span class="mf">8</span><span class="w"> </span><span class="p">};</span>
+<span class="w">    </span><span class="nx">setCpuCount</span><span class="p">(</span><span class="nx">cpuDefaults</span><span class="p">[</span><span class="nx">environment</span><span class="p">]);</span>
+<span class="w">    </span><span class="nx">setComplianceRequired</span><span class="p">(</span><span class="nx">environment</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">&#39;prod&#39;</span><span class="p">);</span>
+<span class="w">  </span><span class="p">},</span><span class="w"> </span><span class="p">[</span><span class="nx">environment</span><span class="p">]);</span>
+
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">handleSubmit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="nx">e</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">e</span><span class="p">.</span><span class="nx">preventDefault</span><span class="p">();</span>
+
+<span class="w">    </span><span class="c1">// Validation</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">environment</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">&#39;prod&#39;</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nx">approvers</span><span class="p">.</span><span class="nx">length</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="mf">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">alert</span><span class="p">(</span><span class="s1">&#39;Approvers required for production&#39;</span><span class="p">);</span>
+<span class="w">      </span><span class="k">return</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="c1">// Launch AAP job</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="nx">launchAAPJob</span><span class="p">(</span><span class="s1">&#39;provision_vm&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">environment</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">approvers</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">cpu_count</span><span class="o">:</span><span class="w"> </span><span class="nx">cpuCount</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">compliance_required</span><span class="o">:</span><span class="w"> </span><span class="nx">complianceRequired</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="w">  </span><span class="p">};</span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="nx">form</span><span class="w"> </span><span class="nx">onSubmit</span><span class="o">=</span><span class="p">{</span><span class="nx">handleSubmit</span><span class="p">}</span><span class="o">&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">div</span><span class="w"> </span><span class="nx">className</span><span class="o">=</span><span class="s2">&quot;form-group&quot;</span><span class="o">&gt;</span>
+<span class="w">        </span><span class="o">&lt;</span><span class="nx">label</span><span class="o">&gt;</span><span class="nx">Environment</span><span class="o">&lt;</span><span class="err">/label&gt;</span>
+<span class="w">        </span><span class="o">&lt;</span><span class="nx">select</span><span class="w"> </span><span class="nx">value</span><span class="o">=</span><span class="p">{</span><span class="nx">environment</span><span class="p">}</span><span class="w"> </span><span class="nx">onChange</span><span class="o">=</span><span class="p">{(</span><span class="nx">e</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">setEnvironment</span><span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">value</span><span class="p">)}</span><span class="o">&gt;</span>
+<span class="w">          </span><span class="o">&lt;</span><span class="nx">option</span><span class="w"> </span><span class="nx">value</span><span class="o">=</span><span class="s2">&quot;dev&quot;</span><span class="o">&gt;</span><span class="nx">Development</span><span class="o">&lt;</span><span class="err">/option&gt;</span>
+<span class="w">          </span><span class="o">&lt;</span><span class="nx">option</span><span class="w"> </span><span class="nx">value</span><span class="o">=</span><span class="s2">&quot;staging&quot;</span><span class="o">&gt;</span><span class="nx">Staging</span><span class="o">&lt;</span><span class="err">/option&gt;</span>
+<span class="w">          </span><span class="o">&lt;</span><span class="nx">option</span><span class="w"> </span><span class="nx">value</span><span class="o">=</span><span class="s2">&quot;prod&quot;</span><span class="o">&gt;</span><span class="nx">Production</span><span class="o">&lt;</span><span class="err">/option&gt;</span>
+<span class="w">        </span><span class="o">&lt;</span><span class="err">/select&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="err">/div&gt;</span>
+
+<span class="w">      </span><span class="p">{</span><span class="cm">/* Conditionally show approvers for prod */</span><span class="p">}</span>
+<span class="w">      </span><span class="p">{</span><span class="nx">environment</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">&#39;prod&#39;</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="o">&lt;</span><span class="nx">div</span><span class="w"> </span><span class="nx">className</span><span class="o">=</span><span class="s2">&quot;form-group&quot;</span><span class="o">&gt;</span>
+<span class="w">          </span><span class="o">&lt;</span><span class="nx">label</span><span class="o">&gt;</span><span class="nx">Approvers</span><span class="w"> </span><span class="o">*&lt;</span><span class="err">/label&gt;</span>
+<span class="w">          </span><span class="o">&lt;</span><span class="nx">MultiSelect</span>
+<span class="w">            </span><span class="nx">options</span><span class="o">=</span><span class="p">{</span><span class="nx">approverList</span><span class="p">}</span>
+<span class="w">            </span><span class="nx">value</span><span class="o">=</span><span class="p">{</span><span class="nx">approvers</span><span class="p">}</span>
+<span class="w">            </span><span class="nx">onChange</span><span class="o">=</span><span class="p">{</span><span class="nx">setApprovers</span><span class="p">}</span>
+<span class="w">            </span><span class="nx">placeholder</span><span class="o">=</span><span class="s2">&quot;Select approvers...&quot;</span>
+<span class="w">          </span><span class="o">/&gt;</span>
+<span class="w">        </span><span class="o">&lt;</span><span class="err">/div&gt;</span>
+<span class="w">      </span><span class="p">)}</span>
+
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">div</span><span class="w"> </span><span class="nx">className</span><span class="o">=</span><span class="s2">&quot;form-group&quot;</span><span class="o">&gt;</span>
+<span class="w">        </span><span class="o">&lt;</span><span class="nx">label</span><span class="o">&gt;</span><span class="nx">CPU</span><span class="w"> </span><span class="nx">Count</span><span class="o">&lt;</span><span class="err">/label&gt;</span>
+<span class="w">        </span><span class="o">&lt;</span><span class="nx">input</span>
+<span class="w">          </span><span class="nx">type</span><span class="o">=</span><span class="s2">&quot;number&quot;</span>
+<span class="w">          </span><span class="nx">min</span><span class="o">=</span><span class="s2">&quot;1&quot;</span>
+<span class="w">          </span><span class="nx">max</span><span class="o">=</span><span class="s2">&quot;16&quot;</span>
+<span class="w">          </span><span class="nx">value</span><span class="o">=</span><span class="p">{</span><span class="nx">cpuCount</span><span class="p">}</span>
+<span class="w">          </span><span class="nx">onChange</span><span class="o">=</span><span class="p">{(</span><span class="nx">e</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">setCpuCount</span><span class="p">(</span><span class="nb">parseInt</span><span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">value</span><span class="p">))}</span>
+<span class="w">        </span><span class="o">/&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="err">/div&gt;</span>
+
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">div</span><span class="w"> </span><span class="nx">className</span><span class="o">=</span><span class="s2">&quot;form-group&quot;</span><span class="o">&gt;</span>
+<span class="w">        </span><span class="o">&lt;</span><span class="nx">label</span><span class="o">&gt;</span>
+<span class="w">          </span><span class="o">&lt;</span><span class="nx">input</span>
+<span class="w">            </span><span class="nx">type</span><span class="o">=</span><span class="s2">&quot;checkbox&quot;</span>
+<span class="w">            </span><span class="nx">checked</span><span class="o">=</span><span class="p">{</span><span class="nx">complianceRequired</span><span class="p">}</span>
+<span class="w">            </span><span class="nx">disabled</span><span class="o">=</span><span class="p">{</span><span class="nx">environment</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">&#39;prod&#39;</span><span class="p">}</span>
+<span class="w">            </span><span class="nx">onChange</span><span class="o">=</span><span class="p">{(</span><span class="nx">e</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">setComplianceRequired</span><span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">checked</span><span class="p">)}</span>
+<span class="w">          </span><span class="o">/&gt;</span>
+<span class="w">          </span><span class="nx">Compliance</span><span class="w"> </span><span class="nx">Required</span>
+<span class="w">        </span><span class="o">&lt;</span><span class="err">/label&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="err">/div&gt;</span>
+
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">button</span><span class="w"> </span><span class="nx">type</span><span class="o">=</span><span class="s2">&quot;submit&quot;</span><span class="o">&gt;</span><span class="nx">Provision</span><span class="w"> </span><span class="nx">VM</span><span class="o">&lt;</span><span class="err">/button&gt;</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="err">/form&gt;</span>
+<span class="w">  </span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Trade-offs:</strong>
+- ✅ Full flexibility and control
+- ✅ Modern, responsive UX
+- ✅ Complex conditional logic
+- ✅ Can integrate with any backend
+- ✅ Progressive web app capabilities
+- ❌ Requires front-end development
+- ❌ Maintenance and security updates
+- ❌ Need to build authentication/authorization</p>
+<h3 id="decision-tree_1">Decision Tree</h3>
+<div class="codehilite"><pre><span></span><code><span class="nx">Do</span><span class="w"> </span><span class="nx">you</span><span class="w"> </span><span class="nx">need</span><span class="w"> </span><span class="nx">conditional</span><span class="w"> </span><span class="nx">field</span><span class="w"> </span><span class="nx">visibility</span><span class="w"> </span><span class="k">or</span><span class="w"> </span><span class="nx">dynamic</span><span class="w"> </span><span class="nx">choices</span><span class="p">?</span>
+<span class="err">├─</span><span class="w"> </span><span class="nx">NO</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">Use</span><span class="w"> </span><span class="nx">AAP</span><span class="w"> </span><span class="nx">surveys</span>
+<span class="err">└─</span><span class="w"> </span><span class="nx">YES</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">Do</span><span class="w"> </span><span class="nx">you</span><span class="w"> </span><span class="nx">have</span><span class="w"> </span><span class="nx">ServiceNow</span><span class="w"> </span><span class="k">or</span><span class="w"> </span><span class="nx">enterprise</span><span class="w"> </span><span class="nx">ITSM</span><span class="p">?</span>
+<span class="w">    </span><span class="err">├─</span><span class="w"> </span><span class="nx">YES</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">Use</span><span class="w"> </span><span class="nx">Service</span><span class="w"> </span><span class="nx">Catalog</span><span class="w"> </span><span class="nx">integration</span><span class="w"> </span><span class="p">(</span><span class="nx">lowest</span><span class="w"> </span><span class="nx">friction</span><span class="p">)</span>
+<span class="w">    </span><span class="err">└─</span><span class="w"> </span><span class="nx">NO</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">Do</span><span class="w"> </span><span class="nx">you</span><span class="w"> </span><span class="nx">have</span><span class="w"> </span><span class="nx">front</span><span class="o">-</span><span class="nx">end</span><span class="w"> </span><span class="nx">development</span><span class="w"> </span><span class="nx">resources</span><span class="p">?</span>
+<span class="w">        </span><span class="err">├─</span><span class="w"> </span><span class="nx">YES</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">Build</span><span class="w"> </span><span class="nx">custom</span><span class="w"> </span><span class="nx">web</span><span class="w"> </span><span class="nx">portal</span>
+<span class="w">        </span><span class="err">└─</span><span class="w"> </span><span class="nx">NO</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">Simplify</span><span class="w"> </span><span class="nx">requirements</span><span class="w"> </span><span class="k">or</span><span class="w"> </span><span class="nx">use</span><span class="w"> </span><span class="nx">AAP</span><span class="w"> </span><span class="nx">surveys</span>
+</code></pre></div>
+
+<hr />
+<h2 id="pattern-3-dynamic-workflow-generation">Pattern 3: Dynamic Workflow Generation</h2>
+<h3 id="vro-capability_2">vRO Capability</h3>
+<p>vRO can generate workflow steps dynamically at runtime based on data:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Generate workflow steps dynamically based on data</span>
+<span class="kd">var</span><span class="w"> </span><span class="nx">steps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">getRequiredSteps</span><span class="p">(</span><span class="nx">environment</span><span class="p">,</span><span class="w"> </span><span class="nx">vmType</span><span class="p">,</span><span class="w"> </span><span class="nx">complianceLevel</span><span class="p">);</span>
+<span class="k">for</span><span class="w"> </span><span class="nx">each</span><span class="w"> </span><span class="p">(</span><span class="nx">step</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="nx">steps</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">executeStep</span><span class="p">(</span><span class="nx">step</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="c1">// Or: build workflow graph at runtime</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">needsCompliance</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">workflow</span><span class="p">.</span><span class="nx">addStep</span><span class="p">(</span><span class="nx">complianceCheck</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">needsBackup</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">workflow</span><span class="p">.</span><span class="nx">addStep</span><span class="p">(</span><span class="nx">configureBackup</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">vmType</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;database&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">workflow</span><span class="p">.</span><span class="nx">addStep</span><span class="p">(</span><span class="nx">tuneDatabase</span><span class="p">);</span>
+<span class="w">    </span><span class="nx">workflow</span><span class="p">.</span><span class="nx">addStep</span><span class="p">(</span><span class="nx">configureReplication</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="alternative-patterns_2">Alternative Patterns</h3>
+<h4 id="option-a-dynamic-includes-ansible-native">Option A: Dynamic Includes (Ansible Native)</h4>
+<p><strong>When to use:</strong> Simple conditional step inclusion</p>
+<div class="codehilite"><pre><span></span><code><span class="nn">---</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Dynamic VM Provisioning</span>
+<span class="w">  </span><span class="nt">hosts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">localhost</span>
+<span class="w">  </span><span class="nt">vars</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">required_steps</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">lookup(&#39;template&#39;,</span><span class="nv"> </span><span class="s">&#39;step_selector.j2&#39;)</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">from_yaml</span><span class="nv"> </span><span class="s">}}&quot;</span>
+
+<span class="w">  </span><span class="nt">tasks</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Execute dynamic steps</span>
+<span class="w">      </span><span class="nt">ansible.builtin.include_tasks</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">item</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">loop</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">required_steps</span><span class="nv"> </span><span class="s">}}&quot;</span>
+
+<span class="c1"># templates/step_selector.j2</span>
+<span class="p p-Indicator">{</span><span class="err">%</span><span class="w"> </span><span class="nv">if environment == &#39;prod&#39; %</span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compliance_check.yml</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">security_hardening.yml</span>
+<span class="p p-Indicator">{</span><span class="err">%</span><span class="w"> </span><span class="nv">endif %</span><span class="p p-Indicator">}</span>
+
+<span class="p p-Indicator">{</span><span class="err">%</span><span class="w"> </span><span class="nv">if vm_type == &#39;database&#39; %</span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">configure_backup.yml</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tune_performance.yml</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">setup_replication.yml</span>
+<span class="p p-Indicator">{</span><span class="err">%</span><span class="w"> </span><span class="nv">endif %</span><span class="p p-Indicator">}</span>
+
+<span class="p p-Indicator">{</span><span class="err">%</span><span class="w"> </span><span class="nv">if needs_monitoring %</span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">install_agents.yml</span>
+<span class="p p-Indicator">{</span><span class="err">%</span><span class="w"> </span><span class="nv">endif %</span><span class="p p-Indicator">}</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">finalize.yml</span>
+</code></pre></div>
+
+<p><strong>Trade-offs:</strong>
+- ✅ Native Ansible feature
+- ✅ No external dependencies
+- ✅ Easy to maintain
+- ❌ Limited to task-level inclusion
+- ❌ Cannot generate AAP workflow graph dynamically
+- ❌ Logic is evaluated at runtime (not visible in AAP UI)</p>
+<h4 id="option-b-aap-workflow-templates-with-branching">Option B: AAP Workflow Templates with Branching</h4>
+<p><strong>When to use:</strong> Need visual workflow in AAP, moderate complexity</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Create AAP workflow template with conditional branches</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ansible.controller</span><span class="w"> </span><span class="kn">import</span> <span class="n">WorkflowJobTemplate</span><span class="p">,</span> <span class="n">WorkflowNode</span>
+
+<span class="c1"># Define workflow structure</span>
+<span class="n">workflow</span> <span class="o">=</span> <span class="n">WorkflowJobTemplate</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;VM Provisioning&quot;</span><span class="p">,</span>
+    <span class="n">organization</span><span class="o">=</span><span class="s2">&quot;Default&quot;</span>
+<span class="p">)</span>
+
+<span class="c1"># Always run provision</span>
+<span class="n">provision_node</span> <span class="o">=</span> <span class="n">WorkflowNode</span><span class="p">(</span>
+    <span class="n">workflow</span><span class="o">=</span><span class="n">workflow</span><span class="p">,</span>
+    <span class="n">unified_job_template</span><span class="o">=</span><span class="s2">&quot;Provision VM&quot;</span><span class="p">,</span>
+    <span class="n">identifier</span><span class="o">=</span><span class="s2">&quot;provision&quot;</span>
+<span class="p">)</span>
+
+<span class="c1"># Conditional: compliance check for prod</span>
+<span class="n">compliance_node</span> <span class="o">=</span> <span class="n">WorkflowNode</span><span class="p">(</span>
+    <span class="n">workflow</span><span class="o">=</span><span class="n">workflow</span><span class="p">,</span>
+    <span class="n">unified_job_template</span><span class="o">=</span><span class="s2">&quot;Compliance Check&quot;</span><span class="p">,</span>
+    <span class="n">identifier</span><span class="o">=</span><span class="s2">&quot;compliance&quot;</span><span class="p">,</span>
+    <span class="n">success_nodes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;finalize&quot;</span><span class="p">],</span>
+    <span class="c1"># Only run if environment == prod</span>
+    <span class="n">extra_data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;_prompt&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;environment&quot;</span><span class="p">:</span> <span class="s2">&quot;prod&quot;</span><span class="p">}}</span>
+<span class="p">)</span>
+<span class="n">provision_node</span><span class="o">.</span><span class="n">success_nodes</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;compliance&quot;</span><span class="p">,</span> <span class="s2">&quot;finalize&quot;</span><span class="p">]</span>
+
+<span class="c1"># Conditional: backup for database VMs</span>
+<span class="n">backup_node</span> <span class="o">=</span> <span class="n">WorkflowNode</span><span class="p">(</span>
+    <span class="n">workflow</span><span class="o">=</span><span class="n">workflow</span><span class="p">,</span>
+    <span class="n">unified_job_template</span><span class="o">=</span><span class="s2">&quot;Configure Backup&quot;</span><span class="p">,</span>
+    <span class="n">identifier</span><span class="o">=</span><span class="s2">&quot;backup&quot;</span><span class="p">,</span>
+    <span class="c1"># Only run if vm_type == database</span>
+    <span class="n">extra_data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;_prompt&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;vm_type&quot;</span><span class="p">:</span> <span class="s2">&quot;database&quot;</span><span class="p">}}</span>
+<span class="p">)</span>
+
+<span class="c1"># All paths lead to finalize</span>
+<span class="n">finalize_node</span> <span class="o">=</span> <span class="n">WorkflowNode</span><span class="p">(</span>
+    <span class="n">workflow</span><span class="o">=</span><span class="n">workflow</span><span class="p">,</span>
+    <span class="n">unified_job_template</span><span class="o">=</span><span class="s2">&quot;Finalize&quot;</span><span class="p">,</span>
+    <span class="n">identifier</span><span class="o">=</span><span class="s2">&quot;finalize&quot;</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Trade-offs:</strong>
+- ✅ Visible in AAP workflow visualizer
+- ✅ Built-in approval gates
+- ✅ Conditional branching support
+- ❌ Workflow structure is static (defined at design time)
+- ❌ Limited conditional logic (based on success/failure/always)
+- ❌ Cannot dynamically add nodes at runtime</p>
+<h4 id="option-c-aap-api-programmatic-workflow-generation">Option C: AAP API Programmatic Workflow Generation</h4>
+<p><strong>When to use:</strong> Truly dynamic workflows, templates generated per request</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">generate_dynamic_workflow</span><span class="p">(</span>
+    <span class="n">vm_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">environment</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">vm_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">compliance_needed</span><span class="p">:</span> <span class="nb">bool</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate AAP workflow template on-the-fly.&quot;&quot;&quot;</span>
+
+    <span class="n">nodes</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">node_id</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="c1"># Always start with provisioning</span>
+    <span class="n">nodes</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+        <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">node_id</span><span class="p">,</span>
+        <span class="s2">&quot;unified_job_template&quot;</span><span class="p">:</span> <span class="n">get_template_id</span><span class="p">(</span><span class="s2">&quot;provision_vm&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;identifier&quot;</span><span class="p">:</span> <span class="s2">&quot;provision&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;extra_data&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;vm_id&quot;</span><span class="p">:</span> <span class="n">vm_id</span><span class="p">,</span> <span class="s2">&quot;environment&quot;</span><span class="p">:</span> <span class="n">environment</span><span class="p">}</span>
+    <span class="p">})</span>
+    <span class="n">prev_node</span> <span class="o">=</span> <span class="n">node_id</span>
+    <span class="n">node_id</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="c1"># Add compliance check for prod</span>
+    <span class="k">if</span> <span class="n">environment</span> <span class="o">==</span> <span class="s2">&quot;prod&quot;</span> <span class="ow">and</span> <span class="n">compliance_needed</span><span class="p">:</span>
+        <span class="n">nodes</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+            <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">node_id</span><span class="p">,</span>
+            <span class="s2">&quot;unified_job_template&quot;</span><span class="p">:</span> <span class="n">get_template_id</span><span class="p">(</span><span class="s2">&quot;compliance_check&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;identifier&quot;</span><span class="p">:</span> <span class="s2">&quot;compliance&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;success_nodes&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">prev_node</span><span class="p">]</span>
+        <span class="p">})</span>
+        <span class="n">prev_node</span> <span class="o">=</span> <span class="n">node_id</span>
+        <span class="n">node_id</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="c1"># Add database-specific tasks</span>
+    <span class="k">if</span> <span class="n">vm_type</span> <span class="o">==</span> <span class="s2">&quot;database&quot;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;configure_backup&quot;</span><span class="p">,</span> <span class="s2">&quot;tune_performance&quot;</span><span class="p">,</span> <span class="s2">&quot;setup_replication&quot;</span><span class="p">]:</span>
+            <span class="n">nodes</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">node_id</span><span class="p">,</span>
+                <span class="s2">&quot;unified_job_template&quot;</span><span class="p">:</span> <span class="n">get_template_id</span><span class="p">(</span><span class="n">task</span><span class="p">),</span>
+                <span class="s2">&quot;identifier&quot;</span><span class="p">:</span> <span class="n">task</span><span class="p">,</span>
+                <span class="s2">&quot;success_nodes&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">prev_node</span><span class="p">]</span>
+            <span class="p">})</span>
+            <span class="n">prev_node</span> <span class="o">=</span> <span class="n">node_id</span>
+            <span class="n">node_id</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="c1"># Create workflow template via API</span>
+    <span class="n">workflow_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;VM Provisioning - </span><span class="si">{</span><span class="n">vm_id</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">AAP_URL</span><span class="si">}</span><span class="s2">/api/v2/workflow_job_templates/&quot;</span><span class="p">,</span>
+        <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Authorization&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Bearer </span><span class="si">{</span><span class="n">AAP_TOKEN</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">},</span>
+        <span class="n">json</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">workflow_name</span><span class="p">,</span>
+            <span class="s2">&quot;organization&quot;</span><span class="p">:</span> <span class="n">get_org_id</span><span class="p">(</span><span class="s2">&quot;Default&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;workflow_nodes&quot;</span><span class="p">:</span> <span class="n">nodes</span>
+        <span class="p">}</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Launch the workflow</span>
+    <span class="n">workflow_id</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span>
+    <span class="n">launch_response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">AAP_URL</span><span class="si">}</span><span class="s2">/api/v2/workflow_job_templates/</span><span class="si">{</span><span class="n">workflow_id</span><span class="si">}</span><span class="s2">/launch/&quot;</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">launch_response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span>
+</code></pre></div>
+
+<p><strong>Trade-offs:</strong>
+- ✅ Truly dynamic workflow generation
+- ✅ Full flexibility
+- ✅ Can create complex conditional logic
+- ❌ Workflow templates proliferate (cleanup needed)
+- ❌ Requires API scripting
+- ❌ Not visible in AAP until generated</p>
+<h3 id="decision-tree_2">Decision Tree</h3>
+<div class="codehilite"><pre><span></span><code><span class="nx">Is</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">dynamic</span><span class="w"> </span><span class="nx">logic</span><span class="w"> </span><span class="nx">simple</span><span class="w"> </span><span class="nx">conditional</span><span class="w"> </span><span class="nx">task</span><span class="w"> </span><span class="nx">inclusion</span><span class="p">?</span>
+<span class="err">├─</span><span class="w"> </span><span class="nx">YES</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">Use</span><span class="w"> </span><span class="nx">Ansible</span><span class="w"> </span><span class="nx">dynamic</span><span class="w"> </span><span class="nx">includes</span>
+<span class="err">└─</span><span class="w"> </span><span class="nx">NO</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">Is</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">workflow</span><span class="w"> </span><span class="nx">structure</span><span class="w"> </span><span class="nx">moderately</span><span class="w"> </span><span class="nx">complex</span><span class="p">?</span>
+<span class="w">    </span><span class="err">├─</span><span class="w"> </span><span class="nx">YES</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">Use</span><span class="w"> </span><span class="nx">AAP</span><span class="w"> </span><span class="nx">workflow</span><span class="w"> </span><span class="nx">templates</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">branching</span>
+<span class="w">    </span><span class="err">└─</span><span class="w"> </span><span class="nx">NO</span><span class="w"> </span><span class="p">(</span><span class="nx">very</span><span class="w"> </span><span class="nx">complex</span><span class="p">)</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">Use</span><span class="w"> </span><span class="nx">AAP</span><span class="w"> </span><span class="nx">API</span><span class="w"> </span><span class="nx">to</span><span class="w"> </span><span class="nx">generate</span><span class="w"> </span><span class="nx">workflows</span><span class="w"> </span><span class="nx">programmatically</span>
+</code></pre></div>
+
+<hr />
+<h2 id="pattern-4-state-management">Pattern 4: State Management</h2>
+<h3 id="vro-capability_3">vRO Capability</h3>
+<p>vRO workflows maintain persistent state across runs and can resume from checkpoints:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Workflow attributes persist across runs</span>
+<span class="nx">workflow</span><span class="p">.</span><span class="nx">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;provisioning&quot;</span><span class="p">;</span>
+<span class="nx">provisionVM</span><span class="p">();</span>
+
+<span class="nx">workflow</span><span class="p">.</span><span class="nx">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;configuring&quot;</span><span class="p">;</span>
+<span class="nx">configureVM</span><span class="p">();</span>
+
+<span class="nx">workflow</span><span class="p">.</span><span class="nx">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;completed&quot;</span><span class="p">;</span>
+
+<span class="c1">// Resume from last state on retry</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">workflow</span><span class="p">.</span><span class="nx">state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;provisioning&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// Skip provisioning, go to configuring</span>
+<span class="w">    </span><span class="nx">configureVM</span><span class="p">();</span>
+<span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">workflow</span><span class="p">.</span><span class="nx">state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;configuring&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// Retry configuration</span>
+<span class="w">    </span><span class="nx">configureVM</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="alternative-patterns_3">Alternative Patterns</h3>
+<h4 id="option-a-ansible-facts-simple">Option A: Ansible Facts (Simple)</h4>
+<p><strong>When to use:</strong> Single-host state, simple workflows</p>
+<div class="codehilite"><pre><span></span><code><span class="nn">---</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Stateful VM Provisioning</span>
+<span class="w">  </span><span class="nt">hosts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">localhost</span>
+
+<span class="w">  </span><span class="nt">tasks</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Check current state</span>
+<span class="w">      </span><span class="nt">ansible.builtin.stat</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/var/lib/ansible/{{</span><span class="nv"> </span><span class="s">vm_id</span><span class="nv"> </span><span class="s">}}_state.json&quot;</span>
+<span class="w">      </span><span class="nt">register</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">state_file</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Load state</span>
+<span class="w">      </span><span class="nt">ansible.builtin.slurp</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/var/lib/ansible/{{</span><span class="nv"> </span><span class="s">vm_id</span><span class="nv"> </span><span class="s">}}_state.json&quot;</span>
+<span class="w">      </span><span class="nt">register</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vm_state_raw</span>
+<span class="w">      </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">state_file.stat.exists</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Parse state</span>
+<span class="w">      </span><span class="nt">ansible.builtin.set_fact</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">vm_state</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vm_state_raw.content</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">b64decode</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">from_json</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">state_file.stat.exists</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Initialize state</span>
+<span class="w">      </span><span class="nt">ansible.builtin.set_fact</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">vm_state</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">stage</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;new&quot;</span><span class="p p-Indicator">,</span><span class="nt"> completed_steps</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]}</span>
+<span class="w">      </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">not state_file.stat.exists</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Provision VM</span>
+<span class="w">      </span><span class="c1"># ... provisioning tasks ...</span>
+<span class="w">      </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&#39;provisioning&#39;</span><span class="nv"> </span><span class="s">not</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">vm_state.completed_steps&quot;</span>
+<span class="w">      </span><span class="nt">register</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provision_result</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Update state after provisioning</span>
+<span class="w">      </span><span class="nt">ansible.builtin.copy</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vm_state</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">combine({&#39;completed_steps&#39;:</span><span class="nv"> </span><span class="s">vm_state.completed_steps</span><span class="nv"> </span><span class="s">+</span><span class="nv"> </span><span class="s">[&#39;provisioning&#39;]})</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">to_json</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">dest</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/var/lib/ansible/{{</span><span class="nv"> </span><span class="s">vm_id</span><span class="nv"> </span><span class="s">}}_state.json&quot;</span>
+<span class="w">      </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provision_result is changed</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Configure VM</span>
+<span class="w">      </span><span class="c1"># ... configuration tasks ...</span>
+<span class="w">      </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&#39;configuring&#39;</span><span class="nv"> </span><span class="s">not</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">vm_state.completed_steps&quot;</span>
+<span class="w">      </span><span class="nt">register</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">configure_result</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Update state after configuration</span>
+<span class="w">      </span><span class="nt">ansible.builtin.copy</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vm_state</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">combine({&#39;completed_steps&#39;:</span><span class="nv"> </span><span class="s">vm_state.completed_steps</span><span class="nv"> </span><span class="s">+</span><span class="nv"> </span><span class="s">[&#39;configuring&#39;]})</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">to_json</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">dest</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/var/lib/ansible/{{</span><span class="nv"> </span><span class="s">vm_id</span><span class="nv"> </span><span class="s">}}_state.json&quot;</span>
+<span class="w">      </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">configure_result is changed</span>
+</code></pre></div>
+
+<p><strong>Trade-offs:</strong>
+- ✅ Simple, no external dependencies
+- ✅ File-based, easy to inspect
+- ❌ Single-host only (no distributed state)
+- ❌ Manual cleanup required
+- ❌ No expiration/TTL</p>
+<h4 id="option-b-external-state-store-redisdatabase">Option B: External State Store (Redis/Database)</h4>
+<p><strong>When to use:</strong> Multi-host workflows, complex state, need TTL</p>
+<div class="codehilite"><pre><span></span><code><span class="nn">---</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Stateful VM Provisioning with Redis</span>
+<span class="w">  </span><span class="nt">hosts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">localhost</span>
+<span class="w">  </span><span class="nt">vars</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">redis_host</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">lookup(&#39;env&#39;,</span><span class="nv"> </span><span class="s">&#39;REDIS_HOST&#39;)</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">redis_port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6379</span>
+
+<span class="w">  </span><span class="nt">tasks</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Get current state from Redis</span>
+<span class="w">      </span><span class="nt">community.general.redis_data</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;vm:{{</span><span class="nv"> </span><span class="s">vm_id</span><span class="nv"> </span><span class="s">}}:state&quot;</span>
+<span class="w">        </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">redis_host</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">redis_port</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">register</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vm_state_redis</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Parse state</span>
+<span class="w">      </span><span class="nt">ansible.builtin.set_fact</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">vm_state</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vm_state_redis.value</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">default(&#39;{}&#39;)</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">from_json</span><span class="nv"> </span><span class="s">}}&quot;</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Provision VM</span>
+<span class="w">      </span><span class="c1"># ... provisioning tasks ...</span>
+<span class="w">      </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vm_state.stage | default(&#39;new&#39;) != &#39;provisioned&#39;</span>
+<span class="w">      </span><span class="nt">register</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provision_result</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Update state in Redis</span>
+<span class="w">      </span><span class="nt">community.general.redis_data</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;vm:{{</span><span class="nv"> </span><span class="s">vm_id</span><span class="nv"> </span><span class="s">}}:state&quot;</span>
+<span class="w">        </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">redis_host</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">redis_port</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">{&#39;stage&#39;:</span><span class="nv"> </span><span class="s">&#39;provisioned&#39;,</span><span class="nv"> </span><span class="s">&#39;timestamp&#39;:</span><span class="nv"> </span><span class="s">ansible_date_time.iso8601}</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">to_json</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">expiration</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">604800</span><span class="w">  </span><span class="c1"># 7 days TTL</span>
+<span class="w">      </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provision_result is changed</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Configure VM</span>
+<span class="w">      </span><span class="c1"># ... configuration tasks ...</span>
+<span class="w">      </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vm_state.stage | default(&#39;new&#39;) == &#39;provisioned&#39;</span>
+<span class="w">      </span><span class="nt">register</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">configure_result</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Update state to completed</span>
+<span class="w">      </span><span class="nt">community.general.redis_data</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;vm:{{</span><span class="nv"> </span><span class="s">vm_id</span><span class="nv"> </span><span class="s">}}:state&quot;</span>
+<span class="w">        </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">redis_host</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">redis_port</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">{&#39;stage&#39;:</span><span class="nv"> </span><span class="s">&#39;completed&#39;,</span><span class="nv"> </span><span class="s">&#39;timestamp&#39;:</span><span class="nv"> </span><span class="s">ansible_date_time.iso8601}</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">to_json</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">expiration</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">604800</span>
+<span class="w">      </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">configure_result is changed</span>
+</code></pre></div>
+
+<p><strong>Trade-offs:</strong>
+- ✅ Distributed state (accessible from any host)
+- ✅ Automatic TTL/expiration
+- ✅ Fast lookups
+- ✅ Can store complex state
+- ❌ Requires Redis infrastructure
+- ❌ Additional operational complexity</p>
+<h4 id="option-c-cmdb-integration">Option C: CMDB Integration</h4>
+<p><strong>When to use:</strong> State should be part of asset management, compliance tracking</p>
+<div class="codehilite"><pre><span></span><code><span class="nn">---</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Stateful VM Provisioning with ServiceNow CMDB</span>
+<span class="w">  </span><span class="nt">hosts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">localhost</span>
+
+<span class="w">  </span><span class="nt">tasks</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Get VM record from CMDB</span>
+<span class="w">      </span><span class="nt">servicenow.itsm.configuration_item_info</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">instance</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">snow_host</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">          </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">snow_user</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">          </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">snow_password</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">query</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vm_name</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">register</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vm_cmdb</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Extract provisioning state</span>
+<span class="w">      </span><span class="nt">ansible.builtin.set_fact</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">provision_state</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vm_cmdb.records[0].u_provision_state</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">default(&#39;new&#39;)</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vm_cmdb.records | length &gt; 0</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Provision VM</span>
+<span class="w">      </span><span class="c1"># ... provisioning tasks ...</span>
+<span class="w">      </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provision_state != &#39;provisioned&#39;</span>
+<span class="w">      </span><span class="nt">register</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provision_result</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Update CMDB with provisioned state</span>
+<span class="w">      </span><span class="nt">servicenow.itsm.configuration_item</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">instance</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">snow_host</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">          </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">snow_user</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">          </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">snow_password</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vm_name</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">u_provision_state</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;provisioned&quot;</span>
+<span class="w">        </span><span class="nt">u_last_provisioned</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">ansible_date_time.iso8601</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provision_result is changed</span>
+</code></pre></div>
+
+<p><strong>Trade-offs:</strong>
+- ✅ State is part of CMDB (single source of truth)
+- ✅ Audit trail built-in
+- ✅ Compliance reporting
+- ❌ Requires ServiceNow or similar CMDB
+- ❌ Slower than Redis
+- ❌ CMDB schema constraints</p>
+<h3 id="decision-tree_3">Decision Tree</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">Do</span><span class="w"> </span><span class="nv">you</span><span class="w"> </span><span class="nv">need</span><span class="w"> </span><span class="nv">distributed</span><span class="w"> </span><span class="nv">state</span><span class="w"> </span><span class="ss">(</span><span class="nv">multi</span><span class="o">-</span><span class="nv">host</span><span class="ss">)</span>?
+├─<span class="w"> </span><span class="nv">NO</span><span class="w"> </span>→<span class="w"> </span><span class="nv">Use</span><span class="w"> </span><span class="nv">Ansible</span><span class="w"> </span><span class="nv">facts</span><span class="w"> </span><span class="ss">(</span><span class="nv">file</span><span class="o">-</span><span class="nv">based</span><span class="ss">)</span>
+└─<span class="w"> </span><span class="nv">YES</span><span class="w"> </span>→<span class="w"> </span><span class="nv">Is</span><span class="w"> </span><span class="nv">state</span><span class="w"> </span><span class="nv">part</span><span class="w"> </span><span class="nv">of</span><span class="w"> </span><span class="nv">asset</span><span class="w"> </span><span class="nv">management</span>?
+<span class="w">    </span>├─<span class="w"> </span><span class="nv">YES</span><span class="w"> </span>→<span class="w"> </span><span class="nv">Use</span><span class="w"> </span><span class="nv">CMDB</span><span class="w"> </span><span class="nv">integration</span>
+<span class="w">    </span>└─<span class="w"> </span><span class="nv">NO</span><span class="w"> </span>→<span class="w"> </span><span class="nv">Use</span><span class="w"> </span><span class="nv">Redis</span><span class="o">/</span><span class="nv">external</span><span class="w"> </span><span class="nv">state</span><span class="w"> </span><span class="nv">store</span>
+</code></pre></div>
+
+<hr />
+<h2 id="pattern-5-nsx-security-components">Pattern 5: NSX Security Components</h2>
+<h3 id="vro-capability_4">vRO Capability</h3>
+<p>vRO integrates with NSX for network virtualization and security:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// NSX Security Group with dynamic membership</span>
+<span class="kd">var</span><span class="w"> </span><span class="nx">securityGroup</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">nsxManager</span><span class="p">.</span><span class="nx">createSecurityGroup</span><span class="p">(</span><span class="s2">&quot;WebTier&quot;</span><span class="p">);</span>
+<span class="nx">securityGroup</span><span class="p">.</span><span class="nx">addDynamicMember</span><span class="p">({</span>
+<span class="w">    </span><span class="s2">&quot;criteria&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="s2">&quot;tag&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;app:web&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;environment&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;prod&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">});</span>
+
+<span class="c1">// NSX Distributed Firewall Rule</span>
+<span class="kd">var</span><span class="w"> </span><span class="nx">firewallRule</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">nsxManager</span><span class="p">.</span><span class="nx">createFirewallRule</span><span class="p">(</span><span class="s2">&quot;Allow-Web-to-DB&quot;</span><span class="p">);</span>
+<span class="nx">firewallRule</span><span class="p">.</span><span class="nx">setSource</span><span class="p">(</span><span class="nx">securityGroup</span><span class="p">(</span><span class="s2">&quot;WebTier&quot;</span><span class="p">));</span>
+<span class="nx">firewallRule</span><span class="p">.</span><span class="nx">setDestination</span><span class="p">(</span><span class="nx">securityGroup</span><span class="p">(</span><span class="s2">&quot;DBTier&quot;</span><span class="p">));</span>
+<span class="nx">firewallRule</span><span class="p">.</span><span class="nx">setService</span><span class="p">(</span><span class="s2">&quot;MySQL&quot;</span><span class="p">);</span>
+<span class="nx">firewallRule</span><span class="p">.</span><span class="nx">setAction</span><span class="p">(</span><span class="s2">&quot;ALLOW&quot;</span><span class="p">);</span>
+
+<span class="c1">// NSX Load Balancer</span>
+<span class="kd">var</span><span class="w"> </span><span class="nx">lb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">nsxManager</span><span class="p">.</span><span class="nx">createLoadBalancer</span><span class="p">(</span><span class="s2">&quot;WebApp-LB&quot;</span><span class="p">);</span>
+<span class="nx">lb</span><span class="p">.</span><span class="nx">addPool</span><span class="p">(</span><span class="s2">&quot;WebServers&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">getVMsByTag</span><span class="p">(</span><span class="s2">&quot;app:web&quot;</span><span class="p">));</span>
+<span class="nx">lb</span><span class="p">.</span><span class="nx">configureHealthCheck</span><span class="p">(</span><span class="s2">&quot;/health&quot;</span><span class="p">,</span><span class="w"> </span><span class="mf">80</span><span class="p">);</span>
+</code></pre></div>
+
+<h3 id="alternative-patterns_4">Alternative Patterns</h3>
+<h4 id="option-a-kubernetes-networkpolicy-native">Option A: Kubernetes NetworkPolicy (Native)</h4>
+<p><strong>When to use:</strong> Workloads running as containers/pods in OpenShift</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Equivalent to NSX firewall rule: Web -&gt; DB</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">networking.k8s.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NetworkPolicy</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-web-to-db</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">podSelector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">tier</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">database</span>
+<span class="w">  </span><span class="nt">policyTypes</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ingress</span>
+<span class="w">  </span><span class="nt">ingress</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">podSelector</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">tier</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">web</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TCP</span>
+<span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3306</span>
+</code></pre></div>
+
+<p><strong>Trade-offs:</strong>
+- ✅ Native Kubernetes/OpenShift feature
+- ✅ No additional infrastructure
+- ✅ Works with pods/containers
+- ❌ Limited to L3/L4 (no L7 filtering)
+- ❌ Doesn't apply to VMs (only pods)
+- ❌ No dynamic membership (labels are static)</p>
+<h4 id="option-b-calico-networkpolicy-advanced">Option B: Calico NetworkPolicy (Advanced)</h4>
+<p><strong>When to use:</strong> Need L7 filtering, global policies, or VM integration</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Calico supports L7 filtering and VM integration</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">projectcalico.org/v3</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NetworkPolicy</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-web-to-db-advanced</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tier == &#39;database&#39;</span>
+<span class="w">  </span><span class="nt">types</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ingress</span>
+<span class="w">  </span><span class="nt">ingress</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Allow</span>
+<span class="w">    </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TCP</span>
+<span class="w">    </span><span class="nt">source</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">selector</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tier == &#39;web&#39;</span>
+<span class="w">    </span><span class="nt">destination</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3306</span>
+<span class="w">    </span><span class="nt">http</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">methods</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;GET&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;POST&#39;</span><span class="p p-Indicator">]</span><span class="w">  </span><span class="c1"># L7 filtering</span>
+
+<span class="nn">---</span>
+<span class="c1"># Calico Global NetworkPolicy applies to VMs and pods</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">projectcalico.org/v3</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GlobalNetworkPolicy</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">deny-egress-to-internet</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">has(isolation)</span>
+<span class="w">  </span><span class="nt">types</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Egress</span>
+<span class="w">  </span><span class="nt">egress</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deny</span>
+<span class="w">    </span><span class="nt">destination</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">notNets</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.0.0.0/8</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.0.0/16</span>
+</code></pre></div>
+
+<p><strong>Trade-offs:</strong>
+- ✅ L7 filtering (HTTP methods, paths)
+- ✅ Global policies across namespaces
+- ✅ Can apply to VMs via KubeVirt
+- ✅ More sophisticated selectors
+- ❌ Requires Calico installation
+- ❌ More complex than Kubernetes NetworkPolicy</p>
+<h4 id="option-c-hybrid-architecture-nsx-openshift">Option C: Hybrid Architecture (NSX + OpenShift)</h4>
+<p><strong>When to use:</strong> Gradual migration, need NSX features during transition</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># VMs stay in NSX, pods use NetworkPolicy</span>
+<span class="c1"># Use NSX-T Container Plugin (NCP) for pod networking</span>
+
+<span class="c1"># OpenShift pods get NSX security group tags</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pod</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">web-app</span>
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">nsx-t.vmware.com/security-groups</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">      </span><span class="no">[&quot;WebTier&quot;, &quot;ProdApps&quot;]</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">containers</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx:latest</span>
+
+<span class="c1"># NSX firewall rules apply to both VMs and pods</span>
+<span class="c1"># Managed via NSX Manager or Terraform:</span>
+<span class="l l-Scalar l-Scalar-Plain">resource &quot;nsxt_policy_group&quot; &quot;web_tier&quot; {</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">display_name = &quot;WebTier&quot;</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">criteria {</span>
+<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">condition {</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">member_type = &quot;VirtualMachine&quot;</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">operator    = &quot;CONTAINS&quot;</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">key         = &quot;Tag&quot;</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">value       = &quot;app:web&quot;</span>
+<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">}</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">}</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">criteria {</span>
+<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">condition {</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">member_type = &quot;Pod&quot;</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">operator    = &quot;CONTAINS&quot;</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">key         = &quot;Tag&quot;</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">value       = &quot;app:web&quot;</span>
+<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">}</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">}</span>
+<span class="err">}</span>
+</code></pre></div>
+
+<p><strong>Trade-offs:</strong>
+- ✅ Consistent security policy across VMs and containers
+- ✅ Gradual migration path
+- ✅ Full NSX feature set
+- ❌ Requires NSX-T Container Plugin
+- ❌ Operational complexity
+- ❌ Licensing costs</p>
+<h4 id="option-d-openshift-service-mesh-istio">Option D: OpenShift Service Mesh (Istio)</h4>
+<p><strong>When to use:</strong> Microservices architecture, need L7 features, service-to-service auth</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Istio AuthorizationPolicy for L7 security</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">security.istio.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AuthorizationPolicy</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-web-to-db</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">tier</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">database</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ALLOW</span>
+<span class="w">  </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">source</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">principals</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;cluster.local/ns/production/sa/web-app&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">operation</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">methods</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;GET&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;POST&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="nt">paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/api/users/*&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">when</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">request.headers[x-api-key]</span>
+<span class="w">      </span><span class="nt">values</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;*&quot;</span><span class="p p-Indicator">]</span><span class="w">  </span><span class="c1"># Require API key</span>
+
+<span class="nn">---</span>
+<span class="c1"># Load balancing with traffic splitting (canary)</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">networking.istio.io/v1alpha3</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VirtualService</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">web-app</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">hosts</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webapp.example.com</span>
+<span class="w">  </span><span class="nt">http</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">match</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">x-version</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">exact</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;v2&quot;</span>
+<span class="w">    </span><span class="nt">route</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">destination</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webapp</span>
+<span class="w">        </span><span class="nt">subset</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v2</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">route</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">destination</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webapp</span>
+<span class="w">        </span><span class="nt">subset</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="w">      </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">90</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">destination</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webapp</span>
+<span class="w">        </span><span class="nt">subset</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v2</span>
+<span class="w">      </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span><span class="w">  </span><span class="c1"># 10% canary traffic</span>
+</code></pre></div>
+
+<p><strong>Trade-offs:</strong>
+- ✅ L7 security policies
+- ✅ Mutual TLS between services
+- ✅ Advanced traffic management (canary, A/B testing)
+- ✅ Observability (distributed tracing)
+- ❌ Requires OpenShift Service Mesh operator
+- ❌ Adds latency (sidecar proxies)
+- ❌ Increased operational complexity</p>
+<h3 id="nsx-migration-decision-tree">NSX Migration Decision Tree</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">What</span><span class="w"> </span><span class="n">workloads</span><span class="w"> </span><span class="n">are</span><span class="w"> </span><span class="n">you</span><span class="w"> </span><span class="n">migrating</span><span class="err">?</span>
+<span class="err">├─</span><span class="w"> </span><span class="n">VMs</span><span class="w"> </span><span class="n">only</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">Are</span><span class="w"> </span><span class="n">you</span><span class="w"> </span><span class="n">migrating</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">KubeVirt</span><span class="err">?</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├─</span><span class="w"> </span><span class="n">YES</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">Use</span><span class="w"> </span><span class="n">Calico</span><span class="w"> </span><span class="n">NetworkPolicy</span><span class="w"> </span><span class="p">(</span><span class="n">VM</span><span class="w"> </span><span class="n">support</span><span class="p">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└─</span><span class="w"> </span><span class="n">NO</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">Use</span><span class="w"> </span><span class="n">Hybrid</span><span class="w"> </span><span class="n">Architecture</span><span class="w"> </span><span class="p">(</span><span class="n">NSX</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">VMs</span><span class="p">)</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">external</span><span class="w"> </span><span class="n">firewall</span>
+<span class="err">│</span>
+<span class="err">└─</span><span class="w"> </span><span class="n">Containers</span><span class="o">/</span><span class="n">Pods</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">Do</span><span class="w"> </span><span class="n">you</span><span class="w"> </span><span class="n">need</span><span class="w"> </span><span class="n">L7</span><span class="w"> </span><span class="n">security</span><span class="w"> </span><span class="n">features</span><span class="err">?</span>
+<span class="w">    </span><span class="err">├─</span><span class="w"> </span><span class="n">YES</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">Use</span><span class="w"> </span><span class="n">OpenShift</span><span class="w"> </span><span class="n">Service</span><span class="w"> </span><span class="n">Mesh</span><span class="w"> </span><span class="p">(</span><span class="n">Istio</span><span class="p">)</span>
+<span class="w">    </span><span class="err">└─</span><span class="w"> </span><span class="n">NO</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">Do</span><span class="w"> </span><span class="n">you</span><span class="w"> </span><span class="n">need</span><span class="w"> </span><span class="n">advanced</span><span class="w"> </span><span class="n">features</span><span class="w"> </span><span class="p">(</span><span class="n">global</span><span class="w"> </span><span class="n">policies</span><span class="p">,</span><span class="w"> </span><span class="n">VM</span><span class="w"> </span><span class="n">integration</span><span class="p">)</span><span class="err">?</span>
+<span class="w">        </span><span class="err">├─</span><span class="w"> </span><span class="n">YES</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">Use</span><span class="w"> </span><span class="n">Calico</span><span class="w"> </span><span class="n">NetworkPolicy</span>
+<span class="w">        </span><span class="err">└─</span><span class="w"> </span><span class="n">NO</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">Use</span><span class="w"> </span><span class="n">native</span><span class="w"> </span><span class="n">Kubernetes</span><span class="w"> </span><span class="n">NetworkPolicy</span>
+</code></pre></div>
+
+<hr />
+<h2 id="migration-decision-tree">Migration Decision Tree</h2>
+<p>Use this decision tree to determine the right migration approach for your vRO workflows:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Start</span><span class="o">:</span><span class="w"> </span><span class="n">Evaluating</span><span class="w"> </span><span class="n">vRO</span><span class="w"> </span><span class="n">workflow</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">migration</span>
+
+<span class="err">├─</span><span class="w"> </span><span class="n">Does</span><span class="w"> </span><span class="n">it</span><span class="w"> </span><span class="n">use</span><span class="w"> </span><span class="n">long</span><span class="o">-</span><span class="n">running</span><span class="w"> </span><span class="n">delays</span><span class="w"> </span><span class="o">(&gt;</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">hour</span><span class="o">)?</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├─</span><span class="w"> </span><span class="n">YES</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">See</span><span class="w"> </span><span class="n">Pattern</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">(</span><span class="n">Long</span><span class="o">-</span><span class="n">Running</span><span class="w"> </span><span class="n">Workflows</span><span class="o">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└─</span><span class="w"> </span><span class="n">NO</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">Continue</span>
+<span class="err">│</span>
+<span class="err">├─</span><span class="w"> </span><span class="n">Does</span><span class="w"> </span><span class="n">it</span><span class="w"> </span><span class="n">use</span><span class="w"> </span><span class="n">complex</span><span class="w"> </span><span class="n">conditional</span><span class="w"> </span><span class="n">forms</span><span class="o">?</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├─</span><span class="w"> </span><span class="n">YES</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">See</span><span class="w"> </span><span class="n">Pattern</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">(</span><span class="n">Complex</span><span class="w"> </span><span class="n">Forms</span><span class="o">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└─</span><span class="w"> </span><span class="n">NO</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">Continue</span>
+<span class="err">│</span>
+<span class="err">├─</span><span class="w"> </span><span class="n">Does</span><span class="w"> </span><span class="n">it</span><span class="w"> </span><span class="n">generate</span><span class="w"> </span><span class="n">workflow</span><span class="w"> </span><span class="n">structure</span><span class="w"> </span><span class="n">dynamically</span><span class="o">?</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├─</span><span class="w"> </span><span class="n">YES</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">See</span><span class="w"> </span><span class="n">Pattern</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="o">(</span><span class="n">Dynamic</span><span class="w"> </span><span class="n">Workflows</span><span class="o">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└─</span><span class="w"> </span><span class="n">NO</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">Continue</span>
+<span class="err">│</span>
+<span class="err">├─</span><span class="w"> </span><span class="n">Does</span><span class="w"> </span><span class="n">it</span><span class="w"> </span><span class="n">require</span><span class="w"> </span><span class="n">persistent</span><span class="w"> </span><span class="n">state</span><span class="w"> </span><span class="n">across</span><span class="w"> </span><span class="n">runs</span><span class="o">?</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├─</span><span class="w"> </span><span class="n">YES</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">See</span><span class="w"> </span><span class="n">Pattern</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="o">(</span><span class="n">State</span><span class="w"> </span><span class="n">Management</span><span class="o">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└─</span><span class="w"> </span><span class="n">NO</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">Continue</span>
+<span class="err">│</span>
+<span class="err">├─</span><span class="w"> </span><span class="n">Does</span><span class="w"> </span><span class="n">it</span><span class="w"> </span><span class="n">integrate</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="n">NSX</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">networking</span><span class="o">/</span><span class="n">security</span><span class="o">?</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├─</span><span class="w"> </span><span class="n">YES</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">See</span><span class="w"> </span><span class="n">Pattern</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="o">(</span><span class="n">NSX</span><span class="w"> </span><span class="n">Security</span><span class="w"> </span><span class="n">Components</span><span class="o">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└─</span><span class="w"> </span><span class="n">NO</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">Continue</span>
+<span class="err">│</span>
+<span class="err">└─</span><span class="w"> </span><span class="n">Direct</span><span class="w"> </span><span class="n">translation</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="n">ops</span><span class="o">-</span><span class="n">translate</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="n">likely</span><span class="w"> </span><span class="n">feasible</span>
+<span class="w">    </span><span class="err">└─</span><span class="w"> </span><span class="n">Run</span><span class="o">:</span><span class="w"> </span><span class="n">ops</span><span class="o">-</span><span class="n">translate</span><span class="w"> </span><span class="n">analyze</span>
+</code></pre></div>
+
+<hr />
+<h2 id="additional-resources">Additional Resources</h2>
+<ul>
+<li><a href="https://docs.ansible.com/automation-controller/">Ansible Automation Platform Documentation</a></li>
+<li><a href="https://www.ansible.com/products/event-driven-ansible">Event-Driven Ansible Documentation</a></li>
+<li><a href="https://docs.temporal.io/">Temporal.io Documentation</a></li>
+<li><a href="https://docs.tigera.io/calico/latest/network-policy/">Calico NetworkPolicy Documentation</a></li>
+<li><a href="https://docs.openshift.com/container-platform/latest/service_mesh/">OpenShift Service Mesh Documentation</a></li>
+<li><a href="https://kubevirt.io/user-guide/">KubeVirt Documentation</a></li>
+</ul>
+<hr />
+<h2 id="getting-help">Getting Help</h2>
+<p>If you're unsure which pattern applies to your use case:</p>
+<ol>
+<li>Run <code>ops-translate analyze</code> to get automated recommendations</li>
+<li>Review the generated <code>intent/gaps.json</code> for component classifications</li>
+<li>Check the HTML report for specific guidance on blocked components</li>
+<li>Consult this patterns guide for architectural alternatives</li>
+<li>Open an issue on <a href="https://github.com/tsanders-rh/ops-translate/issues">GitHub</a> for complex scenarios</li>
+</ol>
+<hr />
+<p><em>This guide is generated as part of the ops-translate migration assessment. For the latest version, see the <a href="https://github.com/tsanders-rh/ops-translate">GitHub repository</a>.</em></p>
+        </div>
+        <div style="margin-top: var(--spacing-xl); text-align: center;">
+            <a href="../index.html" class="back-to-report">← Back to Migration Report</a>
+        </div>
+    </div>
+</body>
+</html>

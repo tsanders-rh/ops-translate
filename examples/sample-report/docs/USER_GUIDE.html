@@ -1,0 +1,1686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Guide</title>
+    <link rel="stylesheet" href="../assets/style.css">
+    <style>
+        .doc-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--spacing-xl);
+            background: white;
+        }
+        .doc-header {
+            margin-bottom: var(--spacing-xl);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 2px solid #0c4a6e;
+        }
+        .doc-nav {
+            margin-bottom: var(--spacing-lg);
+            padding: var(--spacing-md);
+            background: #f0f9ff;
+            border-radius: 8px;
+        }
+        .doc-nav a {
+            color: #0c4a6e;
+            text-decoration: none;
+            margin-right: var(--spacing-md);
+        }
+        .doc-nav a:hover {
+            text-decoration: underline;
+        }
+        .doc-content {
+            line-height: 1.8;
+        }
+        .doc-content h2 {
+            margin-top: var(--spacing-xl);
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid #e2e8f0;
+        }
+        .doc-content h3 {
+            margin-top: var(--spacing-lg);
+            color: #0c4a6e;
+        }
+        .doc-content h4 {
+            margin-top: var(--spacing-md);
+            color: #0369a1;
+            font-weight: 600;
+        }
+        .doc-content code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .doc-content pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: var(--spacing-md);
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: var(--spacing-md) 0;
+        }
+        .doc-content pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        .doc-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: var(--spacing-md) 0;
+        }
+        .doc-content th, .doc-content td {
+            border: 1px solid #cbd5e1;
+            padding: var(--spacing-sm);
+            text-align: left;
+        }
+        .doc-content th {
+            background: #f1f5f9;
+            font-weight: 600;
+        }
+        .doc-content ul, .doc-content ol {
+            margin: var(--spacing-md) 0;
+            padding-left: var(--spacing-xl);
+        }
+        .doc-content li {
+            margin: var(--spacing-xs) 0;
+        }
+        .doc-content blockquote {
+            border-left: 4px solid #0c4a6e;
+            padding-left: var(--spacing-md);
+            margin: var(--spacing-md) 0;
+            color: #64748b;
+            font-style: italic;
+        }
+        .back-to-report {
+            display: inline-block;
+            margin-top: var(--spacing-xl);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: #0c4a6e;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+        .back-to-report:hover {
+            background: #075985;
+        }
+    </style>
+</head>
+<body>
+    <div class="doc-container">
+        <div class="doc-header">
+            <h1>User Guide</h1>
+        </div>
+        <div class="doc-nav">
+            <a href="../index.html">← Back to Report</a>
+            <a href="#table-of-contents">Table of Contents</a>
+        </div>
+        <div class="doc-content">
+            <h1 id="ops-translate-user-guide">ops-translate User Guide</h1>
+<p>Complete guide to using ops-translate for migrating VMware automation to OpenShift Virtualization.</p>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#installation">Installation</a></li>
+<li><a href="#core-concepts">Core Concepts</a></li>
+<li><a href="#getting-started">Getting Started</a></li>
+<li><a href="#workflow-commands">Workflow Commands</a></li>
+<li><a href="#configuration">Configuration</a></li>
+<li><a href="#advanced-usage">Advanced Usage</a></li>
+<li><a href="#troubleshooting">Troubleshooting</a></li>
+<li><a href="#best-practices">Best Practices</a></li>
+</ol>
+<h2 id="introduction">Introduction</h2>
+<h3 id="what-is-ops-translate">What is ops-translate?</h3>
+<p>ops-translate is a CLI tool that helps you migrate from VMware automation (PowerCLI scripts and vRealize Orchestrator workflows) to cloud-native infrastructure on OpenShift Virtualization. Instead of manually rewriting your automation, ops-translate:</p>
+<ol>
+<li><strong>Analyzes</strong> your existing PowerCLI and vRealize automation</li>
+<li><strong>Extracts</strong> the operational intent using AI</li>
+<li><strong>Merges</strong> multiple automation sources into a unified intent model</li>
+<li><strong>Generates</strong> production-ready Ansible playbooks and KubeVirt manifests</li>
+</ol>
+<h3 id="key-benefits">Key Benefits</h3>
+<ul>
+<li><strong>Accelerated Migration</strong>: Convert weeks of manual work into hours</li>
+<li><strong>Preserves Intent</strong>: Captures operational patterns, not just configurations</li>
+<li><strong>Transparent</strong>: Every assumption and inference is documented</li>
+<li><strong>Safe</strong>: Read-only operations with no live system access</li>
+<li><strong>Flexible</strong>: Works with or without AI assistance</li>
+</ul>
+<h3 id="do-i-need-an-llm">Do I Need an LLM?</h3>
+<p><strong>TL;DR</strong>: Only for intent extraction. Everything else is LLM-free.</p>
+<p>ops-translate separates "understanding" (needs AI) from "translation" (doesn't need AI):</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>LLM Required?</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>import</code></td>
+<td>❌ No</td>
+<td>Just copies files</td>
+</tr>
+<tr>
+<td><code>summarize</code></td>
+<td>❌ No</td>
+<td>Static pattern matching</td>
+</tr>
+<tr>
+<td><code>intent extract</code></td>
+<td>✅ <strong>YES</strong></td>
+<td>Understands semantic meaning of code</td>
+</tr>
+<tr>
+<td><code>intent merge</code></td>
+<td>❌ No</td>
+<td>Deterministic YAML reconciliation</td>
+</tr>
+<tr>
+<td><code>dry-run</code></td>
+<td>❌ No</td>
+<td>Schema validation</td>
+</tr>
+<tr>
+<td><code>generate</code></td>
+<td>❌ No</td>
+<td>Template-based (Jinja2)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The only step that needs LLM is intent extraction</strong>, which converts imperative PowerCLI/vRealize code into declarative intent YAML.</p>
+<p><strong>Three ways to use ops-translate:</strong></p>
+<ol>
+<li><strong>With AI</strong> (Recommended for legacy automation)
+   <code>bash
+   ops-translate intent extract  # Uses LLM
+   ops-translate generate        # Uses templates (no LLM)</code></li>
+<li>Best for complex scripts</li>
+<li>Requires API key</li>
+<li>
+<p>One-time cost per file</p>
+</li>
+<li>
+<p><strong>Without AI</strong> (Manual intent creation)
+   ```bash
+   # Write intent.yaml yourself using schema
+   vim intent/intent.yaml</p>
+</li>
+</ol>
+<p>ops-translate generate --no-ai  # Templates only
+   ```
+   - 100% deterministic
+   - Works offline
+   - Free</p>
+<ol>
+<li><strong>Mock Provider</strong> (Testing/Demos)
+   <code>bash
+   # No API key configured
+   ops-translate intent extract  # Uses mock responses
+   ops-translate generate        # Uses templates</code></li>
+<li>No API costs</li>
+<li>Good for testing workflow</li>
+<li>Not real AI understanding</li>
+</ol>
+<p><strong>Important</strong>: Even if you use AI for extraction, <strong>generation always uses templates</strong> by default. This is by design:
+- ✅ Faster (no API call)
+- ✅ Deterministic (same input → same output)
+- ✅ Schema-validated
+- ✅ Works offline</p>
+<p><strong>Cost estimate</strong>: Extracting intent from a typical PowerCLI script costs $0.01-0.10 per file. Generation is free.</p>
+<h3 id="who-should-use-this">Who Should Use This?</h3>
+<ul>
+<li>Infrastructure engineers migrating from VMware to OpenShift</li>
+<li>Operations teams modernizing VM automation</li>
+<li>Architects evaluating migration paths</li>
+<li>DevOps teams adopting Infrastructure as Code</li>
+</ul>
+<h2 id="installation">Installation</h2>
+<h3 id="prerequisites">Prerequisites</h3>
+<ul>
+<li><strong>Python 3.10 or higher</strong></li>
+<li><strong>pip</strong> (Python package installer)</li>
+<li><strong>Optional</strong>: API key for OpenAI or Anthropic (for AI-assisted extraction)</li>
+</ul>
+<h3 id="install-from-pypi">Install from PyPI</h3>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>ops-translate
+</code></pre></div>
+
+<h3 id="install-from-source">Install from Source</h3>
+<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/tsanders-rh/ops-translate
+<span class="nb">cd</span><span class="w"> </span>ops-translate
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+</code></pre></div>
+
+<h3 id="verify-installation">Verify Installation</h3>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>--help
+</code></pre></div>
+
+<p>You should see the command-line interface help text listing all available commands.</p>
+<h2 id="core-concepts">Core Concepts</h2>
+<h3 id="workspace">Workspace</h3>
+<p>A workspace is a directory structure that holds all inputs, intermediate artifacts, and outputs for a translation project. Each workspace contains:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">my-workspace/</span>
+<span class="n">├── ops-translate.yaml      # Configuration file</span>
+<span class="n">├── input/                  # Source automation files</span>
+<span class="n">│   ├── powercli/          # PowerCLI scripts (.ps1)</span>
+<span class="n">│   └── vrealize/          # vRealize workflows (.xml)</span>
+<span class="n">├── intent/                # Extracted operational intent</span>
+<span class="n">│   ├── powercli.intent.yaml</span>
+<span class="n">│   ├── vrealize.intent.yaml</span>
+<span class="n">│   ├── intent.yaml        # Merged intent</span>
+<span class="n">│   ├── assumptions.md     # AI assumptions log</span>
+<span class="n">│   └── conflicts.md       # Merge conflicts (if any)</span>
+<span class="n">├── mapping/               # VMware → OpenShift mappings</span>
+<span class="n">│   └── preview.md</span>
+<span class="n">└── output/                # Generated artifacts</span>
+<span class="n">    ├── kubevirt/</span>
+<span class="n">    │   └── vm.yaml</span>
+<span class="n">    └── ansible/</span>
+<span class="n">        ├── site.yml</span>
+<span class="n">        └── roles/</span>
+</code></pre></div>
+
+<h3 id="operational-intent-model">Operational Intent Model</h3>
+<p>The core of ops-translate is the <strong>Operational Intent Model</strong> - a normalized YAML schema that captures:</p>
+<ul>
+<li><strong>What</strong> resources to provision (VMs, networks, storage)</li>
+<li><strong>How</strong> to configure them (CPU, memory, networking)</li>
+<li><strong>When</strong> to apply governance (approvals, quotas)</li>
+<li><strong>Why</strong> decisions are made (environment branching, tagging)</li>
+</ul>
+<p>Example intent:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">schema_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">powercli</span>
+<span class="nt">workflow_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provision_dev_vm</span>
+<span class="nt">inputs</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vm_name</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">environment</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">allowed_values</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">dev</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">prod</span><span class="p p-Indicator">]</span>
+<span class="nt">compute</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cpu_count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">  </span><span class="nt">memory_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
+<span class="nt">environment_branching</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">conditions</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">environment == &quot;prod&quot;</span>
+<span class="w">      </span><span class="nt">then</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">cpu_count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="w">        </span><span class="nt">memory_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16</span>
+</code></pre></div>
+
+<h3 id="translation-workflow">Translation Workflow</h3>
+<p>The ops-translate workflow has five main phases:</p>
+<ol>
+<li><strong>Import</strong>: Copy source files into workspace</li>
+<li><strong>Summarize</strong>: Quick analysis without AI (optional)</li>
+<li><strong>Extract</strong>: AI-powered intent extraction</li>
+<li><strong>Merge</strong>: Combine multiple sources into unified intent</li>
+<li><strong>Generate</strong>: Create Ansible and KubeVirt artifacts</li>
+</ol>
+<h2 id="getting-started">Getting Started</h2>
+<h3 id="quick-start-with-examples">Quick Start with Examples</h3>
+<p>The fastest way to learn ops-translate is to use the provided examples:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 1. Initialize workspace</span>
+ops-translate<span class="w"> </span>init<span class="w"> </span>demo-workspace
+<span class="nb">cd</span><span class="w"> </span>demo-workspace
+
+<span class="c1"># 2. Import example PowerCLI script</span>
+ops-translate<span class="w"> </span>import<span class="w"> </span>--source<span class="w"> </span>powercli<span class="w"> </span>--file<span class="w"> </span>../examples/powercli/environment-aware.ps1
+
+<span class="c1"># 3. Summarize (no AI required)</span>
+ops-translate<span class="w"> </span>summarize
+cat<span class="w"> </span>intent/summary.md
+
+<span class="c1"># 4. Extract intent (requires LLM API key or uses mock)</span>
+ops-translate<span class="w"> </span>intent<span class="w"> </span>extract
+cat<span class="w"> </span>intent/powercli.intent.yaml
+
+<span class="c1"># 5. Review migration readiness BEFORE generating</span>
+ops-translate<span class="w"> </span>report
+open<span class="w"> </span>output/report/index.html<span class="w">  </span><span class="c1"># Interactive report with recommendations</span>
+
+<span class="c1"># 6. Generate artifacts</span>
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>lab
+
+<span class="c1"># 7. Review output</span>
+ls<span class="w"> </span>-R<span class="w"> </span>output/
+cat<span class="w"> </span>output/README.md
+</code></pre></div>
+
+<h3 id="your-first-real-migration">Your First Real Migration</h3>
+<p>Let's migrate a real PowerCLI script:</p>
+<h4 id="step-1-create-workspace">Step 1: Create Workspace</h4>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>init<span class="w"> </span>my-migration
+<span class="nb">cd</span><span class="w"> </span>my-migration
+</code></pre></div>
+
+<p>This creates the directory structure and default configuration.</p>
+<h4 id="step-2-import-your-automation">Step 2: Import Your Automation</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Import PowerCLI scripts</span>
+ops-translate<span class="w"> </span>import<span class="w"> </span>--source<span class="w"> </span>powercli<span class="w"> </span>--file<span class="w"> </span>/path/to/provision-vm.ps1
+ops-translate<span class="w"> </span>import<span class="w"> </span>--source<span class="w"> </span>powercli<span class="w"> </span>--file<span class="w"> </span>/path/to/configure-network.ps1
+
+<span class="c1"># Import vRealize workflows (if you have them)</span>
+ops-translate<span class="w"> </span>import<span class="w"> </span>--source<span class="w"> </span>vrealize<span class="w"> </span>--file<span class="w"> </span>/path/to/workflow.xml
+</code></pre></div>
+
+<p>Files are copied into <code>input/powercli/</code> and <code>input/vrealize/</code> respectively.</p>
+<h4 id="step-3-configure-llm-provider">Step 3: Configure LLM Provider</h4>
+<p>Edit <code>ops-translate.yaml</code> and configure your LLM provider:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">llm</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">anthropic</span><span class="w">  </span><span class="c1"># or openai</span>
+<span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claude-sonnet-4-5</span>
+<span class="w">  </span><span class="nt">api_key_env</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OPS_TRANSLATE_LLM_API_KEY</span>
+</code></pre></div>
+
+<p>Set the API key:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">OPS_TRANSLATE_LLM_API_KEY</span><span class="o">=</span><span class="s2">&quot;your-api-key-here&quot;</span>
+</code></pre></div>
+
+<h4 id="step-4-summarize-inputs">Step 4: Summarize Inputs</h4>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>summarize
+</code></pre></div>
+
+<p>Review <code>intent/summary.md</code> to understand what was detected:
+- Input parameters
+- Environment branching logic
+- Governance requirements
+- Network/storage patterns</p>
+<h4 id="step-5-extract-intent">Step 5: Extract Intent</h4>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>intent<span class="w"> </span>extract
+</code></pre></div>
+
+<p>This creates:
+- <code>intent/powercli.intent.yaml</code> - Intent from PowerCLI scripts
+- <code>intent/vrealize.intent.yaml</code> - Intent from vRealize workflows (if any)
+- <code>intent/assumptions.md</code> - AI assumptions and inferences</p>
+<p><strong>Review these files carefully</strong> - check that the AI correctly understood your automation.</p>
+<h4 id="step-6-edit-intent-if-needed">Step 6: Edit Intent (if needed)</h4>
+<p>If the AI misunderstood something, edit the intent manually:</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>intent<span class="w"> </span>edit
+<span class="c1"># Opens intent/powercli.intent.yaml in your $EDITOR</span>
+</code></pre></div>
+
+<h4 id="step-7-merge-multiple-sources">Step 7: Merge Multiple Sources</h4>
+<p>If you imported both PowerCLI and vRealize:</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>intent<span class="w"> </span>merge
+</code></pre></div>
+
+<p>This creates <code>intent/intent.yaml</code> by combining sources. If there are conflicts:
+- Conflicts are written to <code>intent/conflicts.md</code>
+- Command exits with error unless you use <code>--force</code></p>
+<p>Example conflict:</p>
+<div class="codehilite"><pre><span></span><code><span class="gu">## Conflict: Approval Required</span>
+
+<span class="k">-</span><span class="w"> </span>PowerCLI script: No approval requirement
+<span class="k">-</span><span class="w"> </span>vRealize workflow: Requires approval for prod environment
+
+<span class="gs">**Resolution needed**</span>: Decide which behavior to preserve
+</code></pre></div>
+
+<h4 id="step-8-preview-mapping">Step 8: Preview Mapping</h4>
+<p>See how VMware concepts map to OpenShift:</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>map<span class="w"> </span>preview<span class="w"> </span>--target<span class="w"> </span>openshift
+cat<span class="w"> </span>mapping/preview.md
+</code></pre></div>
+
+<h4 id="step-9-review-migration-readiness">Step 9: Review Migration Readiness</h4>
+<p>Before generating artifacts, review the interactive migration readiness report:</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>report
+open<span class="w"> </span>output/report/index.html
+</code></pre></div>
+
+<p>This interactive HTML report shows:
+- <strong>3-layer progressive disclosure</strong>: Executive summary, architecture planning, implementation details
+- <strong>Translation status</strong>: Supported, Partial, Expert-Guided, Custom classifications
+- <strong>Expert recommendations</strong>: Production-grade patterns organized by team
+- <strong>Migration paths</strong>: PATH A/B/C guidance with OpenShift equivalents
+- <strong>Interactive features</strong>: Filters, collapsible sections, CSV export</p>
+<h4 id="step-10-generate-artifacts">Step 10: Generate Artifacts</h4>
+<p>After reviewing the report, generate artifacts:</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>lab
+</code></pre></div>
+
+<p>This creates:
+- <code>output/kubevirt/vm.yaml</code> - KubeVirt VirtualMachine manifest
+- <code>output/ansible/site.yml</code> - Main Ansible playbook
+- <code>output/ansible/roles/provision_vm/</code> - Ansible role structure
+- <code>output/README.md</code> - How to use the generated artifacts</p>
+<h4 id="step-11-validate-output">Step 11: Validate Output</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Dry-run validation</span>
+ops-translate<span class="w"> </span>dry-run
+
+<span class="c1"># Review generated files</span>
+cat<span class="w"> </span>output/kubevirt/vm.yaml
+cat<span class="w"> </span>output/ansible/site.yml
+cat<span class="w"> </span>output/README.md
+</code></pre></div>
+
+<h2 id="workflow-commands">Workflow Commands</h2>
+<h3 id="ops-translate-init">ops-translate init</h3>
+<p><strong>Purpose</strong>: Initialize a new workspace.</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>init<span class="w"> </span>&lt;workspace_dir&gt;
+</code></pre></div>
+
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>init<span class="w"> </span>my-project
+<span class="nb">cd</span><span class="w"> </span>my-project
+</code></pre></div>
+
+<p><strong>What it creates</strong>:
+- Directory structure (input/, intent/, output/, etc.)
+- Default <code>ops-translate.yaml</code> configuration
+- README with next steps</p>
+<h3 id="ops-translate-import">ops-translate import</h3>
+<p><strong>Purpose</strong>: Import PowerCLI scripts or vRealize workflows into workspace.</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>import<span class="w"> </span>--source<span class="w"> </span>&lt;powercli<span class="p">|</span>vrealize&gt;<span class="w"> </span>--file<span class="w"> </span>&lt;path&gt;
+</code></pre></div>
+
+<p><strong>Options</strong>:
+- <code>--source</code>: Source type (<code>powercli</code> or <code>vrealize</code>)
+- <code>--file</code>: Path to file to import</p>
+<p><strong>Examples</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Import single PowerCLI script</span>
+ops-translate<span class="w"> </span>import<span class="w"> </span>--source<span class="w"> </span>powercli<span class="w"> </span>--file<span class="w"> </span>provision.ps1
+
+<span class="c1"># Import multiple scripts</span>
+ops-translate<span class="w"> </span>import<span class="w"> </span>--source<span class="w"> </span>powercli<span class="w"> </span>--file<span class="w"> </span>script1.ps1
+ops-translate<span class="w"> </span>import<span class="w"> </span>--source<span class="w"> </span>powercli<span class="w"> </span>--file<span class="w"> </span>script2.ps1
+
+<span class="c1"># Import vRealize workflow</span>
+ops-translate<span class="w"> </span>import<span class="w"> </span>--source<span class="w"> </span>vrealize<span class="w"> </span>--file<span class="w"> </span>workflow.xml
+</code></pre></div>
+
+<p><strong>Notes</strong>:
+- Files are copied, not moved
+- Original files remain unchanged
+- Import metadata is logged in workspace</p>
+<h3 id="ops-translate-summarize">ops-translate summarize</h3>
+<p><strong>Purpose</strong>: Analyze inputs and generate summary without AI.</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>summarize
+</code></pre></div>
+
+<p><strong>Output</strong>: <code>intent/summary.md</code></p>
+<p><strong>What it detects</strong>:
+- Input parameters (name, type, required/optional)
+- Environment branching (dev/prod/staging patterns)
+- Approval requirements
+- Tagging and metadata operations
+- Network and storage selection logic</p>
+<p><strong>When to use</strong>:
+- Before running expensive AI extraction
+- To verify files were imported correctly
+- To understand automation complexity</p>
+<p><strong>Example output</strong> (<code>intent/summary.md</code>):</p>
+<div class="codehilite"><pre><span></span><code><span class="gh"># Automation Summary</span>
+
+<span class="gu">## PowerCLI Scripts</span>
+
+<span class="gu">### File: provision-vm.ps1</span>
+
+<span class="gs">**Parameters**</span>:
+<span class="k">-</span><span class="w"> </span><span class="sb">`VMName`</span> (string, required)
+<span class="k">-</span><span class="w"> </span><span class="sb">`Environment`</span> (string, required)
+<span class="k">-</span><span class="w"> </span><span class="sb">`CPUCount`</span> (int, optional)
+
+<span class="gs">**Environment Branching**</span>: Detected
+<span class="k">-</span><span class="w"> </span>Uses ValidateSet for environment selection
+<span class="k">-</span><span class="w"> </span>Different resource profiles for dev/prod
+
+<span class="gs">**Tagging/Metadata**</span>: Detected
+<span class="k">-</span><span class="w"> </span>Tags VMs with environment
+<span class="k">-</span><span class="w"> </span>Owner email tracking
+
+<span class="gs">**Network/Storage Selection**</span>: Detected
+<span class="k">-</span><span class="w"> </span>Environment-specific network selection
+<span class="k">-</span><span class="w"> </span>Storage profile varies by environment
+</code></pre></div>
+
+<h3 id="ops-translate-intent-extract">ops-translate intent extract</h3>
+<p><strong>Purpose</strong>: Use AI to extract operational intent from source files.</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>intent<span class="w"> </span>extract<span class="w"> </span><span class="o">[</span>--no-ai<span class="o">]</span>
+</code></pre></div>
+
+<p><strong>Options</strong>:
+- <code>--no-ai</code>: Use template-based extraction instead of AI</p>
+<p><strong>Output</strong>:
+- <code>intent/powercli.intent.yaml</code> - Intent from PowerCLI
+- <code>intent/vrealize.intent.yaml</code> - Intent from vRealize
+- <code>intent/assumptions.md</code> - AI assumptions log</p>
+<p><strong>Example workflow</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Extract with AI (default)</span>
+ops-translate<span class="w"> </span>intent<span class="w"> </span>extract
+
+<span class="c1"># Review extracted intent</span>
+cat<span class="w"> </span>intent/powercli.intent.yaml
+
+<span class="c1"># Check AI assumptions</span>
+cat<span class="w"> </span>intent/assumptions.md
+</code></pre></div>
+
+<p><strong>AI Assumptions Log Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="gh"># Assumptions Made During Intent Extraction</span>
+
+<span class="gu">## PowerCLI: provision-vm.ps1</span>
+
+<span class="k">1.</span> <span class="gs">**CPU/Memory Defaults**</span>: Assumed dev environment uses 2 vCPU / 8GB RAM based on script logic
+<span class="k">2.</span> <span class="gs">**Network Selection**</span>: Inferred network names from variable assignments
+<span class="k">3.</span> <span class="gs">**Storage Profile**</span>: Assumed &quot;gold&quot; storage for prod, &quot;standard&quot; for dev
+<span class="k">4.</span> <span class="gs">**Approval**</span>: No approval workflow detected in script
+
+<span class="gs">**Confidence**</span>: High
+
+<span class="gu">## vRealize: approval-workflow.xml</span>
+
+<span class="k">1.</span> <span class="gs">**Approval Gate**</span>: Detected approval decision node before VM creation
+<span class="k">2.</span> <span class="gs">**Approvers**</span>: Extracted from workflow metadata
+<span class="k">3.</span> <span class="gs">**Timeout**</span>: 7 days based on workflow timer configuration
+
+<span class="gs">**Confidence**</span>: High
+</code></pre></div>
+
+<p><strong>Automatic Gap Analysis (vRealize Only)</strong>:</p>
+<p>When extracting intent from vRealize workflows, ops-translate automatically analyzes them for translatability issues:</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>intent<span class="w"> </span>extract
+</code></pre></div>
+
+<p>Output includes:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Running gap analysis on vRealize workflows...</span>
+<span class="n">  Analyzing: nsx-provisioning.xml</span>
+<span class="n">    ⚠ Found 3 blocking issue(s)</span>
+<span class="n">  ✓ Gap analysis reports written to intent/gaps.md and intent/gaps.json</span>
+
+<span class="n">⚠ Warning: Found 3 component(s) that cannot be automatically translated.</span>
+<span class="n">  Review intent/gaps.md for migration guidance.</span>
+</code></pre></div>
+
+<p><strong>Gap analysis output files</strong>:
+- <code>intent/gaps.md</code> - Human-readable report with migration paths and recommendations
+- <code>intent/gaps.json</code> - Machine-readable data for tooling integration</p>
+<p><strong>What gets analyzed</strong>:
+- NSX-T operations (segments, firewall rules, load balancers, security groups, etc.)
+- Custom vRO plugins (ServiceNow, Infoblox, Active Directory, etc.)
+- REST API calls to external systems
+- vRealize-specific constructs</p>
+<p><strong>Classification levels</strong>:
+- ✅ <strong>SUPPORTED</strong> - Fully automatic translation to OpenShift-native equivalent
+- ⚠️ <strong>PARTIAL</strong> - Can translate but requires manual configuration
+- 🎯 <strong>EXPERT-GUIDED</strong> - Production-grade patterns available from Red Hat experts
+- 🔧 <strong>CUSTOM</strong> - Complex custom logic requiring specialist review</p>
+<p><strong>Example gap report</strong> (<code>intent/gaps.md</code>):</p>
+<div class="codehilite"><pre><span></span><code><span class="gh"># Gap Analysis Report: nsx-provisioning.xml</span>
+
+<span class="gu">## Executive Summary</span>
+
+<span class="gs">**Overall Assessment**</span>: REQUIRES_MANUAL_WORK
+
+<span class="k">-</span><span class="w"> </span>Total Components: 5
+<span class="k">-</span><span class="w"> </span>✅ SUPPORTED: 2
+<span class="k">-</span><span class="w"> </span>⚠️ PARTIAL: 2
+<span class="k">-</span><span class="w"> </span>🎯 EXPERT-GUIDED: 1
+
+<span class="gu">## Detailed Component Analysis</span>
+
+<span class="gu">### NSX Firewall Rule</span>
+
+<span class="gs">**Type**</span>: <span class="sb">`nsx_firewall_rule`</span>
+<span class="gs">**Classification**</span>: ⚠️ PARTIAL
+<span class="gs">**OpenShift Equivalent**</span>: NetworkPolicy
+<span class="gs">**Migration Path**</span>: PATH_A - OpenShift-native replacement
+
+<span class="gs">**Why this classification**</span>:
+NSX distributed firewall rules can be replaced with Kubernetes NetworkPolicy,
+but require manual translation of rule syntax and testing.
+
+<span class="gs">**Recommendations**</span>:
+<span class="k">1.</span> Create NetworkPolicy manifest with equivalent rules
+<span class="k">2.</span> Test pod-to-pod connectivity in dev environment
+<span class="k">3.</span> Consider Calico for advanced features (egress rules, logging)
+<span class="k">4.</span> Review default-deny policies
+
+<span class="gs">**Evidence**</span>: <span class="sb">`nsxClient.createFirewallRule()`</span> at line 45
+
+<span class="gs">**Example NetworkPolicy**</span>:
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: web-to-app-allow
+spec:
+  podSelector:
+    matchLabels:
+      app: web
+  policyTypes:
+<span class="w">  </span><span class="k">-</span><span class="w"> </span>Egress
+  egress:
+<span class="w">  </span><span class="k">-</span><span class="w"> </span>to:
+<span class="w">    </span><span class="k">-</span><span class="w"> </span>podSelector:
+        matchLabels:
+          app: app-tier
+    ports:
+<span class="w">    </span><span class="k">-</span><span class="w"> </span>protocol: TCP
+      port: 8080
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>When you run <span class="sb">`ops-translate generate`</span>, these gaps are automatically incorporated into the Ansible playbooks as TODO tasks and role stubs. See [ops-translate generate](#ops-translate-generate) for details.
+
+<span class="gu">##</span># ops-translate intent edit
+
+**Purpose**: Manually edit extracted intent.
+
+```bash
+ops-translate intent edit [--file &lt;intent_file&gt;]
+</code></pre></div>
+
+<p><strong>Options</strong>:
+- <code>--file</code>: Specific intent file to edit (default: <code>intent/intent.yaml</code>)</p>
+<p><strong>Examples</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Edit merged intent</span>
+ops-translate<span class="w"> </span>intent<span class="w"> </span>edit
+
+<span class="c1"># Edit specific source intent</span>
+ops-translate<span class="w"> </span>intent<span class="w"> </span>edit<span class="w"> </span>--file<span class="w"> </span>intent/powercli.intent.yaml
+</code></pre></div>
+
+<p><strong>Tip</strong>: Set your preferred editor:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">EDITOR</span><span class="o">=</span>vim<span class="w">  </span><span class="c1"># or nano, emacs, code, etc.</span>
+</code></pre></div>
+
+<h3 id="ops-translate-intent-merge">ops-translate intent merge</h3>
+<p><strong>Purpose</strong>: Merge multiple source intents into unified intent.</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>intent<span class="w"> </span>merge<span class="w"> </span><span class="o">[</span>--force<span class="o">]</span>
+</code></pre></div>
+
+<p><strong>Options</strong>:
+- <code>--force</code>: Proceed even if conflicts detected</p>
+<p><strong>Output</strong>:
+- <code>intent/intent.yaml</code> - Merged intent
+- <code>intent/conflicts.md</code> - Conflicts (if any)</p>
+<p><strong>Conflict Resolution</strong>:</p>
+<p>If conflicts are detected, review <code>intent/conflicts.md</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="gh"># Intent Merge Conflicts</span>
+
+<span class="gu">## 1. Approval Requirement Mismatch</span>
+
+<span class="gs">**PowerCLI**</span>: No approval required
+<span class="gs">**vRealize**</span>: Requires approval for prod environment
+
+<span class="gs">**Recommendation**</span>: Include approval requirement to match vRealize governance
+
+<span class="gu">## 2. Network Mapping Difference</span>
+
+<span class="gs">**PowerCLI**</span>: Uses &quot;prod-network&quot; for prod
+<span class="gs">**vRealize**</span>: Uses &quot;production-net&quot; for prod
+
+<span class="gs">**Recommendation**</span>: Standardize on one network name
+</code></pre></div>
+
+<p>Options:
+1. <strong>Resolve manually</strong>: Edit intent files to resolve conflicts
+2. <strong>Force merge</strong>: Use <code>--force</code> to merge with conflicts logged
+3. <strong>Choose one source</strong>: Remove conflicting intent file</p>
+<h3 id="ops-translate-map-preview">ops-translate map preview</h3>
+<p><strong>Purpose</strong>: Generate VMware → OpenShift concept mapping.</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>map<span class="w"> </span>preview<span class="w"> </span>--target<span class="w"> </span>openshift
+</code></pre></div>
+
+<p><strong>Output</strong>: <code>mapping/preview.md</code></p>
+<p><strong>Example output</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="gh"># VMware → OpenShift Mapping Preview</span>
+
+<span class="gu">## Compute Mappings</span>
+
+| VMware Concept | OpenShift Equivalent | Notes |
+|----------------|---------------------|-------|
+| New-VM cmdlet | KubeVirt VirtualMachine | Creates VM custom resource |
+| CPU cores | spec.template.spec.domain.cpu.cores | Direct mapping |
+| Memory GB | spec.template.spec.domain.resources.requests.memory | Convert to Mi/Gi |
+
+<span class="gu">## Network Mappings</span>
+
+| VMware Concept | OpenShift Equivalent | Notes |
+|----------------|---------------------|-------|
+| PortGroup | NetworkAttachmentDefinition | Requires Multus CNI |
+| Get-NetworkAdapter | spec.template.spec.domain.devices.interfaces | Network interface config |
+
+<span class="gu">## Storage Mappings</span>
+
+| VMware Concept | OpenShift Equivalent | Notes |
+|----------------|---------------------|-------|
+| Datastore | StorageClass | Abstract storage backend |
+| New-HardDisk | DataVolume | Persistent volume claim |
+</code></pre></div>
+
+<h3 id="ops-translate-report">ops-translate report</h3>
+<p><strong>Purpose</strong>: Generate interactive HTML migration readiness report.</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>report
+</code></pre></div>
+
+<p><strong>Output</strong>: <code>output/report/index.html</code> (self-contained HTML with embedded CSS/JS)</p>
+<p><strong>When to use</strong>: After <code>intent extract</code> and BEFORE <code>generate</code> to review migration complexity, gaps, and expert recommendations.</p>
+<p><strong>Preview</strong>: See a <a href="../../examples/sample-report/">sample report</a> generated from real-world examples.</p>
+<h4 id="what-the-report-shows">What the Report Shows</h4>
+<p>The HTML report provides a comprehensive migration analysis organized in <strong>3 progressive disclosure layers</strong>:</p>
+<p><strong>Layer 1: Executive Summary</strong>
+- Translation status cards (Supported, Partial, Expert-Guided, Custom)
+- Real-world migration story with actual component counts
+- Target architecture snapshot showing end-state
+- How to read this report guide for different audiences
+- Overall migration assessment</p>
+<p><strong>Layer 2: Architecture &amp; Planning</strong>
+- Expert recommendations by team (Platform, Network, Security)
+- Migration path quick reference (PATH A/B/C)
+- Consolidated SUPPORTED patterns (reduced repetition)
+- Detailed gap analysis with OpenShift equivalents</p>
+<p><strong>Layer 3: Implementation Details</strong> (collapsible)
+- Intent overview (workflow info, inputs, outputs, integrations)
+- Generated artifacts preview
+- Source code evidence with line numbers</p>
+<h4 id="interactive-features">Interactive Features</h4>
+<ul>
+<li><strong>Click to filter</strong>: Click summary cards to filter gaps by severity level</li>
+<li><strong>Team-based filters</strong>: Filter expert recommendations by Platform/Network/Security teams</li>
+<li><strong>Collapsible sections</strong>: Layer 3 sections expand on demand</li>
+<li><strong>SUPPORTED toggle</strong>: Hide/show fully-supported patterns (hidden by default)</li>
+<li><strong>Export options</strong>: PDF (print) and CSV (migration tasks)</li>
+</ul>
+<h4 id="multi-audience-design">Multi-Audience Design</h4>
+<p>The report serves different stakeholders:</p>
+<table>
+<thead>
+<tr>
+<th>Audience</th>
+<th>Recommended Path</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Executives</strong></td>
+<td>Executive Summary → Migration Story → Target Architecture</td>
+</tr>
+<tr>
+<td><strong>Platform Teams</strong></td>
+<td>Architecture Snapshot → Expert Recommendations → Implementation Details</td>
+</tr>
+<tr>
+<td><strong>NetOps / SecOps</strong></td>
+<td>NSX Migration Findings → Expert-Guided Security &amp; Governance Patterns</td>
+</tr>
+</tbody>
+</table>
+<h4 id="understanding-migration-classifications">Understanding Migration Classifications</h4>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Meaning</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Supported</strong></td>
+<td>Auto-translatable to OpenShift</td>
+<td>VM provisioning, CPU/memory config</td>
+</tr>
+<tr>
+<td><strong>Partial Translation</strong></td>
+<td>Core intent detected, manual mapping needed</td>
+<td>Custom network policies, advanced storage</td>
+</tr>
+<tr>
+<td><strong>Expert-Guided</strong></td>
+<td>Production-grade patterns available from Red Hat</td>
+<td>NSX firewall rules, approval workflows</td>
+</tr>
+<tr>
+<td><strong>Custom</strong></td>
+<td>Complex custom logic requiring specialist review</td>
+<td>Custom plugins, JavaScript scriptable tasks</td>
+</tr>
+</tbody>
+</table>
+<h4 id="example-workflow">Example Workflow</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Extract intent</span>
+ops-translate<span class="w"> </span>intent<span class="w"> </span>extract
+
+<span class="c1"># Generate and review report</span>
+ops-translate<span class="w"> </span>report
+open<span class="w"> </span>output/report/index.html
+
+<span class="c1"># Review the report to:</span>
+<span class="c1"># 1. Understand what will auto-translate (SUPPORTED)</span>
+<span class="c1"># 2. Identify components needing manual work (PARTIAL/CUSTOM)</span>
+<span class="c1"># 3. Access expert recommendations for complex patterns (EXPERT-GUIDED)</span>
+<span class="c1"># 4. Plan migration based on PATH A/B/C guidance</span>
+
+<span class="c1"># After reviewing, generate artifacts</span>
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>lab
+</code></pre></div>
+
+<h4 id="report-sections-explained">Report Sections Explained</h4>
+<p><strong>Migration Story</strong>
+- Shows actual counts from your workspace analysis
+- Demonstrates proven automation for standard patterns
+- Highlights availability of expert patterns for complex scenarios
+- Not a research project - production-grade guidance</p>
+<p><strong>Target Architecture Snapshot</strong>
+- Explicit end-state showing what runs where
+- OpenShift Virtualization for VM workloads
+- Ansible Automation Platform for orchestration
+- OpenShift Networking (OVN-Kubernetes, NetworkPolicy, Ingress)
+- Clarifies virt-first migration journey</p>
+<p><strong>Expert Recommendations</strong>
+- Production-grade patterns from successful customer migrations
+- Organized by team responsibility (Platform, Network, Security)
+- Includes implementation guidance and OpenShift equivalents
+- Emphasizes supported automation stack (not DIY)</p>
+<p><strong>Gap Analysis</strong>
+- Component-by-component analysis with severity levels
+- Migration path assignments (PATH A/B/C)
+- Evidence from source code with file locations and line numbers
+- Specific recommendations for each component</p>
+<p><strong>Consolidated SUPPORTED Patterns</strong>
+- Groups repeated SUPPORTED components by type
+- Shows "VM Provisioning (5 instances across 2 files)" instead of listing each
+- Reduces report length while preserving full detail
+- Hidden by default (toggle to show)</p>
+<h4 id="tips">Tips</h4>
+<ul>
+<li><strong>Review BEFORE generating</strong>: Understand migration complexity before creating artifacts</li>
+<li><strong>Share with stakeholders</strong>: Report is self-contained HTML (no server required)</li>
+<li><strong>Use filters</strong>: Focus on specific severity levels or teams</li>
+<li><strong>Export to CSV</strong>: Create migration task tracking in your project management tool</li>
+<li><strong>Print to PDF</strong>: Create offline documentation or presentations</li>
+</ul>
+<h3 id="ops-translate-generate">ops-translate generate</h3>
+<p><strong>Purpose</strong>: Generate Ansible playbooks and KubeVirt manifests.</p>
+<p><strong>⚠️ Best Practice</strong>: Review the migration readiness report BEFORE generating:</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>report
+open<span class="w"> </span>output/report/index.html
+</code></pre></div>
+
+<p>The interactive report shows translation status, expert recommendations, and migration paths to help you understand what will be automated vs. what needs manual work.</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>&lt;profile_name&gt;<span class="w"> </span><span class="o">[</span>--no-ai<span class="o">]</span><span class="w"> </span><span class="o">[</span>--assume-existing-vms<span class="o">]</span><span class="w"> </span><span class="o">[</span>--eda<span class="o">]</span><span class="w"> </span><span class="o">[</span>--eda-only<span class="o">]</span>
+</code></pre></div>
+
+<p><strong>Options</strong>:
+- <code>--profile</code>: Target environment profile (lab, prod, etc.)
+- <code>--no-ai</code>: Use templates instead of AI for generation
+- <code>--assume-existing-vms</code>: MTV mode - assume VMs exist, generate validation/day-2 ops only
+- <code>--eda</code>: Also generate Event-Driven Ansible rulebooks from vRO event subscriptions
+- <code>--eda-only</code>: Generate only EDA rulebooks (skip Ansible/KubeVirt artifacts)</p>
+<p><strong>Output</strong> (greenfield mode):
+- <code>output/kubevirt/vm.yaml</code>
+- <code>output/ansible/site.yml</code>
+- <code>output/ansible/roles/&lt;role_name&gt;/tasks/main.yml</code> - Translated tasks from PowerCLI/vRO workflows
+- <code>output/ansible/roles/&lt;role_name&gt;/defaults/main.yml</code> - Variables extracted from workflow parameters
+- <code>output/ansible/roles/&lt;role_name&gt;/meta/main.yml</code> - Role metadata for Ansible Galaxy
+- <code>output/ansible/roles/&lt;role_name&gt;/README.md</code> - Role documentation
+- <code>output/README.md</code></p>
+<p><strong>Role Generation</strong>:
+- <strong>PowerCLI scripts</strong>: Cmdlets are deterministically translated to Ansible tasks (New-VM → kubevirt_vm, New-TagAssignment → k8s labels)
+- <strong>vRealize workflows</strong>: Workflow items are translated to Ansible tasks with integration detection
+- <strong>Skeleton roles</strong>: Created for workflows without direct translation support</p>
+<p><strong>Output</strong> (MTV mode with <code>--assume-existing-vms</code>):
+- <code>output/ansible/site.yml</code> - Playbook with validation tasks
+- <code>output/ansible/roles/provision_vm/tasks/main.yml</code> - VM verification and labeling
+- <code>output/README.md</code>
+- <strong>Note</strong>: KubeVirt VM YAML is not generated in MTV mode</p>
+<p><strong>Output</strong> (EDA mode with <code>--eda</code> or <code>--eda-only</code>):
+- <code>output/eda/rulebooks/vm_lifecycle.yml</code> - VM lifecycle event rules
+- <code>output/eda/rulebooks/alarm_events.yml</code> - vCenter alarm event rules
+- <code>output/eda/requirements.yml</code> - EDA collection dependencies
+- <code>output/eda/deployment/deployment.yml</code> - Deployment playbook
+- <code>output/eda/deployment/inventory.yml</code> - EDA controller inventory</p>
+<p><strong>Examples</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Generate for lab environment (greenfield - creates VMs)</span>
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>lab
+
+<span class="c1"># Generate for production</span>
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>prod
+
+<span class="c1"># Generate without AI (template-based)</span>
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>lab<span class="w"> </span>--no-ai
+
+<span class="c1"># MTV mode - VMs already migrated, generate validation only</span>
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>lab<span class="w"> </span>--assume-existing-vms
+
+<span class="c1"># Generate Event-Driven Ansible rulebooks from vRO event subscriptions</span>
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>lab<span class="w"> </span>--eda<span class="w">           </span><span class="c1"># Generate EDA + Ansible/KubeVirt</span>
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>lab<span class="w"> </span>--eda-only<span class="w">      </span><span class="c1"># Generate only EDA rulebooks</span>
+</code></pre></div>
+
+<p><strong>MTV (Migration Toolkit for Virtualization) Mode</strong>:</p>
+<p>When using <code>--assume-existing-vms</code>, ops-translate assumes VMs have already been migrated to OpenShift Virtualization (e.g., via MTV) and generates Ansible playbooks that:</p>
+<ol>
+<li><strong>Verify VMs exist</strong> - Use <code>kubernetes.core.k8s_info</code> to check VM presence</li>
+<li><strong>Validate configurations</strong> - Assert CPU/memory match operational intent</li>
+<li><strong>Apply operational labels</strong> - Patch VMs with managed-by and environment tags</li>
+</ol>
+<p>This is useful for post-migration scenarios where:
+- VMs were imported via Migration Toolkit for Virtualization
+- VMs already exist and need day-2 operations
+- You want to validate existing VMs against operational intent</p>
+<p><strong>Comparison</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Flag</th>
+<th>VM YAML</th>
+<th>Ansible Tasks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Greenfield</strong></td>
+<td>(default)</td>
+<td>✅ Generated</td>
+<td>Create VM, wait for ready</td>
+</tr>
+<tr>
+<td><strong>MTV</strong></td>
+<td><code>--assume-existing-vms</code></td>
+<td>❌ Skipped</td>
+<td>Verify, validate, label</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Event-Driven Ansible (EDA) Mode</strong>:</p>
+<p>When using <code>--eda</code> or <code>--eda-only</code>, ops-translate generates Event-Driven Ansible rulebooks from vRealize Orchestrator event subscriptions to preserve reactive automation patterns:</p>
+<ol>
+<li><strong>Parse vRO event subscriptions</strong> - Extract event types, conditions, workflow bindings</li>
+<li><strong>Translate JavaScript conditions</strong> - Convert to Python/Jinja2 for EDA</li>
+<li><strong>Map event properties</strong> - Transform vCenter event payloads to EDA format</li>
+<li><strong>Generate categorized rulebooks</strong> - Split by event type (VM lifecycle, alarms, etc.)</li>
+<li><strong>Create deployment artifacts</strong> - Collection requirements and deployment playbooks</li>
+</ol>
+<p>Generated rulebooks include:
+- <strong>Event sources</strong>: Webhook configuration for vCenter Event Broker Appliance (VEBA)
+- <strong>Conditions</strong>: Translated from vRO JavaScript to Python/Jinja2
+- <strong>Actions</strong>: AAP Job Templates or Ansible playbooks
+- <strong>Variable bindings</strong>: Event data mapping to workflow parameters</p>
+<p>This is useful for migrating reactive automation:
+- vRO workflows triggered by vCenter events
+- Event-driven compliance checks, cleanup tasks, ITSM integration
+- Alarm-based incident creation
+- Preserving event-driven patterns in Ansible Automation Platform</p>
+<p>See <code>examples/eda/README.md</code> for detailed usage and configuration.</p>
+<p><strong>Configure in workspace</strong> (optional):</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># ops-translate.yaml</span>
+<span class="nt">assume_existing_vms</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">  </span><span class="c1"># Enable MTV mode by default</span>
+</code></pre></div>
+
+<p><strong>Gap Analysis Integration</strong>:</p>
+<p>When vRealize workflows have been analyzed (via <code>intent extract</code>), the generated Ansible playbooks automatically include:</p>
+<ol>
+<li><strong>TODO tasks</strong> for components requiring manual work</li>
+<li><strong>Role stubs</strong> for EXPERT-GUIDED/CUSTOM components</li>
+<li><strong>Migration guidance</strong> as embedded comments</li>
+</ol>
+<p><strong>Example: Generated playbook with gaps</strong> (<code>output/ansible/site.yml</code>):</p>
+<div class="codehilite"><pre><span></span><code><span class="nn">---</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Provision VM with NSX networking</span>
+<span class="w">  </span><span class="nt">hosts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">localhost</span>
+<span class="w">  </span><span class="nt">tasks</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># Gap Analysis Summary:</span>
+<span class="w">    </span><span class="c1"># - 2 PARTIAL components require manual configuration</span>
+<span class="w">    </span><span class="c1"># - 1 EXPERT-GUIDED component has production patterns available</span>
+<span class="w">    </span><span class="c1"># Review intent/gaps.md for detailed migration guidance</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;TODO:</span><span class="nv"> </span><span class="s">Review</span><span class="nv"> </span><span class="s">NSX</span><span class="nv"> </span><span class="s">segment</span><span class="nv"> </span><span class="s">migration</span><span class="nv"> </span><span class="s">(PARTIAL)&quot;</span>
+<span class="w">      </span><span class="nt">debug</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">msg</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">          </span><span class="no">CLASSIFICATION: PARTIAL</span>
+<span class="w">          </span><span class="no">COMPONENT: NSX Segment</span>
+<span class="w">          </span><span class="no">OPENSHIFT EQUIVALENT: NetworkAttachmentDefinition (Multus CNI)</span>
+<span class="w">          </span><span class="no">MIGRATION PATH: PATH_A - OpenShift-native replacement</span>
+
+<span class="w">          </span><span class="no">RECOMMENDATIONS:</span>
+<span class="w">          </span><span class="no">- Create NetworkAttachmentDefinition manifest</span>
+<span class="w">          </span><span class="no">- Configure Multus CNI on target cluster</span>
+<span class="w">          </span><span class="no">- Test network connectivity</span>
+<span class="w">          </span><span class="no">- Update VM spec to reference NAD</span>
+
+<span class="w">          </span><span class="no">EVIDENCE: nsxClient.createSegment() detected at line 23</span>
+<span class="w">      </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">manual_review_required</span><span class="p p-Indicator">]</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;TODO:</span><span class="nv"> </span><span class="s">Implement</span><span class="nv"> </span><span class="s">NSX</span><span class="nv"> </span><span class="s">firewall</span><span class="nv"> </span><span class="s">rule</span><span class="nv"> </span><span class="s">migration</span><span class="nv"> </span><span class="s">(PARTIAL)&quot;</span>
+<span class="w">      </span><span class="nt">debug</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">msg</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">          </span><span class="no">CLASSIFICATION: PARTIAL</span>
+<span class="w">          </span><span class="no">COMPONENT: NSX Firewall Rule</span>
+<span class="w">          </span><span class="no">OPENSHIFT EQUIVALENT: NetworkPolicy</span>
+<span class="w">          </span><span class="no">MIGRATION PATH: PATH_A - OpenShift-native replacement</span>
+
+<span class="w">          </span><span class="no">RECOMMENDATIONS:</span>
+<span class="w">          </span><span class="no">- Create NetworkPolicy manifest with equivalent rules</span>
+<span class="w">          </span><span class="no">- Test pod-to-pod connectivity</span>
+<span class="w">          </span><span class="no">- Consider Calico for advanced features</span>
+<span class="w">      </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">manual_review_required</span><span class="p p-Indicator">]</span>
+
+<span class="w">    </span><span class="c1"># Normal automation tasks follow...</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Create KubeVirt VM</span>
+<span class="w">      </span><span class="nt">kubernetes.core.k8s</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">state</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">present</span>
+<span class="w">        </span><span class="nt">definition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">lookup(&#39;file&#39;,</span><span class="nv"> </span><span class="s">&#39;kubevirt/vm.yaml&#39;)</span><span class="nv"> </span><span class="s">}}&quot;</span>
+</code></pre></div>
+
+<p><strong>Auto-generated role stubs</strong> (<code>output/ansible/roles/nsx_segment_migration/</code>):</p>
+<p>For EXPERT-GUIDED/CUSTOM components, ops-translate generates role scaffolding:</p>
+<div class="codehilite"><pre><span></span><code>output/ansible/roles/
+└── nsx_segment_migration/
+    ├── README.md                 # Migration guidance
+    ├── tasks/main.yml            # TODO placeholders
+    └── defaults/main.yml         # Discovered parameters
+</code></pre></div>
+
+<p><strong>Role README</strong> (<code>roles/nsx_segment_migration/README.md</code>):</p>
+<div class="codehilite"><pre><span></span><code><span class="gh"># NSX Segment Migration Role</span>
+
+<span class="gs">**Classification**</span>: PARTIAL
+<span class="gs">**OpenShift Equivalent**</span>: NetworkAttachmentDefinition (Multus CNI)
+<span class="gs">**Migration Path**</span>: PATH_A - OpenShift-native replacement
+
+<span class="gu">## Overview</span>
+
+This role was auto-generated because NSX segment operations were detected
+in the source vRealize workflow that cannot be fully automatically translated.
+
+<span class="gu">## What Needs Implementation</span>
+
+<span class="k">1.</span> Create NetworkAttachmentDefinition manifest
+<span class="k">2.</span> Configure Multus CNI on target cluster
+<span class="k">3.</span> Test network connectivity
+<span class="k">4.</span> Update VM spec to reference NAD
+
+<span class="gu">## Discovered Parameters</span>
+
+The following parameters were extracted from the source workflow:
+<span class="k">-</span><span class="w"> </span>segment_name: &quot;web-tier-segment&quot;
+<span class="k">-</span><span class="w"> </span>vlan_ids: [100]
+<span class="k">-</span><span class="w"> </span>gateway_address: &quot;192.168.1.1/24&quot;
+
+<span class="gu">## Implementation Steps</span>
+
+[Detailed steps based on migration path...]
+
+<span class="gu">## Testing</span>
+
+[Testing checklist...]
+</code></pre></div>
+
+<p><strong>Role tasks</strong> (<code>roles/nsx_segment_migration/tasks/main.yml</code>):</p>
+<div class="codehilite"><pre><span></span><code><span class="nn">---</span>
+<span class="c1"># TODO: Implement NSX segment migration</span>
+<span class="c1"># Classification: PARTIAL</span>
+<span class="c1"># OpenShift Equivalent: NetworkAttachmentDefinition</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TODO - Create NetworkAttachmentDefinition</span>
+<span class="w">  </span><span class="nt">fail</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">msg</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">      </span><span class="no">This task is a placeholder. Implement NAD creation here.</span>
+<span class="w">      </span><span class="no">See README.md for guidance.</span>
+<span class="w">  </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">manual_implementation_required</span><span class="p p-Indicator">]</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TODO - Verify Multus CNI configuration</span>
+<span class="w">  </span><span class="nt">fail</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">msg</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">      </span><span class="no">This task is a placeholder. Add CNI verification logic.</span>
+<span class="w">  </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">manual_implementation_required</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
+<p>This gives you a clear starting point for manual work instead of starting from scratch.</p>
+<h3 id="ops-translate-dry-run">ops-translate dry-run</h3>
+<p><strong>Purpose</strong>: Validate intent and generated artifacts without execution.</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>dry-run
+</code></pre></div>
+
+<p><strong>What it checks</strong>:
+- Intent YAML schema validation
+- Required fields presence
+- YAML syntax of generated artifacts
+- Ansible playbook structure
+- KubeVirt manifest validity</p>
+<p><strong>Example output</strong>:</p>
+<div class="codehilite"><pre><span></span><code>Validating intent/intent.yaml...
+✓ Schema version valid: 1
+✓ Required fields present
+✓ Environment branching valid
+✓ Compute resources valid
+
+Validating generated artifacts...
+✓ output/kubevirt/vm.yaml is valid YAML
+✓ output/ansible/site.yml is valid YAML
+✓ Ansible role structure valid
+
+All validations passed ✓
+</code></pre></div>
+
+<h2 id="configuration">Configuration</h2>
+<h3 id="ops-translateyaml-structure">ops-translate.yaml Structure</h3>
+<p>The workspace configuration file controls all aspects of ops-translate:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># LLM Provider Configuration</span>
+<span class="nt">llm</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">anthropic</span><span class="w">  </span><span class="c1"># anthropic, openai, or mock</span>
+<span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claude-sonnet-4-5</span>
+<span class="w">  </span><span class="nt">api_key_env</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OPS_TRANSLATE_LLM_API_KEY</span>
+<span class="w">  </span><span class="nt">max_tokens</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4096</span>
+<span class="w">  </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span>
+
+<span class="c1"># Environment Profiles</span>
+<span class="nt">profiles</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">lab</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default_namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">virt-lab</span>
+<span class="w">    </span><span class="nt">default_network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lab-network</span>
+<span class="w">    </span><span class="nt">default_storage_class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nfs</span>
+<span class="w">    </span><span class="nt">compute_limits</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">max_cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
+<span class="w">      </span><span class="nt">max_memory_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
+
+<span class="w">  </span><span class="nt">prod</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default_namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">virt-prod</span>
+<span class="w">    </span><span class="nt">default_network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prod-network</span>
+<span class="w">    </span><span class="nt">default_storage_class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ceph-rbd</span>
+<span class="w">    </span><span class="nt">compute_limits</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">max_cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16</span>
+<span class="w">      </span><span class="nt">max_memory_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">64</span>
+
+<span class="c1"># Feature Flags</span>
+<span class="nt">features</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">enable_approval_workflows</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">enable_quota_enforcement</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">enable_tagging</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+
+<h3 id="llm-provider-configuration">LLM Provider Configuration</h3>
+<h4 id="anthropic-claude-recommended">Anthropic Claude (Recommended)</h4>
+<div class="codehilite"><pre><span></span><code><span class="nt">llm</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">anthropic</span>
+<span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claude-sonnet-4-5</span><span class="w">  </span><span class="c1"># Best balance of cost/quality</span>
+<span class="w">  </span><span class="c1"># model: claude-opus-4     # Use for complex workflows</span>
+<span class="w">  </span><span class="nt">api_key_env</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OPS_TRANSLATE_LLM_API_KEY</span>
+</code></pre></div>
+
+<p><strong>Get API Key</strong>: https://console.anthropic.com</p>
+<p><strong>Set Environment Variable</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">OPS_TRANSLATE_LLM_API_KEY</span><span class="o">=</span><span class="s2">&quot;sk-ant-...&quot;</span>
+</code></pre></div>
+
+<p><strong>Model Selection</strong>:
+- <code>claude-sonnet-4-5</code>: Recommended for most workflows (fast, cost-effective)
+- <code>claude-opus-4</code>: Use for complex vRealize workflows with intricate logic
+- <code>claude-sonnet-3-5</code>: Previous generation, still supported</p>
+<h4 id="openai">OpenAI</h4>
+<div class="codehilite"><pre><span></span><code><span class="nt">llm</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai</span>
+<span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpt-4-turbo-preview</span>
+<span class="w">  </span><span class="nt">api_key_env</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OPS_TRANSLATE_LLM_API_KEY</span>
+</code></pre></div>
+
+<p><strong>Get API Key</strong>: https://platform.openai.com</p>
+<p><strong>Model Selection</strong>:
+- <code>gpt-4-turbo-preview</code>: Best quality
+- <code>gpt-4</code>: Stable version
+- <code>gpt-3.5-turbo</code>: Faster, lower cost</p>
+<h4 id="mock-provider-testing">Mock Provider (Testing)</h4>
+<div class="codehilite"><pre><span></span><code><span class="nt">llm</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mock</span>
+<span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mock-model</span>
+</code></pre></div>
+
+<p><strong>Use cases</strong>:
+- Testing CLI workflow
+- CI/CD pipelines
+- Demos without API costs</p>
+<h3 id="profile-configuration">Profile Configuration</h3>
+<p>Profiles define target OpenShift environments:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">profiles</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">lab</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default_namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">virt-lab</span>
+<span class="w">    </span><span class="nt">default_network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lab-network</span>
+<span class="w">    </span><span class="nt">default_storage_class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nfs</span>
+<span class="w">    </span><span class="nt">compute_limits</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">max_cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
+<span class="w">      </span><span class="nt">max_memory_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
+<span class="w">    </span><span class="nt">enable_node_selector</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+
+<span class="w">  </span><span class="nt">staging</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default_namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">virt-staging</span>
+<span class="w">    </span><span class="nt">default_network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">staging-network</span>
+<span class="w">    </span><span class="nt">default_storage_class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ceph-rbd</span>
+<span class="w">    </span><span class="nt">compute_limits</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">max_cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16</span>
+<span class="w">      </span><span class="nt">max_memory_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">64</span>
+<span class="w">    </span><span class="nt">enable_node_selector</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">node_selector</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">workload</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">virtualization</span>
+
+<span class="w">  </span><span class="nt">prod</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default_namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">virt-prod</span>
+<span class="w">    </span><span class="nt">default_network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prod-network</span>
+<span class="w">    </span><span class="nt">default_storage_class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ceph-rbd</span>
+<span class="w">    </span><span class="nt">compute_limits</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">max_cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
+<span class="w">      </span><span class="nt">max_memory_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">128</span>
+<span class="w">    </span><span class="nt">enable_node_selector</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">node_selector</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">workload</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">virtualization</span>
+<span class="w">      </span><span class="nt">tier</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
+</code></pre></div>
+
+<h3 id="vm-templateimage-mappings">VM Template/Image Mappings</h3>
+<p>When PowerCLI scripts use VM templates (e.g., <code>New-VM -Template "RHEL8-Golden"</code>), ops-translate needs to map VMware template names to KubeVirt image sources. Without a mapping, VMs will be created with blank disks that cannot boot.</p>
+<p><strong>Add template mappings to your profile configuration:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="nt">profiles</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">lab</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default_namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">virt-lab</span>
+<span class="w">    </span><span class="nt">default_network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lab-network</span>
+<span class="w">    </span><span class="nt">default_storage_class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nfs</span>
+<span class="w">    </span><span class="nt">template_mappings</span><span class="p">:</span>
+<span class="w">      </span><span class="c1"># Container registry images (ContainerDisk)</span>
+<span class="w">      </span><span class="s">&quot;RHEL8-Golden-Image&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;registry:quay.io/containerdisks/centos:8&quot;</span>
+<span class="w">      </span><span class="s">&quot;Ubuntu-22.04&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;registry:quay.io/containerdisks/ubuntu:22.04&quot;</span>
+
+<span class="w">      </span><span class="c1"># Existing PVCs (DataVolume from PVC)</span>
+<span class="w">      </span><span class="s">&quot;Windows-2022-Template&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;pvc:os-images/windows-server-2022&quot;</span>
+<span class="w">      </span><span class="s">&quot;PostgreSQL-Base&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;pvc:database-pvc&quot;</span>
+
+<span class="w">      </span><span class="c1"># HTTP-accessible images</span>
+<span class="w">      </span><span class="s">&quot;Custom-App-Image&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;http:https://storage.example.com/images/app.qcow2&quot;</span>
+
+<span class="w">      </span><span class="c1"># Explicit blank disk (if template should be ignored)</span>
+<span class="w">      </span><span class="s">&quot;Empty-Template&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;blank&quot;</span>
+</code></pre></div>
+
+<p><strong>Mapping Format:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Format</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>registry:URL</code></td>
+<td>Container registry image (ContainerDisk)</td>
+<td><code>registry:quay.io/containerdisks/centos:8</code></td>
+</tr>
+<tr>
+<td><code>pvc:NAME</code></td>
+<td>PVC in current namespace</td>
+<td><code>pvc:database-pvc</code></td>
+</tr>
+<tr>
+<td><code>pvc:NAMESPACE/NAME</code></td>
+<td>PVC in specific namespace</td>
+<td><code>pvc:os-images/windows-server-2022</code></td>
+</tr>
+<tr>
+<td><code>http:URL</code></td>
+<td>HTTP/HTTPS accessible image</td>
+<td><code>http:https://storage.example.com/images/app.qcow2</code></td>
+</tr>
+<tr>
+<td><code>blank</code></td>
+<td>Empty disk (no source)</td>
+<td><code>blank</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>What Happens Without a Mapping:</strong></p>
+<p>If a PowerCLI script references a template that has no mapping configured, ops-translate will:</p>
+<ol>
+<li>Generate a warning message showing the unmapped template name</li>
+<li>Provide an example configuration snippet</li>
+<li>Fall back to creating a blank disk (which cannot boot)</li>
+</ol>
+<p>Example warning:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Warning</span><span class="o">:</span><span class="w"> </span><span class="n">No</span><span class="w"> </span><span class="n">template</span><span class="w"> </span><span class="n">mapping</span><span class="w"> </span><span class="n">found</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="s1">&#39;RHEL8-Golden-Image&#39;</span><span class="o">.</span>
+<span class="n">Add</span><span class="w"> </span><span class="n">mapping</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">profile</span><span class="w"> </span><span class="n">config</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">use</span><span class="w"> </span><span class="n">actual</span><span class="w"> </span><span class="n">image</span><span class="o">.</span>
+<span class="w">  </span><span class="n">Example</span><span class="o">:</span><span class="w"> </span><span class="n">template_mappings</span><span class="o">:</span>
+<span class="w">    </span><span class="n">RHEL8</span><span class="o">-</span><span class="n">Golden</span><span class="o">-</span><span class="n">Image</span><span class="o">:</span><span class="w"> </span><span class="n">registry</span><span class="o">:</span><span class="n">quay</span><span class="o">.</span><span class="na">io</span><span class="sr">/containerdisks/</span><span class="n">centos</span><span class="o">:</span><span class="mi">8</span>
+</code></pre></div>
+
+<p><strong>Best Practices:</strong></p>
+<ul>
+<li><strong>Use ContainerDisk for common OS images</strong>: quay.io/containerdisks has pre-built images for CentOS, Ubuntu, Fedora, etc.</li>
+<li><strong>Use PVCs for custom images</strong>: Import your custom images once as DataVolumes, then reference them via PVC mappings</li>
+<li><strong>Document your mappings</strong>: Add comments in <code>ops-translate.yaml</code> to explain what each template represents</li>
+<li><strong>Test in lab first</strong>: Verify template mappings work in lab profile before using in production</li>
+</ul>
+<p><strong>Example: Multi-Environment Template Mappings:</strong></p>
+<p>Different environments might use different image sources:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">profiles</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">lab</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">template_mappings</span><span class="p">:</span>
+<span class="w">      </span><span class="s">&quot;RHEL8-Golden&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;registry:quay.io/containerdisks/centos:8&quot;</span><span class="w">  </span><span class="c1"># Lab uses public images</span>
+
+<span class="w">  </span><span class="nt">prod</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">template_mappings</span><span class="p">:</span>
+<span class="w">      </span><span class="s">&quot;RHEL8-Golden&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;pvc:golden-images/rhel8-prod&quot;</span><span class="w">  </span><span class="c1"># Prod uses pre-imported PVC</span>
+</code></pre></div>
+
+<h2 id="advanced-usage">Advanced Usage</h2>
+<h3 id="multi-source-merging">Multi-Source Merging</h3>
+<p>When migrating complex automation with multiple PowerCLI scripts and vRealize workflows:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Import all sources</span>
+ops-translate<span class="w"> </span>import<span class="w"> </span>--source<span class="w"> </span>powercli<span class="w"> </span>--file<span class="w"> </span>vm-provision.ps1
+ops-translate<span class="w"> </span>import<span class="w"> </span>--source<span class="w"> </span>powercli<span class="w"> </span>--file<span class="w"> </span>network-config.ps1
+ops-translate<span class="w"> </span>import<span class="w"> </span>--source<span class="w"> </span>powercli<span class="w"> </span>--file<span class="w"> </span>storage-setup.ps1
+ops-translate<span class="w"> </span>import<span class="w"> </span>--source<span class="w"> </span>vrealize<span class="w"> </span>--file<span class="w"> </span>approval-workflow.xml
+ops-translate<span class="w"> </span>import<span class="w"> </span>--source<span class="w"> </span>vrealize<span class="w"> </span>--file<span class="w"> </span>notification-workflow.xml
+
+<span class="c1"># Extract intent from each</span>
+ops-translate<span class="w"> </span>intent<span class="w"> </span>extract
+
+<span class="c1"># Review each intent file</span>
+ls<span class="w"> </span>-l<span class="w"> </span>intent/*.intent.yaml
+
+<span class="c1"># Merge with conflict detection</span>
+ops-translate<span class="w"> </span>intent<span class="w"> </span>merge
+
+<span class="c1"># If conflicts, review and resolve</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>-f<span class="w"> </span>intent/conflicts.md<span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">  </span>cat<span class="w"> </span>intent/conflicts.md
+<span class="w">  </span><span class="c1"># Edit intent files as needed</span>
+<span class="w">  </span>ops-translate<span class="w"> </span>intent<span class="w"> </span>merge<span class="w"> </span>--force
+<span class="k">fi</span>
+
+<span class="c1"># Generate unified output</span>
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>prod
+</code></pre></div>
+
+<h3 id="template-based-workflow-no-ai">Template-Based Workflow (No AI)</h3>
+<p>For environments without LLM API access:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Extract using templates</span>
+ops-translate<span class="w"> </span>intent<span class="w"> </span>extract<span class="w"> </span>--no-ai
+
+<span class="c1"># Generate using templates</span>
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>lab<span class="w"> </span>--no-ai
+</code></pre></div>
+
+<p><strong>Note</strong>: Template-based extraction is less accurate than AI but requires no API keys.</p>
+<h3 id="custom-intent-schema">Custom Intent Schema</h3>
+<p>You can manually create intent YAML if you prefer not to use extraction:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Skip extraction, create intent manually</span>
+cat<span class="w"> </span>&gt;<span class="w"> </span>intent/intent.yaml<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
+<span class="s">schema_version: 1</span>
+<span class="s">type: custom</span>
+<span class="s">workflow_name: my_vm_provision</span>
+
+<span class="s">inputs:</span>
+<span class="s">  - name: vm_name</span>
+<span class="s">    type: string</span>
+<span class="s">    required: true</span>
+
+<span class="s">compute:</span>
+<span class="s">  cpu_count: 4</span>
+<span class="s">  memory_gb: 16</span>
+
+<span class="s">networking:</span>
+<span class="s">  interfaces:</span>
+<span class="s">    - name: eth0</span>
+<span class="s">      network: prod-network</span>
+
+<span class="s">storage:</span>
+<span class="s">  volumes:</span>
+<span class="s">    - name: root</span>
+<span class="s">      size_gb: 100</span>
+<span class="s">      storage_class: ceph-rbd</span>
+<span class="s">EOF</span>
+
+<span class="c1"># Generate from custom intent</span>
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>prod
+</code></pre></div>
+
+<h3 id="incremental-migration">Incremental Migration</h3>
+<p>Migrate automation incrementally:</p>
+<p><strong>Week 1</strong>: Start with simple provisioning</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>import<span class="w"> </span>--source<span class="w"> </span>powercli<span class="w"> </span>--file<span class="w"> </span>provision-basic.ps1
+ops-translate<span class="w"> </span>intent<span class="w"> </span>extract
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>lab
+<span class="c1"># Test in lab</span>
+</code></pre></div>
+
+<p><strong>Week 2</strong>: Add networking complexity</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>import<span class="w"> </span>--source<span class="w"> </span>powercli<span class="w"> </span>--file<span class="w"> </span>provision-networking.ps1
+ops-translate<span class="w"> </span>intent<span class="w"> </span>extract
+ops-translate<span class="w"> </span>intent<span class="w"> </span>merge
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>lab
+<span class="c1"># Test networking</span>
+</code></pre></div>
+
+<p><strong>Week 3</strong>: Add governance</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>import<span class="w"> </span>--source<span class="w"> </span>vrealize<span class="w"> </span>--file<span class="w"> </span>approval-workflow.xml
+ops-translate<span class="w"> </span>intent<span class="w"> </span>extract
+ops-translate<span class="w"> </span>intent<span class="w"> </span>merge
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>staging
+<span class="c1"># Test approval flow</span>
+</code></pre></div>
+
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="common-issues">Common Issues</h3>
+<h4 id="api-key-not-found">API Key Not Found</h4>
+<p><strong>Symptom</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Warning</span><span class="o">:</span><span class="w"> </span><span class="n">LLM</span><span class="w"> </span><span class="n">API</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="n">not</span><span class="w"> </span><span class="n">found</span><span class="o">.</span><span class="w"> </span><span class="n">Falling</span><span class="w"> </span><span class="n">back</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">mock</span><span class="w"> </span><span class="n">provider</span><span class="o">.</span>
+</code></pre></div>
+
+<p><strong>Solution</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">OPS_TRANSLATE_LLM_API_KEY</span><span class="o">=</span><span class="s2">&quot;your-api-key&quot;</span>
+<span class="c1"># Or edit ops-translate.yaml and set api_key_env correctly</span>
+</code></pre></div>
+
+<h4 id="import-file-not-found">Import File Not Found</h4>
+<p><strong>Symptom</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Error</span><span class="o">:</span><span class="w"> </span><span class="n">File</span><span class="w"> </span><span class="n">not</span><span class="w"> </span><span class="n">found</span><span class="o">:</span><span class="w"> </span><span class="sr">/path/to/s</span><span class="n">cript</span><span class="o">.</span><span class="na">ps1</span>
+</code></pre></div>
+
+<p><strong>Solution</strong>:
+- Verify file path is correct
+- Use absolute paths or paths relative to current directory
+- Check file permissions</p>
+<h4 id="merge-conflicts">Merge Conflicts</h4>
+<p><strong>Symptom</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Error</span><span class="o">:</span><span class="w"> </span><span class="n">Conflicts</span><span class="w"> </span><span class="n">detected</span><span class="w"> </span><span class="n">during</span><span class="w"> </span><span class="n">merge</span><span class="o">.</span><span class="w"> </span><span class="n">See</span><span class="w"> </span><span class="n">intent</span><span class="o">/</span><span class="n">conflicts</span><span class="o">.</span><span class="na">md</span>
+</code></pre></div>
+
+<p><strong>Solution</strong>:
+1. Review <code>intent/conflicts.md</code>
+2. Edit intent files to resolve conflicts
+3. Re-run merge, or use <code>--force</code> to proceed</p>
+<h4 id="invalid-intent-schema">Invalid Intent Schema</h4>
+<p><strong>Symptom</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Error</span><span class="o">:</span><span class="w"> </span><span class="n">Intent</span><span class="w"> </span><span class="n">schema</span><span class="w"> </span><span class="n">validation</span><span class="w"> </span><span class="n">failed</span>
+</code></pre></div>
+
+<p><strong>Solution</strong>:
+- Run <code>ops-translate dry-run</code> to see specific errors
+- Check intent YAML syntax
+- Verify required fields are present
+- Compare with schema in <code>schema/</code> directory</p>
+<h4 id="not-in-workspace">Not in Workspace</h4>
+<p><strong>Symptom</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Error</span><span class="o">:</span><span class="w"> </span><span class="n">Not</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">workspace</span><span class="o">.</span><span class="w"> </span><span class="n">Run</span><span class="w"> </span><span class="s1">&#39;ops-translate init &lt;dir&gt;&#39;</span><span class="w"> </span><span class="n">first</span><span class="o">.</span>
+</code></pre></div>
+
+<p><strong>Solution</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Either cd into workspace</span>
+<span class="nb">cd</span><span class="w"> </span>my-workspace
+
+<span class="c1"># Or initialize new workspace</span>
+ops-translate<span class="w"> </span>init<span class="w"> </span>my-workspace
+<span class="nb">cd</span><span class="w"> </span>my-workspace
+</code></pre></div>
+
+<h3 id="debug-mode">Debug Mode</h3>
+<p>Enable verbose logging:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">OPS_TRANSLATE_DEBUG</span><span class="o">=</span><span class="m">1</span>
+ops-translate<span class="w"> </span>intent<span class="w"> </span>extract
+</code></pre></div>
+
+<h3 id="getting-help">Getting Help</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># General help</span>
+ops-translate<span class="w"> </span>--help
+
+<span class="c1"># Command-specific help</span>
+ops-translate<span class="w"> </span>intent<span class="w"> </span>extract<span class="w"> </span>--help
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--help
+</code></pre></div>
+
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="1-version-control-your-workspace">1. Version Control Your Workspace</h3>
+<div class="codehilite"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>my-workspace
+git<span class="w"> </span>init
+git<span class="w"> </span>add<span class="w"> </span>ops-translate.yaml<span class="w"> </span>intent/<span class="w"> </span>output/
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Initial migration setup&quot;</span>
+</code></pre></div>
+
+<p><strong>What to commit</strong>:
+- <code>ops-translate.yaml</code>
+- <code>intent/*.yaml</code>
+- <code>intent/*.md</code>
+- <code>output/</code></p>
+<p><strong>What not to commit</strong>:
+- <code>input/</code> (contains original source files)
+- API keys (use environment variables)</p>
+<h3 id="2-review-before-generate">2. Review Before Generate</h3>
+<p>Always review extracted intent before generation:</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>intent<span class="w"> </span>extract
+<span class="c1"># Review intent files</span>
+cat<span class="w"> </span>intent/powercli.intent.yaml
+cat<span class="w"> </span>intent/assumptions.md
+<span class="c1"># Make corrections if needed</span>
+ops-translate<span class="w"> </span>intent<span class="w"> </span>edit
+<span class="c1"># Then generate</span>
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>lab
+</code></pre></div>
+
+<h3 id="3-test-in-lab-first">3. Test in Lab First</h3>
+<p>Never generate directly to production:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Generate for lab</span>
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>lab
+
+<span class="c1"># Test in lab environment</span>
+kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>output/kubevirt/vm.yaml<span class="w"> </span>--dry-run<span class="o">=</span>client
+ansible-playbook<span class="w"> </span>output/ansible/site.yml<span class="w"> </span>--check
+
+<span class="c1"># After validation, generate for prod</span>
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>prod
+</code></pre></div>
+
+<h3 id="4-document-assumptions">4. Document Assumptions</h3>
+<p>Keep the AI assumptions log in version control:</p>
+<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>add<span class="w"> </span>intent/assumptions.md
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Document AI assumptions for VM provisioning&quot;</span>
+</code></pre></div>
+
+<p>This helps team members understand AI decisions.</p>
+<h3 id="5-incremental-complexity">5. Incremental Complexity</h3>
+<p>Start simple, add complexity incrementally:</p>
+<ol>
+<li>Basic VM provisioning</li>
+<li>Add networking</li>
+<li>Add storage</li>
+<li>Add governance</li>
+<li>Add approval workflows</li>
+</ol>
+<h3 id="6-validate-generated-artifacts">6. Validate Generated Artifacts</h3>
+<p>Always validate before deployment:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Validate YAML syntax</span>
+yamllint<span class="w"> </span>output/kubevirt/vm.yaml
+yamllint<span class="w"> </span>output/ansible/site.yml
+
+<span class="c1"># Validate Ansible playbook</span>
+ansible-playbook<span class="w"> </span>output/ansible/site.yml<span class="w"> </span>--syntax-check
+
+<span class="c1"># Validate KubeVirt manifest</span>
+kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>output/kubevirt/vm.yaml<span class="w"> </span>--dry-run<span class="o">=</span>server
+
+<span class="c1"># Run full validation</span>
+ops-translate<span class="w"> </span>dry-run
+</code></pre></div>
+
+<h3 id="7-keep-originals-safe">7. Keep Originals Safe</h3>
+<p>ops-translate copies files during import. Keep originals:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Backup originals before import</span>
+cp<span class="w"> </span>/original/location/*.ps1<span class="w"> </span>~/backups/
+cp<span class="w"> </span>/original/location/*.xml<span class="w"> </span>~/backups/
+
+<span class="c1"># Then import</span>
+ops-translate<span class="w"> </span>import<span class="w"> </span>--source<span class="w"> </span>powercli<span class="w"> </span>--file<span class="w"> </span>/original/location/script.ps1
+</code></pre></div>
+
+<h3 id="8-use-profiles-consistently">8. Use Profiles Consistently</h3>
+<p>Define profiles once, use everywhere:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># ops-translate.yaml</span>
+<span class="nt">profiles</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">lab</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> namespace</span><span class="p">:</span><span class="w"> </span><span class="nv">virt-lab</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">...</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="nt">staging</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> namespace</span><span class="p">:</span><span class="w"> </span><span class="nv">virt-staging</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">...</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="nt">prod</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> namespace</span><span class="p">:</span><span class="w"> </span><span class="nv">virt-prod</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">...</span><span class="w"> </span><span class="p p-Indicator">}</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># Always specify profile</span>
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>lab
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>staging
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>prod
+</code></pre></div>
+
+<h3 id="9-monitor-costs">9. Monitor Costs</h3>
+<p>If using paid LLM APIs:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Use mock for testing</span>
+ops-translate<span class="w"> </span>intent<span class="w"> </span>extract<span class="w"> </span>--no-ai
+
+<span class="c1"># Use cheaper models for simple scripts</span>
+<span class="c1"># Edit ops-translate.yaml:</span>
+llm:
+<span class="w">  </span>model:<span class="w"> </span>claude-sonnet-4-5<span class="w">  </span><span class="c1"># Cheaper than opus</span>
+
+<span class="c1"># Use AI only when needed</span>
+ops-translate<span class="w"> </span>summarize<span class="w">  </span><span class="c1"># No AI</span>
+ops-translate<span class="w"> </span>intent<span class="w"> </span>extract<span class="w">  </span><span class="c1"># AI only here</span>
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--no-ai<span class="w">  </span><span class="c1"># Templates</span>
+</code></pre></div>
+
+<h3 id="10-collaborate-with-team">10. Collaborate with Team</h3>
+<p>Share workspace configuration:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Share ops-translate.yaml (without API keys!)</span>
+git<span class="w"> </span>add<span class="w"> </span>ops-translate.yaml
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Add team workspace configuration&quot;</span>
+git<span class="w"> </span>push
+
+<span class="c1"># Team members clone and set their own API keys</span>
+git<span class="w"> </span>clone<span class="w"> </span>&lt;repo&gt;
+<span class="nb">cd</span><span class="w"> </span>&lt;workspace&gt;
+<span class="nb">export</span><span class="w"> </span><span class="nv">OPS_TRANSLATE_LLM_API_KEY</span><span class="o">=</span><span class="s2">&quot;their-key&quot;</span>
+</code></pre></div>
+
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li>Read the <a href="ARCHITECTURE.md">Architecture Documentation</a> to understand how ops-translate works</li>
+<li>Follow the <a href="TUTORIAL.md">Tutorial</a> for a hands-on walkthrough</li>
+<li>Check the <a href="API_REFERENCE.md">API Reference</a> for programmatic usage</li>
+<li>Review <a href="../examples/">examples/</a> for sample workflows</li>
+</ul>
+        </div>
+        <div style="margin-top: var(--spacing-xl); text-align: center;">
+            <a href="../index.html" class="back-to-report">← Back to Migration Report</a>
+        </div>
+    </div>
+</body>
+</html>

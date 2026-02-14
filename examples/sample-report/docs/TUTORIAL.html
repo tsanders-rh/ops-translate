@@ -1,0 +1,1408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial</title>
+    <link rel="stylesheet" href="../assets/style.css">
+    <style>
+        .doc-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--spacing-xl);
+            background: white;
+        }
+        .doc-header {
+            margin-bottom: var(--spacing-xl);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 2px solid #0c4a6e;
+        }
+        .doc-nav {
+            margin-bottom: var(--spacing-lg);
+            padding: var(--spacing-md);
+            background: #f0f9ff;
+            border-radius: 8px;
+        }
+        .doc-nav a {
+            color: #0c4a6e;
+            text-decoration: none;
+            margin-right: var(--spacing-md);
+        }
+        .doc-nav a:hover {
+            text-decoration: underline;
+        }
+        .doc-content {
+            line-height: 1.8;
+        }
+        .doc-content h2 {
+            margin-top: var(--spacing-xl);
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid #e2e8f0;
+        }
+        .doc-content h3 {
+            margin-top: var(--spacing-lg);
+            color: #0c4a6e;
+        }
+        .doc-content h4 {
+            margin-top: var(--spacing-md);
+            color: #0369a1;
+            font-weight: 600;
+        }
+        .doc-content code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .doc-content pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: var(--spacing-md);
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: var(--spacing-md) 0;
+        }
+        .doc-content pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        .doc-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: var(--spacing-md) 0;
+        }
+        .doc-content th, .doc-content td {
+            border: 1px solid #cbd5e1;
+            padding: var(--spacing-sm);
+            text-align: left;
+        }
+        .doc-content th {
+            background: #f1f5f9;
+            font-weight: 600;
+        }
+        .doc-content ul, .doc-content ol {
+            margin: var(--spacing-md) 0;
+            padding-left: var(--spacing-xl);
+        }
+        .doc-content li {
+            margin: var(--spacing-xs) 0;
+        }
+        .doc-content blockquote {
+            border-left: 4px solid #0c4a6e;
+            padding-left: var(--spacing-md);
+            margin: var(--spacing-md) 0;
+            color: #64748b;
+            font-style: italic;
+        }
+        .back-to-report {
+            display: inline-block;
+            margin-top: var(--spacing-xl);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: #0c4a6e;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+        .back-to-report:hover {
+            background: #075985;
+        }
+    </style>
+</head>
+<body>
+    <div class="doc-container">
+        <div class="doc-header">
+            <h1>Tutorial</h1>
+        </div>
+        <div class="doc-nav">
+            <a href="../index.html">← Back to Report</a>
+            <a href="#table-of-contents">Table of Contents</a>
+        </div>
+        <div class="doc-content">
+            <h1 id="ops-translate-tutorial">ops-translate Tutorial</h1>
+<p>Step-by-step tutorial for migrating VMware automation to OpenShift Virtualization using ops-translate.</p>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#tutorial-overview">Tutorial Overview</a></li>
+<li><a href="#prerequisites">Prerequisites</a></li>
+<li><a href="#scenario-devprod-vm-provisioning">Scenario: Dev/Prod VM Provisioning</a></li>
+<li><a href="#part-1-setup-and-import">Part 1: Setup and Import</a></li>
+<li><a href="#part-2-analysis-and-summarization">Part 2: Analysis and Summarization</a></li>
+<li><a href="#part-3-intent-extraction">Part 3: Intent Extraction</a></li>
+<li><a href="#part-4-multi-source-merging">Part 4: Multi-Source Merging</a></li>
+<li><a href="#part-5-artifact-generation">Part 5: Artifact Generation</a></li>
+<li><a href="#part-6-testing-and-deployment">Part 6: Testing and Deployment</a></li>
+<li><a href="#advanced-tutorial-governance-workflow">Advanced Tutorial: Governance Workflow</a></li>
+</ol>
+<h2 id="tutorial-overview">Tutorial Overview</h2>
+<h3 id="what-youll-learn">What You'll Learn</h3>
+<p>In this tutorial, you'll migrate a complete VMware automation workflow to OpenShift:</p>
+<ul>
+<li>Import PowerCLI scripts and vRealize workflows</li>
+<li>Extract operational intent using AI</li>
+<li>Merge multiple automation sources</li>
+<li>Generate Ansible playbooks and KubeVirt manifests</li>
+<li>Validate and test the output</li>
+</ul>
+<h3 id="time-required">Time Required</h3>
+<ul>
+<li>Basic tutorial: 30-45 minutes</li>
+<li>Advanced tutorial: 60-90 minutes</li>
+</ul>
+<h3 id="what-youll-build">What You'll Build</h3>
+<p>By the end, you'll have:
+- A complete OpenShift VM provisioning workflow
+- Ansible playbooks with environment awareness
+- KubeVirt manifests for dev and prod
+- Validation and testing setup</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<h3 id="required-software">Required Software</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Python 3.10+</span>
+python<span class="w"> </span>--version<span class="w">  </span><span class="c1"># Should be 3.10 or higher</span>
+
+<span class="c1"># ops-translate</span>
+pip<span class="w"> </span>install<span class="w"> </span>ops-translate
+
+<span class="c1"># Optional: OpenShift CLI (for testing)</span>
+oc<span class="w"> </span>version
+</code></pre></div>
+
+<h3 id="api-keys-choose-one">API Keys (Choose One)</h3>
+<p><strong>Option 1: Anthropic Claude</strong> (Recommended)</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Get key from https://console.anthropic.com</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OPS_TRANSLATE_LLM_API_KEY</span><span class="o">=</span><span class="s2">&quot;sk-ant-your-key&quot;</span>
+</code></pre></div>
+
+<p><strong>Option 2: OpenAI</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Get key from https://platform.openai.com</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OPS_TRANSLATE_LLM_API_KEY</span><span class="o">=</span><span class="s2">&quot;sk-your-key&quot;</span>
+</code></pre></div>
+
+<p><strong>Option 3: No API Key</strong> (Mock mode)</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># No setup needed - will use mock provider</span>
+<span class="c1"># Good for learning the workflow</span>
+</code></pre></div>
+
+<h3 id="verify-installation">Verify Installation</h3>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>--help
+</code></pre></div>
+
+<p>You should see the CLI help text.</p>
+<h2 id="scenario-devprod-vm-provisioning">Scenario: Dev/Prod VM Provisioning</h2>
+<h3 id="business-context">Business Context</h3>
+<p>Your organization uses VMware for VM provisioning with:
+- <strong>PowerCLI scripts</strong> for basic provisioning
+- <strong>vRealize workflows</strong> for approval and governance
+- <strong>Environment branching</strong> (dev uses lower resources than prod)
+- <strong>Tag-based tracking</strong> for cost allocation</p>
+<p>You need to migrate to OpenShift Virtualization while preserving all operational patterns.</p>
+<h3 id="source-automation">Source Automation</h3>
+<p><strong>PowerCLI Script</strong> (<code>provision-vm.ps1</code>):
+- Takes VM name and environment (dev/prod)
+- Provisions VMs with environment-specific resources
+- Applies tags for tracking</p>
+<p><strong>vRealize Workflow</strong> (<code>approval-workflow.xml</code>):
+- Requires approval for prod VMs
+- Validates against quotas
+- Sends notifications</p>
+<h3 id="target-output">Target Output</h3>
+<ul>
+<li><strong>KubeVirt manifests</strong> for VM definitions</li>
+<li><strong>Ansible playbooks</strong> with approval hooks</li>
+<li><strong>Environment-aware</strong> resource allocation</li>
+<li><strong>Quota enforcement</strong> in Ansible</li>
+</ul>
+<h2 id="part-1-setup-and-import">Part 1: Setup and Import</h2>
+<h3 id="step-1-create-workspace">Step 1: Create Workspace</h3>
+<p>Create a new workspace for the migration:</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>init<span class="w"> </span>vmware-migration
+<span class="nb">cd</span><span class="w"> </span>vmware-migration
+</code></pre></div>
+
+<p><strong>What happened?</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="nv">vmware</span><span class="o">-</span><span class="nv">migration</span><span class="o">/</span>
+├──<span class="w"> </span><span class="nv">ops</span><span class="o">-</span><span class="nv">translate</span>.<span class="nv">yaml</span><span class="w">   </span>#<span class="w"> </span><span class="nv">Configuration</span><span class="w"> </span><span class="nv">file</span>
+├──<span class="w"> </span><span class="nv">input</span><span class="o">/</span><span class="w">              </span>#<span class="w"> </span><span class="k">For</span><span class="w"> </span><span class="nv">source</span><span class="w"> </span><span class="nv">files</span>
+│<span class="w">   </span>├──<span class="w"> </span><span class="nv">powercli</span><span class="o">/</span>
+│<span class="w">   </span>└──<span class="w"> </span><span class="nv">vrealize</span><span class="o">/</span>
+├──<span class="w"> </span><span class="nv">intent</span><span class="o">/</span><span class="w">             </span>#<span class="w"> </span><span class="nv">Extracted</span><span class="w"> </span><span class="nv">intent</span><span class="w"> </span><span class="ss">(</span><span class="nv">created</span><span class="w"> </span><span class="nv">later</span><span class="ss">)</span>
+├──<span class="w"> </span><span class="nv">mapping</span><span class="o">/</span><span class="w">            </span>#<span class="w"> </span><span class="nv">Mappings</span><span class="w"> </span><span class="ss">(</span><span class="nv">created</span><span class="w"> </span><span class="nv">later</span><span class="ss">)</span>
+└──<span class="w"> </span><span class="nv">output</span><span class="o">/</span><span class="w">             </span>#<span class="w"> </span><span class="nv">Generated</span><span class="w"> </span><span class="nv">artifacts</span><span class="w"> </span><span class="ss">(</span><span class="nv">created</span><span class="w"> </span><span class="nv">later</span><span class="ss">)</span>
+</code></pre></div>
+
+<h3 id="step-2-review-configuration">Step 2: Review Configuration</h3>
+<p>Open and review <code>ops-translate.yaml</code>:</p>
+<div class="codehilite"><pre><span></span><code>cat<span class="w"> </span>ops-translate.yaml
+</code></pre></div>
+
+<p>You'll see:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">llm</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">anthropic</span><span class="w">  </span><span class="c1"># or openai, mock</span>
+<span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claude-sonnet-4-5</span>
+<span class="w">  </span><span class="nt">api_key_env</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OPS_TRANSLATE_LLM_API_KEY</span>
+
+<span class="nt">profiles</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">lab</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default_namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">virt-lab</span>
+<span class="w">    </span><span class="nt">default_network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lab-network</span>
+<span class="w">    </span><span class="nt">default_storage_class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nfs</span>
+
+<span class="w">  </span><span class="nt">prod</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default_namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">virt-prod</span>
+<span class="w">    </span><span class="nt">default_network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prod-network</span>
+<span class="w">    </span><span class="nt">default_storage_class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ceph-rbd</span>
+</code></pre></div>
+
+<p><strong>Configure for your environment</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Edit configuration</span>
+<span class="nv">$EDITOR</span><span class="w"> </span>ops-translate.yaml
+
+<span class="c1"># Set API key</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OPS_TRANSLATE_LLM_API_KEY</span><span class="o">=</span><span class="s2">&quot;your-key-here&quot;</span>
+</code></pre></div>
+
+<h3 id="step-3-get-example-files">Step 3: Get Example Files</h3>
+<p>We'll use example files from the ops-translate repository:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Clone the repository if you haven&#39;t</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/tsanders-rh/ops-translate
+<span class="nb">cd</span><span class="w"> </span>ops-translate
+
+<span class="c1"># Copy example files</span>
+cp<span class="w"> </span>examples/powercli/environment-aware.ps1<span class="w"> </span>~/vmware-migration/
+cp<span class="w"> </span>examples/vrealize/with-approval.workflow.xml<span class="w"> </span>~/vmware-migration/
+
+<span class="nb">cd</span><span class="w"> </span>~/vmware-migration
+</code></pre></div>
+
+<p>Alternatively, create your own files:</p>
+<p><strong>provision-vm.ps1</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">param</span><span class="p">(</span>
+    <span class="p">[</span><span class="k">Parameter</span><span class="p">(</span><span class="k">Mandatory</span><span class="p">=</span><span class="nv">$true</span><span class="p">)]</span>
+    <span class="p">[</span><span class="k">ValidateSet</span><span class="p">(</span><span class="s2">&quot;dev&quot;</span><span class="p">,</span> <span class="s2">&quot;prod&quot;</span><span class="p">)]</span>
+    <span class="no">[string]</span><span class="nv">$Environment</span><span class="p">,</span>
+
+    <span class="p">[</span><span class="k">Parameter</span><span class="p">(</span><span class="k">Mandatory</span><span class="p">=</span><span class="nv">$true</span><span class="p">)]</span>
+    <span class="no">[string]</span><span class="nv">$VMName</span><span class="p">,</span>
+
+    <span class="p">[</span><span class="k">Parameter</span><span class="p">(</span><span class="k">Mandatory</span><span class="p">=</span><span class="nv">$true</span><span class="p">)]</span>
+    <span class="no">[string]</span><span class="nv">$OwnerEmail</span>
+<span class="p">)</span>
+
+<span class="c"># Environment-specific resource allocation</span>
+<span class="k">if</span> <span class="p">(</span><span class="nv">$Environment</span> <span class="o">-eq</span> <span class="s2">&quot;prod&quot;</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nv">$CPUCount</span> <span class="p">=</span> <span class="n">4</span>
+    <span class="nv">$MemoryGB</span> <span class="p">=</span> <span class="n">16</span>
+    <span class="nv">$Network</span> <span class="p">=</span> <span class="s2">&quot;prod-network&quot;</span>
+    <span class="nv">$Storage</span> <span class="p">=</span> <span class="s2">&quot;storage-gold&quot;</span>
+<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="nv">$CPUCount</span> <span class="p">=</span> <span class="n">2</span>
+    <span class="nv">$MemoryGB</span> <span class="p">=</span> <span class="n">8</span>
+    <span class="nv">$Network</span> <span class="p">=</span> <span class="s2">&quot;dev-network&quot;</span>
+    <span class="nv">$Storage</span> <span class="p">=</span> <span class="s2">&quot;storage-standard&quot;</span>
+<span class="p">}</span>
+
+<span class="c"># Provision VM</span>
+<span class="nb">New-VM</span> <span class="n">-Name</span> <span class="nv">$VMName</span> <span class="p">`</span>
+    <span class="n">-NumCpu</span> <span class="nv">$CPUCount</span> <span class="p">`</span>
+    <span class="n">-MemoryGB</span> <span class="nv">$MemoryGB</span> <span class="p">`</span>
+    <span class="n">-NetworkName</span> <span class="nv">$Network</span> <span class="p">`</span>
+    <span class="n">-Datastore</span> <span class="nv">$Storage</span>
+
+<span class="c"># Apply tags</span>
+<span class="nb">New-TagAssignment</span> <span class="n">-Entity</span> <span class="nv">$VMName</span> <span class="n">-Tag</span> <span class="s2">&quot;env:$Environment&quot;</span>
+<span class="nb">New-TagAssignment</span> <span class="n">-Entity</span> <span class="nv">$VMName</span> <span class="n">-Tag</span> <span class="s2">&quot;owner:$OwnerEmail&quot;</span>
+</code></pre></div>
+
+<h3 id="step-4-import-files">Step 4: Import Files</h3>
+<p>Import the PowerCLI script:</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>import<span class="w"> </span>--source<span class="w"> </span>powercli<span class="w"> </span>--file<span class="w"> </span>provision-vm.ps1
+</code></pre></div>
+
+<p><strong>Output</strong>:</p>
+<div class="codehilite"><pre><span></span><code>✓ Imported provision-vm.ps1 to input/powercli/
+  SHA-256: abc123...
+</code></pre></div>
+
+<p>Import the vRealize workflow:</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>import<span class="w"> </span>--source<span class="w"> </span>vrealize<span class="w"> </span>--file<span class="w"> </span>approval-workflow.xml
+</code></pre></div>
+
+<p><strong>Output</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">✓ Imported approval-workflow.xml to input/vrealize/</span>
+<span class="n">  SHA-256: def456...</span>
+</code></pre></div>
+
+<h3 id="step-5-verify-imports">Step 5: Verify Imports</h3>
+<p>Check that files were imported:</p>
+<div class="codehilite"><pre><span></span><code>ls<span class="w"> </span>-R<span class="w"> </span>input/
+</code></pre></div>
+
+<p><strong>Output</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">input/powercli:</span>
+<span class="n">provision-vm.ps1</span>
+
+<span class="n">input/vrealize:</span>
+<span class="n">approval-workflow.xml</span>
+</code></pre></div>
+
+<p><strong>Checkpoint</strong>: You now have a workspace with imported source files.</p>
+<h2 id="part-2-analysis-and-summarization">Part 2: Analysis and Summarization</h2>
+<h3 id="step-6-run-summarize">Step 6: Run Summarize</h3>
+<p>Analyze the imported files without AI:</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>summarize
+</code></pre></div>
+
+<p><strong>Output</strong>:</p>
+<div class="codehilite"><pre><span></span><code>Analyzing PowerCLI scripts...
+Analyzing vRealize workflows...
+
+✓ Summary written to intent/summary.md
+</code></pre></div>
+
+<h3 id="step-7-review-summary">Step 7: Review Summary</h3>
+<p>Read the generated summary:</p>
+<div class="codehilite"><pre><span></span><code>cat<span class="w"> </span>intent/summary.md
+</code></pre></div>
+
+<p><strong>Output Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="gh"># Automation Summary</span>
+
+<span class="gu">## PowerCLI Scripts</span>
+
+<span class="gu">### File: provision-vm.ps1</span>
+
+<span class="gs">**Parameters**</span>:
+<span class="k">-</span><span class="w"> </span>Environment (string, required) - ValidateSet: dev, prod
+<span class="k">-</span><span class="w"> </span>VMName (string, required)
+<span class="k">-</span><span class="w"> </span>OwnerEmail (string, required)
+
+<span class="gs">**Environment Branching**</span>: ✓ Detected
+<span class="k">-</span><span class="w"> </span>Uses ValidateSet for environment selection
+<span class="k">-</span><span class="w"> </span>Different CPU/memory for dev vs prod
+<span class="k">-</span><span class="w"> </span>Different network selection
+<span class="k">-</span><span class="w"> </span>Different storage tier
+
+<span class="gs">**Tagging/Metadata**</span>: ✓ Detected
+<span class="k">-</span><span class="w"> </span>Tags VMs with environment
+<span class="k">-</span><span class="w"> </span>Tags VMs with owner email
+
+<span class="gs">**Network/Storage Selection**</span>: ✓ Detected
+<span class="k">-</span><span class="w"> </span>Environment-specific network: prod-network vs dev-network
+<span class="k">-</span><span class="w"> </span>Environment-specific storage: storage-gold vs storage-standard
+
+<span class="gs">**Compute Resources**</span>:
+<span class="k">-</span><span class="w"> </span>Prod: 4 vCPU, 16 GB RAM
+<span class="k">-</span><span class="w"> </span>Dev: 2 vCPU, 8 GB RAM
+
+<span class="gu">## vRealize Workflows</span>
+
+<span class="gu">### File: approval-workflow.xml</span>
+
+<span class="gs">**Inputs**</span>:
+<span class="k">-</span><span class="w"> </span>vmName (string)
+<span class="k">-</span><span class="w"> </span>environment (string)
+<span class="k">-</span><span class="w"> </span>requester (string)
+
+<span class="gs">**Approval Requirements**</span>: ✓ Detected
+<span class="k">-</span><span class="w"> </span>Approval required for prod environment
+<span class="k">-</span><span class="w"> </span>Approver: ops-team
+<span class="k">-</span><span class="w"> </span>Timeout: 168 hours (7 days)
+
+<span class="gs">**Governance**</span>: ✓ Detected
+<span class="k">-</span><span class="w"> </span>Quota validation before provisioning
+<span class="k">-</span><span class="w"> </span>Max 16 vCPU, 128 GB RAM per VM
+
+<span class="gs">**Environment Branching**</span>: ✓ Detected
+<span class="k">-</span><span class="w"> </span>Conditional approval based on environment
+</code></pre></div>
+
+<p><strong>Analysis</strong>: The summary shows:
+- Both sources handle dev/prod environments
+- vRealize adds approval workflow
+- Resource limits are defined
+- Tagging for compliance</p>
+<h2 id="part-3-intent-extraction">Part 3: Intent Extraction</h2>
+<h3 id="step-8-extract-intent-with-ai">Step 8: Extract Intent with AI</h3>
+<p>Extract operational intent from both sources:</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>intent<span class="w"> </span>extract
+</code></pre></div>
+
+<p><strong>Output</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Extracting intent from PowerCLI...</span>
+<span class="n">  ✓ provision-vm.ps1 → intent/powercli.intent.yaml</span>
+
+<span class="n">Extracting intent from vRealize...</span>
+<span class="n">  ✓ approval-workflow.xml → intent/vrealize.intent.yaml</span>
+
+<span class="n">✓ Assumptions written to intent/assumptions.md</span>
+</code></pre></div>
+
+<p><strong>What happened?</strong>
+- AI read each source file
+- Extracted structured operational intent
+- Logged assumptions it made</p>
+<h3 id="step-9-review-powercli-intent">Step 9: Review PowerCLI Intent</h3>
+<div class="codehilite"><pre><span></span><code>cat<span class="w"> </span>intent/powercli.intent.yaml
+</code></pre></div>
+
+<p><strong>Output</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">schema_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">powercli</span>
+<span class="nt">workflow_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provision_environment_aware_vm</span>
+
+<span class="nt">inputs</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">environment</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">allowed_values</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dev</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prod</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Target environment (dev or prod)</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vm_name</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Name of the VM to create</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">owner_email</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Email of VM owner for cost allocation</span>
+
+<span class="nt">compute</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cpu_count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span><span class="w">  </span><span class="c1"># Default for dev</span>
+<span class="w">  </span><span class="nt">memory_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span><span class="w">  </span><span class="c1"># Default for dev</span>
+
+<span class="nt">environment_branching</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">conditions</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">environment == &quot;prod&quot;</span>
+<span class="w">      </span><span class="nt">then</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">compute</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">cpu_count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="w">          </span><span class="nt">memory_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16</span>
+<span class="w">        </span><span class="nt">networking</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prod-network</span>
+<span class="w">        </span><span class="nt">storage</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">storage_class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage-gold</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">environment == &quot;dev&quot;</span>
+<span class="w">      </span><span class="nt">then</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">compute</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">cpu_count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">          </span><span class="nt">memory_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
+<span class="w">        </span><span class="nt">networking</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dev-network</span>
+<span class="w">        </span><span class="nt">storage</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">storage_class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage-standard</span>
+
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">tags</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">env</span>
+<span class="w">      </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">environment</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">owner</span>
+<span class="w">      </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">owner_email</span><span class="nv"> </span><span class="s">}}&quot;</span>
+
+<span class="nt">assumptions</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Inferred default compute resources from dev path</span>
+<span class="w">    </span><span class="nt">confidence</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">high</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Network names extracted from variable assignments</span>
+<span class="w">    </span><span class="nt">confidence</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">high</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Storage class names inferred from datastore names</span>
+<span class="w">    </span><span class="nt">confidence</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">medium</span>
+</code></pre></div>
+
+<h3 id="step-10-review-vrealize-intent">Step 10: Review vRealize Intent</h3>
+<div class="codehilite"><pre><span></span><code>cat<span class="w"> </span>intent/vrealize.intent.yaml
+</code></pre></div>
+
+<p><strong>Output</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">schema_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vrealize</span>
+<span class="nt">workflow_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vm_provision_with_approval</span>
+
+<span class="nt">inputs</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vm_name</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">environment</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">requester</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="nt">governance</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">approval_required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">approval_conditions</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">environment == &quot;prod&quot;</span>
+<span class="w">      </span><span class="nt">then</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">approval_required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">        </span><span class="nt">approvers</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ops-team</span>
+<span class="w">        </span><span class="nt">approval_timeout_hours</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">168</span><span class="w">  </span><span class="c1"># 7 days</span>
+
+<span class="w">  </span><span class="nt">quotas</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">max_cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16</span>
+<span class="w">    </span><span class="nt">max_memory_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">128</span>
+<span class="w">    </span><span class="nt">enforcement</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pre_provision</span>
+
+<span class="nt">validation</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">pre_checks</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validate_quota</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check_naming_convention</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">verify_network_availability</span>
+
+<span class="nt">assumptions</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Approval timeout extracted from workflow timer element</span>
+<span class="w">    </span><span class="nt">confidence</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">high</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Quota values extracted from validation scriptlet</span>
+<span class="w">    </span><span class="nt">confidence</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">high</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Approval only required for prod based on decision node</span>
+<span class="w">    </span><span class="nt">confidence</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">high</span>
+</code></pre></div>
+
+<h3 id="step-11-review-assumptions">Step 11: Review Assumptions</h3>
+<div class="codehilite"><pre><span></span><code>cat<span class="w"> </span>intent/assumptions.md
+</code></pre></div>
+
+<p><strong>Output</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="gh"># AI Assumptions Log</span>
+
+<span class="gu">## PowerCLI: provision-vm.ps1</span>
+
+<span class="gu">### Extracted Intent</span>
+
+<span class="gs">**Inputs**</span>:
+<span class="k">-</span><span class="w"> </span>Preserved all parameter definitions
+<span class="k">-</span><span class="w"> </span>Detected ValidateSet constraint for environment
+<span class="k">-</span><span class="w"> </span>Identified required vs optional parameters
+
+<span class="gs">**Compute Resources**</span>:
+<span class="k">-</span><span class="w"> </span>Default values (2 CPU, 8GB) inferred from dev branch
+<span class="k">-</span><span class="w"> </span>Prod values (4 CPU, 16GB) explicitly from prod branch
+<span class="k">-</span><span class="w"> </span>Confidence: HIGH - directly from if/else logic
+
+<span class="gs">**Networking**</span>:
+<span class="k">-</span><span class="w"> </span>Network names extracted from variable assignments
+<span class="k">-</span><span class="w"> </span>Confidence: HIGH - explicit variable values
+
+<span class="gs">**Storage**</span>:
+<span class="k">-</span><span class="w"> </span>Mapped datastore names to storage classes
+<span class="k">-</span><span class="w"> </span>Assumed &quot;storage-gold&quot; → &quot;gold&quot; storage class
+<span class="k">-</span><span class="w"> </span>Assumed &quot;storage-standard&quot; → &quot;standard&quot; storage class
+<span class="k">-</span><span class="w"> </span>Confidence: MEDIUM - naming convention inference
+
+<span class="gs">**Tagging**</span>:
+<span class="k">-</span><span class="w"> </span>Detected New-TagAssignment cmdlets
+<span class="k">-</span><span class="w"> </span>Extracted tag key:value patterns
+<span class="k">-</span><span class="w"> </span>Confidence: HIGH - explicit cmdlet calls
+
+<span class="gu">### Assumptions Made</span>
+
+<span class="k">1.</span> <span class="gs">**Default Environment**</span>: Assumed &quot;dev&quot; as default since it&#39;s first in ValidateSet
+<span class="k">2.</span> <span class="gs">**Storage Mapping**</span>: Inferred OpenShift storage class names from VMware datastore names
+<span class="k">3.</span> <span class="gs">**Network Type**</span>: Assumed bridge networking (no explicit type in script)
+
+<span class="gu">## vRealize: approval-workflow.xml</span>
+
+<span class="gu">### Extracted Intent</span>
+
+<span class="gs">**Approval Workflow**</span>:
+<span class="k">-</span><span class="w"> </span>Detected decision node for environment check
+<span class="k">-</span><span class="w"> </span>Approval only required when environment == &quot;prod&quot;
+<span class="k">-</span><span class="w"> </span>Approver group &quot;ops-team&quot; from workflow metadata
+<span class="k">-</span><span class="w"> </span>Timeout 168 hours from timer element
+<span class="k">-</span><span class="w"> </span>Confidence: HIGH - explicit workflow structure
+
+<span class="gs">**Quota Enforcement**</span>:
+<span class="k">-</span><span class="w"> </span>Max 16 CPU, 128GB RAM from validation scriptlet
+<span class="k">-</span><span class="w"> </span>Enforcement happens before provisioning (pre_provision)
+<span class="k">-</span><span class="w"> </span>Confidence: HIGH - explicit validation code
+
+<span class="gu">### Assumptions Made</span>
+
+<span class="k">1.</span> <span class="gs">**Notification**</span>: Assumed email notification on approval (standard vRO pattern)
+<span class="k">2.</span> <span class="gs">**Timeout Behavior**</span>: Assumed auto-reject on timeout (not explicit in workflow)
+<span class="k">3.</span> <span class="gs">**Retry Logic**</span>: No retry logic detected, assumed single-attempt provisioning
+</code></pre></div>
+
+<p><strong>Analysis</strong>: The AI assumptions are well-documented and mostly high confidence.</p>
+<h3 id="step-12-edit-intent-optional">Step 12: Edit Intent (Optional)</h3>
+<p>If you notice any errors, edit the intent:</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>intent<span class="w"> </span>edit<span class="w"> </span>--file<span class="w"> </span>intent/powercli.intent.yaml
+</code></pre></div>
+
+<p>Make corrections, save, and exit.</p>
+<h2 id="part-4-multi-source-merging">Part 4: Multi-Source Merging</h2>
+<h3 id="step-13-merge-intents">Step 13: Merge Intents</h3>
+<p>Combine PowerCLI and vRealize intents:</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>intent<span class="w"> </span>merge
+</code></pre></div>
+
+<p><strong>Possible outcomes</strong>:</p>
+<p><strong>Scenario A: No Conflicts</strong></p>
+<div class="codehilite"><pre><span></span><code>Merging intents...
+  ✓ Merged compute resources (using maximum values)
+  ✓ Merged inputs (union of all inputs)
+  ✓ Merged governance policies
+  ✓ Merged environment branching
+
+✓ Merged intent written to intent/intent.yaml
+</code></pre></div>
+
+<p><strong>Scenario B: Conflicts Detected</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="nv">Merging</span><span class="w"> </span><span class="nv">intents</span>...
+<span class="w">  </span>✓<span class="w"> </span><span class="nv">Merged</span><span class="w"> </span><span class="nv">compute</span><span class="w"> </span><span class="nv">resources</span>
+<span class="w">  </span>⚠<span class="w"> </span><span class="nv">Conflict</span><span class="w"> </span><span class="nv">detected</span>:<span class="w"> </span><span class="nv">Network</span><span class="w"> </span><span class="nv">naming</span><span class="w"> </span><span class="nv">differs</span>
+<span class="w">  </span>⚠<span class="w"> </span><span class="nv">Conflict</span><span class="w"> </span><span class="nv">detected</span>:<span class="w"> </span><span class="nv">Approval</span><span class="w"> </span><span class="nb">timeout</span><span class="w"> </span><span class="nv">mismatch</span>
+
+✗<span class="w"> </span><span class="nv">Conflicts</span><span class="w"> </span><span class="nv">detected</span><span class="w"> </span><span class="nv">during</span><span class="w"> </span><span class="nv">merge</span>
+<span class="w">  </span><span class="nv">See</span><span class="w"> </span><span class="nv">intent</span><span class="o">/</span><span class="nv">conflicts</span>.<span class="nv">md</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nv">details</span>
+<span class="w">  </span><span class="nv">Use</span><span class="w"> </span><span class="o">--</span><span class="nv">force</span><span class="w"> </span><span class="nv">to</span><span class="w"> </span><span class="nv">merge</span><span class="w"> </span><span class="nv">anyway</span>
+</code></pre></div>
+
+<h3 id="step-14-review-merged-intent">Step 14: Review Merged Intent</h3>
+<div class="codehilite"><pre><span></span><code>cat<span class="w"> </span>intent/intent.yaml
+</code></pre></div>
+
+<p><strong>Output</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">schema_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="nt">workflow_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provision_vm_unified</span>
+<span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">merged</span>
+
+<span class="nt">inputs</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Union of all unique inputs</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">environment</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">allowed_values</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">dev</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">prod</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vm_name</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">owner_email</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">requester</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="nt">compute</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Maximum values across sources</span>
+<span class="w">  </span><span class="nt">cpu_count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="w">  </span><span class="nt">memory_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16</span>
+
+<span class="nt">environment_branching</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">conditions</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">environment == &quot;prod&quot;</span>
+<span class="w">      </span><span class="nt">then</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">compute</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">cpu_count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="w">          </span><span class="nt">memory_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16</span>
+<span class="w">        </span><span class="nt">networking</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prod-network</span>
+<span class="w">        </span><span class="nt">storage</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">storage_class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gold</span>
+<span class="w">        </span><span class="nt">governance</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">approval_required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">          </span><span class="nt">approvers</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">ops-team</span><span class="p p-Indicator">]</span>
+<span class="w">          </span><span class="nt">approval_timeout_hours</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">168</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">environment == &quot;dev&quot;</span>
+<span class="w">      </span><span class="nt">then</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">compute</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">cpu_count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">          </span><span class="nt">memory_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
+<span class="w">        </span><span class="nt">networking</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dev-network</span>
+<span class="w">        </span><span class="nt">storage</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">storage_class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">standard</span>
+<span class="w">        </span><span class="nt">governance</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">approval_required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+
+<span class="nt">governance</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">quotas</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">max_cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16</span>
+<span class="w">    </span><span class="nt">max_memory_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">128</span>
+<span class="w">  </span><span class="nt">validation</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">pre_checks</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validate_quota</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check_naming_convention</span>
+
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">tags</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">env</span>
+<span class="w">      </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">environment</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">owner</span>
+<span class="w">      </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">owner_email</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">requester</span>
+<span class="w">      </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">requester</span><span class="nv"> </span><span class="s">}}&quot;</span>
+</code></pre></div>
+
+<p><strong>Analysis</strong>: The merge combined:
+- All inputs from both sources
+- Maximum compute values (4 CPU, 16GB)
+- Governance from vRealize
+- Environment branching from PowerCLI
+- Tagging from both sources</p>
+<h3 id="step-15-handle-conflicts-if-any">Step 15: Handle Conflicts (If Any)</h3>
+<p>If conflicts were detected:</p>
+<div class="codehilite"><pre><span></span><code>cat<span class="w"> </span>intent/conflicts.md
+</code></pre></div>
+
+<p><strong>Example conflicts</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="gh"># Intent Merge Conflicts</span>
+
+<span class="gu">## 1. Network Naming Convention</span>
+
+<span class="gs">**PowerCLI**</span>: Uses &quot;prod-network&quot;, &quot;dev-network&quot;
+<span class="gs">**vRealize**</span>: Uses &quot;production-net&quot;, &quot;development-net&quot;
+
+<span class="gs">**Impact**</span>: Generated manifests will have inconsistent network references
+
+<span class="gs">**Recommendation**</span>: Standardize on one naming convention
+<span class="k">-</span><span class="w"> </span>Option A: Use PowerCLI names (shorter)
+<span class="k">-</span><span class="w"> </span>Option B: Use vRealize names (more descriptive)
+
+<span class="gs">**Resolution**</span>: Edit <span class="sb">`intent/powercli.intent.yaml`</span> or <span class="sb">`intent/vrealize.intent.yaml`</span>
+
+<span class="gu">## 2. Approval Timeout</span>
+
+<span class="gs">**PowerCLI**</span>: No timeout specified
+<span class="gs">**vRealize**</span>: 168 hours (7 days)
+
+<span class="gs">**Impact**</span>: Unclear timeout behavior
+
+<span class="gs">**Recommendation**</span>: Use vRealize timeout (7 days) as it&#39;s explicit
+
+<span class="gs">**Resolution**</span>: Already resolved in favor of vRealize (explicit wins)
+</code></pre></div>
+
+<p><strong>Resolve conflicts</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Edit source intents to fix issues</span>
+ops-translate<span class="w"> </span>intent<span class="w"> </span>edit<span class="w"> </span>--file<span class="w"> </span>intent/powercli.intent.yaml
+<span class="c1"># Fix network names to match vRealize</span>
+
+<span class="c1"># Re-merge</span>
+ops-translate<span class="w"> </span>intent<span class="w"> </span>merge
+
+<span class="c1"># Or force merge if conflicts are acceptable</span>
+ops-translate<span class="w"> </span>intent<span class="w"> </span>merge<span class="w"> </span>--force
+</code></pre></div>
+
+<h2 id="part-5-artifact-generation">Part 5: Artifact Generation</h2>
+<h3 id="step-16-review-migration-readiness">Step 16: Review Migration Readiness</h3>
+<p>Before generating artifacts, review the migration readiness report to understand what can be auto-translated:</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>report<span class="w"> </span>--format<span class="w"> </span>html<span class="w"> </span>--profile<span class="w"> </span>lab
+</code></pre></div>
+
+<p><strong>Output</strong>:</p>
+<div class="codehilite"><pre><span></span><code>Generating HTML report...
+✓ Report generated successfully
+
+Report location: output/report/index.html
+</code></pre></div>
+
+<p>Open the report:</p>
+<div class="codehilite"><pre><span></span><code>open<span class="w"> </span>output/report/index.html<span class="w">  </span><span class="c1"># macOS</span>
+<span class="c1"># or: xdg-open output/report/index.html  # Linux</span>
+</code></pre></div>
+
+<p><strong>What to look for in the report</strong>:
+- <strong>SUPPORTED</strong> components (green) - Can be fully auto-translated
+- <strong>PARTIAL</strong> components (yellow) - Need manual configuration
+- <strong>BLOCKED</strong> components (red) - No automatic translation available
+- <strong>Migration paths</strong> - Specific recommendations for each component</p>
+<p><strong>Analysis</strong>: Review the gaps before proceeding. For this tutorial:
+- VM provisioning, compute, and networking should be SUPPORTED
+- Approval workflow likely needs manual Ansible integration (PARTIAL)
+- Most components can be auto-generated</p>
+<h3 id="step-18-generate-for-lab">Step 18: Generate for Lab</h3>
+<p>After reviewing the report, generate Ansible and KubeVirt artifacts for lab environment:</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>lab
+</code></pre></div>
+
+<p><strong>Output</strong>:</p>
+<div class="codehilite"><pre><span></span><code>Generating artifacts for profile: lab
+
+Generating KubeVirt manifest...
+  ✓ output/kubevirt/vm.yaml
+
+Generating Ansible playbook...
+  ✓ output/ansible/site.yml
+  ✓ output/ansible/roles/provision_vm/tasks/main.yml
+  ✓ output/ansible/roles/provision_vm/defaults/main.yml
+
+Generating README...
+  ✓ output/README.md
+
+✓ Generation complete
+</code></pre></div>
+
+<h3 id="step-18-review-kubevirt-manifest">Step 18: Review KubeVirt Manifest</h3>
+<div class="codehilite"><pre><span></span><code>cat<span class="w"> </span>output/kubevirt/vm.yaml
+</code></pre></div>
+
+<p><strong>Output</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubevirt.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VirtualMachine</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vm_name</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">virt-lab</span>
+<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provision-vm</span>
+<span class="w">    </span><span class="nt">env</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">environment</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">owner</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">owner_email</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">running</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provision-vm</span>
+<span class="w">        </span><span class="nt">env</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">environment</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">domain</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">cpu</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">cores</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">cpu_count</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">requests</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">memory_gb</span><span class="nv"> </span><span class="s">}}Gi&quot;</span>
+<span class="w">        </span><span class="nt">devices</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">disks</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rootdisk</span>
+<span class="w">              </span><span class="nt">disk</span><span class="p">:</span>
+<span class="w">                </span><span class="nt">bus</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">virtio</span>
+<span class="w">          </span><span class="nt">interfaces</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="w">              </span><span class="nt">masquerade</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">      </span><span class="nt">networks</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="w">          </span><span class="nt">pod</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">      </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rootdisk</span>
+<span class="w">          </span><span class="nt">dataVolume</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vm_name</span><span class="nv"> </span><span class="s">}}-rootdisk&quot;</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cdi.kubevirt.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DataVolume</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vm_name</span><span class="nv"> </span><span class="s">}}-rootdisk&quot;</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">virt-lab</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">source</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">pvc</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openshift-virtualization-os-images</span>
+<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rhel9</span>
+<span class="w">  </span><span class="nt">storage</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">requests</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">storage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30Gi</span>
+<span class="w">    </span><span class="nt">storageClassName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nfs</span>
+</code></pre></div>
+
+<p><strong>Key Points</strong>:
+- Uses lab profile (namespace: virt-lab, storage: nfs)
+- Includes Jinja2 variables for Ansible
+- Creates both VM and DataVolume
+- Preserves tagging as labels</p>
+<h3 id="step-19-review-ansible-playbook">Step 19: Review Ansible Playbook</h3>
+<div class="codehilite"><pre><span></span><code>cat<span class="w"> </span>output/ansible/site.yml
+</code></pre></div>
+
+<p><strong>Output</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nn">---</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Provision VM with environment awareness</span>
+<span class="w">  </span><span class="nt">hosts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">localhost</span>
+<span class="w">  </span><span class="nt">gather_facts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">vars_prompt</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">environment</span>
+<span class="w">      </span><span class="nt">prompt</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Environment</span><span class="nv"> </span><span class="s">(dev</span><span class="nv"> </span><span class="s">or</span><span class="nv"> </span><span class="s">prod)&quot;</span>
+<span class="w">      </span><span class="nt">private</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vm_name</span>
+<span class="w">      </span><span class="nt">prompt</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;VM</span><span class="nv"> </span><span class="s">Name&quot;</span>
+<span class="w">      </span><span class="nt">private</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">owner_email</span>
+<span class="w">      </span><span class="nt">prompt</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Owner</span><span class="nv"> </span><span class="s">Email&quot;</span>
+<span class="w">      </span><span class="nt">private</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">requester</span>
+<span class="w">      </span><span class="nt">prompt</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Requester</span><span class="nv"> </span><span class="s">Email&quot;</span>
+<span class="w">      </span><span class="nt">private</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+
+<span class="w">  </span><span class="nt">tasks</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Validate environment value</span>
+<span class="w">      </span><span class="nt">assert</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">that</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">environment in [&#39;dev&#39;, &#39;prod&#39;]</span>
+<span class="w">        </span><span class="nt">fail_msg</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Environment</span><span class="nv"> </span><span class="s">must</span><span class="nv"> </span><span class="s">be</span><span class="nv"> </span><span class="s">&#39;dev&#39;</span><span class="nv"> </span><span class="s">or</span><span class="nv"> </span><span class="s">&#39;prod&#39;&quot;</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Set environment-specific variables</span>
+<span class="w">      </span><span class="nt">set_fact</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">cpu_count</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">&#39;4&#39;</span><span class="nv"> </span><span class="s">if</span><span class="nv"> </span><span class="s">environment</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">&#39;prod&#39;</span><span class="nv"> </span><span class="s">else</span><span class="nv"> </span><span class="s">&#39;2&#39;</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">memory_gb</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">&#39;16&#39;</span><span class="nv"> </span><span class="s">if</span><span class="nv"> </span><span class="s">environment</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">&#39;prod&#39;</span><span class="nv"> </span><span class="s">else</span><span class="nv"> </span><span class="s">&#39;8&#39;</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">network</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">&#39;prod-network&#39;</span><span class="nv"> </span><span class="s">if</span><span class="nv"> </span><span class="s">environment</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">&#39;prod&#39;</span><span class="nv"> </span><span class="s">else</span><span class="nv"> </span><span class="s">&#39;dev-network&#39;</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">storage_class</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">&#39;gold&#39;</span><span class="nv"> </span><span class="s">if</span><span class="nv"> </span><span class="s">environment</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">&#39;prod&#39;</span><span class="nv"> </span><span class="s">else</span><span class="nv"> </span><span class="s">&#39;standard&#39;</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">approval_required</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">environment</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">&#39;prod&#39;</span><span class="nv"> </span><span class="s">}}&quot;</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Request approval for prod</span>
+<span class="w">      </span><span class="nt">pause</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">prompt</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Approval</span><span class="nv"> </span><span class="s">required</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">prod</span><span class="nv"> </span><span class="s">VM.</span><span class="nv"> </span><span class="s">Notify</span><span class="nv"> </span><span class="s">ops-team</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">press</span><span class="nv"> </span><span class="s">ENTER</span><span class="nv"> </span><span class="s">when</span><span class="nv"> </span><span class="s">approved&quot;</span>
+<span class="w">      </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">approval_required</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Validate against quotas</span>
+<span class="w">      </span><span class="nt">assert</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">that</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cpu_count | int &lt;= 16</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">memory_gb | int &lt;= 128</span>
+<span class="w">        </span><span class="nt">fail_msg</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;VM</span><span class="nv"> </span><span class="s">exceeds</span><span class="nv"> </span><span class="s">quota</span><span class="nv"> </span><span class="s">limits</span><span class="nv"> </span><span class="s">(max</span><span class="nv"> </span><span class="s">16</span><span class="nv"> </span><span class="s">CPU,</span><span class="nv"> </span><span class="s">128</span><span class="nv"> </span><span class="s">GB</span><span class="nv"> </span><span class="s">RAM)&quot;</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Create KubeVirt VM</span>
+<span class="w">      </span><span class="nt">kubernetes.core.k8s</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">state</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">present</span>
+<span class="w">        </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">lookup(&#39;file&#39;,</span><span class="nv"> </span><span class="s">&#39;kubevirt/vm.yaml&#39;)</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">virt-lab</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Wait for VM to be ready</span>
+<span class="w">      </span><span class="nt">kubernetes.core.k8s_info</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">api_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubevirt.io/v1</span>
+<span class="w">        </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VirtualMachine</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vm_name</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">virt-lab</span>
+<span class="w">      </span><span class="nt">register</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vm_status</span>
+<span class="w">      </span><span class="nt">until</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vm_status.resources | length &gt; 0</span>
+<span class="w">      </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
+<span class="w">      </span><span class="nt">delay</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Start VM</span>
+<span class="w">      </span><span class="nt">kubernetes.core.k8s</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">state</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">present</span>
+<span class="w">        </span><span class="nt">definition</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubevirt.io/v1</span>
+<span class="w">          </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VirtualMachine</span>
+<span class="w">          </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vm_name</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">            </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">virt-lab</span>
+<span class="w">          </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">running</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Display VM information</span>
+<span class="w">      </span><span class="nt">debug</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">msg</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;VM</span><span class="nv"> </span><span class="s">created</span><span class="nv"> </span><span class="s">successfully&quot;</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;Name:</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">vm_name</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;Environment:</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">environment</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;CPU:</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">cpu_count</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;Memory:</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">memory_gb</span><span class="nv"> </span><span class="s">}}Gi&quot;</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;Owner:</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">owner_email</span><span class="nv"> </span><span class="s">}}&quot;</span>
+</code></pre></div>
+
+<p><strong>Key Points</strong>:
+- Implements environment branching
+- Includes approval gate for prod
+- Validates quotas
+- Creates KubeVirt VM
+- Uses kubernetes.core collection</p>
+<h3 id="step-20-review-ansible-role">Step 20: Review Ansible Role</h3>
+<div class="codehilite"><pre><span></span><code>cat<span class="w"> </span>output/ansible/roles/provision_vm/tasks/main.yml
+</code></pre></div>
+
+<p>See role structure:</p>
+<div class="codehilite"><pre><span></span><code>tree<span class="w"> </span>output/ansible/
+</code></pre></div>
+
+<p><strong>Output</strong>:</p>
+<div class="codehilite"><pre><span></span><code>output/ansible/
+├── site.yml
+└── roles
+    └── provision_vm
+        ├── defaults
+        │   └── main.yml
+        ├── meta
+        │   └── main.yml
+        ├── README.md
+        └── tasks
+            └── main.yml
+</code></pre></div>
+
+<p><strong>PowerCLI Translation Example</strong>:</p>
+<p>If your PowerCLI script contains standard cmdlets, they are <strong>automatically translated</strong> to Ansible tasks:</p>
+<p><strong>PowerCLI Input</strong> (<code>provision-vm.ps1</code>):</p>
+<div class="codehilite"><pre><span></span><code><span class="c"># Set environment configuration</span>
+<span class="nv">$Network</span> <span class="p">=</span> <span class="s2">&quot;dev-network&quot;</span>
+
+<span class="c"># Create VM</span>
+<span class="nb">New-VM</span> <span class="n">-Name</span> <span class="nv">$VMName</span> <span class="n">-NumCpu</span> <span class="n">4</span> <span class="n">-MemoryGB</span> <span class="n">8</span>
+
+<span class="c"># Apply tags</span>
+<span class="nb">New-TagAssignment</span> <span class="n">-Entity</span> <span class="nv">$VMName</span> <span class="n">-Tag</span> <span class="s2">&quot;Environment:Dev&quot;</span>
+
+<span class="c"># Start VM</span>
+<span class="nb">Start-VM</span> <span class="n">-VM</span> <span class="nv">$VMName</span>
+</code></pre></div>
+
+<p><strong>Generated Ansible Tasks</strong> (<code>roles/provision_vm/tasks/main.yml</code>):</p>
+<div class="codehilite"><pre><span></span><code><span class="nn">---</span>
+<span class="c1"># Ansible role: provision_vm</span>
+<span class="c1"># Source: PowerCLI Script</span>
+<span class="c1"># Original: input/powercli/provision-vm.ps1</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Set network configuration</span>
+<span class="w">  </span><span class="nt">ansible.builtin.set_fact</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">network</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;dev-network&quot;</span>
+<span class="w">  </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">context</span><span class="p p-Indicator">]</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Create VM {{ vmname }}</span>
+<span class="w">  </span><span class="nt">kubevirt.core.kubevirt_vm</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">state</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">present</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vmname</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">target_namespace</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">cpu_cores</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;4&quot;</span>
+<span class="w">    </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;8Gi&quot;</span>
+<span class="w">  </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">mutation</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">vm</span><span class="p p-Indicator">]</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Apply environment label to {{ vmname }}</span>
+<span class="w">  </span><span class="nt">kubernetes.core.k8s</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">state</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">patched</span>
+<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VirtualMachine</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vmname</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">target_namespace</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">definition</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">environment</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;dev&quot;</span>
+<span class="w">  </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">integration</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">tagging</span><span class="p p-Indicator">]</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Start VM {{ vmname }}</span>
+<span class="w">  </span><span class="nt">kubevirt.core.kubevirt_vm</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">state</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">running</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">vmname</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">target_namespace</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">  </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">mutation</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">vm</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
+<p><strong>Key Points</strong>:
+- <strong>Direct translation</strong>: PowerCLI cmdlets → Ansible modules (deterministic, no LLM)
+- <strong>Variable conversion</strong>: <code>$VMName</code> → <code>{{ vmname }}</code>
+- <strong>Module mapping</strong>:
+  - <code>New-VM</code> → <code>kubevirt.core.kubevirt_vm</code> (state: present)
+  - <code>Start-VM</code> → <code>kubevirt.core.kubevirt_vm</code> (state: running)
+  - <code>New-TagAssignment</code> → <code>kubernetes.core.k8s</code> (labels)
+- <strong>Tags</strong>: Categorize tasks (mutation, integration, context, lookup, gate)
+- <strong>Profile-aware</strong>: Uses <code>{{ target_namespace }}</code> from profile</p>
+<p>See <a href="../docs/POWERCLI_MAPPINGS.md">POWERCLI_MAPPINGS.md</a> for complete cmdlet mapping reference.</p>
+<h3 id="step-21-review-generation-readme">Step 21: Review Generation README</h3>
+<div class="codehilite"><pre><span></span><code>cat<span class="w"> </span>output/README.md
+</code></pre></div>
+
+<p><strong>Output</strong>: Instructions for using the generated artifacts (how to run Ansible, apply KubeVirt manifests, etc.)</p>
+<h2 id="part-6-testing-and-deployment">Part 6: Testing and Deployment</h2>
+<h3 id="step-22-validate-artifacts">Step 22: Validate Artifacts</h3>
+<p>Run dry-run validation:</p>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>dry-run
+</code></pre></div>
+
+<p><strong>Output</strong>:</p>
+<div class="codehilite"><pre><span></span><code>Validating intent/intent.yaml...
+  ✓ Schema version valid: 1
+  ✓ Required fields present
+  ✓ Environment branching valid
+  ✓ Governance policies valid
+  ✓ Compute resources within limits
+
+Validating output/kubevirt/vm.yaml...
+  ✓ Valid YAML syntax
+  ✓ KubeVirt API version correct
+  ✓ Required fields present
+
+Validating output/ansible/site.yml...
+  ✓ Valid YAML syntax
+  ✓ Ansible playbook structure valid
+  ✓ kubernetes.core collection referenced
+
+✓ All validations passed
+</code></pre></div>
+
+<h3 id="step-23-test-ansible-playbook-syntax">Step 23: Test Ansible Playbook (Syntax)</h3>
+<div class="codehilite"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>output/ansible
+ansible-playbook<span class="w"> </span>site.yml<span class="w"> </span>--syntax-check
+</code></pre></div>
+
+<p><strong>Output</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">playbook</span><span class="o">:</span><span class="w"> </span><span class="n">site</span><span class="o">.</span><span class="na">yml</span>
+</code></pre></div>
+
+<h3 id="step-24-test-ansible-playbook-check-mode">Step 24: Test Ansible Playbook (Check Mode)</h3>
+<div class="codehilite"><pre><span></span><code>ansible-playbook<span class="w"> </span>site.yml<span class="w"> </span>--check<span class="w"> </span>--extra-vars<span class="w"> </span><span class="s2">&quot;environment=dev vm_name=test-vm owner_email=user@example.com requester=user@example.com&quot;</span>
+</code></pre></div>
+
+<p><strong>Note</strong>: This does a dry run without creating resources.</p>
+<h3 id="step-25-deploy-to-lab-dev-vm">Step 25: Deploy to Lab (Dev VM)</h3>
+<p><strong>Prerequisites</strong>:
+- Access to OpenShift cluster
+- kubectl/oc configured
+- kubernetes.core Ansible collection installed</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Install Ansible collection</span>
+ansible-galaxy<span class="w"> </span>collection<span class="w"> </span>install<span class="w"> </span>kubernetes.core
+
+<span class="c1"># Run playbook for dev VM</span>
+ansible-playbook<span class="w"> </span>site.yml
+
+<span class="c1"># When prompted:</span>
+<span class="c1"># Environment: dev</span>
+<span class="c1"># VM Name: my-test-vm</span>
+<span class="c1"># Owner Email: you@example.com</span>
+<span class="c1"># Requester: you@example.com</span>
+</code></pre></div>
+
+<p><strong>Output</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">PLAY</span><span class="w"> </span><span class="p">[</span><span class="n">Provision</span><span class="w"> </span><span class="n">VM</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="n">environment</span><span class="w"> </span><span class="n">awareness</span><span class="p">]</span><span class="w"> </span><span class="o">***</span>
+
+<span class="n">TASK</span><span class="w"> </span><span class="p">[</span><span class="n">Validate</span><span class="w"> </span><span class="n">environment</span><span class="w"> </span><span class="n">value</span><span class="p">]</span><span class="w"> </span><span class="o">***</span>
+<span class="nl">ok</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="n">localhost</span><span class="p">]</span>
+
+<span class="n">TASK</span><span class="w"> </span><span class="p">[</span><span class="n">Set</span><span class="w"> </span><span class="n">environment</span><span class="o">-</span><span class="n">specific</span><span class="w"> </span><span class="n">variables</span><span class="p">]</span><span class="w"> </span><span class="o">***</span>
+<span class="nl">ok</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="n">localhost</span><span class="p">]</span>
+
+<span class="n">TASK</span><span class="w"> </span><span class="p">[</span><span class="n">Validate</span><span class="w"> </span><span class="n">against</span><span class="w"> </span><span class="n">quotas</span><span class="p">]</span><span class="w"> </span><span class="o">***</span>
+<span class="nl">ok</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="n">localhost</span><span class="p">]</span>
+
+<span class="n">TASK</span><span class="w"> </span><span class="p">[</span><span class="n">Create</span><span class="w"> </span><span class="n">KubeVirt</span><span class="w"> </span><span class="n">VM</span><span class="p">]</span><span class="w"> </span><span class="o">***</span>
+<span class="nl">changed</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="n">localhost</span><span class="p">]</span>
+
+<span class="n">TASK</span><span class="w"> </span><span class="p">[</span><span class="n">Wait</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">VM</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">ready</span><span class="p">]</span><span class="w"> </span><span class="o">***</span>
+<span class="nl">ok</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="n">localhost</span><span class="p">]</span>
+
+<span class="n">TASK</span><span class="w"> </span><span class="p">[</span><span class="n">Start</span><span class="w"> </span><span class="n">VM</span><span class="p">]</span><span class="w"> </span><span class="o">***</span>
+<span class="nl">changed</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="n">localhost</span><span class="p">]</span>
+
+<span class="n">TASK</span><span class="w"> </span><span class="p">[</span><span class="n">Display</span><span class="w"> </span><span class="n">VM</span><span class="w"> </span><span class="n">information</span><span class="p">]</span><span class="w"> </span><span class="o">***</span>
+<span class="nl">ok</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="n">localhost</span><span class="p">]</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="s">&quot;msg&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s">&quot;VM created successfully&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;Name: my-test-vm&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;Environment: dev&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;CPU: 2&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;Memory: 8Gi&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;Owner: you@example.com&quot;</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+
+<span class="n">PLAY</span><span class="w"> </span><span class="n">RECAP</span><span class="w"> </span><span class="o">***</span>
+<span class="nl">localhost</span><span class="p">:</span><span class="w"> </span><span class="n">ok</span><span class="o">=</span><span class="mi">7</span><span class="w"> </span><span class="n">changed</span><span class="o">=</span><span class="mi">2</span>
+</code></pre></div>
+
+<h3 id="step-26-verify-vm-in-openshift">Step 26: Verify VM in OpenShift</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Check VM status</span>
+oc<span class="w"> </span>get<span class="w"> </span>vms<span class="w"> </span>-n<span class="w"> </span>virt-lab
+
+<span class="c1"># Output:</span>
+<span class="c1"># NAME          AGE    STATUS    READY</span>
+<span class="c1"># my-test-vm    2m     Running   True</span>
+
+<span class="c1"># Check VM details</span>
+oc<span class="w"> </span>describe<span class="w"> </span>vm<span class="w"> </span>my-test-vm<span class="w"> </span>-n<span class="w"> </span>virt-lab
+</code></pre></div>
+
+<h3 id="step-27-test-prod-workflow">Step 27: Test Prod Workflow</h3>
+<p>Test prod provisioning with approval:</p>
+<div class="codehilite"><pre><span></span><code>ansible-playbook<span class="w"> </span>site.yml
+
+<span class="c1"># When prompted:</span>
+<span class="c1"># Environment: prod</span>
+<span class="c1"># VM Name: prod-vm-001</span>
+<span class="c1"># Owner Email: admin@example.com</span>
+<span class="c1"># Requester: admin@example.com</span>
+
+<span class="c1"># You&#39;ll see approval prompt:</span>
+<span class="c1"># &quot;Approval required for prod VM. Notify ops-team and press ENTER when approved&quot;</span>
+<span class="c1"># [pause]</span>
+
+<span class="c1"># Press ENTER after getting approval</span>
+<span class="c1"># VM will be created with 4 CPU, 16 GB RAM</span>
+</code></pre></div>
+
+<h3 id="step-28-generate-for-production">Step 28: Generate for Production</h3>
+<p>Generate production-ready artifacts:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>~/vmware-migration
+
+ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>prod
+</code></pre></div>
+
+<p>Review production differences:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Different namespace, network, storage class</span>
+diff<span class="w"> </span>output/kubevirt/vm.yaml<span class="w"> </span>&lt;<span class="o">(</span>ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>prod<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>cat<span class="w"> </span>output/kubevirt/vm.yaml<span class="o">)</span>
+</code></pre></div>
+
+<p><strong>Checkpoint</strong>: You've successfully completed the basic migration!</p>
+<h2 id="advanced-tutorial-governance-workflow">Advanced Tutorial: Governance Workflow</h2>
+<h3 id="scenario-enhanced-approval-process">Scenario: Enhanced Approval Process</h3>
+<p>Add multi-level approval and quota management.</p>
+<h3 id="step-29-create-enhanced-workflow">Step 29: Create Enhanced Workflow</h3>
+<p>Create <code>governance-enhanced.ps1</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">param</span><span class="p">(</span>
+    <span class="p">[</span><span class="k">Parameter</span><span class="p">(</span><span class="k">Mandatory</span><span class="p">=</span><span class="nv">$true</span><span class="p">)]</span>
+    <span class="p">[</span><span class="k">ValidateSet</span><span class="p">(</span><span class="s2">&quot;dev&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">,</span> <span class="s2">&quot;staging&quot;</span><span class="p">,</span> <span class="s2">&quot;prod&quot;</span><span class="p">)]</span>
+    <span class="no">[string]</span><span class="nv">$Environment</span><span class="p">,</span>
+
+    <span class="p">[</span><span class="k">Parameter</span><span class="p">(</span><span class="k">Mandatory</span><span class="p">=</span><span class="nv">$true</span><span class="p">)]</span>
+    <span class="no">[string]</span><span class="nv">$VMName</span><span class="p">,</span>
+
+    <span class="p">[</span><span class="k">Parameter</span><span class="p">(</span><span class="k">Mandatory</span><span class="p">=</span><span class="nv">$true</span><span class="p">)]</span>
+    <span class="no">[string]</span><span class="nv">$ProjectCode</span><span class="p">,</span>
+
+    <span class="p">[</span><span class="k">Parameter</span><span class="p">(</span><span class="k">Mandatory</span><span class="p">=</span><span class="nv">$false</span><span class="p">)]</span>
+    <span class="p">[</span><span class="k">ValidateSet</span><span class="p">(</span><span class="s2">&quot;low&quot;</span><span class="p">,</span> <span class="s2">&quot;medium&quot;</span><span class="p">,</span> <span class="s2">&quot;high&quot;</span><span class="p">)]</span>
+    <span class="no">[string]</span><span class="nv">$Priority</span> <span class="p">=</span> <span class="s2">&quot;medium&quot;</span><span class="p">,</span>
+
+    <span class="p">[</span><span class="k">Parameter</span><span class="p">(</span><span class="k">Mandatory</span><span class="p">=</span><span class="nv">$false</span><span class="p">)]</span>
+    <span class="no">[int]</span><span class="nv">$CPUCount</span><span class="p">,</span>
+
+    <span class="p">[</span><span class="k">Parameter</span><span class="p">(</span><span class="k">Mandatory</span><span class="p">=</span><span class="nv">$false</span><span class="p">)]</span>
+    <span class="no">[int]</span><span class="nv">$MemoryGB</span>
+<span class="p">)</span>
+
+<span class="c"># Multi-tier resource allocation</span>
+<span class="nv">$Tiers</span> <span class="p">=</span> <span class="p">@{</span>
+    <span class="n">dev</span>     <span class="p">=</span> <span class="p">@{</span> <span class="n">CPU</span> <span class="p">=</span> <span class="n">2</span><span class="p">;</span>  <span class="n">Memory</span> <span class="p">=</span> <span class="n">8</span><span class="p">;</span>   <span class="n">Approval</span> <span class="p">=</span> <span class="s2">&quot;none&quot;</span><span class="p">;</span>       <span class="n">Budget</span> <span class="p">=</span> <span class="n">100</span> <span class="p">}</span>
+    <span class="n">test</span>    <span class="p">=</span> <span class="p">@{</span> <span class="n">CPU</span> <span class="p">=</span> <span class="n">2</span><span class="p">;</span>  <span class="n">Memory</span> <span class="p">=</span> <span class="n">8</span><span class="p">;</span>   <span class="n">Approval</span> <span class="p">=</span> <span class="s2">&quot;team-lead&quot;</span><span class="p">;</span>  <span class="n">Budget</span> <span class="p">=</span> <span class="n">200</span> <span class="p">}</span>
+    <span class="n">staging</span> <span class="p">=</span> <span class="p">@{</span> <span class="n">CPU</span> <span class="p">=</span> <span class="n">4</span><span class="p">;</span>  <span class="n">Memory</span> <span class="p">=</span> <span class="n">16</span><span class="p">;</span>  <span class="n">Approval</span> <span class="p">=</span> <span class="s2">&quot;manager&quot;</span><span class="p">;</span>    <span class="n">Budget</span> <span class="p">=</span> <span class="n">500</span> <span class="p">}</span>
+    <span class="n">prod</span>    <span class="p">=</span> <span class="p">@{</span> <span class="n">CPU</span> <span class="p">=</span> <span class="n">8</span><span class="p">;</span>  <span class="n">Memory</span> <span class="p">=</span> <span class="n">32</span><span class="p">;</span>  <span class="n">Approval</span> <span class="p">=</span> <span class="s2">&quot;director&quot;</span><span class="p">;</span>   <span class="n">Budget</span> <span class="p">=</span> <span class="n">1000</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nv">$Tier</span> <span class="p">=</span> <span class="nv">$Tiers</span><span class="p">[</span><span class="nv">$Environment</span><span class="p">]</span>
+
+<span class="c"># Override if specified</span>
+<span class="k">if</span> <span class="p">(</span><span class="nv">$CPUCount</span><span class="p">)</span> <span class="p">{</span> <span class="nv">$Tier</span><span class="p">.</span><span class="n">CPU</span> <span class="p">=</span> <span class="nv">$CPUCount</span> <span class="p">}</span>
+<span class="k">if</span> <span class="p">(</span><span class="nv">$MemoryGB</span><span class="p">)</span> <span class="p">{</span> <span class="nv">$Tier</span><span class="p">.</span><span class="n">Memory</span> <span class="p">=</span> <span class="nv">$MemoryGB</span> <span class="p">}</span>
+
+<span class="c"># Validation</span>
+<span class="k">if</span> <span class="p">(</span><span class="nv">$Tier</span><span class="p">.</span><span class="n">CPU</span> <span class="o">-gt</span> <span class="n">16</span> <span class="o">-or</span> <span class="nv">$Tier</span><span class="p">.</span><span class="n">Memory</span> <span class="o">-gt</span> <span class="n">128</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">throw</span> <span class="s2">&quot;Resource request exceeds maximum quota&quot;</span>
+<span class="p">}</span>
+
+<span class="c"># Tagging for comprehensive tracking</span>
+<span class="nv">$Tags</span> <span class="p">=</span> <span class="p">@(</span>
+    <span class="s2">&quot;env:$Environment&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;project:$ProjectCode&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;priority:$Priority&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;approved-by:</span><span class="p">$(</span><span class="nv">$Tier</span><span class="p">.</span><span class="n">Approval</span><span class="p">)</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;monthly-budget:</span><span class="p">$(</span><span class="nv">$Tier</span><span class="p">.</span><span class="n">Budget</span><span class="p">)</span><span class="s2">&quot;</span>
+<span class="p">)</span>
+
+<span class="c"># Provision</span>
+<span class="nb">New-VM</span> <span class="n">-Name</span> <span class="nv">$VMName</span> <span class="p">`</span>
+    <span class="n">-NumCpu</span> <span class="nv">$Tier</span><span class="p">.</span><span class="n">CPU</span> <span class="p">`</span>
+    <span class="n">-MemoryGB</span> <span class="nv">$Tier</span><span class="p">.</span><span class="n">Memory</span>
+
+<span class="c"># Apply all tags</span>
+<span class="k">foreach</span> <span class="p">(</span><span class="nv">$Tag</span> <span class="k">in</span> <span class="nv">$Tags</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nb">New-TagAssignment</span> <span class="n">-Entity</span> <span class="nv">$VMName</span> <span class="n">-Tag</span> <span class="nv">$Tag</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="step-30-import-enhanced-script">Step 30: Import Enhanced Script</h3>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>import<span class="w"> </span>--source<span class="w"> </span>powercli<span class="w"> </span>--file<span class="w"> </span>governance-enhanced.ps1
+</code></pre></div>
+
+<h3 id="step-31-re-extract-and-merge">Step 31: Re-extract and Merge</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Extract new intent</span>
+ops-translate<span class="w"> </span>intent<span class="w"> </span>extract
+
+<span class="c1"># Review new intent</span>
+cat<span class="w"> </span>intent/powercli.intent.yaml
+
+<span class="c1"># Merge all sources</span>
+ops-translate<span class="w"> </span>intent<span class="w"> </span>merge<span class="w"> </span>--force
+</code></pre></div>
+
+<h3 id="step-32-review-enhanced-intent">Step 32: Review Enhanced Intent</h3>
+<p>The merged intent now includes:
+- Multi-tier environments (dev/test/staging/prod)
+- Approval levels (team-lead, manager, director)
+- Budget tracking
+- Priority levels
+- Enhanced tagging</p>
+<h3 id="step-33-generate-enhanced-artifacts">Step 33: Generate Enhanced Artifacts</h3>
+<div class="codehilite"><pre><span></span><code>ops-translate<span class="w"> </span>generate<span class="w"> </span>--profile<span class="w"> </span>prod
+</code></pre></div>
+
+<p>The generated Ansible will include:
+- Multi-level approval gates
+- Budget validation
+- Priority-based scheduling
+- Comprehensive tagging</p>
+<h2 id="summary">Summary</h2>
+<h3 id="what-you-accomplished">What You Accomplished</h3>
+<p>✅ Created an ops-translate workspace
+✅ Imported PowerCLI and vRealize automation
+✅ Analyzed source files without AI
+✅ Extracted operational intent with AI
+✅ Merged multiple sources intelligently
+✅ Generated Ansible playbooks and KubeVirt manifests
+✅ Validated and tested artifacts
+✅ Deployed to OpenShift
+✅ Enhanced with governance workflow</p>
+<h3 id="key-takeaways">Key Takeaways</h3>
+<ol>
+<li><strong>Workspace Organization</strong>: Everything in one place, version-controllable</li>
+<li><strong>AI Assumptions</strong>: Always review assumptions.md for accuracy</li>
+<li><strong>Conflict Resolution</strong>: Merge conflicts highlight design decisions</li>
+<li><strong>Profile-Based</strong>: Same intent, different environments</li>
+<li><strong>Transparent</strong>: Every step creates inspectable artifacts</li>
+</ol>
+<h3 id="next-steps">Next Steps</h3>
+<ul>
+<li><strong>Production Deployment</strong>: Use prod profile for real workloads</li>
+<li><strong>CI/CD Integration</strong>: Automate with GitHub Actions</li>
+<li><strong>Team Collaboration</strong>: Share workspace in git</li>
+<li><strong>Custom Extensions</strong>: Add custom LLM providers or generators</li>
+<li><strong>Advanced Patterns</strong>: Explore multi-network, multi-disk scenarios</li>
+</ul>
+<h2 id="additional-resources">Additional Resources</h2>
+<ul>
+<li><a href="USER_GUIDE.md">User Guide</a> - Complete reference</li>
+<li><a href="ARCHITECTURE.md">Architecture</a> - System design</li>
+<li><a href="API_REFERENCE.md">API Reference</a> - Programmatic usage</li>
+<li><a href="../examples/">Examples</a> - More sample workflows</li>
+</ul>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="common-issues-during-tutorial">Common Issues During Tutorial</h3>
+<p><strong>Issue</strong>: "Not in a workspace"</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Solution: Make sure you&#39;re in the workspace directory</span>
+<span class="nb">cd</span><span class="w"> </span>vmware-migration
+</code></pre></div>
+
+<p><strong>Issue</strong>: "LLM API key not found"</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Solution: Set the environment variable</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OPS_TRANSLATE_LLM_API_KEY</span><span class="o">=</span><span class="s2">&quot;your-key&quot;</span>
+</code></pre></div>
+
+<p><strong>Issue</strong>: "Merge conflicts detected"</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Solution: Review conflicts and decide resolution</span>
+cat<span class="w"> </span>intent/conflicts.md
+ops-translate<span class="w"> </span>intent<span class="w"> </span>merge<span class="w"> </span>--force<span class="w">  </span><span class="c1"># If conflicts acceptable</span>
+</code></pre></div>
+
+<p><strong>Issue</strong>: "kubernetes.core collection not found"</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Solution: Install Ansible collection</span>
+ansible-galaxy<span class="w"> </span>collection<span class="w"> </span>install<span class="w"> </span>kubernetes.core
+</code></pre></div>
+
+<p><strong>Issue</strong>: "Permission denied on kubectl"</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Solution: Login to OpenShift</span>
+oc<span class="w"> </span>login<span class="w"> </span>https://your-cluster:6443
+</code></pre></div>
+
+<h2 id="feedback">Feedback</h2>
+<p>Found an issue or have suggestions? Please open an issue:
+https://github.com/tsanders-rh/ops-translate/issues</p>
+        </div>
+        <div style="margin-top: var(--spacing-xl); text-align: center;">
+            <a href="../index.html" class="back-to-report">← Back to Migration Report</a>
+        </div>
+    </div>
+</body>
+</html>

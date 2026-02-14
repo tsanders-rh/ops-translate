@@ -2810,3 +2810,16 @@ pre code {
     margin: 0;
     line-height: 1.6;
 }
+
+/* Header Documentation Link */
+.header-docs-link {
+    color: #0ea5e9;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.header-docs-link:hover {
+    color: #0284c7;
+    text-decoration: underline;
+}
