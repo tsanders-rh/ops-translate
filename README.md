@@ -72,6 +72,37 @@ tree output/
 
 See [examples/](examples/) for more sample PowerCLI scripts and vRealize workflows.
 
+## Interactive HTML Report
+
+The `ops-translate report` command generates a comprehensive, interactive HTML report that provides migration readiness assessment and expert recommendations.
+
+### Executive Summary
+Get an at-a-glance view of your migration status with classification breakdowns and key metrics.
+
+![Executive Summary](media/screenshots/executive-summary.png)
+
+### Classification & Filtering
+Interactive cards let you filter components by translation status (SUPPORTED, PARTIAL, BLOCKED, MANUAL).
+
+![Classification Cards](media/screenshots/classification-cards.png)
+
+### Decision Interview
+Provide missing context for BLOCKED/PARTIAL components through an interactive questionnaire. Your decisions automatically upgrade component classifications.
+
+![Decision Interview](media/screenshots/decision-interview-overview.png)
+
+### Gap Analysis
+Detailed component-by-component breakdown with migration paths and OpenShift equivalents.
+
+![Gap Analysis](media/screenshots/gap-analysis.png)
+
+**Interactive Features:**
+- 🎯 Filter by classification level
+- 📊 4-tab progressive disclosure (Executive → Architecture → Implementation → Decisions)
+- ✅ Export to PDF or CSV
+- 🧠 Decision Interview for gathering missing context
+- 📋 Embedded expert recommendations
+
 ### Using Your Own Scripts
 
 ```bash
