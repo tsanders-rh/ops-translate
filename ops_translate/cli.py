@@ -824,6 +824,16 @@ def generate(
         "--no-locking",
         help="Disable distributed locking for LockingSystem calls (not recommended for production)",
     ),
+    lint: bool = typer.Option(
+        False,
+        "--lint",
+        help="Run ansible-lint on generated playbooks after generation",
+    ),
+    lint_strict: bool = typer.Option(
+        False,
+        "--lint-strict",
+        help="Treat ansible-lint warnings as errors (requires --lint)",
+    ),
 ):
     """Generate Ansible and KubeVirt artifacts in various formats.
 
@@ -835,6 +845,9 @@ def generate(
 
     Use --locking-backend to choose distributed locking backend (redis, consul, file).
     Use --no-locking to disable locking (only for testing/development).
+
+    Use --lint to validate generated playbooks with ansible-lint.
+    Use --lint-strict to treat warnings as errors (fails generation if linting issues found).
     """
     workspace = Workspace(Path.cwd())
     if not workspace.config_file.exists():
@@ -1030,6 +1043,67 @@ def generate(
         generate_effort_json(analysis_data, gaps_data, effort_path)
         console.print(f"[green]✓ Generated: {effort_path.relative_to(workspace.root)}[/green]")
 
+        # Run ansible-lint if requested
+        if lint:
+            from ops_translate.util.linting import (
+                generate_lint_report,
+                is_ansible_lint_available,
+                run_ansible_lint,
+            )
+
+            console.print("\n[bold blue]Running ansible-lint on generated playbooks...[/bold blue]")
+
+            if not is_ansible_lint_available():
+                console.print(
+                    "[yellow]⚠ ansible-lint is not installed. "
+                    "Install with: pip install ansible-lint[/yellow]"
+                )
+            else:
+                try:
+                    lint_result = run_ansible_lint(
+                        path=ansible_project_dir,
+                        format="json",
+                        strict=lint_strict,
+                    )
+
+                    # Generate lint report
+                    lint_report = generate_lint_report(lint_result)
+                    lint_report_path = output_dir / "lint-report.md"
+                    lint_report_path.write_text(lint_report)
+
+                    # Display summary
+                    if lint_result.success:
+                        console.print("[green]✓ Linting passed (no violations)[/green]")
+                    else:
+                        by_severity = lint_result.get_violations_by_severity()
+                        error_count = len(by_severity["error"])
+                        warning_count = len(by_severity["warning"])
+
+                        console.print(
+                            f"[yellow]⚠ Found {lint_result.violation_count} linting issue(s)[/yellow]"
+                        )
+                        if error_count > 0:
+                            console.print(f"  [red]Errors: {error_count}[/red]")
+                        if warning_count > 0:
+                            console.print(f"  [yellow]Warnings: {warning_count}[/yellow]")
+
+                        console.print(f"\n[dim]Lint report: {lint_report_path}[/dim]")
+
+                        if lint_strict and not lint_result.success:
+                            console.print(
+                                "\n[red]✗ Generation failed due to linting issues "
+                                "(--lint-strict enabled)[/red]"
+                            )
+                            raise typer.Exit(1)
+
+                except FileNotFoundError as e:
+                    console.print(f"[red]✗ {e}[/red]")
+                    raise typer.Exit(1)
+                except Exception as e:
+                    console.print(f"[red]✗ Linting error: {e}[/red]")
+                    if lint_strict:
+                        raise typer.Exit(1)
+
         # Load current analysis to display summary
         import json
 
@@ -1178,13 +1252,27 @@ def compare(
 
 @app.command()
 @handle_errors
-def analyze():
+def analyze(
+    force: bool = typer.Option(
+        False,
+        "--force",
+        help="Force re-analysis of all workflows (ignore cache)",
+    ),
+    no_cache: bool = typer.Option(
+        False,
+        "--no-cache",
+        help="Disable caching (same as --force but doesn't update cache)",
+    ),
+):
     """
     Analyze imported vRealize workflows for external dependencies and translatability.
 
     Detects NSX-T operations, custom plugins, and REST API calls, then classifies
     them by translatability level (SUPPORTED/PARTIAL/BLOCKED/MANUAL).
     Generates gap reports with migration guidance.
+
+    Supports incremental analysis: only re-analyzes workflows that have changed
+    since last analysis (based on file content hash). Use --force to re-analyze all.
 
     No LLM required - runs offline using pattern matching.
     """
@@ -1201,6 +1289,7 @@ def analyze():
     )
     from ops_translate.intent.classify import classify_components
     from ops_translate.intent.gaps import generate_gap_reports, print_gap_summary
+    from ops_translate.util.cache import AnalysisCache
 
     # Find all vRealize workflows
     vrealize_dir = workspace.root / "input/vrealize"
@@ -1217,7 +1306,37 @@ def analyze():
         console.print("[yellow]No XML files found in input/vrealize/[/yellow]")
         raise typer.Exit(0)
 
-    console.print(f"Found {len(xml_files)} workflow(s) to analyze\n")
+    console.print(f"Found {len(xml_files)} workflow(s) to analyze")
+
+    # Initialize analysis cache (unless disabled)
+    cache = None
+    files_to_analyze = xml_files
+    if not no_cache:
+        cache_file = workspace.root / ".ops-translate" / "analysis-cache.json"
+        cache = AnalysisCache(cache_file)
+
+        if force:
+            console.print("[dim]Force mode: re-analyzing all workflows[/dim]\n")
+        else:
+            # Check which files have changed
+            changed_files, unchanged_files = cache.get_changed_files(xml_files)
+            files_to_analyze = changed_files
+
+            if unchanged_files:
+                console.print(
+                    f"[dim]Skipping {len(unchanged_files)} unchanged workflow(s) "
+                    f"(use --force to re-analyze)[/dim]"
+                )
+            if changed_files:
+                console.print(
+                    f"[cyan]Analyzing {len(changed_files)} changed workflow(s)[/cyan]\n"
+                )
+            else:
+                console.print(
+                    "[green]All workflows up-to-date (no changes detected)[/green]\n"
+                )
+    else:
+        console.print("[dim]Cache disabled[/dim]\n")
 
     # Load ActionIndex if available for action resolution
     action_index = None
@@ -1232,8 +1351,37 @@ def analyze():
 
     all_components = []
 
-    # Analyze each workflow
-    for xml_file in xml_files:
+    # Load existing components from gaps.json for unchanged files
+    if cache and not force:
+        gaps_file = workspace.root / "intent/gaps.json"
+        if gaps_file.exists():
+            try:
+                import json
+
+                with open(gaps_file) as f:
+                    gaps_data = json.load(f)
+                existing_components = gaps_data.get("components", [])
+
+                # Keep components from unchanged files
+                unchanged_file_names = {f.stem for f in xml_files if f not in files_to_analyze}
+                for component in existing_components:
+                    # Extract base filename from location (e.g., "provision-vm" from "provision-vm.item1")
+                    location = component.get("location", "")
+                    base_location = location.split(".")[0] if "." in location else location
+                    if base_location in unchanged_file_names:
+                        all_components.append(component)
+
+                if all_components:
+                    console.print(
+                        f"[dim]Loaded {len(all_components)} existing component(s) "
+                        f"from unchanged workflows[/dim]\n"
+                    )
+            except (json.JSONDecodeError, FileNotFoundError):
+                # If we can't load existing gaps, just analyze everything
+                pass
+
+    # Analyze changed/new workflows only
+    for xml_file in files_to_analyze:
         console.print(f"[dim]Analyzing {xml_file.name}...[/dim]")
 
         # Run analysis with ActionIndex if available
@@ -1245,6 +1393,16 @@ def analyze():
         # Classify components
         components = classify_components(analysis)
         all_components.extend(components)
+
+        # Update cache with analysis metadata
+        if cache and not no_cache:
+            cache.mark_analyzed(
+                xml_file,
+                metadata={
+                    "components": len(components),
+                    "has_external_dependencies": analysis["has_external_dependencies"],
+                },
+            )
 
         # Show quick summary
         if analysis["has_external_dependencies"]:
