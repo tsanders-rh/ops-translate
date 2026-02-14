@@ -25,6 +25,34 @@
         </div>
     </header>
 
+    <!-- Tab Navigation -->
+    <nav class="tab-navigation" role="tablist">
+        <div class="container">
+            <div class="tab-buttons">
+                <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="tab-executive" data-tab="executive">
+                    Executive
+                </button>
+                <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-architecture" data-tab="architecture">
+                    Architecture & Gaps
+                    {% if gaps and gaps.components %}
+                    {% set blocked_count = gaps.components | selectattr('level', 'equalto', 'BLOCKED') | list | length %}
+                    {% if blocked_count > 0 %}
+                    <span class="tab-badge">{{ blocked_count }}</span>
+                    {% endif %}
+                    {% endif %}
+                </button>
+                <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-implementation" data-tab="implementation">
+                    Implementation
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Tab Panels -->
+    <div class="tab-panels">
+        <!-- Executive Tab -->
+        <div id="tab-executive" class="tab-panel active" role="tabpanel" aria-labelledby="tab-executive">
+
     <!-- Executive Summary -->
     {% if executive_summary %}
     <section class="executive-summary-section">
@@ -116,54 +144,6 @@
             </div>
             {% endif %}
 
-            <!-- Integration Heatmap -->
-            {% if effort_metrics.integration_heatmap %}
-            <div class="integration-heatmap-container">
-                <h3 class="subsection-title">Integration Complexity Matrix</h3>
-                <p class="heatmap-description">This matrix shows which workflows require which integrations, helping identify concentration areas and reusable adapter development.</p>
-                <div class="heatmap-scroll">
-                    <table class="integration-heatmap">
-                        <thead>
-                            <tr>
-                                <th class="workflow-col">Workflow</th>
-                                <th>Approval</th>
-                                <th>ITSM</th>
-                                <th>NSX</th>
-                                <th>DNS</th>
-                                <th>Storage</th>
-                                <th>AD</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for row in effort_metrics.integration_heatmap %}
-                            <tr>
-                                <td class="workflow-name">{{ row.workflow }}</td>
-                                <td class="{% if row.integrations.Approval %}cell-present{% else %}cell-none{% endif %}">
-                                    {% if row.integrations.Approval %}✓{% else %}-{% endif %}
-                                </td>
-                                <td class="{% if row.integrations.ITSM %}cell-present{% else %}cell-none{% endif %}">
-                                    {% if row.integrations.ITSM %}✓{% else %}-{% endif %}
-                                </td>
-                                <td class="{% if row.integrations.NSX %}cell-present{% else %}cell-none{% endif %}">
-                                    {% if row.integrations.NSX %}✓{% else %}-{% endif %}
-                                </td>
-                                <td class="{% if row.integrations.DNS %}cell-present{% else %}cell-none{% endif %}">
-                                    {% if row.integrations.DNS %}✓{% else %}-{% endif %}
-                                </td>
-                                <td class="{% if row.integrations.Storage %}cell-present{% else %}cell-none{% endif %}">
-                                    {% if row.integrations.Storage %}✓{% else %}-{% endif %}
-                                </td>
-                                <td class="{% if row.integrations.AD %}cell-present{% else %}cell-none{% endif %}">
-                                    {% if row.integrations.AD %}✓{% else %}-{% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            {% endif %}
-
             <!-- Sprint Planning Recommendations -->
             <div class="sprint-plan-container">
                 <h3 class="subsection-title">Recommended Migration Phases</h3>
@@ -232,7 +212,7 @@
                         {% if workspace.name == "sample-workspace" %}
                         This analysis represents a typical enterprise automation estate—years of vRealize workflows, PowerCLI scripts for provisioning, NSX security policies, and ServiceNow integrations. The kind of automation debt that accumulates when teams deliver value quarter after quarter.
                         {% else %}
-                        We analyzed <strong>{{ workspace.name }}</strong> — {{ summary.total_components }} components across your automation estate, including complex workflows with NSX integration, approval gates, and custom orchestration.
+                        We analyzed <strong>{{ workspace.name }}</strong> — {{ summary.total_components if summary.total_components is defined else ((summary.counts.SUPPORTED or 0) + (summary.counts.PARTIAL or 0) + (summary.counts.BLOCKED or 0) + (summary.counts.MANUAL or 0)) }} components across your automation estate, including complex workflows with NSX integration, approval gates, and custom orchestration.
                         {% endif %}
                     </p>
                     <div class="story-results">
@@ -250,44 +230,116 @@
                         </div>
                     </div>
                     <p class="story-conclusion">
-                        This is not a research project. <strong>ops-translate</strong> provides production-grade automation for standard patterns and battle-tested guidance for complex scenarios—reducing migration risk and accelerating time-to-value.
+                        <strong>ops-translate</strong> provides automation for standard patterns and documented guidance for complex scenarios.
                     </p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- How to Read This Report -->
-    <section class="reading-guide-section">
+    <!-- Architectural Decisions Required -->
+    {% if gaps and gaps.components %}
+    {% set blocked_components = gaps.components | selectattr('level', 'equalto', 'BLOCKED') | list %}
+    {% set partial_components = gaps.components | selectattr('level', 'equalto', 'PARTIAL') | list %}
+    {% if blocked_components or partial_components %}
+    <section class="decisions-required-section">
         <div class="container">
-            <div class="reading-guide">
-                <h3>📖 How to Read This Report</h3>
-                <div class="guide-grid">
-                    <div class="guide-item">
-                        <div class="guide-icon">👔</div>
-                        <h4>Executives</h4>
-                        <p>Executive Summary → Migration Story → Target Architecture</p>
-                    </div>
-                    <div class="guide-item">
-                        <div class="guide-icon">⚙️</div>
-                        <h4>Platform Teams</h4>
-                        <p>Architecture Snapshot → Expert Recommendations → Implementation Details</p>
-                    </div>
-                    <div class="guide-item">
-                        <div class="guide-icon">🔒</div>
-                        <h4>NetOps / SecOps</h4>
-                        <p>NSX Migration Findings → Expert-Guided Security & Governance Patterns</p>
-                    </div>
+            <h2 class="section-title">🎯 Architectural Decisions Required</h2>
+            <p class="section-subtitle">The following enterprise decisions need clarification before auto-generation:</p>
+            <div class="decisions-list">
+                {% set decision_areas = {} %}
+                {% for component in blocked_components + partial_components %}
+                    {% if 'nsx' in component.component_type.lower() or 'security' in component.component_type.lower() or 'firewall' in component.component_type.lower() %}
+                        {% if 'Security & Networking' not in decision_areas %}
+                            {% set _ = decision_areas.update({'Security & Networking': []}) %}
+                        {% endif %}
+                        {% set _ = decision_areas['Security & Networking'].append(component) %}
+                    {% elif 'approval' in component.component_type.lower() or 'governance' in component.component_type.lower() %}
+                        {% if 'Governance & Approvals' not in decision_areas %}
+                            {% set _ = decision_areas.update({'Governance & Approvals': []}) %}
+                        {% endif %}
+                        {% set _ = decision_areas['Governance & Approvals'].append(component) %}
+                    {% elif 'network' in component.component_type.lower() or 'nic' in component.component_type.lower() %}
+                        {% if 'Multi-NIC Networking' not in decision_areas %}
+                            {% set _ = decision_areas.update({'Multi-NIC Networking': []}) %}
+                        {% endif %}
+                        {% set _ = decision_areas['Multi-NIC Networking'].append(component) %}
+                    {% endif %}
+                {% endfor %}
+                {% for area, components in decision_areas.items() %}
+                <div class="decision-area">
+                    <h3>{{ area }}</h3>
+                    <p class="decision-count">{{ components | length }} component(s) require decisions</p>
+                    <ul class="decision-questions">
+                        {% if area == 'Security & Networking' %}
+                        <li>What label keys should represent NSX security group membership?</li>
+                        <li>What is the default network policy stance (allow vs. deny-by-default)?</li>
+                        <li>Which segmentation model: namespace-per-app or shared namespace?</li>
+                        {% elif area == 'Governance & Approvals' %}
+                        <li>What is the approval system of record (AAP workflow vs. ServiceNow)?</li>
+                        <li>Who are the approvers and how are they identified?</li>
+                        <li>What are timeout and escalation policies?</li>
+                        {% elif area == 'Multi-NIC Networking' %}
+                        <li>Retain multi-NIC or collapse to single network?</li>
+                        <li>What is the NetworkAttachmentDefinition naming convention?</li>
+                        <li>How should network attachments be selected (env-based, tier-based)?</li>
+                        {% endif %}
+                    </ul>
+                    <p class="decision-action"><a href="#tab-architecture">→ Review detailed gaps in Architecture tab</a></p>
                 </div>
+                {% endfor %}
+                {% if decision_areas | length == 0 %}
+                <p class="no-decisions">No critical architectural decisions required—workflows are ready for configuration.</p>
+                {% endif %}
             </div>
         </div>
     </section>
+    {% endif %}
+    {% endif %}
+
+    <!-- Executive Conclusion -->
+    <section class="executive-conclusion-section">
+        <div class="container">
+            <div class="conclusion-box">
+                <h3>🎯 Executive Summary</h3>
+                <p class="conclusion-text">
+                    {% set total_comps = summary.total_components if summary.total_components is defined else ((summary.counts.SUPPORTED or 0) + (summary.counts.PARTIAL or 0) + (summary.counts.BLOCKED or 0) + (summary.counts.MANUAL or 0)) %}
+                    <strong>This migration is achievable.</strong> With {{ summary.counts.SUPPORTED or 0 }} components auto-translatable and
+                    {{ summary.counts.PARTIAL or 0 }} requiring configuration, your automation estate is
+                    {% if total_comps > 0 %}
+                    <strong>{{ ((((summary.counts.SUPPORTED or 0) + (summary.counts.PARTIAL or 0)) / total_comps) * 100) | int }}% ready</strong>
+                    {% else %}
+                    <strong>ready</strong>
+                    {% endif %}
+                    for OpenShift Virtualization.
+                </p>
+                <p class="conclusion-text">
+                    {% if blocked_components %}
+                    The {{ blocked_components | length }} BLOCKED component(s) have documented architecture patterns
+                    and can be addressed through proven design decisions—not custom development.
+                    {% else %}
+                    No blocked components detected—clear path to implementation.
+                    {% endif %}
+                </p>
+                <p class="conclusion-cta">
+                    <strong>Next Step:</strong> Review the <a href="#tab-architecture">Architecture & Gaps tab</a> to understand required design decisions,
+                    then proceed to the <a href="#tab-implementation">Implementation tab</a> for generated artifacts and deployment steps.
+                </p>
+            </div>
+        </div>
+    </section>
+
+        </div>
+        <!-- End Executive Tab -->
+
+        <!-- Architecture & Gaps Tab -->
+        <div id="tab-architecture" class="tab-panel" role="tabpanel" aria-labelledby="tab-architecture">
 
     <!-- At a Glance Summary Cards -->
     <section class="summary-section">
         <div class="container">
             <h2>Component-Level Translation Status</h2>
-            <p class="section-subtitle">Detailed component analysis showing {{ summary.total_components }} individual components detected across your workflows.</p>
+            <p class="section-subtitle">Detailed component analysis showing {{ summary.total_components if summary.total_components is defined else ((summary.counts.SUPPORTED or 0) + (summary.counts.PARTIAL or 0) + (summary.counts.BLOCKED or 0) + (summary.counts.MANUAL or 0)) }} individual components detected across your workflows.</p>
             <div class="summary-cards">
                 <div class="card card-supported" data-filter="SUPPORTED" title="Components that can be fully automatically translated to OpenShift-native equivalents">
                     <div class="card-icon">✅</div>
@@ -303,7 +355,7 @@
                         <div class="card-label">Partial Translation</div>
                     </div>
                 </div>
-                <div class="card card-blocked" data-filter="BLOCKED" title="Components solved with production-grade patterns and expert guidance">
+                <div class="card card-blocked" data-filter="BLOCKED" title="Components requiring expert guidance">
                     <div class="card-icon">🎯</div>
                     <div class="card-content">
                         <div class="card-number">{{ summary.counts.BLOCKED }}</div>
@@ -358,7 +410,7 @@
             <!-- Expert Patterns Callout -->
             {% if summary.has_blocking_issues and gaps and gaps.components %}
             <div class="next-steps-callout">
-                <h3>🎯 Expert-Guided Migration (Production-Grade Patterns Available)</h3>
+                <h3>🎯 Expert-Guided Migration</h3>
                 {% for component in gaps.components %}
                     {% if component.level == "BLOCKED" %}
                     <div class="blocking-item">
@@ -367,7 +419,7 @@
                             {% if component.recommendations and component.recommendations|length > 0 %}
                             {{ component.recommendations[0] }}
                             {% else %}
-                            We provide production-grade patterns and expert guidance for this component.
+                            We provide documented patterns and expert guidance for this component.
                             {% endif %}
                         </p>
                         {% if component.pattern_link %}
@@ -425,7 +477,7 @@
                 <div class="architecture-card arch-expert">
                     <div class="arch-icon">🎯</div>
                     <h3>Expert-Guided Patterns</h3>
-                    <p class="arch-description">Production-grade patterns for complex scenarios</p>
+                    <p class="arch-description">Documented patterns for complex scenarios</p>
                     <ul class="arch-components">
                         <li>Approval Workflows → Ansible Automation Platform</li>
                         <li>Custom Orchestration → Ansible Playbooks</li>
@@ -438,7 +490,7 @@
 
             <!-- AAP Integration Note -->
             <div class="aap-integration-note">
-                <p><strong>🔧 Supported Automation Stack:</strong> Expert-guided patterns are delivered as Ansible roles and workflows, aligning with Red Hat's supported automation stack (Ansible Automation Platform). This ensures production-grade support, not DIY scripting.</p>
+                <p><strong>🔧 Supported Automation Stack:</strong> Expert-guided patterns are delivered as Ansible roles and workflows, aligning with Red Hat's supported automation stack (Ansible Automation Platform).</p>
             </div>
 
             <!-- Migration Journey -->
@@ -706,7 +758,7 @@
                 <div class="banner-icon">⚠️</div>
                 <div class="banner-content">
                     <strong>Legacy Drift Detected</strong>
-                    <p>Multiple naming conventions, parameter inconsistencies, and policy variations detected across workflows—common in mature automation estates. This analysis surfaced {{ summary.total_components }} individual patterns, revealing technical debt that would otherwise remain hidden until migration.</p>
+                    <p>Multiple naming conventions, parameter inconsistencies, and policy variations detected across workflows—common in mature automation estates. This analysis surfaced {{ summary.total_components if summary.total_components is defined else ((summary.counts.SUPPORTED or 0) + (summary.counts.PARTIAL or 0) + (summary.counts.BLOCKED or 0) + (summary.counts.MANUAL or 0)) }} individual patterns, revealing technical debt that would otherwise remain hidden until migration.</p>
                 </div>
             </div>
             {% endif %}
@@ -939,45 +991,50 @@
 
             <!-- Component List -->
             <div class="gaps-list">
-                {# Create mapping from base filename to full source filename #}
-                {% set location_to_source = {} %}
-                {% for source in sources %}
-                    {% set base_name = source.name.replace('.workflow.xml', '').replace('.ps1', '') %}
-                    {% set _ = location_to_source.update({base_name: source.name}) %}
-                {% endfor %}
+                {# Group components by architectural domain instead of file #}
+                {% set domain_groups = {
+                    'Security & Segmentation': {'icon': '🔒', 'components': []},
+                    'Governance & Approvals': {'icon': '✅', 'components': []},
+                    'Networking': {'icon': '🌐', 'components': []},
+                    'Compute & Storage': {'icon': '💾', 'components': []},
+                    'Other Components': {'icon': '⚙️', 'components': []}
+                } %}
 
-                {# Sort components by file, then by severity (DESIGN REQUIRED → MANUAL → PARTIAL → SUPPORTED) #}
-                {% set severity_order = {'BLOCKED': 0, 'MANUAL': 1, 'PARTIAL': 2, 'SUPPORTED': 3} %}
-                {% set sorted_components = gaps.components | sort(attribute='location') %}
-                {% set sorted_components = sorted_components | sort(attribute='level', case_sensitive=False) %}
-
-                {# Group by file and sort within each group by severity #}
-                {% set file_groups = {} %}
                 {% for comp in gaps.components %}
-                    {% set file_name = comp.location.split(':')[0] if comp.location else 'unknown' %}
-                    {% if file_name not in file_groups %}
-                        {% set _ = file_groups.update({file_name: []}) %}
+                    {% set comp_type_lower = comp.component_type.lower() %}
+                    {% set comp_name_lower = comp.name.lower() %}
+                    {% if 'nsx' in comp_type_lower or 'security' in comp_type_lower or 'firewall' in comp_type_lower or 'nsx' in comp_name_lower %}
+                        {% set _ = domain_groups['Security & Segmentation']['components'].append(comp) %}
+                    {% elif 'approval' in comp_type_lower or 'governance' in comp_type_lower or 'itsm' in comp_type_lower or 'servicenow' in comp_name_lower %}
+                        {% set _ = domain_groups['Governance & Approvals']['components'].append(comp) %}
+                    {% elif 'network' in comp_type_lower or 'nic' in comp_type_lower or 'dns' in comp_type_lower or 'multus' in comp_name_lower %}
+                        {% set _ = domain_groups['Networking']['components'].append(comp) %}
+                    {% elif 'storage' in comp_type_lower or 'disk' in comp_type_lower or 'volume' in comp_type_lower %}
+                        {% set _ = domain_groups['Compute & Storage']['components'].append(comp) %}
+                    {% else %}
+                        {% set _ = domain_groups['Other Components']['components'].append(comp) %}
                     {% endif %}
-                    {% set _ = file_groups[file_name].append(comp) %}
                 {% endfor %}
 
-                {# Sort components within each file by severity #}
-                {% for file_name, components in file_groups.items() | sort %}
-                    {% set sorted_file_components = components | sort(attribute='level') %}
-
-                    {# Use full source filename for anchor if available #}
-                    {% set anchor_name = location_to_source.get(file_name, file_name) %}
-                    <div id="file-{{ anchor_name | replace('.', '-') }}" class="file-anchor"></div>
-
-                    {# Add visual file header for grouping #}
-                    <div class="file-section-header">
-                        <div class="file-icon">📄</div>
-                        <h3>{{ anchor_name }}</h3>
-                        {% set file_type = 'VREALIZE' if '.workflow.xml' in anchor_name else 'POWERCLI' if '.ps1' in anchor_name else 'UNKNOWN' %}
-                        <span class="badge badge-{{ file_type.lower() }}">{{ file_type }}</span>
+                {# Render components grouped by domain #}
+                {% for domain_name, domain_data in [
+                    ('Security & Segmentation', domain_groups['Security & Segmentation']),
+                    ('Governance & Approvals', domain_groups['Governance & Approvals']),
+                    ('Networking', domain_groups['Networking']),
+                    ('Compute & Storage', domain_groups['Compute & Storage']),
+                    ('Other Components', domain_groups['Other Components'])
+                ] %}
+                    {% if domain_data.components | length > 0 %}
+                    {# Domain header #}
+                    <div class="domain-section-header" id="domain-{{ domain_name | replace(' ', '-') | replace('&', 'and') | lower }}">
+                        <div class="domain-icon">{{ domain_data.icon }}</div>
+                        <h3>{{ domain_name }}</h3>
+                        <span class="domain-count">{{ domain_data.components | length }} component(s)</span>
                     </div>
 
-                    {% for component in sorted_file_components | sort(attribute='level') %}
+                    {# Sort components by severity within domain #}
+                    {% set sorted_domain_components = domain_data.components | sort(attribute='level') %}
+                    {% for component in sorted_domain_components %}
                     <div class="gap-item gap-{{ component.level.lower() }}{% if component.level == 'SUPPORTED' %} supported-hidden{% endif %}" data-level="{{ component.level }}">
                     <div class="gap-header">
                         <h3>
@@ -1187,8 +1244,10 @@
                 </div>
                 {% endfor %}
                 {# End of components loop #}
+
+                    {% endif %}
                 {% endfor %}
-                {# End of file_groups loop #}
+                {# End of domain groups loop #}
             </div>
         </div>
     </section>
@@ -1240,6 +1299,120 @@
     </section>
     {% endif %}
     {% endif %}
+
+        </div>
+        <!-- End Architecture & Gaps Tab -->
+
+        <!-- Implementation Tab -->
+        <div id="tab-implementation" class="tab-panel" role="tabpanel" aria-labelledby="tab-implementation">
+
+    <!-- Start Here Section -->
+    <section class="start-here-section">
+        <div class="container">
+            <div class="start-here-box">
+                <h2>🚀 Start Here</h2>
+                <p class="start-here-intro">
+                    This tab contains everything you need to implement the migration. Follow these steps in order.
+                </p>
+
+                <div class="implementation-steps-grid">
+                    <div class="impl-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h3>Review Generated Artifacts</h3>
+                            <p>Examine the Ansible playbooks and KubeVirt manifests below</p>
+                        </div>
+                    </div>
+                    <div class="impl-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h3>Validate Configuration</h3>
+                            <p>Run <code>ops-translate dry-run</code> to check for issues</p>
+                        </div>
+                    </div>
+                    <div class="impl-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h3>Deploy to Lab</h3>
+                            <p>Apply manifests in a non-production environment first</p>
+                        </div>
+                    </div>
+                    <div class="impl-step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h3>Verify & Test</h3>
+                            <p>Use the Definition-of-Done checklist below</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Definition of Done -->
+    <section class="dod-section">
+        <div class="container">
+            <h2>✅ Definition of Done</h2>
+            <p class="section-subtitle">Check off these items before promoting to production:</p>
+
+            <div class="dod-checklist">
+                <div class="dod-category">
+                    <h3>🧪 Testing</h3>
+                    <ul class="dod-items">
+                        <li><input type="checkbox" disabled> VMs boot successfully in lab environment</li>
+                        <li><input type="checkbox" disabled> Network connectivity verified (all NICs functional)</li>
+                        <li><input type="checkbox" disabled> Storage volumes attached and accessible</li>
+                        <li><input type="checkbox" disabled> Ansible playbooks execute without errors</li>
+                        {% if gaps and gaps.components | selectattr('level', 'equalto', 'BLOCKED') | list | length > 0 %}
+                        <li><input type="checkbox" disabled> Custom implementations tested for BLOCKED components</li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <div class="dod-category">
+                    <h3>📋 Documentation</h3>
+                    <ul class="dod-items">
+                        <li><input type="checkbox" disabled> Runbooks created for operational tasks</li>
+                        <li><input type="checkbox" disabled> Architectural decisions documented</li>
+                        <li><input type="checkbox" disabled> Custom role implementations documented</li>
+                        {% if assumptions_md %}
+                        <li><input type="checkbox" disabled> Assumptions validated with stakeholders</li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <div class="dod-category">
+                    <h3>🔒 Security & Compliance</h3>
+                    <ul class="dod-items">
+                        <li><input type="checkbox" disabled> NetworkPolicies reviewed and approved</li>
+                        <li><input type="checkbox" disabled> RBAC permissions validated</li>
+                        <li><input type="checkbox" disabled> Secret management strategy confirmed</li>
+                        {% if gaps and gaps.components | selectattr('component_type', 'defined') | list | length > 0 %}
+                        {% set has_approval = namespace(found=false) %}
+                        {% for comp in gaps.components %}
+                            {% if 'approval' in comp.component_type.lower() %}
+                                {% set has_approval.found = true %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if has_approval.found %}
+                        <li><input type="checkbox" disabled> Approval workflows configured and tested</li>
+                        {% endif %}
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <div class="dod-category">
+                    <h3>🎯 Acceptance Criteria</h3>
+                    <ul class="dod-items">
+                        <li><input type="checkbox" disabled> All functional requirements met</li>
+                        <li><input type="checkbox" disabled> Performance acceptable (CPU, memory, I/O)</li>
+                        <li><input type="checkbox" disabled> Monitoring and alerting configured</li>
+                        <li><input type="checkbox" disabled> Rollback plan tested and documented</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <!-- Generated Artifacts -->
     {% if artifacts.kubevirt or artifacts.ansible %}
@@ -1343,6 +1516,12 @@
         </div>
     </section>
     {% endif %}
+
+        </div>
+        <!-- End Implementation Tab -->
+
+    </div>
+    <!-- End Tab Panels -->
 
     <!-- Footer -->
     <footer class="report-footer">
