@@ -588,8 +588,168 @@ def detect_rest_calls(script_content: str, script_file: Path) -> list[dict[str, 
     return rest_calls
 
 
+def detect_risk_signals(script_content: str, script_file: Path) -> list[dict[str, Any]]:
+    """
+    Detect security and complexity risk signals in PowerCLI scripts.
+
+    Detects:
+    - Module imports (Import-Module)
+    - Type loading (Add-Type)
+    - Process execution (Start-Process)
+    - SSH commands
+    - Inline credentials (-Password, -Credential, hardcoded passwords)
+    - Hardcoded endpoints (IP addresses, URLs)
+
+    Args:
+        script_content: PowerShell script content to analyze
+        script_file: Path to script file for location tracking
+
+    Returns:
+        List of detected risk signals with metadata
+    """
+    risk_signals = []
+    lines = script_content.split("\n")
+
+    # Module imports
+    module_pattern = r'\bImport-Module\s+([^\s;]+)'
+
+    # Type loading
+    type_pattern = r'\bAdd-Type\b'
+
+    # Process execution
+    process_pattern = r'\bStart-Process\b'
+
+    # SSH commands
+    ssh_pattern = r'\bssh\s+'
+
+    # Credential patterns (case-insensitive)
+    credential_patterns = [
+        r'-Password\s+["\']([^"\']+)["\']',  # -Password "value"
+        r'-Credential\s+',  # -Credential parameter
+        r'ConvertTo-SecureString\s+',  # Secure string creation
+        r'password\s*=\s*["\']([^"\']+)["\']',  # password = "value"
+    ]
+
+    # Hardcoded endpoint patterns
+    endpoint_patterns = [
+        r'\b(?:https?://)?(?:\d{1,3}\.){3}\d{1,3}(?::\d+)?',  # IP addresses with optional port
+        r'https?://[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,}(?:/[^\s"\']*)?',  # URLs with protocol
+        r'\b[a-zA-Z0-9\-]+\.[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,}\b',  # Bare domain names (e.g., vcenter.example.com)
+    ]
+
+    for line_num, line in enumerate(lines, 1):
+        # Skip comments
+        if line.strip().startswith('#'):
+            continue
+
+        # Module imports
+        match = re.search(module_pattern, line, re.IGNORECASE)
+        if match:
+            module_name = match.group(1)
+            risk_signals.append(
+                {
+                    "type": "module_import",
+                    "module": module_name,
+                    "location": str(script_file.name),
+                    "line": line_num,
+                    "severity": "medium",
+                    "confidence": 0.95,
+                    "evidence": line.strip(),
+                    "recommendation": f"Review module dependency: {module_name}",
+                }
+            )
+
+        # Type loading
+        if re.search(type_pattern, line, re.IGNORECASE):
+            risk_signals.append(
+                {
+                    "type": "type_loading",
+                    "location": str(script_file.name),
+                    "line": line_num,
+                    "severity": "high",
+                    "confidence": 0.9,
+                    "evidence": line.strip(),
+                    "recommendation": "Add-Type may load external assemblies - review for security",
+                }
+            )
+
+        # Process execution
+        if re.search(process_pattern, line, re.IGNORECASE):
+            risk_signals.append(
+                {
+                    "type": "process_execution",
+                    "location": str(script_file.name),
+                    "line": line_num,
+                    "severity": "high",
+                    "confidence": 0.9,
+                    "evidence": line.strip(),
+                    "recommendation": "Start-Process executes external commands - review for security",
+                }
+            )
+
+        # SSH commands
+        if re.search(ssh_pattern, line, re.IGNORECASE):
+            risk_signals.append(
+                {
+                    "type": "ssh_command",
+                    "location": str(script_file.name),
+                    "line": line_num,
+                    "severity": "medium",
+                    "confidence": 0.85,
+                    "evidence": line.strip(),
+                    "recommendation": "SSH commands require external connectivity - manual review needed",
+                }
+            )
+
+        # Credential patterns
+        for pattern in credential_patterns:
+            match = re.search(pattern, line, re.IGNORECASE)
+            if match:
+                # Redact actual credential values
+                redacted_line = re.sub(
+                    r'(["\'][^"\']*["\'])',
+                    '"***REDACTED***"',
+                    line.strip()
+                )
+                risk_signals.append(
+                    {
+                        "type": "inline_credential",
+                        "location": str(script_file.name),
+                        "line": line_num,
+                        "severity": "high",
+                        "confidence": 0.8,
+                        "evidence": redacted_line,
+                        "recommendation": "Inline credentials detected - use Azure Key Vault or secrets management",
+                    }
+                )
+                break  # Only report once per line
+
+        # Hardcoded endpoints
+        for pattern in endpoint_patterns:
+            matches = re.finditer(pattern, line, re.IGNORECASE)
+            for match in matches:
+                endpoint = match.group(0)
+                risk_signals.append(
+                    {
+                        "type": "hardcoded_endpoint",
+                        "endpoint": endpoint,
+                        "location": str(script_file.name),
+                        "line": line_num,
+                        "severity": "low",
+                        "confidence": 0.7,
+                        "evidence": line.strip(),
+                        "recommendation": f"Hardcoded endpoint '{endpoint}' - consider using configuration/environment variables",
+                    }
+                )
+
+    return risk_signals
+
+
 def calculate_complexity(
-    vmware_ops: dict[str, list], nsx_ops: dict[str, list], rest_calls: list
+    vmware_ops: dict[str, list],
+    nsx_ops: dict[str, list],
+    rest_calls: list,
+    risk_signals: list
 ) -> int:
     """
     Calculate migration complexity score (0-100).
@@ -598,11 +758,13 @@ def calculate_complexity(
     - VMware cmdlets: 1 point each (basic translation available)
     - NSX cmdlets: 5 points each (architectural complexity)
     - REST calls: 3 points each (custom integration)
+    - Risk signals: 2 points each (security/complexity concerns)
 
     Args:
         vmware_ops: VMware cmdlet detections
         nsx_ops: NSX cmdlet detections
         rest_calls: REST API call detections
+        risk_signals: Security/complexity risk signals
 
     Returns:
         Complexity score (0-100)
@@ -610,9 +772,10 @@ def calculate_complexity(
     vmware_count = sum(len(ops) for ops in vmware_ops.values())
     nsx_count = sum(len(ops) for ops in nsx_ops.values())
     rest_count = len(rest_calls)
+    risk_count = len(risk_signals)
 
     # Weighted scoring
-    score = (vmware_count * 1) + (nsx_count * 5) + (rest_count * 3)
+    score = (vmware_count * 1) + (nsx_count * 5) + (rest_count * 3) + (risk_count * 2)
 
     # Cap at 100
     return min(score, 100)
@@ -620,7 +783,7 @@ def calculate_complexity(
 
 def analyze_powercli_script(script_file: Path) -> dict[str, Any]:
     """
-    Analyze a PowerCLI script for external dependencies.
+    Analyze a PowerCLI script for external dependencies and risk signals.
 
     Args:
         script_file: Path to PowerCLI (.ps1) script file
@@ -628,14 +791,15 @@ def analyze_powercli_script(script_file: Path) -> dict[str, Any]:
     Returns:
         Dictionary containing analysis results with keys:
         - source_file: Path to the analyzed script file
-        - signals: Signal counts dict with vmware_cmdlets, nsx_cmdlets, rest_calls
+        - signals: Signal counts dict with vmware_cmdlets, nsx_cmdlets, rest_calls, risk_signals
         - confidence: Overall confidence rating ("low", "medium", or "high")
         - evidence: Array of evidence dicts with cmdlet, line, snippet, confidence, type
         - vmware_operations: VMware cmdlets detected (detailed dict by category)
         - nsx_operations: NSX cmdlets detected (detailed dict by category)
         - rest_api_calls: External REST API calls (detailed list)
+        - risk_signals: Security/complexity risk signals (detailed list)
         - complexity_score: Overall complexity rating (0-100)
-        - has_external_dependencies: Boolean flag for any external dependencies
+        - has_external_dependencies: Boolean flag for any external dependencies or risks
 
     Raises:
         FileNotFoundError: If script file doesn't exist
@@ -645,6 +809,8 @@ def analyze_powercli_script(script_file: Path) -> dict[str, Any]:
         >>> result = analyze_powercli_script(Path("provision.ps1"))
         >>> if result["nsx_operations"]:
         ...     print(f"Found NSX operations: {result['nsx_operations'].keys()}")
+        >>> if result["risk_signals"]:
+        ...     print(f"Found {len(result['risk_signals'])} risk signals")
     """
     if not script_file.exists():
         raise FileNotFoundError(f"Script file not found: {script_file}")
@@ -659,14 +825,23 @@ def analyze_powercli_script(script_file: Path) -> dict[str, Any]:
     vmware_ops = detect_vmware_cmdlets(script_content, script_file)
     nsx_ops = detect_nsx_cmdlets(script_content, script_file)
     rest_calls = detect_rest_calls(script_content, script_file)
+    risk_signals = detect_risk_signals(script_content, script_file)
 
     # Calculate complexity score
-    complexity = calculate_complexity(vmware_ops, nsx_ops, rest_calls)
+    complexity = calculate_complexity(vmware_ops, nsx_ops, rest_calls, risk_signals)
 
     # Build structured signal output
     signals = calculate_signal_counts(vmware_ops, nsx_ops, rest_calls)
+    signals["risk_signals"] = len(risk_signals)
+
     confidence = calculate_overall_confidence(vmware_ops, nsx_ops, rest_calls)
     evidence = build_evidence_array(vmware_ops, nsx_ops, rest_calls)
+
+    # Check if there are any actual detections (not just empty category dicts)
+    has_vmware = any(len(ops) > 0 for ops in vmware_ops.values())
+    has_nsx = any(len(ops) > 0 for ops in nsx_ops.values())
+    has_rest = len(rest_calls) > 0
+    has_risk = len(risk_signals) > 0
 
     result = {
         "source_file": str(script_file),
@@ -676,8 +851,9 @@ def analyze_powercli_script(script_file: Path) -> dict[str, Any]:
         "vmware_operations": vmware_ops,
         "nsx_operations": nsx_ops,
         "rest_api_calls": rest_calls,
+        "risk_signals": risk_signals,
         "complexity_score": complexity,
-        "has_external_dependencies": bool(vmware_ops or nsx_ops or rest_calls),
+        "has_external_dependencies": has_vmware or has_nsx or has_rest or has_risk,
     }
 
     return result
