@@ -44,6 +44,15 @@
                 <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-implementation" data-tab="implementation">
                     Implementation
                 </button>
+                <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-decisions" data-tab="decisions">
+                    Decision Interview
+                    {% if gaps and gaps.components %}
+                    {% set decision_needed_count = (gaps.components | selectattr('level', 'in', ['BLOCKED', 'PARTIAL']) | list | length) %}
+                    {% if decision_needed_count > 0 %}
+                    <span class="tab-badge tab-badge-warning">{{ decision_needed_count }}</span>
+                    {% endif %}
+                    {% endif %}
+                </button>
             </div>
         </div>
     </nav>
@@ -1519,6 +1528,408 @@
 
         </div>
         <!-- End Implementation Tab -->
+
+        <!-- Decision Interview Tab -->
+        <div id="tab-decisions" class="tab-panel" role="tabpanel" aria-labelledby="tab-decisions">
+
+    <!-- Overview Panel -->
+    <section class="decision-overview-section">
+        <div class="container">
+            <h2>🧠 Decision Interview</h2>
+            <p class="section-subtitle">Convert ambiguous or BLOCKED/PARTIAL findings into explicit, versioned decisions</p>
+
+            {% if gaps and gaps.components %}
+            {% set blocked_components = gaps.components | selectattr('level', 'equalto', 'BLOCKED') | list %}
+            {% set partial_components = gaps.components | selectattr('level', 'equalto', 'PARTIAL') | list %}
+            {% set decision_needed = blocked_components + partial_components %}
+
+            {% if decision_needed %}
+            <div class="decision-summary-cards">
+                <div class="decision-summary-card">
+                    <div class="summary-icon">📋</div>
+                    <div class="summary-content">
+                        <div class="summary-number">{{ decision_needed | length }}</div>
+                        <div class="summary-label">Components Need Decisions</div>
+                    </div>
+                </div>
+                <div class="decision-summary-card">
+                    <div class="summary-icon">⏱️</div>
+                    <div class="summary-content">
+                        <div class="summary-number">~15min</div>
+                        <div class="summary-label">Estimated Time</div>
+                    </div>
+                </div>
+                <div class="decision-summary-card">
+                    <div class="summary-icon">🎯</div>
+                    <div class="summary-content">
+                        <div class="summary-number">{{ blocked_components | length }}</div>
+                        <div class="summary-label">BLOCKED Components</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="decision-intro">
+                <p>
+                    <strong>Why decisions are needed:</strong> These components require enterprise-specific design choices
+                    (label taxonomy, network policies, approval workflows) that cannot be automatically inferred.
+                    Answering these questions will move components from BLOCKED/PARTIAL to Ready.
+                </p>
+                <p>
+                    <strong>What happens next:</strong> Your answers are saved to <code>workspace/.ops-translate/decisions.yaml</code>
+                    and used to update classifications and re-generate artifacts when you click "Save & Re-run".
+                </p>
+            </div>
+            {% else %}
+            <div class="alert alert-success">
+                <strong>✅ No decisions needed!</strong> All components have sufficient information for translation.
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="alert alert-info">
+                <strong>ℹ️ No gaps data available.</strong> Run analysis first to identify decision points.
+            </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- Question Packs (Only show if decisions needed) -->
+    {% if gaps and gaps.components %}
+    {% set blocked_components = gaps.components | selectattr('level', 'equalto', 'BLOCKED') | list %}
+    {% set partial_components = gaps.components | selectattr('level', 'equalto', 'PARTIAL') | list %}
+    {% set decision_needed = blocked_components + partial_components %}
+
+    {% if decision_needed %}
+    <section class="question-packs-section">
+        <div class="container">
+            <h3>Decision Packs</h3>
+            <p class="section-subtitle">Answer questions by domain to provide missing context</p>
+
+            <div class="question-packs">
+                <!-- Security Pack: NSX Groups → Label Taxonomy -->
+                {% set has_nsx_groups = namespace(found=false) %}
+                {% for comp in gaps.components %}
+                    {% if 'nsx' in comp.component_type.lower() and 'group' in comp.component_type.lower() %}
+                        {% set has_nsx_groups.found = true %}
+                    {% elif 'security' in comp.component_type.lower() and 'group' in comp.component_type.lower() %}
+                        {% set has_nsx_groups.found = true %}
+                    {% endif %}
+                {% endfor %}
+                {% if has_nsx_groups.found %}
+                <details class="question-pack" data-pack="security-labels">
+                    <summary class="pack-header">
+                        <div class="pack-icon">🔒</div>
+                        <div class="pack-info">
+                            <h4>Security: NSX Groups → Kubernetes Labels</h4>
+                            <p>Define label taxonomy for security group membership</p>
+                        </div>
+                        <div class="pack-badge">4 questions</div>
+                    </summary>
+                    <div class="pack-content">
+                        <div class="pack-why">
+                            <strong>Why these decisions are required:</strong>
+                            <p>NSX security groups use VM tags and membership rules. Kubernetes NetworkPolicy uses label selectors.
+                            You must define the label key taxonomy and mapping rules.</p>
+                        </div>
+
+                        <div class="question-form">
+                            <div class="form-question">
+                                <label for="q-label-key">1. What label keys should represent segmentation?</label>
+                                <p class="question-help">Common choices: security.zone, app.tier, env, network.segment</p>
+                                <input type="text" id="q-label-key" name="security.label_key" placeholder="e.g., security.zone" class="form-input">
+                            </div>
+
+                            <div class="form-question">
+                                <label for="q-namespace-model">2. Namespace scope model:</label>
+                                <select id="q-namespace-model" name="security.namespace_model" class="form-select">
+                                    <option value="">-- Select --</option>
+                                    <option value="single">Single namespace for all VMs</option>
+                                    <option value="per-app">Per-application namespaces</option>
+                                    <option value="per-env">Per-environment namespaces</option>
+                                    <option value="per-tier">Per-tier namespaces (frontend, backend, data)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-question">
+                                <label for="q-policy-stance">3. Default NetworkPolicy stance:</label>
+                                <select id="q-policy-stance" name="security.default_policy" class="form-select">
+                                    <option value="">-- Select --</option>
+                                    <option value="deny">Deny-by-default (recommended for production)</option>
+                                    <option value="allow">Allow-by-default (easier for development)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-question">
+                                <label for="q-group-mapping">4. NSX group membership mapping:</label>
+                                <p class="question-help">How should NSX group rules map to label selectors?</p>
+                                <textarea id="q-group-mapping" name="security.group_mapping" rows="4" class="form-textarea" placeholder="Example:&#10;NSX-Group-Web -> app.tier: web&#10;NSX-Group-DB -> app.tier: database"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="pack-preview">
+                            <strong>📄 Preview impact:</strong>
+                            <p>Answering these questions will generate NetworkPolicy templates with proper label selectors
+                            and move NSX security group components from BLOCKED to PARTIAL/READY.</p>
+                        </div>
+                    </div>
+                </details>
+                {% endif %}
+
+                <!-- Security Pack: NSX Firewall → NetworkPolicy -->
+                {% set has_nsx_firewall = namespace(found=false) %}
+                {% for comp in gaps.components %}
+                    {% if 'firewall' in comp.component_type.lower() %}
+                        {% set has_nsx_firewall.found = true %}
+                    {% endif %}
+                {% endfor %}
+                {% if has_nsx_firewall.found %}
+                <details class="question-pack" data-pack="security-firewall">
+                    <summary class="pack-header">
+                        <div class="pack-icon">🛡️</div>
+                        <div class="pack-info">
+                            <h4>Security: NSX Firewall → NetworkPolicy</h4>
+                            <p>Define network policy strategy and controls</p>
+                        </div>
+                        <div class="pack-badge">4 questions</div>
+                    </summary>
+                    <div class="pack-content">
+                        <div class="pack-why">
+                            <strong>Why these decisions are required:</strong>
+                            <p>NSX distributed firewall rules need to be translated to Kubernetes NetworkPolicy.
+                            You must define the policy approach and feature requirements.</p>
+                        </div>
+
+                        <div class="question-form">
+                            <div class="form-question">
+                                <label for="q-l7-features">1. Are L7/stateful firewall features in use?</label>
+                                <select id="q-l7-features" name="firewall.l7_features" class="form-select">
+                                    <option value="">-- Select --</option>
+                                    <option value="no">No - Only L3/L4 rules (port/protocol)</option>
+                                    <option value="yes">Yes - Using L7 application rules</option>
+                                    <option value="unknown">Unknown - Need to audit firewall rules</option>
+                                </select>
+                            </div>
+
+                            <div class="form-question">
+                                <label for="q-calico">2. Is Calico available for GlobalNetworkPolicy?</label>
+                                <p class="question-help">Calico provides advanced features beyond standard Kubernetes NetworkPolicy</p>
+                                <select id="q-calico" name="firewall.calico_available" class="form-select">
+                                    <option value="">-- Select --</option>
+                                    <option value="yes">Yes - Calico is available</option>
+                                    <option value="no">No - Use standard NetworkPolicy only</option>
+                                    <option value="planned">Planned - Will install Calico</option>
+                                </select>
+                            </div>
+
+                            <div class="form-question">
+                                <label for="q-egress-model">3. Egress control model:</label>
+                                <select id="q-egress-model" name="firewall.egress_model" class="form-select">
+                                    <option value="">-- Select --</option>
+                                    <option value="netpol">NetworkPolicy egress rules only</option>
+                                    <option value="egressfirewall">OpenShift EgressFirewall (recommended for OpenShift)</option>
+                                    <option value="calico">Calico GlobalNetworkPolicy</option>
+                                    <option value="none">No egress controls needed</option>
+                                </select>
+                            </div>
+
+                            <div class="form-question">
+                                <label for="q-allowed-destinations">4. Allowed external destinations:</label>
+                                <p class="question-help">List of external services/IPs that VMs need to reach (CIDR or FQDN)</p>
+                                <textarea id="q-allowed-destinations" name="firewall.allowed_destinations" rows="4" class="form-textarea" placeholder="Example:&#10;10.0.0.0/8 (Internal network)&#10;registry.redhat.io (Container registry)&#10;api.company.com (Company API)"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="pack-preview">
+                            <strong>📄 Preview impact:</strong>
+                            <p>Answering these questions will generate appropriate NetworkPolicy or EgressFirewall manifests
+                            and document any feature gaps between NSX and Kubernetes networking.</p>
+                        </div>
+                    </div>
+                </details>
+                {% endif %}
+
+                <!-- Governance Pack: Approval Workflows -->
+                {% set has_approvals = namespace(found=false) %}
+                {% for comp in gaps.components %}
+                    {% if 'approval' in comp.component_type.lower() %}
+                        {% set has_approvals.found = true %}
+                    {% endif %}
+                {% endfor %}
+                {% if has_approvals.found %}
+                <details class="question-pack" data-pack="governance-approvals">
+                    <summary class="pack-header">
+                        <div class="pack-icon">✅</div>
+                        <div class="pack-info">
+                            <h4>Governance: Approval Workflows</h4>
+                            <p>Configure approval gates and notification patterns</p>
+                        </div>
+                        <div class="pack-badge">4 questions</div>
+                    </summary>
+                    <div class="pack-content">
+                        <div class="pack-why">
+                            <strong>Why these decisions are required:</strong>
+                            <p>vRealize Orchestrator approval workflows need to be translated to Ansible Automation Platform
+                            approval nodes or external ITSM integrations.</p>
+                        </div>
+
+                        <div class="question-form">
+                            <div class="form-question">
+                                <label for="q-approval-system">1. Approval system of record:</label>
+                                <select id="q-approval-system" name="governance.approval_system" class="form-select">
+                                    <option value="">-- Select --</option>
+                                    <option value="aap">AAP approval nodes (native)</option>
+                                    <option value="servicenow">ServiceNow ITSM integration</option>
+                                    <option value="jira">Jira Service Management</option>
+                                    <option value="email">Email-based approval</option>
+                                    <option value="manual">Manual approval outside automation</option>
+                                </select>
+                            </div>
+
+                            <div class="form-question">
+                                <label for="q-approver-source">2. Approver identity source:</label>
+                                <p class="question-help">How are approvers identified?</p>
+                                <input type="text" id="q-approver-source" name="governance.approver_source" placeholder="e.g., LDAP group, email list, AAP team" class="form-input">
+                            </div>
+
+                            <div class="form-question">
+                                <label for="q-approval-timeout">3. Approval timeout (minutes):</label>
+                                <p class="question-help">How long to wait before timeout/escalation?</p>
+                                <input type="number" id="q-approval-timeout" name="governance.timeout_minutes" placeholder="60" min="1" max="10080" class="form-input">
+                            </div>
+
+                            <div class="form-question">
+                                <label for="q-notification-channels">4. Notification channels:</label>
+                                <p class="question-help">How should approvers be notified?</p>
+                                <div class="checkbox-group">
+                                    <label><input type="checkbox" name="governance.notify_email" value="true"> Email</label>
+                                    <label><input type="checkbox" name="governance.notify_slack" value="true"> Slack</label>
+                                    <label><input type="checkbox" name="governance.notify_teams" value="true"> Microsoft Teams</label>
+                                    <label><input type="checkbox" name="governance.notify_webhook" value="true"> Custom Webhook</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pack-preview">
+                            <strong>📄 Preview impact:</strong>
+                            <p>Answering these questions will generate AAP workflow configuration with approval nodes
+                            or ITSM integration stubs, moving approval components from BLOCKED to READY.</p>
+                        </div>
+                    </div>
+                </details>
+                {% endif %}
+
+                <!-- Networking Pack: Multi-NIC / Multus -->
+                {% set has_multinic = namespace(found=false) %}
+                {% for comp in gaps.components %}
+                    {% if 'network' in comp.component_type.lower() or 'nic' in comp.component_type.lower() %}
+                        {% set has_multinic.found = true %}
+                    {% endif %}
+                {% endfor %}
+                {% if has_multinic.found %}
+                <details class="question-pack" data-pack="networking-multus">
+                    <summary class="pack-header">
+                        <div class="pack-icon">🌐</div>
+                        <div class="pack-info">
+                            <h4>Networking: Multi-NIC / Multus Strategy</h4>
+                            <p>Define network attachment and VLAN mapping</p>
+                        </div>
+                        <div class="pack-badge">4 questions</div>
+                    </summary>
+                    <div class="pack-content">
+                        <div class="pack-why">
+                            <strong>Why these decisions are required:</strong>
+                            <p>VMs with multiple network adapters need NetworkAttachmentDefinition (NAD) configuration.
+                            You must define the network mapping strategy.</p>
+                        </div>
+
+                        <div class="question-form">
+                            <div class="form-question">
+                                <label for="q-multinic-strategy">1. Multi-NIC strategy:</label>
+                                <select id="q-multinic-strategy" name="networking.multinic_strategy" class="form-select">
+                                    <option value="">-- Select --</option>
+                                    <option value="retain">Retain multi-NIC with Multus CNI</option>
+                                    <option value="collapse">Collapse to single pod network</option>
+                                    <option value="selective">Selective - some VMs multi-NIC, some single</option>
+                                </select>
+                            </div>
+
+                            <div class="form-question">
+                                <label for="q-nad-naming">2. NetworkAttachmentDefinition naming convention:</label>
+                                <p class="question-help">How should NADs be named?</p>
+                                <input type="text" id="q-nad-naming" name="networking.nad_naming" placeholder="e.g., {vlan-id}-network, {portgroup-name}" class="form-input">
+                            </div>
+
+                            <div class="form-question">
+                                <label for="q-attachment-selection">3. Network attachment selection rules:</label>
+                                <select id="q-attachment-selection" name="networking.attachment_rules" class="form-select">
+                                    <option value="">-- Select --</option>
+                                    <option value="env">Environment-based (dev/prod networks)</option>
+                                    <option value="tier">Tier-based (frontend/backend/data networks)</option>
+                                    <option value="static">Static mapping per VM</option>
+                                    <option value="vlan">VLAN-based mapping</option>
+                                </select>
+                            </div>
+
+                            <div class="form-question">
+                                <label for="q-vlan-mapping">4. VLAN/PortGroup mapping:</label>
+                                <p class="question-help">Map VMware PortGroups to OpenShift networks</p>
+                                <textarea id="q-vlan-mapping" name="networking.vlan_mapping" rows="4" class="form-textarea" placeholder="Example:&#10;VM Network -> pod-network&#10;VLAN-100-Prod -> vlan-100-prod&#10;DMZ-Network -> dmz-nad"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="pack-preview">
+                            <strong>📄 Preview impact:</strong>
+                            <p>Answering these questions will generate NetworkAttachmentDefinition manifests
+                            and VM network attachment configurations, moving network components from PARTIAL to READY.</p>
+                        </div>
+                    </div>
+                </details>
+                {% endif %}
+
+                <!-- If no question packs are applicable -->
+                {% if not (has_nsx_groups.found or has_nsx_firewall.found or has_approvals.found or has_multinic.found) %}
+                <div class="alert alert-info">
+                    <strong>ℹ️ No specific question packs available.</strong>
+                    <p>The current gaps don't match known decision pack patterns. Components may require manual review or custom configuration.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Save & Re-run Section -->
+    <section class="decision-actions-section">
+        <div class="container">
+            <div class="actions-box">
+                <h3>💾 Save Decisions & Re-generate</h3>
+                <p>Your answers will be saved to <code>workspace/.ops-translate/decisions.yaml</code> and used to update component classifications.</p>
+
+                <div class="action-buttons">
+                    <button id="save-decisions-btn" class="btn btn-primary">
+                        💾 Save Decisions
+                    </button>
+                    <button id="rerun-translate-btn" class="btn btn-secondary" disabled>
+                        🔄 Re-run Translation
+                    </button>
+                </div>
+
+                <div id="decision-save-status" class="save-status hidden"></div>
+
+                <div class="action-notes">
+                    <p><strong>Note:</strong> These actions require CLI commands to execute:</p>
+                    <ul>
+                        <li><strong>Save Decisions:</strong> Exports answers to YAML file for review</li>
+                        <li><strong>Re-run Translation:</strong> Runs <code>ops-translate analyze</code> with saved decisions</li>
+                    </ul>
+                    <p>No automatic execution - all actions require explicit user commands in the workspace directory.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+    {% endif %}
+
+        </div>
+        <!-- End Decision Interview Tab -->
 
     </div>
     <!-- End Tab Panels -->
