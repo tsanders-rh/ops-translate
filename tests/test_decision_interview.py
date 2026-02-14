@@ -6,9 +6,7 @@ and classification updates.
 """
 
 import json
-from pathlib import Path
 
-import pytest
 import yaml
 
 from ops_translate.decisions import DecisionManager
