@@ -1328,13 +1328,9 @@ def analyze(
                     f"(use --force to re-analyze)[/dim]"
                 )
             if changed_files:
-                console.print(
-                    f"[cyan]Analyzing {len(changed_files)} changed workflow(s)[/cyan]\n"
-                )
+                console.print(f"[cyan]Analyzing {len(changed_files)} changed workflow(s)[/cyan]\n")
             else:
-                console.print(
-                    "[green]All workflows up-to-date (no changes detected)[/green]\n"
-                )
+                console.print("[green]All workflows up-to-date (no changes detected)[/green]\n")
     else:
         console.print("[dim]Cache disabled[/dim]\n")
 
