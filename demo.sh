@@ -148,7 +148,7 @@ echo -e "${MAGENTA}but it will save you weeks of analysis and give you a clear p
 echo ""
 wait_medium
 echo -e "${BOLD}${CYAN}What we'll demo:${NC}"
-echo -e "  • Initialize workspace and import vRealize workflows"
+echo -e "  • Initialize workspace and import vRealize workflows + PowerCLI scripts"
 echo -e "  • Analyze for gaps (pattern matching, no AI required)"
 echo -e "  • Generate HTML reports for stakeholders"
 echo -e "  • Extract operational intent with AI"
@@ -179,14 +179,24 @@ else
 fi
 press_enter
 
-print_narration "Import realistic workflow with NSX networking components"
+print_narration "Import vRealize workflow with NSX networking components"
 wait_short
 run_command "$OPS_CMD import --source vrealize --file ../examples/virt-first-realworld/vrealize/provision-vm-with-nsx-firewall.workflow.xml"
 wait_short
 
-print_narration "Import web application workflow with NSX load balancer"
+print_narration "Import vRealize workflow for web app with NSX load balancer"
 wait_short
 run_command "$OPS_CMD import --source vrealize --file ../examples/virt-first-realworld/vrealize/provision-web-app-with-nsx-lb.workflow.xml"
+wait_short
+
+print_narration "Import PowerCLI script for standard VM provisioning"
+wait_short
+run_command "$OPS_CMD import --source powercli --file ../examples/virt-first-realworld/powercli/New-StandardVM.ps1"
+wait_short
+
+print_narration "Import PowerCLI script for web tier provisioning"
+wait_short
+run_command "$OPS_CMD import --source powercli --file ../examples/virt-first-realworld/powercli/Provision-WebTier.ps1"
 press_enter
 
 # ============================================================================
@@ -234,9 +244,9 @@ wait_short
 run_command "$OPS_CMD analyze"
 wait_medium
 
-print_narration "Now let's modify one workflow to trigger re-analysis:"
+print_narration "Now let's modify one file to trigger re-analysis:"
 wait_short
-run_command "touch input/vrealize/provision-vm-with-nsx-firewall.workflow.xml"
+run_command "touch input/powercli/New-StandardVM.ps1"
 wait_short
 
 print_narration "Run analyze again - only changed file is processed:"
@@ -400,7 +410,7 @@ print_header "Demo Complete!"
 echo ""
 echo -e "${BOLD}${CYAN}Complete Workflow Demonstrated:${NC}"
 echo -e "${BOLD}${GREEN}✓ 1. Initialize${NC} workspace with organized structure"
-echo -e "${BOLD}${GREEN}✓ 2. Import${NC} realistic vRealize workflows with NSX components"
+echo -e "${BOLD}${GREEN}✓ 2. Import${NC} vRealize workflows + PowerCLI scripts with NSX components"
 echo -e "${BOLD}${GREEN}✓ 3. Analyze${NC} for gaps (SUPPORTED/PARTIAL/BLOCKED classification)"
 echo -e "${BOLD}${GREEN}✓ 4. Incremental analysis${NC} with caching (70-90% faster)"
 echo -e "${BOLD}${GREEN}✓ 5. HTML reports${NC} for stakeholders and decision makers"
@@ -417,10 +427,16 @@ echo -e "  • ${BOLD}Architecture Patterns${NC} = your migration playbook"
 echo -e "  • ${BOLD}Linting${NC} = code quality built-in"
 echo ""
 echo -e "${BOLD}${CYAN}What was analyzed:${NC}"
-echo -e "  • provision-vm-with-nsx-firewall.workflow.xml - VM with NSX Security Groups"
-echo -e "  • provision-web-app-with-nsx-lb.workflow.xml - Web app with NSX Load Balancer"
-echo -e "  → Gap analysis identified BLOCKED NSX components"
-echo -e "  → Architecture Patterns provide migration guidance"
+echo -e "  ${BOLD}vRealize Workflows:${NC}"
+echo -e "    • provision-vm-with-nsx-firewall.workflow.xml - VM with NSX Security Groups"
+echo -e "    • provision-web-app-with-nsx-lb.workflow.xml - Web app with NSX Load Balancer"
+echo -e "  ${BOLD}PowerCLI Scripts:${NC}"
+echo -e "    • New-StandardVM.ps1 - Standard VM provisioning (conflicts with vRealize)"
+echo -e "    • Provision-WebTier.ps1 - Web tier with manual NSX steps"
+echo -e "  ${BOLD}Results:${NC}"
+echo -e "    → Gap analysis identified BLOCKED NSX components"
+echo -e "    → Detected conflicts between vRealize and PowerCLI approaches"
+echo -e "    → Architecture Patterns provide migration guidance"
 echo ""
 echo -e "${BOLD}${MAGENTA}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${BOLD}${MAGENTA}  You don't start with rewriting automation.${NC}"
