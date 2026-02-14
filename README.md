@@ -10,7 +10,47 @@
 
 Stop manually rewriting your PowerCLI scripts and vRealize workflows. Let AI extract operational intent and generate production-ready Ansible + KubeVirt artifacts — safely, transparently, and locally.
 
-## What It Does
+---
+
+## 🚀 Quick Links
+
+- [Try It Now](#-quick-start) - Get started in 5 minutes
+- [View Sample Report](examples/sample-report/) - See what ops-translate generates
+- [Documentation](docs/TUTORIAL.md) - Step-by-step tutorial
+- [Examples](examples/) - Real-world PowerCLI & vRealize samples
+
+---
+
+## 📌 Project Status
+
+**v1 Prototype** - Demonstrating core workflow. Not for production use.
+
+Built for ops and infra engineers evaluating migration paths from VMware to OpenShift Virtualization.
+
+---
+
+## Table of Contents
+
+- [What It Does](#-what-it-does)
+- [What You Get](#-what-you-get)
+- [Quick Start](#-quick-start)
+- [See It In Action](#-see-it-in-action)
+- [Why ops-translate?](#-why-ops-translate)
+- [How is ops-translate Different?](#how-is-ops-translate-different)
+- [Key Features](#-key-features)
+- [When Do You Need an LLM?](#when-do-you-need-an-llm)
+- [Advanced Features](#-advanced-features)
+- [Example Output](#example-output)
+- [Configuration](#-configuration)
+- [Installation](#-installation)
+- [Documentation](#-documentation)
+- [Development](#development)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
+## ⚡ What It Does
 
 `ops-translate` bridges the gap between VMware automation and cloud-native infrastructure:
 
@@ -19,24 +59,33 @@ Stop manually rewriting your PowerCLI scripts and vRealize workflows. Let AI ext
 3. **Merge** multiple sources into a single unified intent
 4. **Generate** Ansible playbooks and KubeVirt manifests ready for OpenShift
 
-All processing happens locally. No execution by default. Full transparency at every step.
+> 💡 All processing happens locally. No execution by default. Full transparency at every step.
 
-## Quick Start
+---
 
-### Try with Example Scripts
+## 📦 What You Get
+
+After running ops-translate, you'll have:
+
+✅ **Migration Readiness Report** - Interactive HTML with classification, gaps, and recommendations
+✅ **KubeVirt Manifests** - Ready-to-deploy VirtualMachine YAML
+✅ **Ansible Playbooks** - Executable roles with TODO placeholders for manual work
+✅ **Gap Analysis** - Detailed migration paths for each component
+✅ **Decision Guidance** - Interactive questionnaire for missing context
+
+All generated artifacts are customizable via Jinja2 templates.
+
+---
+
+## 🏃 Quick Start
+
+**First time?** See [Installation](#-installation) for setup instructions.
+
+### Option 1: Try with Examples (Fastest)
 
 ```bash
-# Install from source
-git clone https://github.com/tsanders-rh/ops-translate.git
+# Assuming you've completed installation
 cd ops-translate
-
-# Create and activate virtual environment
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies and package
-pip install -r requirements.txt
-pip install -e .
 
 # Initialize workspace
 ops-translate init demo && cd demo
@@ -68,42 +117,11 @@ ops-translate generate --profile lab --eda-only      # Generate only EDA ruleboo
 tree output/
 ```
 
-**Preview the report**: See a [sample HTML report](examples/sample-report/) generated from real-world examples to understand what ops-translate produces.
+**Preview the report**: See a [sample HTML report](examples/sample-report/) generated from real-world examples.
 
 See [examples/](examples/) for more sample PowerCLI scripts and vRealize workflows.
 
-## Interactive HTML Report
-
-The `ops-translate report` command generates a comprehensive, interactive HTML report that provides migration readiness assessment and expert recommendations.
-
-### Executive Summary
-Get an at-a-glance view of your migration status with classification breakdowns and key metrics.
-
-![Executive Summary](media/screenshots/executive-summary.png)
-
-### Classification & Filtering
-Interactive cards let you filter components by translation status (SUPPORTED, PARTIAL, BLOCKED, MANUAL).
-
-![Classification Cards](media/screenshots/classification-cards.png)
-
-### Decision Interview
-Provide missing context for BLOCKED/PARTIAL components through an interactive questionnaire. Your decisions automatically upgrade component classifications.
-
-![Decision Interview](media/screenshots/decision-interview-overview.png)
-
-### Gap Analysis
-Detailed component-by-component breakdown with migration paths and OpenShift equivalents.
-
-![Gap Analysis](media/screenshots/gap-analysis.png)
-
-**Interactive Features:**
-- 🎯 Filter by classification level
-- 📊 4-tab progressive disclosure (Executive → Architecture → Implementation → Decisions)
-- ✅ Export to PDF or CSV
-- 🧠 Decision Interview for gathering missing context
-- 📋 Embedded expert recommendations
-
-### Using Your Own Scripts
+### Option 2: Use Your Own Scripts
 
 ```bash
 # Initialize workspace (optionally with custom templates)
@@ -133,13 +151,86 @@ ops-translate generate --profile prod --format argocd   # ArgoCD Applications
 
 **Result**: Ansible roles, KubeVirt VM manifests, and a clear migration path in your choice of format.
 
-## Why ops-translate?
+---
+
+## 📊 See It In Action
+
+**Key differentiator**: ops-translate generates a comprehensive migration readiness report that goes beyond simple "yes/no" translatability assessments.
+
+### Interactive HTML Report
+
+The `ops-translate report` command generates an interactive dashboard with:
+
+#### Executive Summary
+Get an at-a-glance view of your migration status with classification breakdowns and key metrics.
+
+![Executive Summary](media/screenshots/executive-summary.png)
+
+#### Classification & Filtering
+Interactive cards let you filter components by translation status (SUPPORTED, PARTIAL, BLOCKED, MANUAL).
+
+![Classification Cards](media/screenshots/classification-cards.png)
+
+#### Decision Interview
+Provide missing context for BLOCKED/PARTIAL components through an interactive questionnaire. Your decisions automatically upgrade component classifications.
+
+![Decision Interview](media/screenshots/decision-interview-overview.png)
+
+#### Gap Analysis
+Detailed component-by-component breakdown with migration paths and OpenShift equivalents.
+
+![Gap Analysis](media/screenshots/gap-analysis.png)
+
+**Interactive Features:**
+- 🎯 Filter by classification level
+- 📊 4-tab progressive disclosure (Executive → Architecture → Implementation → Decisions)
+- ✅ Export to PDF or CSV
+- 🧠 Decision Interview for gathering missing context
+- 📋 Embedded expert recommendations
+
+---
+
+## 🎯 Why ops-translate?
 
 - **Safe by design**: Read-only operations, no live system access in v1
 - **Transparent**: Every assumption and inference is logged
 - **Flexible**: Supports AI-assisted or template-based generation (`--no-ai`)
 - **Conflict detection**: Identifies incompatibilities between source automations
 - **Day 2 aware**: Captures operational patterns beyond just provisioning
+
+---
+
+## How is ops-translate Different?
+
+| Feature | Manual Migration | MTV Only | ops-translate |
+|---------|-----------------|----------|---------------|
+| VM Migration | Manual rebuild | ✅ Automated | ✅ Automated |
+| Automation Translation | ❌ Manual rewrite | ❌ Not included | ✅ AI-assisted |
+| Gap Analysis | ❌ None | ❌ Basic | ✅ Comprehensive |
+| Decision Support | ❌ None | ❌ None | ✅ Interactive Interview |
+| Custom Templates | ❌ | ❌ | ✅ Jinja2-based |
+| Output Formats | YAML only | YAML only | YAML, JSON, Kustomize, ArgoCD |
+
+---
+
+## ⭐ Key Features
+
+- Parse PowerCLI parameters, environment branching, and resource profiles
+- Extract vRealize workflow logic including approvals and governance
+- **Interactive Decision Interview** - Answer questions to provide missing context and upgrade component classifications
+- **Automatic gap analysis for vRealize workflows** - Detects NSX operations, custom plugins, and REST calls
+- **Translatability assessment** - Classifies components as SUPPORTED, PARTIAL, BLOCKED, or MANUAL
+- **Migration path guidance** - Provides specific recommendations with production-grade patterns
+- **Smart Ansible scaffolding** - Generates TODO tasks and role stubs for manual work
+- **MTV (Migration Toolkit for Virtualization) support** - Generate validation playbooks for already-migrated VMs
+- **Event-Driven Ansible (EDA) rulebook generation** - Translate vRO event subscriptions to preserve reactive automation patterns
+- Detect conflicts during intent merge (different approval requirements, network mappings, etc.)
+- Generate KubeVirt VirtualMachine manifests
+- Generate Ansible roles with proper structure and defaults
+- Support multiple LLM providers (OpenAI, Anthropic, or mock for testing)
+- Multiple output formats (YAML, JSON, Kustomize, ArgoCD)
+
+---
 
 ## When Do You Need an LLM?
 
@@ -151,6 +242,7 @@ ops-translate generate --profile prod --format argocd   # ArgoCD Applications
 - **Why**: Understands semantic meaning of imperative code
 - **Alternative**: Write intent.yaml files manually (see [INTENT_SCHEMA.md](docs/INTENT_SCHEMA.md))
 - **Options**: OpenAI, Anthropic, or mock provider (for testing)
+- **Cost**: Typically $0.01-0.10 per file for extraction
 
 ### No LLM Needed ❌ (Everything Else)
 
@@ -161,13 +253,16 @@ All other commands are **deterministic** and **LLM-free**:
 - `ops-translate dry-run` - Schema validation
 - `ops-translate generate` - Template-based (Jinja2) + Direct translation
 
-**Visual breakdown - Two Translation Paths:**
+### Two Translation Paths
+
+**PATH 1: Direct Translation** (Common Patterns - No LLM)
 ```
-PATH 1: Direct Translation (Common Patterns - No LLM)
 PowerCLI/vRealize  ──[Parser]──>  Statements  ──[Mappings]──>  Ansible Tasks
    (New-VM, etc.)    NO AI         (categorized)   NO AI          (kubevirt_vm)
+```
 
-PATH 2: Intent Extraction (Complex Scenarios - LLM Optional)
+**PATH 2: Intent Extraction** (Complex Scenarios - LLM Optional)
+```
 PowerCLI/vRealize  ──[LLM]──>  intent.yaml  ──[Templates]──>  Ansible + KubeVirt
    (custom logic)    NEEDS AI    (normalized)   NO AI NEEDED    (cloud-native)
 ```
@@ -178,42 +273,24 @@ PowerCLI/vRealize  ──[LLM]──>  intent.yaml  ──[Templates]──>  An
 
 ### Three Modes
 
-1. **AI-Assisted Extraction** (Recommended)
-   - Use LLM for extraction, templates for generation
-   - Best accuracy for complex scripts
-
-2. **Manual Intent Creation** (No LLM Required)
-   - Write intent.yaml files yourself
-   - 100% deterministic, works offline
-
-3. **Mock Provider** (Testing/Demo)
-   - No API key needed
-   - Uses predefined templates
-
-### Cost & Requirements
-
-- **Extraction**: One-time LLM cost per source file (typically $0.01-0.10 per file)
-- **Generation**: Free (template-based)
-- **Offline use**: Possible after initial extraction (or with manual intent files)
+1. **AI-Assisted Extraction** (Recommended) - Use LLM for extraction, templates for generation
+2. **Manual Intent Creation** (No LLM Required) - Write intent.yaml files yourself, 100% deterministic
+3. **Mock Provider** (Testing/Demo) - No API key needed, uses predefined templates
 
 **Bottom line**: LLM extracts *what* your automation does. Templates generate *how* to do it in OpenShift.
 
-## Key Features
+---
 
-- Parse PowerCLI parameters, environment branching, and resource profiles
-- Extract vRealize workflow logic including approvals and governance
-- **Automatic gap analysis for vRealize workflows** - Detects NSX operations, custom plugins, and REST calls
-- **Translatability assessment** - Classifies components as SUPPORTED, PARTIAL, EXPERT-GUIDED, or CUSTOM
-- **Migration path guidance** - Provides specific recommendations with production-grade patterns
-- **Smart Ansible scaffolding** - Generates TODO tasks and role stubs for manual work
-- **MTV (Migration Toolkit for Virtualization) support** - Generate validation playbooks for already-migrated VMs
-- **Event-Driven Ansible (EDA) rulebook generation** - Translate vRO event subscriptions to preserve reactive automation patterns
-- Detect conflicts during intent merge (different approval requirements, network mappings, etc.)
-- Generate KubeVirt VirtualMachine manifests
-- Generate Ansible roles with proper structure and defaults
-- Support multiple LLM providers (OpenAI, Anthropic, or mock for testing)
+## 🔧 Advanced Features
 
-## Advanced Features
+Quick navigation to advanced capabilities:
+
+- [Multiple Output Formats](#multiple-output-formats) - YAML, JSON, Kustomize, ArgoCD
+- [Template Customization](#template-customization) - Customize generated artifacts
+- [MTV Mode](#mtv-migration-toolkit-for-virtualization-mode) - Post-migration validation playbooks
+- [Dry-Run Validation](#enhanced-dry-run-validation) - Validate before execution
+- [vRealize Translation](#vrealize-workflow-translation-to-ansible) - Workflow to Ansible
+- [Gap Analysis](#automatic-gap-analysis-vrealize-workflows) - Migration readiness assessment
 
 ### Multiple Output Formats
 
@@ -535,14 +612,14 @@ Running gap analysis on vRealize workflows...
 
 3. **Smart scaffolding** - When you run `generate`, Ansible playbooks include:
    - **TODO tasks** for PARTIAL components (need configuration)
-   - **Role stubs** for EXPERT-GUIDED/CUSTOM components (need implementation)
+   - **Role stubs** for BLOCKED/MANUAL components (need implementation)
    - **Migration guidance** embedded as comments
 
 **Classification levels:**
 - ✅ **SUPPORTED** - Fully automatic translation to OpenShift-native
 - ⚠️ **PARTIAL** - Can translate with manual configuration needed
-- 🎯 **EXPERT-GUIDED** - Production-grade patterns available from Red Hat experts
-- 🔧 **CUSTOM** - Complex custom logic requiring specialist review
+- 🎯 **BLOCKED** - Needs decision input or expert guidance
+- 🔧 **MANUAL** - Complex custom logic requiring specialist review
 
 **Migration paths:**
 - **PATH_A**: OpenShift-native replacement available (e.g., NetworkPolicy for NSX firewall)
@@ -585,6 +662,8 @@ nsxClient.createFirewallRule() at line 45
 
 This gives you a clear migration roadmap before writing any code.
 
+---
+
 ## Example Output
 
 After running `ops-translate generate`, you'll have:
@@ -609,7 +688,9 @@ output/
 └── README.md                      # How to run the artifacts
 ```
 
-## Configuration
+---
+
+## ⚙️ Configuration
 
 The `ops-translate init` command automatically creates `ops-translate.yaml` with default settings. You can customize it for your environment.
 
@@ -750,19 +831,9 @@ ops-translate will:
 
 **Best Practice:** Set up template mappings before generating artifacts to ensure VMs can boot with the correct base images.
 
-## Non-Goals (v1)
+---
 
-This is a v1 prototype focused on demonstrating the translation workflow. Not included:
-
-- Live VMware/vCenter access
-- Full Ansible Automation Platform workflow import
-- Production-grade correctness guarantees
-
-**Note**: NSX operations are now detected and analyzed via gap analysis, providing migration guidance even though automatic conversion is not always possible.
-
-See [SPEC.md](SPEC.md) for complete design details.
-
-## Installation
+## 📥 Installation
 
 > **Note**: ops-translate is not yet published to PyPI. Install from source for now.
 
@@ -790,7 +861,9 @@ pip install -e .
 - pip and virtualenv (recommended)
 - Optional: OpenAI or Anthropic API key for AI-assisted extraction
 
-## Documentation
+---
+
+## 📚 Documentation
 
 ### Getting Started
 
@@ -842,20 +915,15 @@ pip install -e .
 
 ### Example Workflows
 
-The [examples/](examples/) directory contains ready-to-use samples:
+Explore real-world scenarios in [examples/](examples/):
 
-**PowerCLI Scripts:**
-- `simple-vm.ps1` - Basic VM provisioning
-- `environment-aware.ps1` - Environment branching (dev/prod)
-- `with-governance.ps1` - Governance policies and approvals
-- `multi-nic-storage.ps1` - Advanced networking and storage
+**PowerCLI**: [Basic VM](examples/powercli/simple-vm.ps1) • [Environment branching](examples/powercli/environment-aware.ps1) • [Governance](examples/powercli/with-governance.ps1) • [Multi-NIC](examples/powercli/multi-nic-storage.ps1)
 
-**vRealize Workflows:**
-- `simple-provision.workflow.xml` - Basic workflow
-- `environment-branching.workflow.xml` - Environment-based logic
-- `with-approval.workflow.xml` - Approval and governance
+**vRealize**: [Simple workflow](examples/vrealize/simple-provision.workflow.xml) • [Environment logic](examples/vrealize/environment-branching.workflow.xml) • [Approvals](examples/vrealize/with-approval.workflow.xml)
 
-See [examples/README.md](examples/README.md) for detailed usage instructions.
+📖 See [examples/README.md](examples/README.md) for usage instructions
+
+---
 
 ## Development
 
@@ -919,6 +987,8 @@ All PRs automatically run:
 - Type checking (mypy)
 - Coverage reporting
 
+---
+
 ## Contributing
 
 This is an early-stage prototype. Contributions welcome:
@@ -929,12 +999,22 @@ This is an early-stage prototype. Contributions welcome:
 - Add support for additional VMware automation patterns
 - Add tests for new features
 
+---
+
 ## License
 
 Apache-2.0 - See [LICENSE](LICENSE)
 
-## Project Status
+---
 
-**v1 Prototype** - Demonstrating core workflow. Not for production use.
+## Non-Goals (v1)
 
-Built for ops and infra engineers evaluating migration paths from VMware to OpenShift Virtualization.
+This is a v1 prototype focused on demonstrating the translation workflow. Not included:
+
+- Live VMware/vCenter access
+- Full Ansible Automation Platform workflow import
+- Production-grade correctness guarantees
+
+**Note**: NSX operations are now detected and analyzed via gap analysis, providing migration guidance even though automatic conversion is not always possible.
+
+See [SPEC.md](SPEC.md) for complete design details.
