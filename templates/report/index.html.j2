@@ -370,6 +370,13 @@
                             We provide production-grade patterns and expert guidance for this component.
                             {% endif %}
                         </p>
+                        {% if component.pattern_link %}
+                        <p class="pattern-link">
+                            <a href="docs/PATTERNS.html#{{ component.pattern_link.anchor }}" class="btn-pattern-link">
+                                📖 {{ component.pattern_link.description }}
+                            </a>
+                        </p>
+                        {% endif %}
                     </div>
                     {% endif %}
                 {% endfor %}

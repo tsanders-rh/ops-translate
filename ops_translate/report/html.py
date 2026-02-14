@@ -169,6 +169,14 @@ def build_report_context(workspace: Workspace, profile: str | None = None) -> di
     # Calculate effort metrics for executive dashboard
     effort_metrics = _calculate_effort_metrics(analysis_data, gaps_data)
 
+    # Enrich components with pattern links
+    if gaps_data and "components" in gaps_data:
+        for component in gaps_data["components"]:
+            pattern_link = get_pattern_link(
+                component.get("component_type", ""), component.get("name", "")
+            )
+            component["pattern_link"] = pattern_link
+
     # Use ContextBuilder to assemble final context
     builder = ReportContextBuilder()
     context = builder.build(
@@ -1102,3 +1110,92 @@ def convert_markdown_to_html(md_file: Path) -> str:
 </html>
 """
     return html_template
+
+
+def get_pattern_link(component_type: str, component_name: str) -> dict[str, str] | None:
+    """
+    Get pattern guide link for a component type.
+
+    Args:
+        component_type: Component type from gaps.json
+        component_name: Component name
+
+    Returns:
+        Dict with 'anchor' and 'description' keys, or None if no pattern applies
+    """
+    # Map component types to pattern guide anchors
+    pattern_mappings = {
+        # NSX Components
+        "nsx_security_groups": {
+            "anchor": "pattern-5-nsx-security-components",
+            "description": "NSX Security & Networking Alternatives",
+        },
+        "nsx_firewall_rules": {
+            "anchor": "pattern-5-nsx-security-components",
+            "description": "NSX Firewall Migration Patterns",
+        },
+        "nsx_distributed_firewall": {
+            "anchor": "pattern-5-nsx-security-components",
+            "description": "NSX Firewall Migration Patterns",
+        },
+        "nsx_load_balancers": {
+            "anchor": "pattern-5-nsx-security-components",
+            "description": "NSX Load Balancer Alternatives",
+        },
+        "nsx_segments": {
+            "anchor": "pattern-5-nsx-security-components",
+            "description": "NSX Networking Migration",
+        },
+        # Workflow patterns
+        "workflow_delay": {
+            "anchor": "pattern-1-long-running-stateful-workflows",
+            "description": "Long-Running Workflow Patterns",
+        },
+        "long_running_workflow": {
+            "anchor": "pattern-1-long-running-stateful-workflows",
+            "description": "Long-Running Workflow Patterns",
+        },
+        # Form patterns
+        "user_interaction": {
+            "anchor": "pattern-2-complex-interactive-forms",
+            "description": "Interactive Form Alternatives",
+        },
+        "approval": {
+            "anchor": "pattern-2-complex-interactive-forms",
+            "description": "Approval Workflow Patterns",
+        },
+        # Dynamic workflows
+        "dynamic_workflow": {
+            "anchor": "pattern-3-dynamic-workflow-generation",
+            "description": "Dynamic Workflow Patterns",
+        },
+        # State management
+        "workflow_state": {
+            "anchor": "pattern-4-state-management",
+            "description": "State Management Patterns",
+        },
+    }
+
+    # Try exact match first
+    if component_type in pattern_mappings:
+        return pattern_mappings[component_type]
+
+    # Try partial matches
+    component_type_lower = component_type.lower()
+    if "nsx" in component_type_lower:
+        return {
+            "anchor": "pattern-5-nsx-security-components",
+            "description": "NSX Migration Patterns",
+        }
+    elif "approval" in component_type_lower or "user_interaction" in component_type_lower:
+        return {
+            "anchor": "pattern-2-complex-interactive-forms",
+            "description": "Approval & Form Patterns",
+        }
+    elif "workflow" in component_type_lower and "state" in component_type_lower:
+        return {
+            "anchor": "pattern-4-state-management",
+            "description": "State Management Patterns",
+        }
+
+    return None
