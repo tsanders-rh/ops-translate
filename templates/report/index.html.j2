@@ -144,54 +144,6 @@
             </div>
             {% endif %}
 
-            <!-- Integration Heatmap -->
-            {% if effort_metrics.integration_heatmap %}
-            <div class="integration-heatmap-container">
-                <h3 class="subsection-title">Integration Complexity Matrix</h3>
-                <p class="heatmap-description">This matrix shows which workflows require which integrations, helping identify concentration areas and reusable adapter development.</p>
-                <div class="heatmap-scroll">
-                    <table class="integration-heatmap">
-                        <thead>
-                            <tr>
-                                <th class="workflow-col">Workflow</th>
-                                <th>Approval</th>
-                                <th>ITSM</th>
-                                <th>NSX</th>
-                                <th>DNS</th>
-                                <th>Storage</th>
-                                <th>AD</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for row in effort_metrics.integration_heatmap %}
-                            <tr>
-                                <td class="workflow-name">{{ row.workflow }}</td>
-                                <td class="{% if row.integrations.Approval %}cell-present{% else %}cell-none{% endif %}">
-                                    {% if row.integrations.Approval %}✓{% else %}-{% endif %}
-                                </td>
-                                <td class="{% if row.integrations.ITSM %}cell-present{% else %}cell-none{% endif %}">
-                                    {% if row.integrations.ITSM %}✓{% else %}-{% endif %}
-                                </td>
-                                <td class="{% if row.integrations.NSX %}cell-present{% else %}cell-none{% endif %}">
-                                    {% if row.integrations.NSX %}✓{% else %}-{% endif %}
-                                </td>
-                                <td class="{% if row.integrations.DNS %}cell-present{% else %}cell-none{% endif %}">
-                                    {% if row.integrations.DNS %}✓{% else %}-{% endif %}
-                                </td>
-                                <td class="{% if row.integrations.Storage %}cell-present{% else %}cell-none{% endif %}">
-                                    {% if row.integrations.Storage %}✓{% else %}-{% endif %}
-                                </td>
-                                <td class="{% if row.integrations.AD %}cell-present{% else %}cell-none{% endif %}">
-                                    {% if row.integrations.AD %}✓{% else %}-{% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            {% endif %}
-
             <!-- Sprint Planning Recommendations -->
             <div class="sprint-plan-container">
                 <h3 class="subsection-title">Recommended Migration Phases</h3>
@@ -285,28 +237,89 @@
         </div>
     </section>
 
-    <!-- How to Read This Report -->
-    <section class="reading-guide-section">
+    <!-- Architectural Decisions Required -->
+    {% if gaps_data and gaps_data.components %}
+    {% set blocked_components = gaps_data.components | selectattr('level', 'equalto', 'BLOCKED') | list %}
+    {% set partial_components = gaps_data.components | selectattr('level', 'equalto', 'PARTIAL') | list %}
+    {% if blocked_components or partial_components %}
+    <section class="decisions-required-section">
         <div class="container">
-            <div class="reading-guide">
-                <h3>📖 How to Read This Report</h3>
-                <div class="guide-grid">
-                    <div class="guide-item">
-                        <div class="guide-icon">👔</div>
-                        <h4>Executives</h4>
-                        <p>Executive Summary → Migration Story → Target Architecture</p>
-                    </div>
-                    <div class="guide-item">
-                        <div class="guide-icon">⚙️</div>
-                        <h4>Platform Teams</h4>
-                        <p>Architecture Snapshot → Expert Recommendations → Implementation Details</p>
-                    </div>
-                    <div class="guide-item">
-                        <div class="guide-icon">🔒</div>
-                        <h4>NetOps / SecOps</h4>
-                        <p>NSX Migration Findings → Expert-Guided Security & Governance Patterns</p>
-                    </div>
+            <h2 class="section-title">🎯 Architectural Decisions Required</h2>
+            <p class="section-subtitle">The following enterprise decisions need clarification before auto-generation:</p>
+            <div class="decisions-list">
+                {% set decision_areas = {} %}
+                {% for component in blocked_components + partial_components %}
+                    {% if 'nsx' in component.component_type.lower() or 'security' in component.component_type.lower() or 'firewall' in component.component_type.lower() %}
+                        {% if 'Security & Networking' not in decision_areas %}
+                            {% set _ = decision_areas.update({'Security & Networking': []}) %}
+                        {% endif %}
+                        {% set _ = decision_areas['Security & Networking'].append(component) %}
+                    {% elif 'approval' in component.component_type.lower() or 'governance' in component.component_type.lower() %}
+                        {% if 'Governance & Approvals' not in decision_areas %}
+                            {% set _ = decision_areas.update({'Governance & Approvals': []}) %}
+                        {% endif %}
+                        {% set _ = decision_areas['Governance & Approvals'].append(component) %}
+                    {% elif 'network' in component.component_type.lower() or 'nic' in component.component_type.lower() %}
+                        {% if 'Multi-NIC Networking' not in decision_areas %}
+                            {% set _ = decision_areas.update({'Multi-NIC Networking': []}) %}
+                        {% endif %}
+                        {% set _ = decision_areas['Multi-NIC Networking'].append(component) %}
+                    {% endif %}
+                {% endfor %}
+                {% for area, components in decision_areas.items() %}
+                <div class="decision-area">
+                    <h3>{{ area }}</h3>
+                    <p class="decision-count">{{ components | length }} component(s) require decisions</p>
+                    <ul class="decision-questions">
+                        {% if area == 'Security & Networking' %}
+                        <li>What label keys should represent NSX security group membership?</li>
+                        <li>What is the default network policy stance (allow vs. deny-by-default)?</li>
+                        <li>Which segmentation model: namespace-per-app or shared namespace?</li>
+                        {% elif area == 'Governance & Approvals' %}
+                        <li>What is the approval system of record (AAP workflow vs. ServiceNow)?</li>
+                        <li>Who are the approvers and how are they identified?</li>
+                        <li>What are timeout and escalation policies?</li>
+                        {% elif area == 'Multi-NIC Networking' %}
+                        <li>Retain multi-NIC or collapse to single network?</li>
+                        <li>What is the NetworkAttachmentDefinition naming convention?</li>
+                        <li>How should network attachments be selected (env-based, tier-based)?</li>
+                        {% endif %}
+                    </ul>
+                    <p class="decision-action"><a href="#tab-architecture">→ Review detailed gaps in Architecture tab</a></p>
                 </div>
+                {% endfor %}
+                {% if decision_areas | length == 0 %}
+                <p class="no-decisions">No critical architectural decisions required—workflows are ready for configuration.</p>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+    {% endif %}
+
+    <!-- Executive Conclusion -->
+    <section class="executive-conclusion-section">
+        <div class="container">
+            <div class="conclusion-box">
+                <h3>🎯 Executive Summary</h3>
+                <p class="conclusion-text">
+                    <strong>This migration is achievable.</strong> With {{ summary.counts.SUPPORTED or 0 }} components auto-translatable and
+                    {{ summary.counts.PARTIAL or 0 }} requiring configuration, your automation estate is
+                    <strong>{{ ((((summary.counts.SUPPORTED or 0) + (summary.counts.PARTIAL or 0)) / summary.total_components) * 100) | int }}% ready</strong>
+                    for OpenShift Virtualization.
+                </p>
+                <p class="conclusion-text">
+                    {% if blocked_components %}
+                    The {{ blocked_components | length }} BLOCKED component(s) have documented architecture patterns
+                    and can be addressed through proven design decisions—not custom development.
+                    {% else %}
+                    No blocked components detected—clear path to implementation.
+                    {% endif %}
+                </p>
+                <p class="conclusion-cta">
+                    <strong>Next Step:</strong> Review the <a href="#tab-architecture">Architecture & Gaps tab</a> to understand required design decisions,
+                    then proceed to the <a href="#tab-implementation">Implementation tab</a> for generated artifacts and deployment steps.
+                </p>
             </div>
         </div>
     </section>
