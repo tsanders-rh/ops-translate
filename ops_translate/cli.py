@@ -76,7 +76,12 @@ def init(
         False, "--with-templates", help="Copy default templates for customization"
     ),
 ):
-    """Initialize a new ops-translate workspace."""
+    """Initialize a new ops-translate workspace.
+
+    Args:
+        workspace_dir: Workspace directory to initialize
+        with_templates: Copy default templates for customization
+    """
     console.print(f"[bold blue]Initializing workspace:[/bold blue] {workspace_dir}")
 
     workspace = Workspace(Path(workspace_dir))
@@ -129,6 +134,10 @@ def import_cmd(
     If --source is omitted, file types are auto-detected based on extension:
     - *.ps1 files are imported as powercli
     - *.xml files are imported as vrealize
+
+    Args:
+        source: Source type (powercli or vrealize). Auto-detected from file extension if omitted.
+        file: Path to file or directory to import
     """
     # Validate source type if provided
     if source and source not in ["powercli", "vrealize"]:
@@ -848,6 +857,19 @@ def generate(
 
     Use --lint to validate generated playbooks with ansible-lint.
     Use --lint-strict to treat warnings as errors (fails generation if linting issues found).
+
+    Args:
+        profile: Profile to use (lab or prod) from ops-translate.yaml
+        translation_profile: Path to translation profile YAML for deterministic adapter generation
+        no_ai: Use templates only without AI assistance
+        format: Output format (yaml, json, kustomize, or argocd)
+        assume_existing_vms: Assume VMs exist (MTV mode) - generate validation/day-2 ops only
+        eda: Also generate Event-Driven Ansible rulebooks from vRO event subscriptions
+        eda_only: Generate only EDA rulebooks, skip Ansible/KubeVirt artifacts
+        locking_backend: Distributed locking backend (redis, consul, or file)
+        no_locking: Disable distributed locking (for testing/development only)
+        lint: Run ansible-lint on generated playbooks after generation
+        lint_strict: Treat ansible-lint warnings as errors (requires --lint)
     """
     workspace = Workspace(Path.cwd())
     if not workspace.config_file.exists():
@@ -1170,6 +1192,10 @@ def compare(
     Displays the delta between two translation runs, showing how many workflows
     moved from BLOCKED to PARTIAL or AUTOMATABLE classifications.
 
+    Args:
+        previous: Path to previous analysis.json file
+        current: Path to current analysis.json file
+
     Example:
         ops-translate compare output/run1/analysis.json output/run2/analysis.json
     """
@@ -1276,6 +1302,10 @@ def analyze(
     since last analysis (based on file content hash). Use --force to re-analyze all.
 
     No LLM required - runs offline using pattern matching.
+
+    Args:
+        force: Force re-analysis of all workflows (ignore cache)
+        no_cache: Disable caching (same as --force but doesn't update cache)
     """
     workspace = Workspace(Path.cwd())
     if not workspace.config_file.exists():
@@ -1477,6 +1507,11 @@ def report(
 
     Creates a shareable HTML report that consolidates intent, gaps, assumptions,
     and generated artifacts for human review before deployment.
+
+    Args:
+        format: Report format (currently only 'html' is supported)
+        profile: Target profile name from ops-translate.yaml
+        out: Output directory (default: output/report/)
 
     Example:
         ops-translate report --format html --profile lab
