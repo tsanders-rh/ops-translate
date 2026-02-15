@@ -281,9 +281,9 @@ echo ""
 press_enter
 
 # ============================================================================
-# Scene 5: Extract Operational Intent
+# Scene 4: Extract Operational Intent
 # ============================================================================
-print_header "Scene 5: Extract Operational Intent"
+print_header "Scene 4: Extract Operational Intent"
 print_narration "Extract normalized intent using AI (or mock provider for demo)"
 wait_short
 
@@ -310,7 +310,14 @@ wait_medium
 
 print_narration "View one of the extracted intent files:"
 wait_short
-run_command "cat intent/provision-vm-with-nsx-firewall.intent.yaml | head -40"
+# Show the first .intent.yaml file found (intent extract may have different naming)
+INTENT_FILE=$(ls intent/*.intent.yaml 2>/dev/null | head -1)
+if [ -n "$INTENT_FILE" ]; then
+    run_command "cat $INTENT_FILE | head -40"
+else
+    echo -e "${YELLOW}No intent files found - intent extraction may have been skipped${NC}"
+    echo ""
+fi
 wait_short
 
 print_narration "Intent files normalize automation across different source formats."
@@ -330,9 +337,9 @@ echo ""
 press_enter
 
 # ============================================================================
-# Scene 6: Generate with Linting
+# Scene 5: Generate with Linting
 # ============================================================================
-print_header "Scene 6: Generate Artifacts with Linting"
+print_header "Scene 5: Generate Artifacts with Linting"
 print_narration "Generate KubeVirt manifests and Ansible playbooks with code quality checks"
 wait_short
 
