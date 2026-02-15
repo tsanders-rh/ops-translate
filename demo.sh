@@ -328,11 +328,14 @@ wait_short
 
 print_narration "Now merge individual intent files into unified intent:"
 wait_short
-run_command "$OPS_CMD intent merge"
+run_command "$OPS_CMD intent merge --force"
 wait_medium
 
 print_narration "Merged intent file created at intent/intent.yaml"
 echo -e "${CYAN}This unified intent is used for artifact generation${NC}"
+echo ""
+echo -e "${YELLOW}Note: --force used because PowerCLI + vRealize sources may have conflicting definitions${NC}"
+echo -e "${YELLOW}In production, review intent/conflicts.md to resolve conflicts manually${NC}"
 echo ""
 press_enter
 
