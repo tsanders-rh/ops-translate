@@ -1467,7 +1467,9 @@ def analyze(
         console.print("[green]✓ Analysis reports written to intent/[/green]")
         if xml_files:
             console.print("  [cyan]• analysis.vrealize.json[/cyan] - vRealize detection details")
-            console.print("  [cyan]• analysis.vrealize.md[/cyan] - Human-readable vRealize analysis")
+            console.print(
+                "  [cyan]• analysis.vrealize.md[/cyan] - Human-readable vRealize analysis"
+            )
         console.print("  [cyan]• gaps.json[/cyan] - Classification data")
         console.print("  [cyan]• gaps.md[/cyan] - Migration guidance")
 

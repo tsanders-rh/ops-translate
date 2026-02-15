@@ -603,11 +603,11 @@ def detect_rest_calls(script_content: str, script_file: Path) -> list[dict[str, 
             endpoint = match.group(1)
             # Try to detect method flag
             method = "GET"
-            if re.search(r'-X\s+POST', line, re.IGNORECASE):
+            if re.search(r"-X\s+POST", line, re.IGNORECASE):
                 method = "POST"
-            elif re.search(r'-X\s+PUT', line, re.IGNORECASE):
+            elif re.search(r"-X\s+PUT", line, re.IGNORECASE):
                 method = "PUT"
-            elif re.search(r'-X\s+DELETE', line, re.IGNORECASE):
+            elif re.search(r"-X\s+DELETE", line, re.IGNORECASE):
                 method = "DELETE"
 
             # Check if this is an NSX API call
@@ -654,35 +654,35 @@ def detect_risk_signals(script_content: str, script_file: Path) -> list[dict[str
     lines = script_content.split("\n")
 
     # Module imports
-    module_pattern = r'\bImport-Module\s+([^\s;]+)'
+    module_pattern = r"\bImport-Module\s+([^\s;]+)"
 
     # Type loading
-    type_pattern = r'\bAdd-Type\b'
+    type_pattern = r"\bAdd-Type\b"
 
     # Process execution
-    process_pattern = r'\bStart-Process\b'
+    process_pattern = r"\bStart-Process\b"
 
     # SSH commands
-    ssh_pattern = r'\bssh\s+'
+    ssh_pattern = r"\bssh\s+"
 
     # Credential patterns (case-insensitive)
     credential_patterns = [
         r'-Password\s+["\']([^"\']+)["\']',  # -Password "value"
-        r'-Credential\s+',  # -Credential parameter
-        r'ConvertTo-SecureString\s+',  # Secure string creation
+        r"-Credential\s+",  # -Credential parameter
+        r"ConvertTo-SecureString\s+",  # Secure string creation
         r'password\s*=\s*["\']([^"\']+)["\']',  # password = "value"
     ]
 
     # Hardcoded endpoint patterns
     endpoint_patterns = [
-        r'\b(?:https?://)?(?:\d{1,3}\.){3}\d{1,3}(?::\d+)?',  # IP addresses with optional port
+        r"\b(?:https?://)?(?:\d{1,3}\.){3}\d{1,3}(?::\d+)?",  # IP addresses with optional port
         r'https?://[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,}(?:/[^\s"\']*)?',  # URLs with protocol
-        r'\b[a-zA-Z0-9\-]+\.[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,}\b',  # Bare domain names (e.g., vcenter.example.com)
+        r"\b[a-zA-Z0-9\-]+\.[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,}\b",  # Bare domain names (e.g., vcenter.example.com)
     ]
 
     for line_num, line in enumerate(lines, 1):
         # Skip comments
-        if line.strip().startswith('#'):
+        if line.strip().startswith("#"):
             continue
 
         # Module imports
@@ -749,11 +749,7 @@ def detect_risk_signals(script_content: str, script_file: Path) -> list[dict[str
             match = re.search(pattern, line, re.IGNORECASE)
             if match:
                 # Redact actual credential values
-                redacted_line = re.sub(
-                    r'(["\'][^"\']*["\'])',
-                    '"***REDACTED***"',
-                    line.strip()
-                )
+                redacted_line = re.sub(r'(["\'][^"\']*["\'])', '"***REDACTED***"', line.strip())
                 risk_signals.append(
                     {
                         "type": "inline_credential",
@@ -789,10 +785,7 @@ def detect_risk_signals(script_content: str, script_file: Path) -> list[dict[str
 
 
 def calculate_complexity(
-    vmware_ops: dict[str, list],
-    nsx_ops: dict[str, list],
-    rest_calls: list,
-    risk_signals: list
+    vmware_ops: dict[str, list], nsx_ops: dict[str, list], rest_calls: list, risk_signals: list
 ) -> int:
     """
     Calculate migration complexity score (0-100).
