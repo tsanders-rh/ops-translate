@@ -300,6 +300,68 @@ class TestRESTAPIDetection:
         finally:
             script_file.unlink()
 
+    def test_detect_nsx_v_api(self):
+        """Test detection of NSX-V API calls."""
+        script = """
+        Invoke-RestMethod -Uri "https://nsx-manager.example.com/api/2.0/services/securitygroup/scope/globalroot-0" -Method GET
+        """
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".ps1", delete=False) as f:
+            f.write(script)
+            f.flush()
+            script_file = Path(f.name)
+
+        try:
+            result = detect_rest_calls(script, script_file)
+
+            assert len(result) == 1
+            assert result[0]["nsx_api"] is True
+            assert result[0]["nsx_version"] == "NSX-V"
+            assert result[0]["confidence"] == 0.95  # Higher confidence for NSX API
+            assert "/api/2.0/" in result[0]["endpoint"]
+        finally:
+            script_file.unlink()
+
+    def test_detect_nsx_t_api(self):
+        """Test detection of NSX-T API calls."""
+        script = """
+        Invoke-RestMethod -Uri "https://nsx-t.example.com/policy/api/v1/infra/domains/default/groups" -Method POST
+        """
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".ps1", delete=False) as f:
+            f.write(script)
+            f.flush()
+            script_file = Path(f.name)
+
+        try:
+            result = detect_rest_calls(script, script_file)
+
+            assert len(result) == 1
+            assert result[0]["nsx_api"] is True
+            assert result[0]["nsx_version"] == "NSX-T"
+            assert result[0]["confidence"] == 0.95
+            assert "/policy/api/" in result[0]["endpoint"]
+        finally:
+            script_file.unlink()
+
+    def test_detect_non_nsx_rest_call(self):
+        """Test that non-NSX REST calls are not flagged as NSX API."""
+        script = """
+        Invoke-RestMethod -Uri "https://cmdb.example.com/api/servers" -Method GET
+        """
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".ps1", delete=False) as f:
+            f.write(script)
+            f.flush()
+            script_file = Path(f.name)
+
+        try:
+            result = detect_rest_calls(script, script_file)
+
+            assert len(result) == 1
+            assert result[0]["nsx_api"] is False
+            assert result[0]["nsx_version"] is None
+            assert result[0]["confidence"] == 0.9  # Normal confidence
+        finally:
+            script_file.unlink()
+
 
 class TestRiskSignalDetection:
     """Test security and complexity risk signal detection."""

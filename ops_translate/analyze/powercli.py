@@ -491,6 +491,25 @@ def detect_nsx_cmdlets(script_content: str, script_file: Path) -> dict[str, list
     return nsx_ops
 
 
+def _is_nsx_api_call(endpoint: str) -> tuple[bool, str | None]:
+    """
+    Check if endpoint is an NSX API call.
+
+    Args:
+        endpoint: URL or endpoint string
+
+    Returns:
+        Tuple of (is_nsx_api, nsx_version):
+        - is_nsx_api: True if endpoint contains NSX API patterns
+        - nsx_version: "NSX-V" for /api/2.0/, "NSX-T" for /policy/api/, None otherwise
+    """
+    if "/api/2.0/" in endpoint or "/api/v2.0/" in endpoint:
+        return (True, "NSX-V")
+    elif "/policy/api/" in endpoint or "/api/v1/policy" in endpoint:
+        return (True, "NSX-T")
+    return (False, None)
+
+
 def detect_rest_calls(script_content: str, script_file: Path) -> list[dict[str, Any]]:
     """
     Detect external REST API calls in PowerCLI scripts.
@@ -501,6 +520,10 @@ def detect_rest_calls(script_content: str, script_file: Path) -> list[dict[str, 
     - curl
     - wget
 
+    Also flags NSX API calls specifically:
+    - NSX-V: /api/2.0/ or /api/v2.0/
+    - NSX-T: /policy/api/ or /api/v1/policy
+
     Args:
         script_content: PowerShell script content to analyze
         script_file: Path to script file for location tracking
@@ -510,6 +533,8 @@ def detect_rest_calls(script_content: str, script_file: Path) -> list[dict[str, 
         - endpoint: URL if detected, otherwise "unknown"
         - method: HTTP method if detected, otherwise "UNKNOWN"
         - call_type: Type of REST call
+        - nsx_api: True if NSX API call detected
+        - nsx_version: "NSX-V" or "NSX-T" if NSX API, None otherwise
         - line: Line number
         - confidence: Confidence score (0.0-0.95)
         - evidence: Supporting code snippet
@@ -527,14 +552,20 @@ def detect_rest_calls(script_content: str, script_file: Path) -> list[dict[str, 
             method_match = re.search(r'-Method\s+["\']?(\w+)["\']?', line, re.IGNORECASE)
             method = method_match.group(1).upper() if method_match else "GET"
 
+            # Check if this is an NSX API call
+            is_nsx, nsx_version = _is_nsx_api_call(endpoint)
+            confidence = 0.95 if is_nsx else 0.9  # Higher confidence for NSX API calls
+
             rest_calls.append(
                 {
                     "endpoint": endpoint,
                     "method": method,
                     "call_type": "Invoke-RestMethod",
+                    "nsx_api": is_nsx,
+                    "nsx_version": nsx_version,
                     "location": str(script_file.name),
                     "line": line_num,
-                    "confidence": 0.9,
+                    "confidence": confidence,
                     "evidence": line.strip(),
                 }
             )
@@ -547,14 +578,20 @@ def detect_rest_calls(script_content: str, script_file: Path) -> list[dict[str, 
             method_match = re.search(r'-Method\s+["\']?(\w+)["\']?', line, re.IGNORECASE)
             method = method_match.group(1).upper() if method_match else "GET"
 
+            # Check if this is an NSX API call
+            is_nsx, nsx_version = _is_nsx_api_call(endpoint)
+            confidence = 0.95 if is_nsx else 0.9  # Higher confidence for NSX API calls
+
             rest_calls.append(
                 {
                     "endpoint": endpoint,
                     "method": method,
                     "call_type": "Invoke-WebRequest",
+                    "nsx_api": is_nsx,
+                    "nsx_version": nsx_version,
                     "location": str(script_file.name),
                     "line": line_num,
-                    "confidence": 0.9,
+                    "confidence": confidence,
                     "evidence": line.strip(),
                 }
             )
@@ -573,14 +610,20 @@ def detect_rest_calls(script_content: str, script_file: Path) -> list[dict[str, 
             elif re.search(r'-X\s+DELETE', line, re.IGNORECASE):
                 method = "DELETE"
 
+            # Check if this is an NSX API call
+            is_nsx, nsx_version = _is_nsx_api_call(endpoint)
+            confidence = 0.9 if is_nsx else 0.85  # Higher confidence for NSX API calls
+
             rest_calls.append(
                 {
                     "endpoint": endpoint,
                     "method": method,
                     "call_type": "curl",
+                    "nsx_api": is_nsx,
+                    "nsx_version": nsx_version,
                     "location": str(script_file.name),
                     "line": line_num,
-                    "confidence": 0.85,
+                    "confidence": confidence,
                     "evidence": line.strip(),
                 }
             )
