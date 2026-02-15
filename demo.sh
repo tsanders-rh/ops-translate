@@ -284,11 +284,15 @@ press_enter
 # Scene 4: Extract Operational Intent
 # ============================================================================
 print_header "Scene 4: Extract Operational Intent"
-print_narration "Extract normalized intent using AI (or mock provider for demo)"
+print_narration "Extract normalized intent using AI"
 wait_short
 
-# Configure mock provider to avoid API costs
-cat > ops-translate.yaml << EOF
+# Configure LLM provider and profiles
+# If OPS_TRANSLATE_LLM_API_KEY is not set, use mock provider for demo
+if [ -z "$OPS_TRANSLATE_LLM_API_KEY" ]; then
+    echo -e "${YELLOW}Note: Using mock LLM provider (set OPS_TRANSLATE_LLM_API_KEY for real AI)${NC}"
+    echo ""
+    cat > ops-translate.yaml << EOF
 llm:
   provider: mock
   model: mock-model
@@ -304,6 +308,26 @@ profiles:
     default_network: prod-network
     default_storage_class: ceph-rbd
 EOF
+else
+    echo -e "${GREEN}Using configured LLM provider${NC}"
+    echo ""
+    cat > ops-translate.yaml << EOF
+llm:
+  provider: anthropic
+  model: claude-sonnet-3-5-20241022
+  api_key_env: OPS_TRANSLATE_LLM_API_KEY
+
+profiles:
+  lab:
+    default_namespace: virt-lab
+    default_network: lab-network
+    default_storage_class: nfs
+  prod:
+    default_namespace: virt-prod
+    default_network: prod-network
+    default_storage_class: ceph-rbd
+EOF
+fi
 
 run_command "$OPS_CMD intent extract"
 wait_medium
@@ -378,9 +402,9 @@ fi
 press_enter
 
 # ============================================================================
-# Scene 7: Review Generated Code
+# Scene 6: Review Generated Code
 # ============================================================================
-print_header "Scene 7: Review Generated Code"
+print_header "Scene 6: Review Generated Code"
 print_narration "Generated code includes links to Architecture Patterns for BLOCKED components"
 wait_short
 
