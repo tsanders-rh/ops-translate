@@ -1292,19 +1292,19 @@ def analyze(
     ),
 ):
     """
-    Analyze imported vRealize workflows for external dependencies and translatability.
+    Analyze imported automation (vRealize workflows and PowerCLI scripts) for external dependencies.
 
     Detects NSX-T operations, custom plugins, and REST API calls, then classifies
     them by translatability level (SUPPORTED/PARTIAL/BLOCKED/MANUAL).
     Generates gap reports with migration guidance.
 
-    Supports incremental analysis: only re-analyzes workflows that have changed
+    Supports incremental analysis: only re-analyzes files that have changed
     since last analysis (based on file content hash). Use --force to re-analyze all.
 
     No LLM required - runs offline using pattern matching.
 
     Args:
-        force: Force re-analysis of all workflows (ignore cache)
+        force: Force re-analysis of all files (ignore cache)
         no_cache: Disable caching (same as --force but doesn't update cache)
     """
     workspace = Workspace(Path.cwd())
@@ -1312,8 +1312,9 @@ def analyze(
         console.print("[red]Error: Not in a workspace.[/red]")
         raise typer.Exit(1)
 
-    console.print("[bold blue]Analyzing workflows for external dependencies...[/bold blue]\n")
+    console.print("[bold blue]Analyzing automation for external dependencies...[/bold blue]\n")
 
+    from ops_translate.analyze.powercli import analyze_powercli_script
     from ops_translate.analyze.vrealize import (
         analyze_vrealize_workflow,
         write_analysis_report,
@@ -1324,44 +1325,55 @@ def analyze(
 
     # Find all vRealize workflows
     vrealize_dir = workspace.root / "input/vrealize"
-    if not vrealize_dir.exists():
-        console.print("[yellow]No vRealize workflows found to analyze.[/yellow]")
+    xml_files = []
+    if vrealize_dir.exists():
+        xml_files = list(vrealize_dir.glob("*.xml"))
+
+    # Find all PowerCLI scripts
+    powercli_dir = workspace.root / "input/powercli"
+    ps1_files = []
+    if powercli_dir.exists():
+        ps1_files = list(powercli_dir.glob("*.ps1"))
+
+    # Check if we have any files to analyze
+    all_files = xml_files + ps1_files
+    if not all_files:
+        console.print("[yellow]No automation files found to analyze.[/yellow]")
         console.print(
-            "[dim]Import vRealize workflows with: "
-            "ops-translate import --source vrealize --file <path>[/dim]"
+            "[dim]Import files with:[/dim]\n"
+            "  [dim]ops-translate import --source vrealize --file <path>[/dim]\n"
+            "  [dim]ops-translate import --source powercli --file <path>[/dim]"
         )
         raise typer.Exit(0)
 
-    xml_files = list(vrealize_dir.glob("*.xml"))
-    if not xml_files:
-        console.print("[yellow]No XML files found in input/vrealize/[/yellow]")
-        raise typer.Exit(0)
-
-    console.print(f"Found {len(xml_files)} workflow(s) to analyze")
+    if xml_files:
+        console.print(f"Found {len(xml_files)} vRealize workflow(s) to analyze")
+    if ps1_files:
+        console.print(f"Found {len(ps1_files)} PowerCLI script(s) to analyze")
 
     # Initialize analysis cache (unless disabled)
     cache = None
-    files_to_analyze = xml_files
+    files_to_analyze = all_files
     if not no_cache:
         cache_file = workspace.root / ".ops-translate" / "analysis-cache.json"
         cache = AnalysisCache(cache_file)
 
         if force:
-            console.print("[dim]Force mode: re-analyzing all workflows[/dim]\n")
+            console.print("[dim]Force mode: re-analyzing all files[/dim]\n")
         else:
             # Check which files have changed
-            changed_files, unchanged_files = cache.get_changed_files(xml_files)
+            changed_files, unchanged_files = cache.get_changed_files(all_files)
             files_to_analyze = changed_files
 
             if unchanged_files:
                 console.print(
-                    f"[dim]Skipping {len(unchanged_files)} unchanged workflow(s) "
+                    f"[dim]Skipping {len(unchanged_files)} unchanged file(s) "
                     f"(use --force to re-analyze)[/dim]"
                 )
             if changed_files:
-                console.print(f"[cyan]Analyzing {len(changed_files)} changed workflow(s)[/cyan]\n")
+                console.print(f"[cyan]Analyzing {len(changed_files)} changed file(s)[/cyan]\n")
             else:
-                console.print("[green]All workflows up-to-date (no changes detected)[/green]\n")
+                console.print("[green]All files up-to-date (no changes detected)[/green]\n")
     else:
         console.print("[dim]Cache disabled[/dim]\n")
 
@@ -1390,7 +1402,7 @@ def analyze(
                 existing_components = gaps_data.get("components", [])
 
                 # Keep components from unchanged files
-                unchanged_file_names = {f.stem for f in xml_files if f not in files_to_analyze}
+                unchanged_file_names = {f.stem for f in all_files if f not in files_to_analyze}
                 for component in existing_components:
                     # Extract base filename from location
                     # (e.g., "provision-vm" from "provision-vm.item1")
@@ -1408,15 +1420,24 @@ def analyze(
                 # If we can't load existing gaps, just analyze everything
                 pass
 
-    # Analyze changed/new workflows only
-    for xml_file in files_to_analyze:
-        console.print(f"[dim]Analyzing {xml_file.name}...[/dim]")
+    # Analyze changed/new files only
+    for file_path in files_to_analyze:
+        console.print(f"[dim]Analyzing {file_path.name}...[/dim]")
 
-        # Run analysis with ActionIndex if available
-        analysis = analyze_vrealize_workflow(xml_file, action_index=action_index)
-
-        # Write analysis report
-        write_analysis_report(analysis, workspace.root / "intent")
+        # Determine file type and run appropriate analyzer
+        if file_path.suffix == ".xml":
+            # vRealize workflow
+            analysis = analyze_vrealize_workflow(file_path, action_index=action_index)
+            # Write analysis report
+            write_analysis_report(analysis, workspace.root / "intent")
+        elif file_path.suffix == ".ps1":
+            # PowerCLI script
+            analysis = analyze_powercli_script(file_path)
+            # Note: PowerCLI scripts don't write individual analysis reports yet
+            # They just contribute to combined gaps
+        else:
+            console.print(f"  [yellow]⚠ {file_path.name}: Unknown file type, skipping[/yellow]")
+            continue
 
         # Classify components
         components = classify_components(analysis)
@@ -1425,7 +1446,7 @@ def analyze(
         # Update cache with analysis metadata
         if cache and not no_cache:
             cache.mark_analyzed(
-                xml_file,
+                file_path,
                 metadata={
                     "components": len(components),
                     "has_external_dependencies": analysis["has_external_dependencies"],
@@ -1434,9 +1455,9 @@ def analyze(
 
         # Show quick summary
         if analysis["has_external_dependencies"]:
-            console.print(f"  [yellow]⚠ {xml_file.name}: Found external dependencies[/yellow]")
+            console.print(f"  [yellow]⚠ {file_path.name}: Found external dependencies[/yellow]")
         else:
-            console.print(f"  [green]✓ {xml_file.name}: No external dependencies[/green]")
+            console.print(f"  [green]✓ {file_path.name}: No external dependencies[/green]")
 
     console.print()
 
@@ -1444,8 +1465,11 @@ def analyze(
     if all_components:
         generate_gap_reports(all_components, workspace.root / "intent")
         console.print("[green]✓ Analysis reports written to intent/[/green]")
-        console.print("  [cyan]• analysis.vrealize.json[/cyan] - Detection details")
-        console.print("  [cyan]• analysis.vrealize.md[/cyan] - Human-readable analysis")
+        if xml_files:
+            console.print("  [cyan]• analysis.vrealize.json[/cyan] - vRealize detection details")
+            console.print(
+                "  [cyan]• analysis.vrealize.md[/cyan] - Human-readable vRealize analysis"
+            )
         console.print("  [cyan]• gaps.json[/cyan] - Classification data")
         console.print("  [cyan]• gaps.md[/cyan] - Migration guidance")
 
@@ -1453,7 +1477,7 @@ def analyze(
         print_gap_summary(all_components)
     else:
         console.print(
-            "[green]✓ No external dependencies detected - workflows are fully translatable[/green]"
+            "[green]✓ No external dependencies detected - automation is fully translatable[/green]"
         )
 
 
