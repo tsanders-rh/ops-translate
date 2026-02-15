@@ -1314,11 +1314,11 @@ def analyze(
 
     console.print("[bold blue]Analyzing automation for external dependencies...[/bold blue]\n")
 
+    from ops_translate.analyze.powercli import analyze_powercli_script
     from ops_translate.analyze.vrealize import (
         analyze_vrealize_workflow,
         write_analysis_report,
     )
-    from ops_translate.analyze.powercli import analyze_powercli_script
     from ops_translate.intent.classify import classify_components
     from ops_translate.intent.gaps import generate_gap_reports, print_gap_summary
     from ops_translate.util.cache import AnalysisCache

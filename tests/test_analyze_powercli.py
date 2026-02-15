@@ -302,8 +302,9 @@ class TestRESTAPIDetection:
 
     def test_detect_nsx_v_api(self):
         """Test detection of NSX-V API calls."""
-        script = """
-        Invoke-RestMethod -Uri "https://nsx-manager.example.com/api/2.0/services/securitygroup/scope/globalroot-0" -Method GET
+        uri = "https://nsx-manager.example.com/api/2.0/services/securitygroup"
+        script = f"""
+        Invoke-RestMethod -Uri "{uri}/scope/globalroot-0" -Method GET
         """
         with tempfile.NamedTemporaryFile(mode="w", suffix=".ps1", delete=False) as f:
             f.write(script)
@@ -323,8 +324,9 @@ class TestRESTAPIDetection:
 
     def test_detect_nsx_t_api(self):
         """Test detection of NSX-T API calls."""
-        script = """
-        Invoke-RestMethod -Uri "https://nsx-t.example.com/policy/api/v1/infra/domains/default/groups" -Method POST
+        uri = "https://nsx-t.example.com/policy/api/v1/infra/domains"
+        script = f"""
+        Invoke-RestMethod -Uri "{uri}/default/groups" -Method POST
         """
         with tempfile.NamedTemporaryFile(mode="w", suffix=".ps1", delete=False) as f:
             f.write(script)

@@ -675,9 +675,9 @@ def detect_risk_signals(script_content: str, script_file: Path) -> list[dict[str
 
     # Hardcoded endpoint patterns
     endpoint_patterns = [
-        r"\b(?:https?://)?(?:\d{1,3}\.){3}\d{1,3}(?::\d+)?",  # IP addresses with optional port
-        r'https?://[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,}(?:/[^\s"\']*)?',  # URLs with protocol
-        r"\b[a-zA-Z0-9\-]+\.[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,}\b",  # Bare domain names (e.g., vcenter.example.com)
+        r"\b(?:https?://)?(?:\d{1,3}\.){3}\d{1,3}(?::\d+)?",  # IP addresses
+        r'https?://[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,}(?:/[^\s"\']*)?',  # URLs
+        r"\b[a-zA-Z0-9\-]+\.[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,}\b",  # Domains
     ]
 
     for line_num, line in enumerate(lines, 1):
@@ -726,7 +726,7 @@ def detect_risk_signals(script_content: str, script_file: Path) -> list[dict[str
                     "severity": "high",
                     "confidence": 0.9,
                     "evidence": line.strip(),
-                    "recommendation": "Start-Process executes external commands - review for security",
+                    "recommendation": "Start-Process executes external commands",
                 }
             )
 
@@ -740,7 +740,7 @@ def detect_risk_signals(script_content: str, script_file: Path) -> list[dict[str
                     "severity": "medium",
                     "confidence": 0.85,
                     "evidence": line.strip(),
-                    "recommendation": "SSH commands require external connectivity - manual review needed",
+                    "recommendation": "SSH commands require external connectivity",
                 }
             )
 
@@ -758,7 +758,7 @@ def detect_risk_signals(script_content: str, script_file: Path) -> list[dict[str
                         "severity": "high",
                         "confidence": 0.8,
                         "evidence": redacted_line,
-                        "recommendation": "Inline credentials detected - use Azure Key Vault or secrets management",
+                        "recommendation": "Use Key Vault or secrets management",
                     }
                 )
                 break  # Only report once per line
@@ -777,7 +777,7 @@ def detect_risk_signals(script_content: str, script_file: Path) -> list[dict[str
                         "severity": "low",
                         "confidence": 0.7,
                         "evidence": line.strip(),
-                        "recommendation": f"Hardcoded endpoint '{endpoint}' - consider using configuration/environment variables",
+                        "recommendation": f"Use config/env variables for '{endpoint}'",
                     }
                 )
 
@@ -852,7 +852,7 @@ def analyze_powercli_script(script_file: Path) -> dict[str, Any]:
         raise FileNotFoundError(f"Script file not found: {script_file}")
 
     try:
-        with open(script_file, "r", encoding="utf-8") as f:
+        with open(script_file, encoding="utf-8") as f:
             script_content = f.read()
     except Exception as e:
         raise ValueError(f"Could not read script file {script_file}: {e}")
