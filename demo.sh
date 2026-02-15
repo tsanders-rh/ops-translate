@@ -314,7 +314,7 @@ else
     cat > ops-translate.yaml << EOF
 llm:
   provider: anthropic
-  model: claude-sonnet-3-5-20241022
+  model: claude-3-5-sonnet-20241022
   api_key_env: OPS_TRANSLATE_LLM_API_KEY
 
 profiles:
