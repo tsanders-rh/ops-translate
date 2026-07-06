@@ -86,6 +86,23 @@ cat intent/analysis.vrealize.json | jq '.nsx_operations.segments[] | {name, vlan
 
 ### Part 3: Generation & Correlation (8 min)
 
+#### Create Minimal Intent File
+
+**Say**:
+> "For NSX-only demos, we need a minimal intent file. In production, this would come from the full workflow."
+
+**Run**:
+```bash
+cat > intent/intent.yaml <<'EOF'
+workflows:
+  - name: nsx-3tier-app
+    source: nsx-3tier-app.workflow.xml
+    description: NSX 3-tier application provisioning
+EOF
+```
+
+#### Generate Resources
+
 **Run**:
 ```bash
 ops-translate generate --profile lab
