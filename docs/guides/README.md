@@ -121,6 +121,88 @@ This directory contains comprehensive guides for using ops-translate, from first
 
 ---
 
+### [MULTINETWORK_DEMO.md](MULTINETWORK_DEMO.md)
+**Audience**: Consulting team, technical stakeholders, demo presenters
+
+**Purpose**: Comprehensive end-to-end demo of NSX → OVN-Kubernetes MultiNetworkPolicy feature
+
+**Key Sections**:
+- Complete demo scenario (3-tier app with NSX networking)
+- Step-by-step workflow (setup, analysis, generation, deployment)
+- Real NSX vRealize workflow example
+- Output examination (correlation reports, policies, NADs)
+- OpenShift deployment and validation
+- Testing network policy enforcement
+- Talking points for stakeholders
+- Common questions and answers
+
+**Time to complete**: 30-45 minutes (full demo with deployment)
+
+**When to use**:
+- Demonstrating NSX multi-network translation capability
+- Customer proof-of-concept sessions
+- Team training on MultiNetworkPolicy feature
+- End-to-end validation on OpenShift cluster
+- Preparing for customer engagements
+
+**Format**: Detailed walkthrough with code examples and expected outputs
+
+---
+
+### [DEMO_SCRIPT.md](DEMO_SCRIPT.md)
+**Audience**: Consulting team delivering live demos
+
+**Purpose**: Quick-reference script for 20-30 minute live demonstrations
+
+**Key Sections**:
+- Pre-demo setup checklist
+- Condensed demo flow with talking points
+- Commands to run (copy-paste ready)
+- What to highlight at each step
+- Q&A preparation with prepared responses
+- Backup plans if cluster unavailable
+- Post-demo follow-up materials
+
+**Time to complete**: 20-30 minutes (live presentation)
+
+**When to use**:
+- Delivering live demos to customers or stakeholders
+- Short presentation time slot (< 30 minutes)
+- Need quick reference during demo
+- Training consultants on demo delivery
+- Customer discovery calls
+
+**Format**: Condensed script with timing and talking points
+
+---
+
+### [TESTING_GUIDE.md](TESTING_GUIDE.md)
+**Audience**: Development team, QA, contributors
+
+**Purpose**: Complete testing guide for NSX MultiNetworkPolicy feature
+
+**Key Sections**:
+- Unit testing (correlation, policy generation)
+- Integration testing (end-to-end pipeline)
+- Manual testing with demo workflows
+- OpenShift cluster validation
+- Test scenarios (simple, complex, edge cases)
+- Performance and regression testing
+- Testing checklist
+
+**Time to complete**: Varies by testing level (10 min unit tests to 60 min full validation)
+
+**When to use**:
+- Developing or modifying MultiNetworkPolicy features
+- Validating changes before release
+- Customer acceptance testing
+- Quality assurance workflows
+- Troubleshooting test failures
+
+**Format**: Multi-level testing guide with commands and expected results
+
+---
+
 ## Document Progression
 
 ### Learning Path for New Users
@@ -305,6 +387,9 @@ This directory contains comprehensive guides for using ops-translate, from first
 - Look up a command → [USER_GUIDE.md](USER_GUIDE.md)
 - Solve a complex scenario → [PATTERNS.md](PATTERNS.md)
 - Fix a specific problem → [FIELD_GUIDE.md](FIELD_GUIDE.md)
+- Demo NSX MultiNetworkPolicy → [MULTINETWORK_DEMO.md](MULTINETWORK_DEMO.md)
+- Quick demo script (20-30 min) → [DEMO_SCRIPT.md](DEMO_SCRIPT.md)
+- Test MultiNetworkPolicy feature → [TESTING_GUIDE.md](TESTING_GUIDE.md)
 - Quick command reminder → [../reference/QUICK_REFERENCE.md](../reference/QUICK_REFERENCE.md)
 - Answer a question → [../reference/FAQ.md](../reference/FAQ.md)
 - Understand internals → [../technical/ARCHITECTURE.md](../technical/ARCHITECTURE.md)
