@@ -69,90 +69,90 @@ def _generate_network_policies(workspace: Workspace, segment_mapping=None):
 
     from ops_translate.generate.networkpolicy import generate_network_policies
 
-    # Find the latest analysis file
-    runs_dir = workspace.root / "runs"
-    if not runs_dir.exists():
-        return
+    # Find analysis file (check intent/ directory first, then runs/)
+    analysis_file = workspace.root / "intent" / "analysis.vrealize.json"
+    if not analysis_file.exists():
+        # Fallback to runs directory for backwards compatibility
+        runs_dir = workspace.root / "runs"
+        if runs_dir.exists():
+            run_dirs = sorted(runs_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
+            for run_dir in run_dirs:
+                potential_file = run_dir / "analysis.vrealize.json"
+                if potential_file.exists():
+                    analysis_file = potential_file
+                    break
 
-    # Get the most recent run directory
-    run_dirs = sorted(runs_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
-    if not run_dirs:
-        return
+    if analysis_file.exists():
+        # Load analysis data
+        with open(analysis_file) as f:
+            analysis = json.load(f)
 
-    # Look for analysis.vrealize.json in the latest run
-    for run_dir in run_dirs:
-        analysis_file = run_dir / "analysis.vrealize.json"
-        if analysis_file.exists():
-            # Load analysis data
-            with open(analysis_file) as f:
-                analysis = json.load(f)
+        # Extract NSX firewall rules
+        nsx_ops = analysis.get("nsx_operations", {})
+        firewall_rules = nsx_ops.get("firewall_rules", [])
+        distributed_firewall = nsx_ops.get("distributed_firewall", [])
 
-            # Extract NSX firewall rules
-            nsx_ops = analysis.get("nsx_operations", {})
-            firewall_rules = nsx_ops.get("firewall_rules", [])
-            distributed_firewall = nsx_ops.get("distributed_firewall", [])
+        # Combine both types of firewall rules
+        all_firewall_rules = firewall_rules + distributed_firewall
 
-            # Combine both types of firewall rules
-            all_firewall_rules = firewall_rules + distributed_firewall
+        if not all_firewall_rules:
+            # No firewall rules detected
+            return
+
+        # Filter to primary network rules only if segment mapping provided
+        if segment_mapping and segment_mapping.primary_network_rules:
+            # Only generate policies for rules assigned to primary network
+            primary_rule_names = set(segment_mapping.primary_network_rules)
+            all_firewall_rules = [
+                r for r in all_firewall_rules if r.get("name") in primary_rule_names
+            ]
 
             if not all_firewall_rules:
-                # No firewall rules detected
-                return
-
-            # Filter to primary network rules only if segment mapping provided
-            if segment_mapping and segment_mapping.primary_network_rules:
-                # Only generate policies for rules assigned to primary network
-                primary_rule_names = set(segment_mapping.primary_network_rules)
-                all_firewall_rules = [
-                    r for r in all_firewall_rules if r.get("name") in primary_rule_names
-                ]
-
-                if not all_firewall_rules:
-                    # No primary network rules to generate
-                    console.print(
-                        "[dim]All firewall rules assigned to secondary networks "
-                        "(MultiNetworkPolicy)[/dim]"
-                    )
-                    return
-
+                # No primary network rules to generate
                 console.print(
-                    f"[dim]Generating NetworkPolicy for {len(all_firewall_rules)} "
-                    f"primary network rule(s)[/dim]"
+                    "[dim]All firewall rules assigned to secondary networks "
+                    "(MultiNetworkPolicy)[/dim]"
                 )
-
-            # Get workflow name from source file
-            source_file = analysis.get("source_file", "workflow")
-            workflow_name = Path(source_file).stem
-
-            # Generate NetworkPolicy manifests
-            policies = generate_network_policies(all_firewall_rules, workflow_name)
-
-            if not policies:
-                # No policies could be generated
                 return
 
-            # Write NetworkPolicy files
-            output_dir = workspace.root / "output/network-policies"
-            output_dir.mkdir(parents=True, exist_ok=True)
-
-            for filename, content in policies.items():
-                policy_file = output_dir / filename
-                policy_file.write_text(content)
-
-            # Generate README
-            readme_content = _generate_networkpolicy_readme()
-            (output_dir / "README.md").write_text(readme_content)
-
-            # Print success message
             console.print(
-                f"[green]✓ Generated {len(policies)} NetworkPolicy manifest(s): "
-                f"output/network-policies/[/green]"
-            )
-            console.print(
-                "[yellow]⚠ Review limitations in YAML comments before deployment[/yellow]"
+                f"[dim]Generating NetworkPolicy for {len(all_firewall_rules)} "
+                f"primary network rule(s)[/dim]"
             )
 
-            return  # Found analysis and generated policies
+        # Get workflow name from source file
+        source_file = analysis.get("source_file", "workflow")
+        workflow_name = Path(source_file).stem
+
+        # Generate NetworkPolicy manifests
+        policies = generate_network_policies(all_firewall_rules, workflow_name)
+
+        if not policies:
+            # No policies could be generated
+            return
+
+        # Write NetworkPolicy files
+        output_dir = workspace.root / "output/network-policies"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        for filename, content in policies.items():
+            policy_file = output_dir / filename
+            policy_file.write_text(content)
+
+        # Generate README
+        readme_content = _generate_networkpolicy_readme()
+        (output_dir / "README.md").write_text(readme_content)
+
+        # Print success message
+        console.print(
+            f"[green]✓ Generated {len(policies)} NetworkPolicy manifest(s): "
+            f"output/network-policies/[/green]"
+        )
+        console.print(
+            "[yellow]⚠ Review limitations in YAML comments before deployment[/yellow]"
+        )
+
+        return  # Found analysis and generated policies
 
 
 def _generate_networkpolicy_readme() -> str:
@@ -304,20 +304,20 @@ def _generate_multi_network_policies(workspace: Workspace, segment_rule_mapping)
     if not segment_rule_mapping or not segment_rule_mapping.segment_mappings:
         return
 
-    # Find the latest analysis file
-    runs_dir = workspace.root / "runs"
-    if not runs_dir.exists():
-        return
+    # Find analysis file (check intent/ directory first, then runs/)
+    analysis_file = workspace.root / "intent" / "analysis.vrealize.json"
+    if not analysis_file.exists():
+        # Fallback to runs directory for backwards compatibility
+        runs_dir = workspace.root / "runs"
+        if runs_dir.exists():
+            run_dirs = sorted(runs_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
+            for run_dir in run_dirs:
+                potential_file = run_dir / "analysis.vrealize.json"
+                if potential_file.exists():
+                    analysis_file = potential_file
+                    break
 
-    # Get the most recent run directory
-    run_dirs = sorted(runs_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
-    if not run_dirs:
-        return
-
-    # Look for analysis.vrealize.json in the latest run
-    for run_dir in run_dirs:
-        analysis_file = run_dir / "analysis.vrealize.json"
-        if analysis_file.exists():
+    if analysis_file.exists():
             # Load analysis data
             with open(analysis_file) as f:
                 analysis = json.load(f)
@@ -585,20 +585,20 @@ def _generate_network_attachments(workspace: Workspace):
 
     from ops_translate.generate.network_attachment import generate_network_attachments
 
-    # Find the latest analysis file
-    runs_dir = workspace.root / "runs"
-    if not runs_dir.exists():
-        return
+    # Find analysis file (check intent/ directory first, then runs/)
+    analysis_file = workspace.root / "intent" / "analysis.vrealize.json"
+    if not analysis_file.exists():
+        # Fallback to runs directory for backwards compatibility
+        runs_dir = workspace.root / "runs"
+        if runs_dir.exists():
+            run_dirs = sorted(runs_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
+            for run_dir in run_dirs:
+                potential_file = run_dir / "analysis.vrealize.json"
+                if potential_file.exists():
+                    analysis_file = potential_file
+                    break
 
-    # Get the most recent run directory
-    run_dirs = sorted(runs_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
-    if not run_dirs:
-        return
-
-    # Look for analysis.vrealize.json in the latest run
-    for run_dir in run_dirs:
-        analysis_file = run_dir / "analysis.vrealize.json"
-        if analysis_file.exists():
+    if analysis_file.exists():
             # Load analysis data
             with open(analysis_file) as f:
                 analysis = json.load(f)
