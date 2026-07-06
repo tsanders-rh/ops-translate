@@ -231,57 +231,57 @@ def _correlate_segments_and_rules(workspace: Workspace):
 
     from ops_translate.generate.nsx_correlation import NSXCorrelationEngine
 
-    # Find the latest analysis file
-    runs_dir = workspace.root / "runs"
-    if not runs_dir.exists():
-        return None
+    # Find analysis file (check intent/ directory first, then runs/)
+    analysis_file = workspace.root / "intent" / "analysis.vrealize.json"
+    if not analysis_file.exists():
+        # Fallback to runs directory for backwards compatibility
+        runs_dir = workspace.root / "runs"
+        if runs_dir.exists():
+            run_dirs = sorted(runs_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
+            for run_dir in run_dirs:
+                potential_file = run_dir / "analysis.vrealize.json"
+                if potential_file.exists():
+                    analysis_file = potential_file
+                    break
 
-    # Get the most recent run directory
-    run_dirs = sorted(runs_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
-    if not run_dirs:
-        return None
+    if analysis_file.exists():
+        # Load analysis data
+        with open(analysis_file) as f:
+            analysis = json.load(f)
 
-    # Look for analysis.vrealize.json in the latest run
-    for run_dir in run_dirs:
-        analysis_file = run_dir / "analysis.vrealize.json"
-        if analysis_file.exists():
-            # Load analysis data
-            with open(analysis_file) as f:
-                analysis = json.load(f)
+        # Extract NSX operations
+        nsx_ops = analysis.get("nsx_operations", {})
+        segments = nsx_ops.get("segments", [])
+        firewall_rules = nsx_ops.get("firewall_rules", [])
+        distributed_firewall = nsx_ops.get("distributed_firewall", [])
 
-            # Extract NSX operations
-            nsx_ops = analysis.get("nsx_operations", {})
-            segments = nsx_ops.get("segments", [])
-            firewall_rules = nsx_ops.get("firewall_rules", [])
-            distributed_firewall = nsx_ops.get("distributed_firewall", [])
+        # Combine both types of firewall rules
+        all_firewall_rules = firewall_rules + distributed_firewall
 
-            # Combine both types of firewall rules
-            all_firewall_rules = firewall_rules + distributed_firewall
+        if not all_firewall_rules:
+            # No firewall rules to correlate
+            return None
 
-            if not all_firewall_rules:
-                # No firewall rules to correlate
-                return None
+        # Run correlation engine
+        engine = NSXCorrelationEngine()
+        mapping = engine.correlate_rules_to_segments(all_firewall_rules, segments)
 
-            # Run correlation engine
-            engine = NSXCorrelationEngine()
-            mapping = engine.correlate_rules_to_segments(all_firewall_rules, segments)
+        # Log correlation results
+        console.print("[dim]Correlation results:[/dim]")
+        console.print(
+            f"[dim]  - Primary network rules: {len(mapping.primary_network_rules)}[/dim]"
+        )
+        console.print(
+            f"[dim]  - Segments with rules: {len(mapping.segment_mappings)}[/dim]"
+        )
 
-            # Log correlation results
-            console.print("[dim]Correlation results:[/dim]")
+        for seg_name, seg_mapping in mapping.segment_mappings.items():
             console.print(
-                f"[dim]  - Primary network rules: {len(mapping.primary_network_rules)}[/dim]"
-            )
-            console.print(
-                f"[dim]  - Segments with rules: {len(mapping.segment_mappings)}[/dim]"
+                f"[dim]    • {seg_name}: {len(seg_mapping.firewall_rules)} rules "
+                f"(confidence: {seg_mapping.correlation_confidence:.2f})[/dim]"
             )
 
-            for seg_name, seg_mapping in mapping.segment_mappings.items():
-                console.print(
-                    f"[dim]    • {seg_name}: {len(seg_mapping.firewall_rules)} rules "
-                    f"(confidence: {seg_mapping.correlation_confidence:.2f})[/dim]"
-                )
-
-            return mapping
+        return mapping
 
     return None
 
