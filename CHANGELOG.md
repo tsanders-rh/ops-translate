@@ -8,6 +8,46 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+#### OVN-Kubernetes MultiNetworkPolicy Support (NSX Multi-Network Translation)
+- Intelligent NSX segment-to-firewall-rule correlation engine
+- Automatic generation of OVN-Kubernetes MultiNetworkPolicy for secondary networks
+- Smart network policy routing (primary vs secondary network detection)
+- NetworkAttachmentDefinition generation from NSX segments
+- Correlation confidence scoring with multiple detection strategies:
+  - Direct reference detection (0.90 confidence)
+  - IP range overlap analysis (0.70 confidence)
+  - VLAN ID matching (0.70 confidence)
+  - Workflow proximity analysis (0.40 confidence)
+- Comprehensive correlation reporting (CORRELATION_REPORT.md)
+- L3/L4 network policy generation with NSX limitation detection
+- Integration with existing NetworkPolicy generation
+- Support for OpenShift 4.12+ OVN-Kubernetes CNI
+- New modules:
+  - `ops_translate/generate/nsx_correlation.py` - Correlation engine (89% coverage)
+  - `ops_translate/generate/multinetworkpolicy.py` - Policy generator (85% coverage)
+- Unit tests (>85% coverage):
+  - `tests/test_nsx_correlation.py` - Correlation engine tests
+  - `tests/test_multinetworkpolicy.py` - Policy generation tests
+- Integration tests:
+  - `tests/integration/test_multinetworkpolicy_workflow.py` - End-to-end workflow tests (9 test cases)
+
+### Changed
+
+#### Network Policy Generation
+- Modified `networkpolicy.py` to filter out segment-specific rules
+- NetworkPolicy now generates only for primary pod network rules
+- Segment-specific rules route to MultiNetworkPolicy instead
+- Enhanced `generator.py` with correlation and multi-network policy generation pipeline
+
+### Documentation
+
+#### Updated Documentation
+- **README.md**: Added comprehensive NSX Multi-Network Policy Translation section with examples
+- **README.md**: Updated "What You Get" to include MultiNetworkPolicy outputs
+- **README.md**: Updated "Key Features" with network correlation capabilities
+- **README.md**: Updated "Example Output" structure to show multi-network-policies directory
+- **docs/guides/TESTING_GUIDE.md**: Created comprehensive OVN-Kubernetes MultiNetworkPolicy testing guide
+
 #### Ansible Role Skeleton Generation (Issue #58)
 - Automated Ansible role directory structure creation for imported workflows
 - Role generation for both vRealize Orchestrator workflows and PowerCLI scripts

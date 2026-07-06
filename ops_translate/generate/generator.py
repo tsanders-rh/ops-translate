@@ -53,80 +53,106 @@ def _generate_role_stubs_from_gaps(workspace: Workspace):
             console.print(f"[dim]  Generated role stub for: {comp_name}[/dim]")
 
 
-def _generate_network_policies(workspace: Workspace):
+def _generate_network_policies(workspace: Workspace, segment_mapping=None):
     """
     Generate Kubernetes NetworkPolicy manifests from detected NSX firewall rules.
 
     Reads analysis.vrealize.json to find NSX firewall rules and generates
     corresponding NetworkPolicy YAML files with limitation warnings.
+
+    Args:
+        workspace: Workspace containing analysis data
+        segment_mapping: Optional SegmentRuleMapping to filter segment-specific rules.
+                        If provided, only rules for the primary network are generated.
     """
     import json
 
     from ops_translate.generate.networkpolicy import generate_network_policies
 
-    # Find the latest analysis file
-    runs_dir = workspace.root / "runs"
-    if not runs_dir.exists():
-        return
+    # Find analysis file (check intent/ directory first, then runs/)
+    analysis_file = workspace.root / "intent" / "analysis.vrealize.json"
+    if not analysis_file.exists():
+        # Fallback to runs directory for backwards compatibility
+        runs_dir = workspace.root / "runs"
+        if runs_dir.exists():
+            run_dirs = sorted(runs_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
+            for run_dir in run_dirs:
+                potential_file = run_dir / "analysis.vrealize.json"
+                if potential_file.exists():
+                    analysis_file = potential_file
+                    break
 
-    # Get the most recent run directory
-    run_dirs = sorted(runs_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
-    if not run_dirs:
-        return
+    if analysis_file.exists():
+        # Load analysis data
+        with open(analysis_file) as f:
+            analysis = json.load(f)
 
-    # Look for analysis.vrealize.json in the latest run
-    for run_dir in run_dirs:
-        analysis_file = run_dir / "analysis.vrealize.json"
-        if analysis_file.exists():
-            # Load analysis data
-            with open(analysis_file) as f:
-                analysis = json.load(f)
+        # Extract NSX firewall rules
+        nsx_ops = analysis.get("nsx_operations", {})
+        firewall_rules = nsx_ops.get("firewall_rules", [])
+        distributed_firewall = nsx_ops.get("distributed_firewall", [])
 
-            # Extract NSX firewall rules
-            nsx_ops = analysis.get("nsx_operations", {})
-            firewall_rules = nsx_ops.get("firewall_rules", [])
-            distributed_firewall = nsx_ops.get("distributed_firewall", [])
+        # Combine both types of firewall rules
+        all_firewall_rules = firewall_rules + distributed_firewall
 
-            # Combine both types of firewall rules
-            all_firewall_rules = firewall_rules + distributed_firewall
+        if not all_firewall_rules:
+            # No firewall rules detected
+            return
+
+        # Filter to primary network rules only if segment mapping provided
+        if segment_mapping and segment_mapping.primary_network_rules:
+            # Only generate policies for rules assigned to primary network
+            primary_rule_names = set(segment_mapping.primary_network_rules)
+            all_firewall_rules = [
+                r for r in all_firewall_rules if r.get("name") in primary_rule_names
+            ]
 
             if not all_firewall_rules:
-                # No firewall rules detected
+                # No primary network rules to generate
+                console.print(
+                    "[dim]All firewall rules assigned to secondary networks "
+                    "(MultiNetworkPolicy)[/dim]"
+                )
                 return
 
-            # Get workflow name from source file
-            source_file = analysis.get("source_file", "workflow")
-            workflow_name = Path(source_file).stem
-
-            # Generate NetworkPolicy manifests
-            policies = generate_network_policies(all_firewall_rules, workflow_name)
-
-            if not policies:
-                # No policies could be generated
-                return
-
-            # Write NetworkPolicy files
-            output_dir = workspace.root / "output/network-policies"
-            output_dir.mkdir(parents=True, exist_ok=True)
-
-            for filename, content in policies.items():
-                policy_file = output_dir / filename
-                policy_file.write_text(content)
-
-            # Generate README
-            readme_content = _generate_networkpolicy_readme()
-            (output_dir / "README.md").write_text(readme_content)
-
-            # Print success message
             console.print(
-                f"[green]✓ Generated {len(policies)} NetworkPolicy manifest(s): "
-                f"output/network-policies/[/green]"
-            )
-            console.print(
-                "[yellow]⚠ Review limitations in YAML comments before deployment[/yellow]"
+                f"[dim]Generating NetworkPolicy for {len(all_firewall_rules)} "
+                f"primary network rule(s)[/dim]"
             )
 
-            return  # Found analysis and generated policies
+        # Get workflow name from source file
+        source_file = analysis.get("source_file", "workflow")
+        workflow_name = Path(source_file).stem
+
+        # Generate NetworkPolicy manifests
+        policies = generate_network_policies(all_firewall_rules, workflow_name)
+
+        if not policies:
+            # No policies could be generated
+            return
+
+        # Write NetworkPolicy files
+        output_dir = workspace.root / "output/network-policies"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        for filename, content in policies.items():
+            policy_file = output_dir / filename
+            policy_file.write_text(content)
+
+        # Generate README
+        readme_content = _generate_networkpolicy_readme()
+        (output_dir / "README.md").write_text(readme_content)
+
+        # Print success message
+        console.print(
+            f"[green]✓ Generated {len(policies)} NetworkPolicy manifest(s): "
+            f"output/network-policies/[/green]"
+        )
+        console.print(
+            "[yellow]⚠ Review limitations in YAML comments before deployment[/yellow]"
+        )
+
+        return  # Found analysis and generated policies
 
 
 def _generate_networkpolicy_readme() -> str:
@@ -191,6 +217,363 @@ For complex NSX environments, consider a hybrid approach:
 """
 
 
+def _correlate_segments_and_rules(workspace: Workspace):
+    """
+    Correlate NSX segments with firewall rules to determine network scope.
+
+    Uses the NSXCorrelationEngine to analyze which firewall rules apply to
+    specific segments (secondary networks) vs. primary network.
+
+    Returns:
+        SegmentRuleMapping or None if correlation fails or no data
+    """
+    import json
+
+    from ops_translate.generate.nsx_correlation import NSXCorrelationEngine
+
+    # Find analysis file (check intent/ directory first, then runs/)
+    analysis_file = workspace.root / "intent" / "analysis.vrealize.json"
+    if not analysis_file.exists():
+        # Fallback to runs directory for backwards compatibility
+        runs_dir = workspace.root / "runs"
+        if runs_dir.exists():
+            run_dirs = sorted(runs_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
+            for run_dir in run_dirs:
+                potential_file = run_dir / "analysis.vrealize.json"
+                if potential_file.exists():
+                    analysis_file = potential_file
+                    break
+
+    if analysis_file.exists():
+        # Load analysis data
+        with open(analysis_file) as f:
+            analysis = json.load(f)
+
+        # Extract NSX operations
+        nsx_ops = analysis.get("nsx_operations", {})
+        segments = nsx_ops.get("segments", [])
+        firewall_rules = nsx_ops.get("firewall_rules", [])
+        distributed_firewall = nsx_ops.get("distributed_firewall", [])
+
+        # Combine both types of firewall rules
+        all_firewall_rules = firewall_rules + distributed_firewall
+
+        if not all_firewall_rules:
+            # No firewall rules to correlate
+            return None
+
+        # Run correlation engine
+        engine = NSXCorrelationEngine()
+        mapping = engine.correlate_rules_to_segments(all_firewall_rules, segments)
+
+        # Log correlation results
+        console.print("[dim]Correlation results:[/dim]")
+        console.print(
+            f"[dim]  - Primary network rules: {len(mapping.primary_network_rules)}[/dim]"
+        )
+        console.print(
+            f"[dim]  - Segments with rules: {len(mapping.segment_mappings)}[/dim]"
+        )
+
+        for seg_name, seg_mapping in mapping.segment_mappings.items():
+            console.print(
+                f"[dim]    • {seg_name}: {len(seg_mapping.firewall_rules)} rules "
+                f"(confidence: {seg_mapping.correlation_confidence:.2f})[/dim]"
+            )
+
+        return mapping
+
+    return None
+
+
+def _generate_multi_network_policies(workspace: Workspace, segment_rule_mapping):
+    """
+    Generate OVN-Kubernetes MultiNetworkPolicy manifests for secondary networks.
+
+    Args:
+        workspace: Workspace containing analysis data
+        segment_rule_mapping: SegmentRuleMapping from correlation engine
+
+    Generates MultiNetworkPolicy YAML files for each segment with associated
+    firewall rules, along with README and CORRELATION_REPORT.
+    """
+    import json
+
+    from ops_translate.generate.multinetworkpolicy import generate_multi_network_policies
+
+    if not segment_rule_mapping or not segment_rule_mapping.segment_mappings:
+        return
+
+    # Find analysis file (check intent/ directory first, then runs/)
+    analysis_file = workspace.root / "intent" / "analysis.vrealize.json"
+    if not analysis_file.exists():
+        # Fallback to runs directory for backwards compatibility
+        runs_dir = workspace.root / "runs"
+        if runs_dir.exists():
+            run_dirs = sorted(runs_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
+            for run_dir in run_dirs:
+                potential_file = run_dir / "analysis.vrealize.json"
+                if potential_file.exists():
+                    analysis_file = potential_file
+                    break
+
+    if analysis_file.exists():
+            # Load analysis data
+            with open(analysis_file) as f:
+                analysis = json.load(f)
+
+            # Extract NSX firewall rules
+            nsx_ops = analysis.get("nsx_operations", {})
+            firewall_rules = nsx_ops.get("firewall_rules", [])
+            distributed_firewall = nsx_ops.get("distributed_firewall", [])
+            all_firewall_rules = firewall_rules + distributed_firewall
+
+            # Get workflow name
+            source_file = analysis.get("source_file", "workflow")
+            workflow_name = Path(source_file).stem
+
+            # Generate MultiNetworkPolicy for each segment
+            output_dir = workspace.root / "output/multi-network-policies"
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            total_policies = 0
+            for seg_name, seg_mapping in segment_rule_mapping.segment_mappings.items():
+                # Convert SegmentMapping to dict for compatibility
+                segment_dict = {
+                    "segment_name": seg_mapping.segment_name,
+                    "nad_name": seg_mapping.nad_name,
+                    "firewall_rules": seg_mapping.firewall_rules,
+                    "vlan_ids": seg_mapping.vlan_ids,
+                    "subnets": seg_mapping.subnets,
+                }
+
+                # Generate policies for this segment
+                policies = generate_multi_network_policies(
+                    segment_dict, all_firewall_rules, workflow_name
+                )
+
+                # Write policy files
+                for filename, content in policies.items():
+                    policy_file = output_dir / filename
+                    policy_file.write_text(content)
+                    total_policies += 1
+
+            # Generate README
+            readme_content = _generate_multinetworkpolicy_readme()
+            (output_dir / "README.md").write_text(readme_content)
+
+            # Generate CORRELATION_REPORT
+            report_content = _generate_correlation_report(segment_rule_mapping)
+            (output_dir / "CORRELATION_REPORT.md").write_text(report_content)
+
+            # Print success message
+            console.print(
+                f"[green]✓ Generated {total_policies} MultiNetworkPolicy manifest(s): "
+                f"output/multi-network-policies/[/green]"
+            )
+            console.print(
+                "[yellow]⚠ Review correlation report and YAML comments before deployment[/yellow]"
+            )
+
+            return  # Found analysis and generated policies
+
+
+def _generate_multinetworkpolicy_readme() -> str:
+    """Generate README for MultiNetworkPolicy output directory."""
+    return """# MultiNetworkPolicy Manifests (OVN-Kubernetes)
+
+This directory contains **OVN-Kubernetes MultiNetworkPolicy** manifests generated from NSX firewall rules that apply to **secondary networks** (NetworkAttachmentDefinitions).
+
+## What is MultiNetworkPolicy?
+
+MultiNetworkPolicy is a Kubernetes CRD provided by OVN-Kubernetes (OpenShift default CNI) that allows network policies to be scoped to specific secondary network interfaces, not just the primary pod network.
+
+**Key Differences from Standard NetworkPolicy:**
+- **API Group**: `k8s.cni.cncf.io/v1beta1` (not `networking.k8s.io/v1`)
+- **Scope**: Applies to traffic on specific secondary network (via annotation)
+- **Use Case**: VLANs, overlays, and other non-primary networks
+
+## Generated Files
+
+- **`*.yaml`**: MultiNetworkPolicy manifests (one per NSX firewall rule per segment)
+- **`CORRELATION_REPORT.md`**: Explains how rules were mapped to segments
+- **`README.md`**: This file
+
+## How Correlation Works
+
+NSX firewall rules are analyzed to determine which network segment (secondary network) they apply to:
+
+1. **Direct Reference** (0.9 confidence) - Rule evidence contains segment name
+2. **IP Range Overlap** (0.7 confidence) - Rule IPs in segment subnet
+3. **VLAN Matching** (0.7 confidence) - Same VLAN ID
+4. **Proximity** (0.4 confidence) - Same workflow location
+5. **Default** - No correlation → goes to primary network (standard NetworkPolicy)
+
+See `CORRELATION_REPORT.md` for details on each rule assignment.
+
+## Prerequisites
+
+Your cluster must have:
+- **OVN-Kubernetes CNI** (OpenShift default - already installed!)
+- **Multus CNI** for secondary network support
+- **NetworkAttachmentDefinitions** (see `output/network-attachments/`)
+
+## How to Use
+
+### 1. Deploy NetworkAttachmentDefinitions First
+
+```bash
+kubectl apply -f output/network-attachments/
+```
+
+### 2. Deploy MultiNetworkPolicies
+
+```bash
+kubectl apply -f output/multi-network-policies/
+```
+
+### 3. Attach Pods to Secondary Networks
+
+Pods must be annotated to use the secondary network:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-server
+  annotations:
+    k8s.v1.cni.cncf.io/networks: web-tier-vlan100  # NAD name
+spec:
+  containers:
+  - name: nginx
+    image: nginx:latest
+```
+
+### 4. Verify Policy Application
+
+```bash
+# Check MultiNetworkPolicies
+kubectl get multinetworkpolicy
+
+# Describe specific policy
+kubectl describe multinetworkpolicy web-tier-vlan100-allow-db
+```
+
+## Important Limitations
+
+OVN-Kubernetes MultiNetworkPolicy shares the same limitations as standard NetworkPolicy:
+
+- **L3/L4 only**: No L7 (HTTP/HTTPS) filtering. Consider Cilium for L7 support.
+- **No FQDN**: Cannot filter by domain names. Consider Cilium for FQDN support.
+- **No time-based rules**: Policies are always active.
+- **No user/group policies**: Pod-based filtering only.
+
+See YAML header comments for rule-specific limitations.
+
+## Troubleshooting
+
+**Policy not applying?**
+- Ensure pod has `k8s.v1.cni.cncf.io/networks` annotation
+- Verify NetworkAttachmentDefinition exists
+- Check pod has secondary interface: `kubectl exec <pod> -- ip a`
+
+**Traffic still blocked?**
+- MultiNetworkPolicy is default-deny
+- Ensure egress rules exist if needed
+- Check for conflicting policies
+
+## References
+
+- [OVN-Kubernetes Documentation](https://github.com/ovn-org/ovn-kubernetes)
+- [MultiNetworkPolicy Spec](https://github.com/k8snetworkplumbingwg/multi-networkpolicy)
+- [OpenShift Virtualization Multi-Network](https://docs.openshift.com/container-platform/latest/virt/vm_networking/virt-connecting-vm-to-linux-bridge.html)
+"""
+
+
+def _generate_correlation_report(segment_rule_mapping) -> str:
+    """Generate correlation report explaining rule-to-segment assignments."""
+    lines = [
+        "# NSX Segment-to-Rule Correlation Report",
+        "",
+        "This report explains how NSX firewall rules were mapped to network segments (secondary networks).",
+        "",
+        "## Summary",
+        "",
+        f"- **Primary Network Rules**: {len(segment_rule_mapping.primary_network_rules)}",
+        f"- **Segments with Rules**: {len(segment_rule_mapping.segment_mappings)}",
+        "",
+    ]
+
+    # Primary network rules
+    if segment_rule_mapping.primary_network_rules:
+        lines.extend([
+            "## Primary Network Rules",
+            "",
+            "These rules apply to the primary pod network (standard NetworkPolicy):",
+            "",
+        ])
+        for rule_name in segment_rule_mapping.primary_network_rules:
+            lines.append(f"- `{rule_name}`")
+        lines.append("")
+
+    # Segment-specific rules
+    if segment_rule_mapping.segment_mappings:
+        lines.extend([
+            "## Secondary Network Rules (MultiNetworkPolicy)",
+            "",
+            "These rules were correlated to specific network segments:",
+            "",
+        ])
+
+        for seg_name, seg_mapping in segment_rule_mapping.segment_mappings.items():
+            lines.extend([
+                f"### Segment: {seg_name}",
+                "",
+                f"- **NetworkAttachmentDefinition**: `default/{seg_mapping.nad_name}`",
+                f"- **VLAN IDs**: {', '.join(map(str, seg_mapping.vlan_ids)) if seg_mapping.vlan_ids else 'N/A'}",
+                f"- **Subnets**: {', '.join(seg_mapping.subnets) if seg_mapping.subnets else 'N/A'}",
+                f"- **Correlation Confidence**: {seg_mapping.correlation_confidence:.2f}",
+                f"- **Firewall Rules**: {len(seg_mapping.firewall_rules)}",
+                "",
+            ])
+
+            if seg_mapping.firewall_rules:
+                lines.append("| Rule Name | Evidence |")
+                lines.append("|-----------|----------|")
+                for i, rule_name in enumerate(seg_mapping.firewall_rules):
+                    evidence = (
+                        seg_mapping.correlation_evidence[i]
+                        if i < len(seg_mapping.correlation_evidence)
+                        else "N/A"
+                    )
+                    lines.append(f"| `{rule_name}` | {evidence} |")
+                lines.append("")
+
+    lines.extend([
+        "## Correlation Methods",
+        "",
+        "The correlation engine uses multiple detection strategies:",
+        "",
+        "1. **Direct Reference** (0.90 confidence) - Rule evidence contains segment name",
+        "2. **IP Range Overlap** (0.70 confidence) - Rule IPs fall within segment subnet",
+        "3. **VLAN Matching** (0.70 confidence) - Same VLAN ID in rule and segment",
+        "4. **Proximity Analysis** (0.40 confidence) - Same workflow location",
+        "5. **Multi-Signal Boost** (+0.05 per additional signal, max +0.15)",
+        "",
+        "Rules with confidence ≥ 0.50 are assigned to segments. Lower confidence rules default to primary network.",
+        "",
+        "## Review Recommendations",
+        "",
+        "- **High Confidence (≥ 0.85)**: Likely correct, but review YAML comments",
+        "- **Medium Confidence (0.65-0.84)**: Review carefully, validate IP ranges and VLANs",
+        "- **Low Confidence (0.50-0.64)**: Manual review recommended",
+        "",
+        "For questions or issues with correlation, see the project documentation.",
+    ])
+
+    return "\n".join(lines)
+
+
 def _generate_network_attachments(workspace: Workspace):
     """
     Generate Kubernetes NetworkAttachmentDefinition manifests from NSX segments.
@@ -202,20 +585,20 @@ def _generate_network_attachments(workspace: Workspace):
 
     from ops_translate.generate.network_attachment import generate_network_attachments
 
-    # Find the latest analysis file
-    runs_dir = workspace.root / "runs"
-    if not runs_dir.exists():
-        return
+    # Find analysis file (check intent/ directory first, then runs/)
+    analysis_file = workspace.root / "intent" / "analysis.vrealize.json"
+    if not analysis_file.exists():
+        # Fallback to runs directory for backwards compatibility
+        runs_dir = workspace.root / "runs"
+        if runs_dir.exists():
+            run_dirs = sorted(runs_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
+            for run_dir in run_dirs:
+                potential_file = run_dir / "analysis.vrealize.json"
+                if potential_file.exists():
+                    analysis_file = potential_file
+                    break
 
-    # Get the most recent run directory
-    run_dirs = sorted(runs_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
-    if not run_dirs:
-        return
-
-    # Look for analysis.vrealize.json in the latest run
-    for run_dir in run_dirs:
-        analysis_file = run_dir / "analysis.vrealize.json"
-        if analysis_file.exists():
+    if analysis_file.exists():
             # Load analysis data
             with open(analysis_file) as f:
                 analysis = json.load(f)
@@ -619,12 +1002,6 @@ def generate_with_templates(
             console.print("[green]✓ Ansible role: output/ansible/roles/provision_vm/[/green]")
             console.print("[green]✓ README: output/README.md[/green]")
 
-            # Generate NetworkPolicy manifests from NSX firewall rules if detected
-            try:
-                _generate_network_policies(workspace)
-            except Exception as e:
-                console.print(f"[yellow]⚠ Could not generate NetworkPolicy manifests: {e}[/yellow]")
-
             # Generate NetworkAttachmentDefinition manifests from NSX segments if detected
             try:
                 _generate_network_attachments(workspace)
@@ -633,6 +1010,28 @@ def generate_with_templates(
                     f"[yellow]⚠ Could not generate NetworkAttachmentDefinition "
                     f"manifests: {e}[/yellow]"
                 )
+
+            # Correlate NSX segments with firewall rules to determine network scope
+            segment_rule_mapping = None
+            try:
+                segment_rule_mapping = _correlate_segments_and_rules(workspace)
+            except Exception as e:
+                console.print(f"[yellow]⚠ Could not correlate segments and rules: {e}[/yellow]")
+
+            # Generate MultiNetworkPolicy manifests for secondary networks
+            if segment_rule_mapping and segment_rule_mapping.segment_mappings:
+                try:
+                    _generate_multi_network_policies(workspace, segment_rule_mapping)
+                except Exception as e:
+                    console.print(
+                        f"[yellow]⚠ Could not generate MultiNetworkPolicy manifests: {e}[/yellow]"
+                    )
+
+            # Generate NetworkPolicy manifests for primary network
+            try:
+                _generate_network_policies(workspace, segment_rule_mapping)
+            except Exception as e:
+                console.print(f"[yellow]⚠ Could not generate NetworkPolicy manifests: {e}[/yellow]")
         except Exception as e:
             console.print(f"[red]Error generating artifacts: {e}[/red]")
         return

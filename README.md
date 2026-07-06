@@ -70,6 +70,8 @@ After running ops-translate, you'll have:
 - ✅ **Migration Readiness Report** - Interactive HTML with classification, gaps, and recommendations
 - ✅ **KubeVirt Manifests** - Ready-to-deploy VirtualMachine YAML
 - ✅ **Ansible Playbooks** - Executable roles with TODO placeholders for manual work
+- ✅ **NetworkPolicy & MultiNetworkPolicy** - Primary and secondary network policies from NSX rules
+- ✅ **NetworkAttachmentDefinitions** - Secondary network definitions from NSX segments
 - ✅ **Gap Analysis** - Detailed migration paths for each component
 - ✅ **Decision Guidance** - Interactive questionnaire for missing context
 
@@ -219,6 +221,9 @@ Detailed component-by-component breakdown with migration paths and OpenShift equ
 - Extract vRealize workflow logic including approvals and governance
 - **Interactive Decision Interview** - Answer questions to provide missing context and upgrade component classifications
 - **Automatic gap analysis for vRealize workflows** - Detects NSX operations, custom plugins, and REST calls
+- **NSX network segmentation translation** - Intelligent correlation of NSX segments and firewall rules
+- **OVN-Kubernetes MultiNetworkPolicy generation** - Secondary network policies for OpenShift multi-network pods
+- **Smart network policy routing** - Automatically routes rules to primary (NetworkPolicy) or secondary (MultiNetworkPolicy) networks
 - **Translatability assessment** - Classifies components as SUPPORTED, PARTIAL, BLOCKED, or MANUAL
 - **Migration path guidance** - Provides specific recommendations with production-grade patterns
 - **Smart Ansible scaffolding** - Generates TODO tasks and role stubs for manual work
@@ -285,12 +290,220 @@ PowerCLI/vRealize  ──[LLM]──>  intent.yaml  ──[Templates]──>  An
 
 Quick navigation to advanced capabilities:
 
+- [NSX Multi-Network Policy Translation](#nsx-multi-network-policy-translation) - Automatic secondary network policies
 - [Multiple Output Formats](#multiple-output-formats) - YAML, JSON, Kustomize, ArgoCD
 - [Template Customization](#template-customization) - Customize generated artifacts
 - [MTV Mode](#mtv-migration-toolkit-for-virtualization-mode) - Post-migration validation playbooks
 - [Dry-Run Validation](#enhanced-dry-run-validation) - Validate before execution
 - [vRealize Translation](#vrealize-workflow-translation-to-ansible) - Workflow to Ansible
 - [Gap Analysis](#automatic-gap-analysis-vrealize-workflows) - Migration readiness assessment
+
+### NSX Multi-Network Policy Translation
+
+When migrating vRealize workflows that configure NSX network segments and firewall rules, ops-translate automatically generates **OVN-Kubernetes MultiNetworkPolicy** resources for secondary networks alongside standard **NetworkPolicy** for primary pod networks.
+
+#### What It Does
+
+**Intelligent Network Policy Routing:**
+- **Primary Network Rules** → Standard Kubernetes **NetworkPolicy** (pod-to-pod on default network)
+- **Segment-Specific Rules** → **MultiNetworkPolicy** (traffic on secondary networks/VLANs)
+- **NetworkAttachmentDefinitions** → Multus secondary network definitions from NSX segments
+
+#### How It Works
+
+```bash
+# Import vRealize workflow with NSX operations
+ops-translate import --source vrealize --file nsx-provisioning-workflow.xml
+
+# Analyze detects NSX segments and firewall rules
+ops-translate analyze
+
+# Generate automatically correlates and routes policies
+ops-translate generate --profile lab
+```
+
+**Correlation Engine** analyzes NSX firewall rule evidence to determine network scope:
+
+| Detection Method | Confidence | Example |
+|-----------------|-----------|---------|
+| **Direct Reference** | 0.90 | Rule mentions segment name: `segment: 'Web-Tier-VLAN100'` |
+| **IP Range Overlap** | 0.70 | Rule destination `10.10.100.50` matches segment subnet `10.10.100.0/24` |
+| **VLAN Matching** | 0.70 | Both rule and segment reference `vlan: 100` |
+| **Proximity Analysis** | 0.40 | Rule defined near segment in workflow |
+
+**Output Structure:**
+
+```
+output/
+├── multi-network-policies/           # OVN-Kubernetes secondary networks
+│   ├── CORRELATION_REPORT.md         # How rules were assigned
+│   ├── web-tier-vlan100-allow-web-to-app.yaml
+│   └── db-tier-vlan200-allow-backup.yaml
+├── network-policies/                 # Standard Kubernetes primary network
+│   ├── allow-internet-egress.yaml
+│   └── allow-dns.yaml
+└── network-attachments/              # Multus NetworkAttachmentDefinitions
+    ├── web-tier-vlan100.yaml
+    └── db-tier-vlan200.yaml
+```
+
+#### Example: NSX Workflow Translation
+
+**NSX vRealize Workflow:**
+```xml
+<workflow-item name="createWebSegment" type="task">
+  <script>
+    var webSegment = nsxClient.createSegment({
+      displayName: "Web-Tier-VLAN100",
+      vlanIds: [100],
+      subnets: ["10.10.100.0/24"]
+    });
+  </script>
+</workflow-item>
+
+<workflow-item name="allowWebToApp" type="task">
+  <script>
+    nsxClient.createFirewallRule({
+      name: "Allow Web to App",
+      segment: "Web-Tier-VLAN100",
+      sources: ["web-sg"],
+      destinations: ["app-sg"],
+      services: ["HTTP", "HTTPS"],
+      action: "ALLOW"
+    });
+  </script>
+</workflow-item>
+```
+
+**Generated MultiNetworkPolicy (OVN-Kubernetes):**
+```yaml
+apiVersion: k8s.cni.cncf.io/v1beta1
+kind: MultiNetworkPolicy
+metadata:
+  name: web-tier-vlan100-allow-web-to-app
+  namespace: default
+  annotations:
+    k8s.v1.cni.cncf.io/policy-for: default/web-tier-vlan100
+    source-location: workflow.xml:145
+  labels:
+    translated-from: nsx-firewall
+    network-scope: secondary
+    network-attachment: web-tier-vlan100
+spec:
+  podSelector:
+    matchLabels:
+      app: web
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: app-tier
+    ports:
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 443
+```
+
+**Generated NetworkAttachmentDefinition:**
+```yaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: web-tier-vlan100
+  namespace: default
+spec:
+  config: |
+    {
+      "cniVersion": "0.3.1",
+      "name": "web-tier-vlan100",
+      "type": "bridge",
+      "vlan": 100,
+      "ipam": {
+        "type": "whereabouts",
+        "range": "10.10.100.0/24",
+        "gateway": "10.10.100.1"
+      }
+    }
+```
+
+#### Correlation Report
+
+The `CORRELATION_REPORT.md` explains how each rule was assigned:
+
+```markdown
+# NSX Segment-to-Rule Correlation Report
+
+## Summary
+- **Primary Network Rules**: 2
+- **Segments with Rules**: 3
+
+## Primary Network Rules
+- Allow-Internet-Egress
+- Allow-DNS
+
+## Secondary Network Rules (MultiNetworkPolicy)
+
+### Segment: Web-Tier-VLAN100
+- **NetworkAttachmentDefinition**: `default/web-tier-vlan100`
+- **VLAN IDs**: 100
+- **Subnets**: 10.10.100.0/24
+- **Correlation Confidence**: 0.95
+- **Firewall Rules**: 1
+
+| Rule Name | Evidence |
+|-----------|----------|
+| `Allow-Web-to-App` | Direct reference to segment 'Web-Tier-VLAN100' |
+
+## Correlation Methods
+1. **Direct Reference** (0.90) - Rule evidence contains segment name
+2. **IP Range Overlap** (0.70) - Rule IPs within segment subnet
+3. **VLAN Matching** (0.70) - Same VLAN ID
+4. **Proximity Analysis** (0.40) - Same workflow location
+```
+
+#### OpenShift Deployment
+
+**1. Apply NetworkAttachmentDefinitions:**
+```bash
+oc apply -f output/network-attachments/
+```
+
+**2. Apply MultiNetworkPolicies:**
+```bash
+oc apply -f output/multi-network-policies/
+```
+
+**3. Attach pods to secondary networks:**
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-server
+  annotations:
+    k8s.v1.cni.cncf.io/networks: web-tier-vlan100
+spec:
+  containers:
+  - name: nginx
+    image: nginx:latest
+```
+
+#### Requirements
+
+- **OpenShift 4.12+** (OVN-Kubernetes is the default CNI)
+- **Multus CNI** (pre-installed on OpenShift)
+- **Bridge CNI plugin** (for VLAN support)
+
+#### Limitations
+
+ops-translate automatically detects and documents NSX features that don't translate to MultiNetworkPolicy:
+
+- ✅ **Supported**: L3/L4 ingress/egress rules, IP/port/protocol filtering
+- ⚠️ **Not Supported**: L7 application-aware filtering, FQDN-based rules, time-based rules, user/group-based rules
+
+See generated policy YAML comments for specific limitations detected in your NSX configuration.
 
 ### Multiple Output Formats
 
@@ -671,21 +884,34 @@ After running `ops-translate generate`, you'll have:
 ```
 output/
 ├── kubevirt/
-│   └── vm.yaml                    # KubeVirt VirtualMachine manifest
+│   └── vm.yaml                      # KubeVirt VirtualMachine manifest
 ├── ansible/
-│   ├── site.yml                   # Main playbook with TODO tasks for gaps
+│   ├── site.yml                     # Main playbook with TODO tasks for gaps
 │   └── roles/
 │       ├── provision_vm/
 │       │   ├── tasks/main.yml
 │       │   └── defaults/main.yml
-│       └── nsx_segment_migration/ # Auto-generated stub for manual work
-│           ├── README.md          # Migration guidance
-│           ├── tasks/main.yml     # TODO placeholders
-│           └── defaults/main.yml  # Discovered parameters
+│       └── nsx_segment_migration/   # Auto-generated stub for manual work
+│           ├── README.md            # Migration guidance
+│           ├── tasks/main.yml       # TODO placeholders
+│           └── defaults/main.yml    # Discovered parameters
+├── network-policies/                # Primary network (standard NetworkPolicy)
+│   ├── README.md
+│   ├── allow-internet-egress.yaml
+│   └── allow-dns.yaml
+├── multi-network-policies/          # Secondary networks (OVN-Kubernetes)
+│   ├── README.md
+│   ├── CORRELATION_REPORT.md        # Segment-to-rule correlation analysis
+│   ├── web-tier-vlan100-allow-web-to-app.yaml
+│   └── db-tier-vlan200-allow-backup.yaml
+├── network-attachments/             # NetworkAttachmentDefinitions
+│   ├── README.md
+│   ├── web-tier-vlan100.yaml
+│   └── db-tier-vlan200.yaml
 ├── intent/
-│   ├── gaps.md                    # Human-readable gap analysis
-│   └── gaps.json                  # Machine-readable gap data
-└── README.md                      # How to run the artifacts
+│   ├── gaps.md                      # Human-readable gap analysis
+│   └── gaps.json                    # Machine-readable gap data
+└── README.md                        # How to run the artifacts
 ```
 
 ---
