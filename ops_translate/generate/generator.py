@@ -2,6 +2,7 @@
 Unified artifact generation using LLM or templates.
 """
 
+import json
 import logging
 import re
 from pathlib import Path
@@ -856,8 +857,27 @@ def generate_with_ai(
     # Load intent
     intent_file = workspace.root / "intent/intent.yaml"
     if not intent_file.exists():
-        console.print("[red]Error: intent/intent.yaml not found. Run 'intent extract' first.[/red]")
-        return
+        # Check if we have NSX operations that can be generated without intent.yaml
+        analysis_file = workspace.root / "intent/analysis.vrealize.json"
+        has_nsx_operations = False
+        if analysis_file.exists():
+            try:
+                analysis_data = json.load(analysis_file.open())
+                nsx_ops = analysis_data.get("nsx_operations", {})
+                has_segments = bool(nsx_ops.get("segments"))
+                has_firewall_rules = bool(nsx_ops.get("firewall_rules"))
+                has_nsx_operations = has_segments or has_firewall_rules
+            except Exception:
+                pass
+
+        if has_nsx_operations:
+            # NSX-only mode: fall back to templates which handle this case
+            console.print("[dim]NSX operations detected. Using template-based generation for network policies.[/dim]")
+            generate_with_templates(workspace, profile, output_format, assume_existing_vms, translation_profile)
+            return
+        else:
+            console.print("[red]Error: intent/intent.yaml not found. Run 'intent extract' first.[/red]")
+            return
 
     intent_yaml = intent_file.read_text()
 
@@ -978,62 +998,89 @@ def generate_with_templates(
     # Check if we can work with gaps.json instead of merged intent
     has_merged_intent = intent_file.exists()
 
+    # Check if we have NSX operations that can be generated without intent.yaml
+    analysis_file = workspace.root / "intent/analysis.vrealize.json"
+    has_nsx_operations = False
+    if analysis_file.exists():
+        try:
+            analysis_data = json.load(analysis_file.open())
+            nsx_ops = analysis_data.get("nsx_operations", {})
+            has_segments = bool(nsx_ops.get("segments"))
+            has_firewall_rules = bool(nsx_ops.get("firewall_rules"))
+            has_nsx_operations = has_segments or has_firewall_rules
+        except Exception:
+            pass
+
     # For YAML format, check if custom templates exist
     loader = TemplateLoader(workspace.root)
     has_custom_templates = loader.has_custom_templates()
 
     if output_format == "yaml" and not has_custom_templates:
         # Use direct generation to support gap analysis (only if no custom templates)
-        # This path works without merged intent.yaml if gaps.json exists
-        try:
-            ansible.generate(
-                workspace,
-                profile,
-                use_ai=False,
-                assume_existing_vms=assume_existing_vms,
-                translation_profile=translation_profile,
-            )
-            if not assume_existing_vms:
-                kubevirt.generate(workspace, profile, use_ai=False)
-                console.print("[green]✓ KubeVirt manifest: output/kubevirt/vm.yaml[/green]")
-            else:
-                console.print("[dim]Skipping VM YAML generation (--assume-existing-vms)[/dim]")
-            console.print("[green]✓ Ansible playbook: output/ansible/site.yml[/green]")
-            console.print("[green]✓ Ansible role: output/ansible/roles/provision_vm/[/green]")
-            console.print("[green]✓ README: output/README.md[/green]")
+        # This path works without merged intent.yaml if gaps.json exists OR if we have NSX operations
 
-            # Generate NetworkAttachmentDefinition manifests from NSX segments if detected
+        # Only generate Ansible/KubeVirt if we have intent/gaps OR if we're not NSX-only
+        skip_ansible_kubevirt = has_nsx_operations and not has_merged_intent and not (workspace.root / "intent/gaps.json").exists()
+
+        if not skip_ansible_kubevirt:
             try:
-                _generate_network_attachments(workspace)
+                ansible.generate(
+                    workspace,
+                    profile,
+                    use_ai=False,
+                    assume_existing_vms=assume_existing_vms,
+                    translation_profile=translation_profile,
+                )
+                if not assume_existing_vms:
+                    kubevirt.generate(workspace, profile, use_ai=False)
+                    console.print("[green]✓ KubeVirt manifest: output/kubevirt/vm.yaml[/green]")
+                else:
+                    console.print("[dim]Skipping VM YAML generation (--assume-existing-vms)[/dim]")
+                console.print("[green]✓ Ansible playbook: output/ansible/site.yml[/green]")
+                console.print("[green]✓ Ansible role: output/ansible/roles/provision_vm/[/green]")
+                console.print("[green]✓ README: output/README.md[/green]")
+            except Exception as e:
+                if has_nsx_operations:
+                    # If we have NSX operations, it's OK if Ansible/KubeVirt generation fails
+                    console.print(f"[dim]Skipping Ansible/KubeVirt generation (NSX-only mode): {e}[/dim]")
+                else:
+                    # Otherwise, this is an error
+                    raise
+        else:
+            console.print("[dim]Skipping Ansible/KubeVirt generation (NSX-only mode)[/dim]")
+
+        # NSX network generation (works independently of intent.yaml)
+        # Generate NetworkAttachmentDefinition manifests from NSX segments if detected
+        try:
+            _generate_network_attachments(workspace)
+        except Exception as e:
+            console.print(
+                f"[yellow]⚠ Could not generate NetworkAttachmentDefinition "
+                f"manifests: {e}[/yellow]"
+            )
+
+        # Correlate NSX segments with firewall rules to determine network scope
+        segment_rule_mapping = None
+        try:
+            segment_rule_mapping = _correlate_segments_and_rules(workspace)
+        except Exception as e:
+            console.print(f"[yellow]⚠ Could not correlate segments and rules: {e}[/yellow]")
+
+        # Generate MultiNetworkPolicy manifests for secondary networks
+        if segment_rule_mapping and segment_rule_mapping.segment_mappings:
+            try:
+                _generate_multi_network_policies(workspace, segment_rule_mapping)
             except Exception as e:
                 console.print(
-                    f"[yellow]⚠ Could not generate NetworkAttachmentDefinition "
-                    f"manifests: {e}[/yellow]"
+                    f"[yellow]⚠ Could not generate MultiNetworkPolicy manifests: {e}[/yellow]"
                 )
 
-            # Correlate NSX segments with firewall rules to determine network scope
-            segment_rule_mapping = None
-            try:
-                segment_rule_mapping = _correlate_segments_and_rules(workspace)
-            except Exception as e:
-                console.print(f"[yellow]⚠ Could not correlate segments and rules: {e}[/yellow]")
-
-            # Generate MultiNetworkPolicy manifests for secondary networks
-            if segment_rule_mapping and segment_rule_mapping.segment_mappings:
-                try:
-                    _generate_multi_network_policies(workspace, segment_rule_mapping)
-                except Exception as e:
-                    console.print(
-                        f"[yellow]⚠ Could not generate MultiNetworkPolicy manifests: {e}[/yellow]"
-                    )
-
-            # Generate NetworkPolicy manifests for primary network
-            try:
-                _generate_network_policies(workspace, segment_rule_mapping)
-            except Exception as e:
-                console.print(f"[yellow]⚠ Could not generate NetworkPolicy manifests: {e}[/yellow]")
+        # Generate NetworkPolicy manifests for primary network
+        try:
+            _generate_network_policies(workspace, segment_rule_mapping)
         except Exception as e:
-            console.print(f"[red]Error generating artifacts: {e}[/red]")
+            console.print(f"[yellow]⚠ Could not generate NetworkPolicy manifests: {e}[/yellow]")
+
         return
 
     # For other formats, we need merged intent.yaml
