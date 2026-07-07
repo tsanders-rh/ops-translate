@@ -979,8 +979,10 @@ def generate(
         translation_profile=translation_profile_schema,
     )
 
-    # Generate locking setup documentation if vRealize workflows exist
-    if locking_enabled:
+    # Generate locking setup documentation if vRealize workflows exist AND we have intent.yaml
+    # (Skip in NSX-only mode where only network policies are generated)
+    intent_file = workspace.root / "intent/intent.yaml"
+    if locking_enabled and intent_file.exists():
         vrealize_dir = workspace.root / "input/vrealize"
         if vrealize_dir.exists():
             workflow_files = list(vrealize_dir.glob("*.xml"))

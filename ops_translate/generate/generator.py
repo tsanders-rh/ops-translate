@@ -1019,8 +1019,8 @@ def generate_with_templates(
         # Use direct generation to support gap analysis (only if no custom templates)
         # This path works without merged intent.yaml if gaps.json exists OR if we have NSX operations
 
-        # Only generate Ansible/KubeVirt if we have intent/gaps OR if we're not NSX-only
-        skip_ansible_kubevirt = has_nsx_operations and not has_merged_intent and not (workspace.root / "intent/gaps.json").exists()
+        # Only generate Ansible/KubeVirt if we have merged intent (not NSX-only mode)
+        skip_ansible_kubevirt = has_nsx_operations and not has_merged_intent
 
         if not skip_ansible_kubevirt:
             try:
