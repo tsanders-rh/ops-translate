@@ -356,28 +356,7 @@ cat intent/analysis.vrealize.json | jq '.nsx_operations'
 
 ## Part 3: Generation and Correlation (10 minutes)
 
-### Step 5: Create Minimal Intent File
-
-**Why this is needed**: The `generate` command expects an `intent.yaml` file from the standard workflow. For NSX-only demos, we create a minimal one to allow the generator to proceed. The actual network policy generation happens from the `analysis.vrealize.json` file.
-
-```bash
-# Create minimal intent file
-cat > intent/intent.yaml <<'EOF'
-# Minimal intent file for NSX MultiNetworkPolicy demo
-# The actual network policy generation happens from analysis.vrealize.json
-
-workflows:
-  - name: nsx-3tier-app
-    source: nsx-3tier-app.workflow.xml
-    description: NSX 3-tier application provisioning
-
-# Network policies will be generated from NSX operations in analysis file
-EOF
-```
-
-**Note**: In future versions, this step may be automated with a `--skip-intent` flag for NSX-only workflows.
-
-### Step 6: Generate OpenShift Resources
+### Step 5: Generate OpenShift Resources
 
 ```bash
 # Generate all artifacts (correlation happens automatically)
@@ -414,7 +393,7 @@ output/
    - General rules → NetworkPolicy
 3. **Three output types** generated automatically
 
-### Step 7: Review the Correlation Report
+### Step 6: Review the Correlation Report
 
 This is the key artifact that explains the AI's decision-making:
 
@@ -505,7 +484,7 @@ For questions or issues with correlation, see the project documentation.
 **Customer Value Highlight**:
 > "Notice how the DB rule got **0.95 confidence** because it had 3 signals: segment name, VLAN ID, and IP overlap. This multi-signal validation reduces false positives."
 
-### Step 8: Examine a MultiNetworkPolicy
+### Step 7: Examine a MultiNetworkPolicy
 
 ```bash
 cat output/multi-network-policies/web-tier-vlan100-allow-web-to-app.yaml
@@ -578,7 +557,7 @@ spec:
 - ✅ **Traceability**: Source location annotated
 - ✅ **Standard NetworkPolicy structure**: Easy for users to understand
 
-### Step 9: Examine a NetworkAttachmentDefinition
+### Step 8: Examine a NetworkAttachmentDefinition
 
 ```bash
 cat output/network-attachments/web-tier-vlan100.yaml
@@ -638,7 +617,7 @@ spec:
 - Cluster admin access
 - `oc` CLI configured
 
-### Step 10: Prepare the Cluster
+### Step 9: Prepare the Cluster
 
 ```bash
 # Login to OpenShift
@@ -654,7 +633,7 @@ oc get pods -n openshift-ovn-kubernetes
 oc get pods -n openshift-multus
 ```
 
-### Step 11: Deploy NetworkAttachmentDefinitions
+### Step 10: Deploy NetworkAttachmentDefinitions
 
 ```bash
 # Apply NADs first (other resources depend on them)
@@ -672,7 +651,7 @@ app-tier-vlan150      5s
 db-tier-vlan200       5s
 ```
 
-### Step 12: Deploy MultiNetworkPolicies
+### Step 11: Deploy MultiNetworkPolicies
 
 ```bash
 # Apply MultiNetworkPolicies for secondary networks
@@ -690,7 +669,7 @@ app-tier-vlan150-allow-app-to-db      3s
 db-tier-vlan200-allow-db-backup       3s
 ```
 
-### Step 13: Deploy Standard NetworkPolicies
+### Step 12: Deploy Standard NetworkPolicies
 
 ```bash
 # Apply NetworkPolicies for primary network
@@ -711,7 +690,7 @@ allow-dns                 <none>         2s
 
 ## Part 5: Testing and Validation (10 minutes)
 
-### Step 14: Create Test Pods
+### Step 13: Create Test Pods
 
 Create pods attached to the secondary networks to test the policies:
 
@@ -784,7 +763,7 @@ oc wait --for=condition=ready pod/app-server -n nsx-demo --timeout=60s
 oc wait --for=condition=ready pod/db-server -n nsx-demo --timeout=60s
 ```
 
-### Step 15: Verify Secondary Network Interfaces
+### Step 14: Verify Secondary Network Interfaces
 
 ```bash
 # Check web-server has secondary interface
@@ -815,7 +794,7 @@ App Secondary IP (VLAN 150): 10.10.150.20
 DB Secondary IP (VLAN 200): 10.10.200.25
 ```
 
-### Step 16: Test Network Policy Enforcement
+### Step 15: Test Network Policy Enforcement
 
 **Test 1: Web → App (should be allowed on ports 80, 443)**
 ```bash
@@ -855,7 +834,7 @@ oc exec -n nsx-demo web-server -- timeout 3 nc -zv $DB_SECONDARY 3306
 # Expected: Connection timeout (no policy allows web → db directly)
 ```
 
-### Step 17: View Policy Verdicts (Optional - if network observability enabled)
+### Step 16: View Policy Verdicts (Optional - if network observability enabled)
 
 ```bash
 # If using OpenShift network observability
