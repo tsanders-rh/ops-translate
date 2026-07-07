@@ -1081,6 +1081,13 @@ def generate_with_templates(
         except Exception as e:
             console.print(f"[yellow]⚠ Could not generate NetworkPolicy manifests: {e}[/yellow]")
 
+        # Clean up empty directories created during workspace init
+        if skip_ansible_kubevirt:
+            for empty_dir in ["output/ansible", "output/kubevirt"]:
+                dir_path = workspace.root / empty_dir
+                if dir_path.exists() and not any(dir_path.iterdir()):
+                    dir_path.rmdir()
+
         return
 
     # For other formats, we need merged intent.yaml
