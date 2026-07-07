@@ -809,8 +809,9 @@ spec:
 # Login to OpenShift
 oc login https://your-cluster-api:6443
 
-# Create namespace for demo
-oc new-project nsx-demo
+# Create namespace matching your profile
+# The 'lab' profile uses namespace 'virt-lab' by default
+oc new-project virt-lab
 
 # Verify OVN-Kubernetes is running
 oc get pods -n openshift-ovn-kubernetes
@@ -819,14 +820,26 @@ oc get pods -n openshift-ovn-kubernetes
 oc get pods -n openshift-multus
 ```
 
+> **Note: Namespace Configuration**
+>
+> Generated resources use the `default_namespace` from your profile. The `lab` profile uses `virt-lab`.
+>
+> **To use a different namespace** (e.g., `nsx-demo`), edit `ops-translate.yaml`:
+> ```yaml
+> profiles:
+>   lab:
+>     default_namespace: nsx-demo  # Change from virt-lab
+> ```
+> Then regenerate: `rm -rf output/ && ops-translate generate --profile lab`
+
 ### Step 10: Deploy NetworkAttachmentDefinitions
 
 ```bash
 # Apply NADs first (other resources depend on them)
-oc apply -f output/network-attachments/ -n nsx-demo
+oc apply -f output/network-attachments/ -n virt-lab
 
 # Verify NADs created
-oc get network-attachment-definitions -n nsx-demo
+oc get network-attachment-definitions -n virt-lab
 ```
 
 **Expected Output**:
@@ -841,10 +854,10 @@ db-tier-vlan200       5s
 
 ```bash
 # Apply MultiNetworkPolicies for secondary networks
-oc apply -f output/multi-network-policies/ -n nsx-demo
+oc apply -f output/multi-network-policies/ -n virt-lab
 
 # Verify policies created
-oc get multinetworkpolicies -n nsx-demo
+oc get multinetworkpolicies -n virt-lab
 ```
 
 **Expected Output**:
@@ -859,10 +872,10 @@ db-tier-vlan200-allow-db-backup       3s
 
 ```bash
 # Apply NetworkPolicies for primary network
-oc apply -f output/network-policies/ -n nsx-demo
+oc apply -f output/network-policies/ -n virt-lab
 
 # Verify policies created
-oc get networkpolicies -n nsx-demo
+oc get networkpolicies -n virt-lab
 ```
 
 **Expected Output**:
@@ -888,7 +901,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: web-server
-  namespace: nsx-demo
+  namespace: virt-lab
   labels:
     app: web
   annotations:
@@ -906,7 +919,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: app-server
-  namespace: nsx-demo
+  namespace: virt-lab
   labels:
     app: app-tier
   annotations:
@@ -924,7 +937,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: db-server
-  namespace: nsx-demo
+  namespace: virt-lab
   labels:
     app: database
   annotations:
@@ -944,16 +957,16 @@ EOF
 oc apply -f test-pods.yaml
 
 # Wait for pods to be ready
-oc wait --for=condition=ready pod/web-server -n nsx-demo --timeout=60s
-oc wait --for=condition=ready pod/app-server -n nsx-demo --timeout=60s
-oc wait --for=condition=ready pod/db-server -n nsx-demo --timeout=60s
+oc wait --for=condition=ready pod/web-server -n virt-lab --timeout=60s
+oc wait --for=condition=ready pod/app-server -n virt-lab --timeout=60s
+oc wait --for=condition=ready pod/db-server -n virt-lab --timeout=60s
 ```
 
 ### Step 14: Verify Secondary Network Interfaces
 
 ```bash
 # Check web-server has secondary interface
-oc exec -n nsx-demo web-server -- ip addr show
+oc exec -n virt-lab web-server -- ip addr show
 
 # You should see:
 # 1: lo: <LOOPBACK,UP,LOWER_UP> ...
@@ -964,9 +977,9 @@ oc exec -n nsx-demo web-server -- ip addr show
 **Get IP addresses**:
 ```bash
 # Get secondary network IPs
-WEB_SECONDARY=$(oc exec -n nsx-demo web-server -- ip -4 addr show net1 | grep inet | awk '{print $2}' | cut -d/ -f1)
-APP_SECONDARY=$(oc exec -n nsx-demo app-server -- ip -4 addr show net1 | grep inet | awk '{print $2}' | cut -d/ -f1)
-DB_SECONDARY=$(oc exec -n nsx-demo db-server -- ip -4 addr show net1 | grep inet | awk '{print $2}' | cut -d/ -f1)
+WEB_SECONDARY=$(oc exec -n virt-lab web-server -- ip -4 addr show net1 | grep inet | awk '{print $2}' | cut -d/ -f1)
+APP_SECONDARY=$(oc exec -n virt-lab app-server -- ip -4 addr show net1 | grep inet | awk '{print $2}' | cut -d/ -f1)
+DB_SECONDARY=$(oc exec -n virt-lab db-server -- ip -4 addr show net1 | grep inet | awk '{print $2}' | cut -d/ -f1)
 
 echo "Web Secondary IP (VLAN 100): $WEB_SECONDARY"
 echo "App Secondary IP (VLAN 150): $APP_SECONDARY"
@@ -985,38 +998,38 @@ DB Secondary IP (VLAN 200): 10.10.200.25
 **Test 1: Web → App (should be allowed on ports 80, 443)**
 ```bash
 # Install curl in web pod
-oc exec -n nsx-demo web-server -- apk add curl
+oc exec -n virt-lab web-server -- apk add curl
 
 # Test HTTP (port 80) - Should succeed
-oc exec -n nsx-demo web-server -- curl -s -o /dev/null -w "%{http_code}\n" http://$APP_SECONDARY:8080
+oc exec -n virt-lab web-server -- curl -s -o /dev/null -w "%{http_code}\n" http://$APP_SECONDARY:8080
 # Expected: 200 (or connection success)
 
 # Test HTTPS (port 443) - Should succeed
-oc exec -n nsx-demo web-server -- curl -sk -o /dev/null -w "%{http_code}\n" https://$APP_SECONDARY:8443
+oc exec -n virt-lab web-server -- curl -sk -o /dev/null -w "%{http_code}\n" https://$APP_SECONDARY:8443
 # Expected: Connection success (or 200 if HTTPS configured)
 ```
 
 **Test 2: Web → App on different port (should be denied)**
 ```bash
 # Test SSH (port 22) - Should timeout/fail
-oc exec -n nsx-demo web-server -- timeout 3 nc -zv $APP_SECONDARY 22
+oc exec -n virt-lab web-server -- timeout 3 nc -zv $APP_SECONDARY 22
 # Expected: Connection timeout (policy only allows 80, 443)
 ```
 
 **Test 3: App → DB on MySQL port (should be allowed)**
 ```bash
 # Install mysql client in app pod
-oc exec -n nsx-demo app-server -- apk add mysql-client
+oc exec -n virt-lab app-server -- apk add mysql-client
 
 # Test MySQL connection (port 3306) - Should succeed
-oc exec -n nsx-demo app-server -- timeout 5 nc -zv $DB_SECONDARY 3306
+oc exec -n virt-lab app-server -- timeout 5 nc -zv $DB_SECONDARY 3306
 # Expected: Connection succeeded
 ```
 
 **Test 4: Direct Web → DB (should be denied - no policy)**
 ```bash
 # Test MySQL from web (no policy allowing this) - Should timeout
-oc exec -n nsx-demo web-server -- timeout 3 nc -zv $DB_SECONDARY 3306
+oc exec -n virt-lab web-server -- timeout 3 nc -zv $DB_SECONDARY 3306
 # Expected: Connection timeout (no policy allows web → db directly)
 ```
 
@@ -1024,10 +1037,10 @@ oc exec -n nsx-demo web-server -- timeout 3 nc -zv $DB_SECONDARY 3306
 
 ```bash
 # If using OpenShift network observability
-oc get flows -n nsx-demo
+oc get flows -n virt-lab
 
 # Or check pod logs for connection attempts
-oc logs -n nsx-demo web-server --tail=20
+oc logs -n virt-lab web-server --tail=20
 ```
 
 ---
@@ -1068,17 +1081,17 @@ oc logs -n nsx-demo web-server --tail=20
 
 ```bash
 # Delete test pods
-oc delete pod web-server app-server db-server -n nsx-demo
+oc delete pod web-server app-server db-server -n virt-lab
 
 # Delete policies
-oc delete multinetworkpolicies --all -n nsx-demo
-oc delete networkpolicies --all -n nsx-demo
+oc delete multinetworkpolicies --all -n virt-lab
+oc delete networkpolicies --all -n virt-lab
 
 # Delete NADs
-oc delete network-attachment-definitions --all -n nsx-demo
+oc delete network-attachment-definitions --all -n virt-lab
 
 # Delete namespace
-oc delete project nsx-demo
+oc delete project virt-lab
 
 # Clean up demo workspace (optional)
 cd ..

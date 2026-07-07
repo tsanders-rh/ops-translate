@@ -15,7 +15,7 @@ cd ops-translate
 source .venv/bin/activate
 
 # 2. Create demo workspace with pre-made NSX workflow
-ops-translate init nsx-demo && cd nsx-demo
+ops-translate init virt-lab && cd virt-lab
 
 # 3. Copy the 3-tier NSX workflow from MULTINETWORK_DEMO.md
 # (See Part 1, Step 2 in full demo guide)
@@ -24,7 +24,7 @@ mkdir -p input/vrealize
 
 # 4. Optional: Have OpenShift cluster ready
 # - Login: oc login https://your-cluster
-# - Create namespace: oc new-project nsx-demo
+# - Create namespace: oc new-project virt-lab
 ```
 
 ---
@@ -192,16 +192,16 @@ spec:
 
 **Run**:
 ```bash
-oc apply -f output/network-attachments/ -n nsx-demo
-oc apply -f output/multi-network-policies/ -n nsx-demo
-oc apply -f output/network-policies/ -n nsx-demo
+oc apply -f output/network-attachments/ -n virt-lab
+oc apply -f output/multi-network-policies/ -n virt-lab
+oc apply -f output/network-policies/ -n virt-lab
 ```
 
 **Show**:
 ```bash
-oc get network-attachment-definitions -n nsx-demo
-oc get multinetworkpolicies -n nsx-demo
-oc get networkpolicies -n nsx-demo
+oc get network-attachment-definitions -n virt-lab
+oc get multinetworkpolicies -n virt-lab
+oc get networkpolicies -n virt-lab
 ```
 
 #### Create Test Pods
@@ -213,7 +213,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: web-server
-  namespace: nsx-demo
+  namespace: virt-lab
   labels:
     app: web
   annotations:
@@ -227,7 +227,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: app-server
-  namespace: nsx-demo
+  namespace: virt-lab
   labels:
     app: app-tier
   annotations:
@@ -239,14 +239,14 @@ spec:
 EOF
 
 oc apply -f test-pods.yaml
-oc get pods -n nsx-demo -w
+oc get pods -n virt-lab -w
 ```
 
 #### Verify Secondary Networks
 
 **Run**:
 ```bash
-oc exec -n nsx-demo web-server -- ip addr show
+oc exec -n virt-lab web-server -- ip addr show
 ```
 
 **Point out**:
@@ -264,14 +264,14 @@ oc exec -n nsx-demo web-server -- ip addr show
 
 **Run**:
 ```bash
-APP_IP=$(oc exec -n nsx-demo app-server -- ip -4 addr show net1 | grep inet | awk '{print $2}' | cut -d/ -f1)
+APP_IP=$(oc exec -n virt-lab app-server -- ip -4 addr show net1 | grep inet | awk '{print $2}' | cut -d/ -f1)
 
 # Test allowed traffic (HTTP to app)
-oc exec -n nsx-demo web-server -- nc -zv $APP_IP 8080
+oc exec -n virt-lab web-server -- nc -zv $APP_IP 8080
 echo "Exit code: $?"  # Should be 0 (success)
 
 # Test denied traffic (SSH to app)
-oc exec -n nsx-demo web-server -- timeout 2 nc -zv $APP_IP 22
+oc exec -n virt-lab web-server -- timeout 2 nc -zv $APP_IP 22
 echo "Exit code: $?"  # Should be 1 or 124 (timeout/denied)
 ```
 
@@ -370,7 +370,7 @@ This auto-creates a test workspace and runs the full pipeline.
 - [ ] Demo workspace created with NSX workflow
 - [ ] OpenShift cluster accessible (if doing deployment)
 - [ ] `oc login` working
-- [ ] Demo namespace created (`oc new-project nsx-demo`)
+- [ ] Demo namespace created (`oc new-project virt-lab`)
 - [ ] Screen recording started (optional - for async sharing)
 - [ ] Terminal font size increased (for visibility)
 - [ ] Browser tabs ready:
