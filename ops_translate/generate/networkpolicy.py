@@ -16,6 +16,7 @@ from ops_translate.generate.nsx_mappings import NSXToK8sMapper
 def generate_network_policies(
     nsx_firewall_rules: list[dict[str, Any]],
     workflow_name: str = "workflow",
+    namespace: str = "default",
 ) -> dict[str, str]:
     """
     Generate NetworkPolicy YAML files from NSX firewall rules.
@@ -23,6 +24,7 @@ def generate_network_policies(
     Args:
         nsx_firewall_rules: List of detected NSX firewall rule operations
         workflow_name: Source workflow name for metadata
+        namespace: Target namespace for NetworkPolicies
 
     Returns:
         Dictionary mapping filename to YAML content
@@ -58,7 +60,7 @@ def generate_network_policies(
         policy_name = mapper.sanitize_name(rule_name)
 
         # Build NetworkPolicy manifest
-        policy = _build_network_policy(rule_details, mapper, workflow_name, rule.get("location"))
+        policy = _build_network_policy(rule_details, mapper, workflow_name, rule.get("location"), namespace)
 
         if not policy:
             # Couldn't generate valid policy
@@ -169,6 +171,7 @@ def _build_network_policy(
     mapper: NSXToK8sMapper,
     workflow_name: str,
     location: str | None,
+    namespace: str = "default",
 ) -> dict[str, Any] | None:
     """
     Build NetworkPolicy manifest from NSX firewall rule details.
@@ -178,6 +181,7 @@ def _build_network_policy(
         mapper: NSX to Kubernetes mapper
         workflow_name: Source workflow name
         location: Rule location for metadata
+        namespace: Target namespace for the NetworkPolicy
 
     Returns:
         NetworkPolicy manifest dict, or None if cannot generate
@@ -256,7 +260,7 @@ def _build_network_policy(
         "kind": "NetworkPolicy",
         "metadata": {
             "name": policy_name,
-            "namespace": "default",
+            "namespace": namespace,
             "labels": {
                 "translated-from": "nsx-firewall",
                 "source-workflow": workflow_name,

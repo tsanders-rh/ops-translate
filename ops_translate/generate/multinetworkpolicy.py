@@ -20,6 +20,7 @@ def generate_multi_network_policies(
     segment_mapping: dict[str, Any],
     nsx_firewall_rules: list[dict[str, Any]],
     workflow_name: str = "workflow",
+    namespace: str = "default",
 ) -> dict[str, str]:
     """
     Generate MultiNetworkPolicy YAML files from NSX firewall rules for a segment.
@@ -28,6 +29,7 @@ def generate_multi_network_policies(
         segment_mapping: SegmentMapping with segment metadata and associated rules
         nsx_firewall_rules: List of all detected NSX firewall rule operations
         workflow_name: Source workflow name for metadata
+        namespace: Target namespace for MultiNetworkPolicies
 
     Returns:
         Dictionary mapping filename to YAML content
@@ -84,7 +86,7 @@ def generate_multi_network_policies(
 
         # Build MultiNetworkPolicy manifest
         policy = _build_multi_network_policy(
-            rule_details, mapper, workflow_name, nad_name, rule.get("location")
+            rule_details, mapper, workflow_name, nad_name, rule.get("location"), namespace
         )
 
         if not policy:
@@ -199,6 +201,7 @@ def _build_multi_network_policy(
     workflow_name: str,
     nad_name: str,
     location: str | None,
+    namespace: str = "default",
 ) -> dict[str, Any] | None:
     """
     Build MultiNetworkPolicy manifest from NSX firewall rule details.
@@ -209,6 +212,7 @@ def _build_multi_network_policy(
         workflow_name: Source workflow name
         nad_name: NetworkAttachmentDefinition name for annotation
         location: Rule location for metadata
+        namespace: Target namespace for the MultiNetworkPolicy
 
     Returns:
         MultiNetworkPolicy manifest dict, or None if cannot generate
@@ -289,10 +293,10 @@ def _build_multi_network_policy(
         "kind": "MultiNetworkPolicy",
         "metadata": {
             "name": f"{nad_name}-{policy_name}",
-            "namespace": "default",
+            "namespace": namespace,
             "annotations": {
                 # Link to NetworkAttachmentDefinition
-                "k8s.v1.cni.cncf.io/policy-for": f"default/{nad_name}",
+                "k8s.v1.cni.cncf.io/policy-for": f"{namespace}/{nad_name}",
             },
             "labels": {
                 "translated-from": "nsx-firewall",

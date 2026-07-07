@@ -54,7 +54,7 @@ def _generate_role_stubs_from_gaps(workspace: Workspace):
             console.print(f"[dim]  Generated role stub for: {comp_name}[/dim]")
 
 
-def _generate_network_policies(workspace: Workspace, segment_mapping=None):
+def _generate_network_policies(workspace: Workspace, segment_mapping=None, namespace: str = "default"):
     """
     Generate Kubernetes NetworkPolicy manifests from detected NSX firewall rules.
 
@@ -65,6 +65,7 @@ def _generate_network_policies(workspace: Workspace, segment_mapping=None):
         workspace: Workspace containing analysis data
         segment_mapping: Optional SegmentRuleMapping to filter segment-specific rules.
                         If provided, only rules for the primary network are generated.
+        namespace: Target namespace for NetworkPolicies (from profile)
     """
     import json
 
@@ -126,7 +127,7 @@ def _generate_network_policies(workspace: Workspace, segment_mapping=None):
         workflow_name = Path(source_file).stem
 
         # Generate NetworkPolicy manifests
-        policies = generate_network_policies(all_firewall_rules, workflow_name)
+        policies = generate_network_policies(all_firewall_rules, workflow_name, namespace)
 
         if not policies:
             # No policies could be generated
@@ -287,13 +288,14 @@ def _correlate_segments_and_rules(workspace: Workspace):
     return None
 
 
-def _generate_multi_network_policies(workspace: Workspace, segment_rule_mapping):
+def _generate_multi_network_policies(workspace: Workspace, segment_rule_mapping, namespace: str = "default"):
     """
     Generate OVN-Kubernetes MultiNetworkPolicy manifests for secondary networks.
 
     Args:
         workspace: Workspace containing analysis data
         segment_rule_mapping: SegmentRuleMapping from correlation engine
+        namespace: Target namespace for MultiNetworkPolicies (from profile)
 
     Generates MultiNetworkPolicy YAML files for each segment with associated
     firewall rules, along with README and CORRELATION_REPORT.
@@ -350,7 +352,7 @@ def _generate_multi_network_policies(workspace: Workspace, segment_rule_mapping)
 
                 # Generate policies for this segment
                 policies = generate_multi_network_policies(
-                    segment_dict, all_firewall_rules, workflow_name
+                    segment_dict, all_firewall_rules, workflow_name, namespace
                 )
 
                 # Write policy files
@@ -575,12 +577,16 @@ def _generate_correlation_report(segment_rule_mapping) -> str:
     return "\n".join(lines)
 
 
-def _generate_network_attachments(workspace: Workspace):
+def _generate_network_attachments(workspace: Workspace, namespace: str = "default"):
     """
     Generate Kubernetes NetworkAttachmentDefinition manifests from NSX segments.
 
     Reads analysis.vrealize.json to find NSX segments and generates
     corresponding NAD YAML files with CNI/IPAM configuration.
+
+    Args:
+        workspace: Workspace instance
+        namespace: Target namespace for NADs (from profile)
     """
     import json
 
@@ -617,7 +623,7 @@ def _generate_network_attachments(workspace: Workspace):
             workflow_name = Path(source_file).stem
 
             # Generate NetworkAttachmentDefinition manifests
-            attachments = generate_network_attachments(segments, workflow_name)
+            attachments = generate_network_attachments(segments, workflow_name, namespace)
 
             if not attachments:
                 # No NADs could be generated
@@ -1049,10 +1055,14 @@ def generate_with_templates(
         else:
             console.print("[dim]Skipping Ansible/KubeVirt generation (NSX-only mode)[/dim]")
 
+        # Get namespace from profile configuration
+        profile_config = config["profiles"][profile]
+        namespace = profile_config.get("default_namespace", "default")
+
         # NSX network generation (works independently of intent.yaml)
         # Generate NetworkAttachmentDefinition manifests from NSX segments if detected
         try:
-            _generate_network_attachments(workspace)
+            _generate_network_attachments(workspace, namespace)
         except Exception as e:
             console.print(
                 f"[yellow]⚠ Could not generate NetworkAttachmentDefinition "
@@ -1069,7 +1079,7 @@ def generate_with_templates(
         # Generate MultiNetworkPolicy manifests for secondary networks
         if segment_rule_mapping and segment_rule_mapping.segment_mappings:
             try:
-                _generate_multi_network_policies(workspace, segment_rule_mapping)
+                _generate_multi_network_policies(workspace, segment_rule_mapping, namespace)
             except Exception as e:
                 console.print(
                     f"[yellow]⚠ Could not generate MultiNetworkPolicy manifests: {e}[/yellow]"
@@ -1077,7 +1087,7 @@ def generate_with_templates(
 
         # Generate NetworkPolicy manifests for primary network
         try:
-            _generate_network_policies(workspace, segment_rule_mapping)
+            _generate_network_policies(workspace, segment_rule_mapping, namespace)
         except Exception as e:
             console.print(f"[yellow]⚠ Could not generate NetworkPolicy manifests: {e}[/yellow]")
 

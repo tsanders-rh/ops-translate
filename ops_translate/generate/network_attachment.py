@@ -18,6 +18,7 @@ from ops_translate.generate.nsx_segment_mappings import NSXSegmentMapper
 def generate_network_attachments(
     nsx_segments: list[dict[str, Any]],
     workflow_name: str = "workflow",
+    namespace: str = "default",
 ) -> dict[str, str]:
     """
     Generate NetworkAttachmentDefinition YAML files from NSX segments.
@@ -25,6 +26,7 @@ def generate_network_attachments(
     Args:
         nsx_segments: List of detected NSX segment operations
         workflow_name: Source workflow name for metadata
+        namespace: Target namespace for NetworkAttachmentDefinitions
 
     Returns:
         Dictionary mapping filename to YAML content
@@ -61,7 +63,7 @@ def generate_network_attachments(
 
         # Build NetworkAttachmentDefinition manifest
         nad = _build_network_attachment_definition(
-            segment_details, mapper, workflow_name, segment.get("location")
+            segment_details, mapper, workflow_name, segment.get("location"), namespace
         )
 
         if not nad:
@@ -177,6 +179,7 @@ def _build_network_attachment_definition(
     mapper: NSXSegmentMapper,
     workflow_name: str,
     location: str | None,
+    namespace: str = "default",
 ) -> dict[str, Any] | None:
     """
     Build NetworkAttachmentDefinition manifest from NSX segment details.
@@ -186,6 +189,7 @@ def _build_network_attachment_definition(
         mapper: NSX to Kubernetes mapper
         workflow_name: Source workflow name
         location: Segment location for metadata
+        namespace: Target namespace for the NetworkAttachmentDefinition
 
     Returns:
         NetworkAttachmentDefinition manifest dict, or None if cannot generate
@@ -214,7 +218,7 @@ def _build_network_attachment_definition(
         "kind": "NetworkAttachmentDefinition",
         "metadata": {
             "name": nad_name,
-            "namespace": "default",
+            "namespace": namespace,
             "labels": {
                 "translated-from": "nsx-segment",
                 "source-workflow": workflow_name,
