@@ -102,6 +102,9 @@ ops-translate generate --profile lab
 tree output/
 ```
 
+**Say** (if asked about `--profile lab`):
+> "The 'lab' profile selects environment defaults from the config - namespace, storage class, etc. For NSX network policies, it mainly affects which namespace they're deployed to. We have 'lab' for testing and 'prod' for production deployments."
+
 **Point out the structure**:
 ```
 output/
@@ -319,6 +322,9 @@ echo "Exit code: $?"  # Should be 1 or 124 (timeout/denied)
 
 **Q: How do we customize for our org?**
 > "Use template customization: `ops-translate init --with-templates`. Edit the Jinja2 templates to add org-specific labels, annotations, naming conventions."
+
+**Q: What does `--profile lab` mean? Can we customize it?**
+> "Profiles are environment-specific configs in `ops-translate.yaml`. 'lab' uses namespace `virt-lab` and NFS storage, 'prod' uses `virt-prod` and Ceph. You can add custom profiles (staging, dev, etc.) or modify existing ones to match your org's standards."
 
 **Q: What's the accuracy rate?**
 > "In our testing with real NSX exports, direct segment references achieve 95% confidence. IP overlap and VLAN matching achieve 70-85% confidence depending on complexity."

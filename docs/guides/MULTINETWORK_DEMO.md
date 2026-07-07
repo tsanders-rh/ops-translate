@@ -523,6 +523,14 @@ ops-translate generate --profile lab
 tree output/
 ```
 
+> **Note: What is `--profile lab`?**
+>
+> The profile parameter selects environment-specific defaults from your `ops-translate.yaml` configuration:
+> - **`lab`**: Development/testing environment (namespace: `virt-lab`, storage: `nfs`)
+> - **`prod`**: Production environment (namespace: `virt-prod`, storage: `ceph-rbd`)
+>
+> For NSX network resources, the profile mainly affects the namespace where policies are deployed. The network policies themselves (VLANs, firewall rules) come directly from the NSX workflow.
+
 **Expected Output**:
 ```
 output/
