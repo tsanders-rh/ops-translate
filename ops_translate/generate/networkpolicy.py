@@ -85,10 +85,10 @@ def generate_network_policies(
 
 def _parse_rule_from_evidence(rule: dict[str, Any]) -> dict[str, Any] | None:
     """
-    Parse firewall rule details from detection evidence.
+    Parse firewall rule details from detection evidence or parsed fields.
 
     Args:
-        rule: Detected NSX firewall rule with evidence
+        rule: Detected NSX firewall rule with evidence and/or parsed fields
 
     Returns:
         Dict with parsed rule details, or None if cannot parse
@@ -98,14 +98,18 @@ def _parse_rule_from_evidence(rule: dict[str, Any]) -> dict[str, Any] | None:
     evidence = rule.get("evidence", "")
     name = rule.get("name", "")
 
-    # Initialize rule details
+    # Initialize rule details - prefer parsed fields over evidence extraction
     details: dict[str, Any] = {
         "name": name,
-        "sources": [],
-        "destinations": [],
-        "services": [],
-        "action": "ALLOW",  # Default assumption
+        "sources": rule.get("sources", []),
+        "destinations": rule.get("destinations", []),
+        "services": rule.get("services", []) or rule.get("ports", []),
+        "action": (rule.get("action", "") or "ALLOW").upper(),
     }
+
+    # If we already have parsed fields, use them and return early
+    if details["sources"] or details["destinations"] or details["services"]:
+        return details
 
     # Try to extract structured data from evidence
     # Pattern 1: createFirewallRule API call with JSON-like structure
