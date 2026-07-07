@@ -414,14 +414,46 @@ ops-translate analyze
 
 **Expected Output**:
 ```
-🔍 Analyzing vRealize workflows...
+Analyzing automation for external dependencies...
 
-Found NSX operations in: nsx-3tier-app.workflow.xml
-  ✓ 3 network segments detected
-  ✓ 5 firewall rules detected
+Found 1 vRealize workflow(s) to analyze
+Analyzing 1 changed file(s)
 
-📄 Analysis saved to: intent/analysis.vrealize.json
+Analyzing nsx-3tier-app.workflow.xml...
+  ⚠ nsx-3tier-app.workflow.xml: Found external dependencies
+
+✓ Analysis reports written to intent/
+  • analysis.vrealize.json - vRealize detection details
+  • analysis.vrealize.md - Human-readable vRealize analysis
+  • gaps.json - Classification data
+  • gaps.md - Migration guidance
+
+Gap Analysis Summary
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
+┃ Classification           ┃ Count ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
+│ ✅ Fully Supported       │     0 │
+│ ⚠️ Partial Translation   │     8 │
+│ 🎯 Expert-Guided         │     0 │
+│ 🔧 Custom Implementation │     0 │
+└──────────────────────────┴───────┘
+
+Overall Assessment: Mostly Manual
 ```
+
+**⚠️ IMPORTANT - Understanding "Partial Translation"**:
+
+The "Partial Translation" status is **EXPECTED and CORRECT** for NSX operations. It does NOT mean the translation failed! Here's what it means:
+
+- ✅ **Segments** → NetworkAttachmentDefinition (PARTIAL because you need to configure host network interfaces)
+- ✅ **Firewall Rules** → NetworkPolicy/MultiNetworkPolicy (PARTIAL because OVN-Kubernetes is L3/L4 only, NSX has L7 features)
+
+**What "Partial" REALLY Means**:
+- ✅ YAMLs will be generated automatically
+- ⚠️ You need to review limitations (documented in YAML comments)
+- ⚠️ Some manual infrastructure setup required (VLAN interfaces on nodes)
+
+**This is a SUCCESS** - all NSX operations were detected and will generate valid Kubernetes resources! The "Mostly Manual" message refers to infrastructure prerequisites, not translation failure.
 
 ### Step 4: Examine the Analysis
 

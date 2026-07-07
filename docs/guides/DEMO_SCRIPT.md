@@ -68,8 +68,17 @@ ops-translate analyze
 ✓ 5 firewall rules detected
 ```
 
+**IMPORTANT - Address the "Partial Translation" Warning**:
+
+You'll see "⚠️ Partial Translation" and "Mostly Manual" in the gap analysis. **Address this proactively**:
+
 **Say**:
-> "The analyzer detected all NSX operations. Let's look at what it found."
+> "You'll notice it says 'Partial Translation' - that's actually expected and correct. It doesn't mean the translation failed. NSX has some L7 features that Kubernetes NetworkPolicy doesn't support, and you'll need to configure VLAN interfaces on your nodes. But ops-translate WILL generate all the YAMLs automatically. The 'Partial' status just means you need to review the limitations documented in the YAML comments. Think of it as 'automated with caveats' rather than 'manual work required'."
+
+**Then continue**:
+
+**Say**:
+> "The analyzer detected all NSX operations and extracted their metadata. Let's look at what it found."
 
 **Show**:
 ```bash
