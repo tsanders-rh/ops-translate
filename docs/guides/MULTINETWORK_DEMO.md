@@ -40,6 +40,132 @@ This demo shows how ops-translate automatically translates NSX network segments 
 
 ---
 
+## Architecture Diagram
+
+### NSX Environment → OpenShift Translation
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           NSX NETWORK ARCHITECTURE                              │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+    ┌──────────────────────┐         ┌──────────────────────┐         ┌──────────────────────┐
+    │  Web-Tier-VLAN100    │         │  App-Tier-VLAN150    │         │  DB-Tier-VLAN200     │
+    │  ════════════════    │         │  ════════════════    │         │  ═══════════════     │
+    │  VLAN: 100           │         │  VLAN: 150           │         │  VLAN: 200           │
+    │  Subnet:             │         │  Subnet:             │         │  Subnet:             │
+    │  10.10.100.0/24      │         │  10.10.150.0/24      │         │  10.10.200.0/24      │
+    │  Gateway:            │         │  Gateway:            │         │  Gateway:            │
+    │  10.10.100.1         │         │  10.10.150.1         │         │  10.10.200.1         │
+    └──────────┬───────────┘         └──────────┬───────────┘         └──────────┬───────────┘
+               │                                │                                │
+               │  Web VMs                       │  App VMs                       │  DB VMs
+               │  (10.10.100.x)                 │  (10.10.150.x)                 │  (10.10.200.x)
+               │                                │                                │
+               └────────────────────────────────┴────────────────────────────────┘
+                                                │
+                                    ┌───────────▼──────────┐
+                                    │   NSX Firewall       │
+                                    │   ═════════════      │
+                                    │  5 Rules:            │
+                                    │  • Web → App (80,443)│
+                                    │  • App → DB (3306)   │
+                                    │  • DB → Backup (*)   │
+                                    │  • Internet Egress   │
+                                    │  • DNS (53)          │
+                                    └──────────────────────┘
+
+
+                                           ⬇ ⬇ ⬇
+                               ops-translate analyze + generate
+                                           ⬇ ⬇ ⬇
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                       OPENSHIFT / OVN-KUBERNETES                                │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                    NetworkAttachmentDefinitions (NADs)                          │
+│  ═══════════════════════════════════════════════════════════════════════       │
+│                                                                                 │
+│  web-tier-vlan100.yaml    app-tier-vlan150.yaml    db-tier-vlan200.yaml       │
+│  ├─ VLAN: 100             ├─ VLAN: 150             ├─ VLAN: 200               │
+│  ├─ IPAM: Whereabouts     ├─ IPAM: Whereabouts     ├─ IPAM: Whereabouts       │
+│  └─ Range: 10.10.100.0/24 └─ Range: 10.10.150.0/24 └─ Range: 10.10.200.0/24   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+                                           │
+                                           ▼
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                    Pod Deployment (with annotations)                            │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+  ┌──────────────────┐         ┌──────────────────┐         ┌──────────────────┐
+  │   web-server     │         │   app-server     │         │   db-server      │
+  │   ═══════════    │         │   ══════════     │         │   ═════════      │
+  │  Annotations:    │         │  Annotations:    │         │  Annotations:    │
+  │  networks:       │         │  networks:       │         │  networks:       │
+  │  web-tier-vlan100│         │  app-tier-vlan150│         │  db-tier-vlan200 │
+  │                  │         │                  │         │                  │
+  │  ┌─────────────┐ │         │  ┌─────────────┐ │         │  ┌─────────────┐ │
+  │  │ eth0 (prim) │ │         │  │ eth0 (prim) │ │         │  │ eth0 (prim) │ │
+  │  │ net1 (VLAN) │ │         │  │ net1 (VLAN) │ │         │  │ net1 (VLAN) │ │
+  │  │ 10.10.100.x │ │         │  │ 10.10.150.x │ │         │  │ 10.10.200.x │ │
+  │  └─────────────┘ │         │  └─────────────┘ │         │  └─────────────┘ │
+  └────────┬─────────┘         └────────┬─────────┘         └────────┬─────────┘
+           │                            │                            │
+           │                            │                            │
+           └────────────┬───────────────┴───────────┬────────────────┘
+                        │                           │
+                        ▼                           ▼
+
+┌─────────────────────────────────────┐   ┌─────────────────────────────────────┐
+│   MultiNetworkPolicy (Secondary)    │   │   NetworkPolicy (Primary)           │
+│   ════════════════════════════      │   │   ════════════════════              │
+│                                     │   │                                     │
+│  web-tier-vlan100-allow-web-to-app  │   │  allow-internet-egress              │
+│  • policy-for: web-tier-vlan100     │   │  • All pods → internet              │
+│  • Web pods → App pods (80,443)     │   │                                     │
+│                                     │   │  allow-dns                          │
+│  app-tier-vlan150-allow-app-to-db   │   │  • All pods → DNS (53)              │
+│  • policy-for: app-tier-vlan150     │   │                                     │
+│  • App pods → DB pods (3306)        │   │                                     │
+│                                     │   │                                     │
+│  db-tier-vlan200-allow-db-backup    │   │                                     │
+│  • policy-for: db-tier-vlan200      │   │                                     │
+│  • DB pods → Backup server          │   │                                     │
+└─────────────────────────────────────┘   └─────────────────────────────────────┘
+     ▲                                         ▲
+     │                                         │
+     │    Applies to net1 interface            │    Applies to eth0 interface
+     │    (secondary VLAN networks)            │    (primary pod network)
+     │                                         │
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                          CORRELATION MAPPING                                    │
+│  ═══════════════════════════════════════════════════════════════════════       │
+│                                                                                 │
+│  NSX Rule             Confidence   Target         Reason                       │
+│  ─────────────────    ──────────   ─────────────  ─────────────────────────    │
+│  Web → App (80,443)      0.95      Multi (VLAN100) Segment name + VLAN match   │
+│  App → DB (3306)         0.90      Multi (VLAN150) Segment name + IP overlap   │
+│  DB → Backup             0.95      Multi (VLAN200) Name + VLAN + IP (3 signals)│
+│  Internet Egress         0.50      Primary Network No segment correlation      │
+│  DNS (53)                0.50      Primary Network No segment correlation      │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Key Points**:
+- ✅ **3 NSX segments** → 3 NetworkAttachmentDefinitions (secondary networks)
+- ✅ **3 segment-specific rules** → 3 MultiNetworkPolicies (net1 interface)
+- ✅ **2 general rules** → 2 NetworkPolicies (eth0 interface)
+- ✅ **Correlation engine** intelligently routes rules based on evidence
+- ✅ **Confidence scoring** ensures accurate mapping (0.90-0.95 for direct matches)
+
+---
+
 ## Part 1: Setup and Import (5 minutes)
 
 ### Step 1: Initialize Workspace
