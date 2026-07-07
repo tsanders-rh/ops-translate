@@ -59,7 +59,6 @@ cat input/vrealize/nsx-3tier-app.workflow.xml | grep -A 5 "createWebSegment"
 
 **Run**:
 ```bash
-ops-translate import --source vrealize --file input/vrealize/nsx-3tier-app.workflow.xml
 ops-translate analyze
 ```
 

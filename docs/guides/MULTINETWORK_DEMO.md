@@ -406,12 +406,11 @@ EOF
 ops-translate automatically detects NSX operations in vRealize workflows:
 
 ```bash
-# Import the workflow
-ops-translate import --source vrealize --file input/vrealize/nsx-3tier-app.workflow.xml
-
 # Analyze to detect NSX operations
 ops-translate analyze
 ```
+
+**Note**: No need to run `import` since we created the file directly in `input/vrealize/`. The `import` command is only needed when copying files from outside the workspace.
 
 **Expected Output**:
 ```
