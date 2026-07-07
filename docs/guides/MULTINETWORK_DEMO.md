@@ -395,7 +395,7 @@ output/
 
 ### Step 6: Review the Correlation Report
 
-This is the key artifact that explains the AI's decision-making:
+This is the key artifact that explains how the correlation engine mapped rules to segments:
 
 ```bash
 cat output/multi-network-policies/CORRELATION_REPORT.md
