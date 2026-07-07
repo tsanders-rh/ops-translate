@@ -100,7 +100,7 @@ def generate_multi_network_policies(
         header = _generate_header_comments(
             rule_details, rule, segment_mapping, warnings
         )
-        policy_yaml = yaml.dump([policy], default_flow_style=False, sort_keys=False)
+        policy_yaml = yaml.dump(policy, default_flow_style=False, sort_keys=False)
 
         # Remove leading "---" from yaml.dump output
         policy_yaml_lines = policy_yaml.strip().split("\n")
