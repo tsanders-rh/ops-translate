@@ -324,7 +324,7 @@ echo "Exit code: $?"  # Should be 1 or 124 (timeout/denied)
 > "Use template customization: `ops-translate init --with-templates`. Edit the Jinja2 templates to add org-specific labels, annotations, naming conventions."
 
 **Q: What does `--profile lab` mean? Can we customize it?**
-> "Profiles are environment-specific configs in `ops-translate.yaml`. 'lab' uses namespace `virt-lab` and NFS storage, 'prod' uses `virt-prod` and Ceph. You can add custom profiles (staging, dev, etc.) or modify existing ones to match your org's standards."
+> "Profiles are environment-specific configs in `ops-translate.yaml` in your workspace. 'lab' uses namespace `virt-lab` and NFS storage, 'prod' uses `virt-prod` and Ceph. To customize, just edit the YAML file - add a 'staging' profile, change namespace names, update storage classes, whatever your org needs. It's just a config file."
 
 **Q: What's the accuracy rate?**
 > "In our testing with real NSX exports, direct segment references achieve 95% confidence. IP overlap and VLAN matching achieve 70-85% confidence depending on complexity."

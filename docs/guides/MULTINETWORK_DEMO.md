@@ -190,8 +190,10 @@ tree -L 2
 │   └── vrealize/
 ├── intent/
 ├── output/
-└── ops-translate.yaml
+└── ops-translate.yaml  ← Configuration file (profiles, LLM settings)
 ```
+
+> **Tip**: You can customize environment profiles by editing `ops-translate.yaml`. The default `lab` and `prod` profiles can be modified or you can add custom profiles like `staging`, `dev`, etc. See the note in Step 5 for details.
 
 ### Step 2: Create Sample NSX Workflow
 
@@ -530,6 +532,25 @@ tree output/
 > - **`prod`**: Production environment (namespace: `virt-prod`, storage: `ceph-rbd`)
 >
 > For NSX network resources, the profile mainly affects the namespace where policies are deployed. The network policies themselves (VLANs, firewall rules) come directly from the NSX workflow.
+>
+> **To customize profiles**, edit `ops-translate.yaml` in your workspace:
+> ```bash
+> # Add a custom staging profile
+> vi ops-translate.yaml
+> ```
+> ```yaml
+> profiles:
+>   lab:
+>     default_namespace: virt-lab
+>     default_storage_class: nfs
+>   staging:  # Add your custom profile
+>     default_namespace: virt-staging
+>     default_storage_class: ceph-rbd
+>   prod:
+>     default_namespace: virt-prod
+>     default_storage_class: ceph-rbd
+> ```
+> See [USER_GUIDE.md - Profile Configuration](USER_GUIDE.md#profile-configuration) for all available options.
 
 **Expected Output**:
 ```
