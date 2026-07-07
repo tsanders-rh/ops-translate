@@ -370,6 +370,211 @@ def calculate_detection_confidence(match_type: str, context: str, pattern: str =
     return min(confidence, 0.95)
 
 
+def parse_javascript_object_literal(js_code: str, api_call_pattern: str) -> dict[str, Any] | None:
+    """
+    Parse JavaScript object literal from NSX API call.
+
+    Extracts structured metadata from JavaScript API calls like:
+        nsxClient.createSegment({displayName: "Web-Tier", vlanIds: [100], ...})
+
+    Args:
+        js_code: JavaScript code containing the API call
+        api_call_pattern: The API call to look for (e.g., "createSegment")
+
+    Returns:
+        Dictionary with parsed object properties, or None if parsing fails
+
+    Example:
+        >>> code = 'var s = nsxClient.createSegment({displayName: "Web", vlanIds: [100]});'
+        >>> parse_javascript_object_literal(code, "createSegment")
+        {'displayName': 'Web', 'vlanIds': [100]}
+    """
+    # Find the API call and its object literal parameter
+    # Pattern: apiCall({...}) or apiCall( {...} )
+    pattern = rf"{re.escape(api_call_pattern)}\s*\(\s*\{{"
+    match = re.search(pattern, js_code)
+    if not match:
+        return None
+
+    # Start parsing from the opening brace
+    start_pos = match.end() - 1  # Back up to the '{'
+
+    # Simple brace-matching parser to find the closing }
+    depth = 0
+    pos = start_pos
+    while pos < len(js_code):
+        if js_code[pos] == '{':
+            depth += 1
+        elif js_code[pos] == '}':
+            depth -= 1
+            if depth == 0:
+                # Found the closing brace
+                obj_literal = js_code[start_pos:pos+1]
+                return _parse_object_literal_content(obj_literal)
+        pos += 1
+
+    return None
+
+
+def _parse_object_literal_content(obj_str: str) -> dict[str, Any]:
+    """
+    Parse the content of a JavaScript object literal.
+
+    Handles simple cases: strings, numbers, arrays, booleans.
+    Does not handle nested objects, functions, or complex expressions.
+
+    Args:
+        obj_str: String containing object literal with braces: "{key: value, ...}"
+
+    Returns:
+        Dictionary with parsed key-value pairs
+    """
+    result = {}
+
+    # Remove outer braces and strip whitespace
+    content = obj_str.strip()[1:-1].strip()
+    if not content:
+        return result
+
+    # Split by commas, but be careful of commas inside arrays/strings
+    # Simple state machine approach
+    current_key = None
+    current_value_parts = []
+    in_string = False
+    string_char = None
+    in_array = False
+    array_depth = 0
+    i = 0
+
+    while i < len(content):
+        char = content[i]
+
+        # Track string state
+        if char in ('"', "'") and (i == 0 or content[i-1] != '\\'):
+            if not in_string:
+                in_string = True
+                string_char = char
+            elif char == string_char:
+                in_string = False
+                string_char = None
+
+        # Track array state
+        if not in_string:
+            if char == '[':
+                in_array = True
+                array_depth += 1
+            elif char == ']':
+                array_depth -= 1
+                if array_depth == 0:
+                    in_array = False
+
+        # Look for key-value separator ':'
+        if char == ':' and not in_string and not in_array and current_key is None:
+            # Everything before ':' is the key
+            key_str = ''.join(current_value_parts).strip()
+            # Remove quotes from key if present
+            current_key = key_str.strip('"').strip("'")
+            current_value_parts = []
+        # Look for property separator ','
+        elif char == ',' and not in_string and not in_array and current_key is not None:
+            # Everything between ':' and ',' is the value
+            value_str = ''.join(current_value_parts).strip()
+            result[current_key] = _parse_value(value_str)
+            current_key = None
+            current_value_parts = []
+        else:
+            current_value_parts.append(char)
+
+        i += 1
+
+    # Handle last property (no trailing comma)
+    if current_key is not None and current_value_parts:
+        value_str = ''.join(current_value_parts).strip()
+        result[current_key] = _parse_value(value_str)
+
+    return result
+
+
+def _parse_value(value_str: str) -> Any:
+    """
+    Parse a JavaScript value string into Python type.
+
+    Handles: strings, numbers, booleans, arrays, null.
+
+    Args:
+        value_str: String representation of the value
+
+    Returns:
+        Parsed Python value
+    """
+    value_str = value_str.strip()
+
+    # String (quoted)
+    if (value_str.startswith('"') and value_str.endswith('"')) or \
+       (value_str.startswith("'") and value_str.endswith("'")):
+        return value_str[1:-1]  # Remove quotes
+
+    # Array
+    if value_str.startswith('[') and value_str.endswith(']'):
+        array_content = value_str[1:-1].strip()
+        if not array_content:
+            return []
+
+        # Simple array parser - split by comma
+        # This won't handle nested arrays, but good enough for vlanIds, subnets
+        items = []
+        current_item = []
+        in_string = False
+        string_char = None
+
+        for i, char in enumerate(array_content):
+            if char in ('"', "'") and (i == 0 or array_content[i-1] != '\\'):
+                if not in_string:
+                    in_string = True
+                    string_char = char
+                elif char == string_char:
+                    in_string = False
+                    string_char = None
+
+            if char == ',' and not in_string:
+                item_str = ''.join(current_item).strip()
+                if item_str:
+                    items.append(_parse_value(item_str))
+                current_item = []
+            else:
+                current_item.append(char)
+
+        # Add last item
+        if current_item:
+            item_str = ''.join(current_item).strip()
+            if item_str:
+                items.append(_parse_value(item_str))
+
+        return items
+
+    # Boolean
+    if value_str.lower() == 'true':
+        return True
+    if value_str.lower() == 'false':
+        return False
+
+    # Null/undefined
+    if value_str.lower() in ('null', 'undefined'):
+        return None
+
+    # Number
+    try:
+        if '.' in value_str:
+            return float(value_str)
+        else:
+            return int(value_str)
+    except ValueError:
+        pass
+
+    # If we can't parse it, return as string (might be a variable name)
+    return value_str
+
+
 def detect_nsx_operations(
     root: etree._Element, namespace: str = "", workflow_file: Path | None = None
 ) -> dict[str, list[dict[str, Any]]]:
@@ -509,17 +714,67 @@ def detect_nsx_operations(
                     # Calculate confidence based on match type and context
                     confidence = calculate_detection_confidence(match_type, context, pattern)
 
-                    nsx_ops[category].append(
-                        {
-                            "name": pattern,
-                            "location": location,
-                            "confidence": confidence,
-                            "evidence": (
-                                f"Pattern match: {match.group()} in context ({location}): "
-                                f"...{context}..."
-                            ),
-                        }
-                    )
+                    # Try to parse JavaScript object literal for API calls
+                    metadata = None
+                    display_name = pattern  # Default to pattern name
+
+                    if "nsxClient" in pattern and match_type == "api_call":
+                        # Extract API method name (e.g., "createSegment" from "nsxClient.createSegment")
+                        api_method = pattern.replace(r"nsxClient\.", "").replace("\\", "")
+
+                        # Parse the object literal parameter
+                        metadata = parse_javascript_object_literal(script_text, api_method)
+
+                        if metadata:
+                            # Use displayName or name field if available
+                            if "displayName" in metadata:
+                                display_name = metadata["displayName"]
+                            elif "name" in metadata:
+                                display_name = metadata["name"]
+
+                    detection = {
+                        "name": display_name,
+                        "location": location,
+                        "confidence": confidence,
+                        "evidence": (
+                            f"Pattern match: {match.group()} in context ({location}): "
+                            f"...{context}..."
+                        ),
+                    }
+
+                    # Add parsed metadata if available
+                    if metadata:
+                        # For segments
+                        if category == "segments":
+                            if "vlanIds" in metadata:
+                                detection["vlan_ids"] = metadata["vlanIds"]
+                            if "subnets" in metadata:
+                                detection["subnets"] = metadata["subnets"]
+                            if "gateway" in metadata:
+                                detection["gateway"] = metadata["gateway"]
+                            if "description" in metadata:
+                                detection["description"] = metadata["description"]
+
+                        # For firewall rules
+                        elif category == "firewall_rules":
+                            if "segment" in metadata:
+                                detection["segment"] = metadata["segment"]
+                            if "sourceSegments" in metadata:
+                                detection["source_segments"] = metadata["sourceSegments"]
+                            if "destinationSegments" in metadata:
+                                detection["destination_segments"] = metadata["destinationSegments"]
+                            if "sources" in metadata:
+                                detection["sources"] = metadata["sources"]
+                            if "destinations" in metadata:
+                                detection["destinations"] = metadata["destinations"]
+                            if "services" in metadata:
+                                detection["services"] = metadata["services"]
+                            if "ports" in metadata:
+                                detection["ports"] = metadata["ports"]
+                            if "action" in metadata:
+                                detection["action"] = metadata["action"]
+
+                    nsx_ops[category].append(detection)
 
     # Search workflow item names and parameters
     workflow_item_tag = f"{namespace}workflow-item" if namespace else "workflow-item"

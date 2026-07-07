@@ -112,9 +112,9 @@ class NSXCorrelationEngine:
             if not seg_name:
                 continue
 
-            # Extract metadata for correlation
-            vlan_ids = self._extract_vlan_ids(seg.get("evidence", ""))
-            subnets = self._extract_subnets(seg.get("evidence", ""))
+            # Extract metadata for correlation (prefer parsed fields over evidence)
+            vlan_ids = seg.get("vlan_ids", []) or self._extract_vlan_ids(seg.get("evidence", ""))
+            subnets = seg.get("subnets", []) or self._extract_subnets(seg.get("evidence", ""))
 
             # Create mapping with sanitized NAD name
             nad_name = self._sanitize_nad_name(seg_name)
@@ -137,8 +137,21 @@ class NSXCorrelationEngine:
             # Try all detection strategies
             detections = []
 
+            # Strategy 0: Parsed Segment Field (HIGHEST PRIORITY)
+            # If the firewall rule has a parsed 'segment' field, use it directly
+            parsed_segment = rule.get("segment")
+            if parsed_segment and parsed_segment in segment_map:
+                detections.append(
+                    {
+                        "segment": parsed_segment,
+                        "method": "Parsed Segment Field",
+                        "confidence": 0.95,  # Highest confidence - it's a direct field match
+                        "evidence": f"Firewall rule has explicit segment field: '{parsed_segment}'",
+                    }
+                )
+
             for seg_name, seg_mapping in segment_map.items():
-                # Strategy 1: Direct Reference
+                # Strategy 1: Direct Reference in Evidence
                 if self._detect_direct_reference(rule_evidence, seg_name):
                     detections.append(
                         {
