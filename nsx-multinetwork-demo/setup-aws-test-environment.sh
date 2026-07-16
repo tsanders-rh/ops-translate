@@ -149,12 +149,18 @@ deploy_test_pods() {
         exit 1
     fi
 
+    # Select first worker node for all pods (required for bridge CNI cross-pod connectivity)
+    SELECTED_NODE=$(echo $WORKER_NODES | awk '{print $1}')
+    echo "Selected node for all pods: $SELECTED_NODE"
+    echo "  (Bridge CNI networks require pods on same node for connectivity)"
+    echo ""
+
     # Delete existing pods if any
     oc delete pods -n "$NAMESPACE" --all --wait=false &> /dev/null || true
     sleep 3
 
-    # Apply test pods
-    oc apply -f "$PODS_FILE"
+    # Apply test pods with node name substitution
+    sed "s/WORKER_NODE_PLACEHOLDER/$SELECTED_NODE/g" "$PODS_FILE" | oc apply -f -
 
     echo "Waiting for pods to be ready (timeout: 90s)..."
     if oc wait --for=condition=ready pod/web-server pod/app-server pod/db-server \

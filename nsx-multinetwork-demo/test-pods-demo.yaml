@@ -11,6 +11,7 @@ metadata:
   annotations:
     k8s.v1.cni.cncf.io/networks: web-tier-vlan100
 spec:
+  nodeName: WORKER_NODE_PLACEHOLDER
   containers:
   - name: nginx
     image: nginxinc/nginx-unprivileged:alpine
@@ -37,6 +38,7 @@ metadata:
   annotations:
     k8s.v1.cni.cncf.io/networks: app-tier-vlan150
 spec:
+  nodeName: WORKER_NODE_PLACEHOLDER
   containers:
   - name: nginx
     image: nginxinc/nginx-unprivileged:alpine
@@ -83,6 +85,7 @@ metadata:
   annotations:
     k8s.v1.cni.cncf.io/networks: db-tier-vlan200
 spec:
+  nodeName: WORKER_NODE_PLACEHOLDER
   containers:
   - name: postgres
     image: postgres:alpine
