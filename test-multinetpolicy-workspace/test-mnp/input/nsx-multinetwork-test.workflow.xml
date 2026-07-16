@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow xmlns="http://vmware.com/vco/workflow" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://vmware.com/vco/workflow http://vmware.com/vco/workflow" version="1.0.0" api-version="8.0.0">
+  <display-name>NSX Multi-Network Test Workflow</display-name>
+  <description>Test workflow for NSX segment and firewall rule correlation</description>
+
+  <input>
+    <param name="environment" type="string">
+      <description>Environment name</description>
+    </param>
+  </input>
+
+  <output>
+    <param name="success" type="boolean">
+      <description>Workflow success</description>
+    </param>
+  </output>
+
+  <workflow-item name="item0" type="end" end-mode="0">
+    <position y="450.0" x="300.0"/>
+  </workflow-item>
+
+  <workflow-item name="item1" out-name="item2" type="task">
+    <display-name>Create Web Tier Segment</display-name>
+    <script encoded="false">
+      // Create NSX segment for web tier
+      var nsxClient = System.getModule("com.acme.nsx").getNSXClient();
+
+      var webSegment = nsxClient.createSegment({
+        displayName: "Web-Tier-VLAN100",
+        vlanIds: [100],
+        subnets: ["10.10.100.0/24"],
+        gateway: "10.10.100.1",
+        description: "Web tier network segment"
+      });
+
+      System.log("Created web tier segment: " + webSegment.id);
+    </script>
+    <position y="50.0" x="100.0"/>
+  </workflow-item>
+
+  <workflow-item name="item2" out-name="item3" type="task">
+    <display-name>Create App Tier Segment</display-name>
+    <script encoded="false">
+      // Create NSX segment for app tier
+      var nsxClient = System.getModule("com.acme.nsx").getNSXClient();
+
+      var appSegment = nsxClient.createSegment({
+        displayName: "App-Tier-VLAN150",
+        vlanIds: [150],
+        subnets: ["10.10.150.0/24"],
+        gateway: "10.10.150.1",
+        description: "Application tier network segment"
+      });
+
+      System.log("Created app tier segment: " + appSegment.id);
+    </script>
+    <position y="100.0" x="100.0"/>
+  </workflow-item>
+
+  <workflow-item name="item3" out-name="item4" type="task">
+    <display-name>Create DB Tier Segment</display-name>
+    <script encoded="false">
+      // Create NSX segment for database tier
+      var nsxClient = System.getModule("com.acme.nsx").getNSXClient();
+
+      var dbSegment = nsxClient.createSegment({
+        displayName: "DB-Tier-VLAN200",
+        vlanIds: [200],
+        subnets: ["10.10.200.0/24"],
+        gateway: "10.10.200.1",
+        description: "Database tier network segment"
+      });
+
+      System.log("Created database tier segment: " + dbSegment.id);
+    </script>
+    <position y="150.0" x="100.0"/>
+  </workflow-item>
+
+  <workflow-item name="item4" out-name="item5" type="task">
+    <display-name>Create Web to App Firewall Rule</display-name>
+    <script encoded="false">
+      // Create firewall rule allowing web tier to app tier
+      var nsxClient = System.getModule("com.acme.nsx").getNSXClient();
+
+      var webToAppRule = nsxClient.createFirewallRule({
+        name: "Allow-Web-to-App",
+        segment: "Web-Tier-VLAN100",
+        sources: ["web-security-group"],
+        destinations: ["app-security-group"],
+        services: ["HTTP", "HTTPS"],
+        action: "ALLOW",
+        description: "Allow web tier to communicate with app tier on HTTP/HTTPS"
+      });
+
+      System.log("Created firewall rule: " + webToAppRule.id);
+    </script>
+    <position y="200.0" x="100.0"/>
+  </workflow-item>
+
+  <workflow-item name="item5" out-name="item6" type="task">
+    <display-name>Create App to DB Firewall Rule</display-name>
+    <script encoded="false">
+      // Create firewall rule allowing app tier to database tier
+      var nsxClient = System.getModule("com.acme.nsx").getNSXClient();
+
+      var appToDbRule = nsxClient.createFirewallRule({
+        name: "Allow-App-to-DB",
+        segment: "App-Tier-VLAN150",
+        sources: ["app-security-group"],
+        destinations: ["db-security-group"],
+        services: ["MySQL"],
+        action: "ALLOW",
+        destination: "10.10.200.50",
+        description: "Allow app tier to access database on MySQL port"
+      });
+
+      System.log("Created firewall rule: " + appToDbRule.id);
+    </script>
+    <position y="250.0" x="100.0"/>
+  </workflow-item>
+
+  <workflow-item name="item6" out-name="item7" type="task">
+    <display-name>Create DB Backup Rule</display-name>
+    <script encoded="false">
+      // Create firewall rule for database backups
+      var nsxClient = System.getModule("com.acme.nsx").getNSXClient();
+
+      var dbBackupRule = nsxClient.createFirewallRule({
+        name: "Allow-DB-Backup",
+        segment: "DB-Tier-VLAN200",
+        vlan: 200,
+        sources: ["backup-server"],
+        destinations: ["db-security-group"],
+        destination: "10.10.200.50",
+        services: ["SSH"],
+        action: "ALLOW",
+        description: "Allow backup server to access database for backups"
+      });
+
+      System.log("Created firewall rule: " + dbBackupRule.id);
+    </script>
+    <position y="300.0" x="100.0"/>
+  </workflow-item>
+
+  <workflow-item name="item7" out-name="item8" type="task">
+    <display-name>Create Internet Egress Rule</display-name>
+    <script encoded="false">
+      // Create general internet egress rule (no specific segment)
+      var nsxClient = System.getModule("com.acme.nsx").getNSXClient();
+
+      var internetEgressRule = nsxClient.createFirewallRule({
+        name: "Allow-Internet-Egress",
+        sources: ["any"],
+        destinations: ["internet"],
+        services: ["HTTP", "HTTPS"],
+        action: "ALLOW",
+        description: "Allow all tiers to access internet for updates"
+      });
+
+      System.log("Created firewall rule: " + internetEgressRule.id);
+    </script>
+    <position y="350.0" x="100.0"/>
+  </workflow-item>
+
+  <workflow-item name="item8" out-name="item0" type="task">
+    <display-name>Create DNS Rule</display-name>
+    <script encoded="false">
+      // Create DNS rule (no specific segment)
+      var nsxClient = System.getModule("com.acme.nsx").getNSXClient();
+
+      var dnsRule = nsxClient.createFirewallRule({
+        name: "Allow-DNS",
+        sources: ["any"],
+        destinations: ["dns-servers"],
+        services: ["DNS"],
+        action: "ALLOW",
+        description: "Allow DNS queries from all networks"
+      });
+
+      System.log("Created firewall rule: " + dnsRule.id);
+      success = true;
+    </script>
+    <position y="400.0" x="100.0"/>
+  </workflow-item>
+
+  <presentation/>
+</workflow>

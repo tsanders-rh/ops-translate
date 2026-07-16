@@ -1,0 +1,98 @@
+{
+  "workflow_name": "vRealize workflows",
+  "summary": {
+    "total_components": 4,
+    "counts": {
+      "SUPPORTED": 1,
+      "PARTIAL": 2,
+      "BLOCKED": 1,
+      "MANUAL": 0
+    },
+    "overall_assessment": "HAS_BLOCKING_ISSUES",
+    "migration_paths": {
+      "PATH_A": 3,
+      "PATH_B": 0,
+      "PATH_C": 1,
+      "NONE": 0
+    },
+    "requires_manual_work": true,
+    "has_blocking_issues": true
+  },
+  "components": [
+    {
+      "name": "VM Lifecycle Operations",
+      "component_type": "day2_ops",
+      "level": "SUPPORTED",
+      "reason": "Start/stop/restart operations supported via VirtualMachine spec",
+      "openshift_equivalent": "VirtualMachine running field",
+      "migration_path": "PATH_A",
+      "evidence": null,
+      "location": "nsx-multinetwork-test",
+      "recommendations": [
+        "Map start/stop to spec.running: true/false",
+        "Use virtctl for CLI operations",
+        "Consider using Ansible for automation"
+      ]
+    },
+    {
+      "name": "NSX Security Groups",
+      "component_type": "nsx_security_groups",
+      "level": "BLOCKED",
+      "reason": "Security Groups cannot be automatically translated - no direct OpenShift equivalent",
+      "openshift_equivalent": null,
+      "migration_path": "PATH_C",
+      "evidence": null,
+      "location": "nsx-multinetwork-test",
+      "recommendations": [
+        "Security groups have no direct OpenShift equivalent",
+        "Option 1: Model as pod selectors in NetworkPolicy",
+        "Option 2: Use labels to group pods logically",
+        "Option 3: Keep NSX for security groups (hybrid)",
+        "Requires specialist review of security requirements"
+      ]
+    },
+    {
+      "name": "NSX Distributed Firewall",
+      "component_type": "nsx_firewall_rules",
+      "level": "PARTIAL",
+      "reason": "Firewall Rules can be partially translated to NetworkPolicy with manual configuration",
+      "openshift_equivalent": "NetworkPolicy",
+      "migration_path": "PATH_A",
+      "evidence": null,
+      "location": "nsx-multinetwork-test",
+      "recommendations": [
+        "Convert firewall rules to NetworkPolicy manifests",
+        "Note: NetworkPolicy is L3/L4 only (no L7 filtering)",
+        "Consider using Calico for advanced features",
+        "Test egress/ingress rules in dev environment",
+        "Document any unsupported rule types"
+      ]
+    },
+    {
+      "name": "NSX Overlay Segments",
+      "component_type": "nsx_segments",
+      "level": "PARTIAL",
+      "reason": "Segments can be partially translated to NetworkAttachmentDefinition (Multus CNI) with manual configuration",
+      "openshift_equivalent": "NetworkAttachmentDefinition (Multus CNI)",
+      "migration_path": "PATH_A",
+      "evidence": null,
+      "location": "nsx-multinetwork-test",
+      "recommendations": [
+        "Create NetworkAttachmentDefinition for each segment",
+        "Configure Multus CNI plugin",
+        "Update pod specs to reference NAD",
+        "Map VLAN/overlay IDs to bridge/macvlan config",
+        "Test pod-to-pod networking"
+      ]
+    }
+  ],
+  "migration_guidance": {
+    "overall_assessment": "HAS_BLOCKING_ISSUES",
+    "has_blocking_issues": true,
+    "requires_manual_work": true,
+    "recommended_paths": [
+      "PATH_A",
+      "PATH_C"
+    ]
+  }
+}

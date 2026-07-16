@@ -1,0 +1,22 @@
+---
+# ============================================================================
+# GAP ANALYSIS SUMMARY
+# ============================================================================
+# Overall Assessment: HAS_BLOCKING_ISSUES
+# Total Components: 4
+# - SUPPORTED: 1
+# - PARTIAL: 2 (manual configuration needed)
+# - BLOCKED: 1 (no direct equivalent)
+# - MANUAL: 0 (specialist work required)
+#
+# For detailed migration guidance, see: intent/gaps.md
+#
+# To skip manual tasks during testing:
+#   ansible-playbook site.yml --skip-tags manual_implementation_required
+# ============================================================================
+
+- name: Provision KubeVirt VM
+  hosts: localhost
+  gather_facts: false
+  roles:
+  - provision_vm

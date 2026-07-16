@@ -1,0 +1,14 @@
+llm:
+  provider: anthropic
+  model: claude-sonnet-4-5
+  api_key_env: OPS_TRANSLATE_LLM_API_KEY
+  rate_limit_delay: 1.0
+profiles:
+  lab:
+    default_namespace: virt-lab
+    default_network: lab-network
+    default_storage_class: nfs
+  prod:
+    default_namespace: virt-prod
+    default_network: prod-network
+    default_storage_class: ceph-rbd

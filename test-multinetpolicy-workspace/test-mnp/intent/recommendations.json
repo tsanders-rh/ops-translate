@@ -1,0 +1,70 @@
+{
+  "total_recommendations": 2,
+  "recommendations": [
+    {
+      "component_name": "NSX Security Groups",
+      "component_type": "nsx_security_group",
+      "reason_not_auto_translatable": "NSX Security Groups support dynamic membership based on VM tags, network properties, and complex criteria. Kubernetes uses label selectors which are fundamentally different. Auto-translation cannot safely map dynamic NSX group membership to static label selectors without NetOps/SecOps review.",
+      "ansible_approach": "Define a Kubernetes label taxonomy that represents security zones and application tiers. Use Ansible to apply labels to workloads based on the NSX group membership criteria. Reference labels in NetworkPolicy selectors.",
+      "openshift_primitives": [
+        "Pod Labels",
+        "Namespace Labels",
+        "NetworkPolicy podSelector/namespaceSelector"
+      ],
+      "implementation_steps": [
+        "Document NSX security group membership rules and criteria",
+        "Design Kubernetes label taxonomy (e.g., security.zone, app.tier)",
+        "Map NSX group membership to label assignments",
+        "Create Ansible tasks to label namespaces and workloads",
+        "Update NetworkPolicy to reference label selectors",
+        "Require NetOps/SecOps sign-off on label taxonomy and policy mapping"
+      ],
+      "required_inputs": {
+        "security_groups": "List of NSX security groups with membership rules",
+        "label_taxonomy": "Proposed Kubernetes label schema",
+        "workload_inventory": "List of workloads and their security requirements"
+      },
+      "testing_guidance": "Validate label assignments match intended security group membership. Test NetworkPolicy enforcement with labeled pods. Review with SecOps to ensure security boundaries are maintained. Document any gaps in enforcement compared to NSX.",
+      "owner": "SecOps",
+      "references": [
+        "https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/",
+        "https://docs.openshift.com/container-platform/latest/networking/network_policy/about-network-policy.html"
+      ],
+      "ansible_role_stub": "custom_nsx_security_groups",
+      "ansible_todo_task": "# TODO: Implement NSX security group to label migration\n# Source: nsx-multinetwork-test\n# Evidence: See gap analysis report\n# Requires NetOps/SecOps review of label taxonomy\n# Review intent/recommendations.md for implementation guidance"
+    },
+    {
+      "component_name": "NSX Distributed Firewall",
+      "component_type": "nsx_firewall",
+      "reason_not_auto_translatable": "NSX Distributed Firewall provides L7 filtering, stateful inspection, and micro-segmentation features that cannot be directly mapped to Kubernetes NetworkPolicy. Auto-translation would lose critical security enforcement and create a false sense of equivalence.",
+      "ansible_approach": "Use `kubernetes.core.k8s` module to create NetworkPolicy resources with an allow-list approach. For advanced requirements, consider Calico GlobalNetworkPolicy or OpenShift Egress Firewall.",
+      "openshift_primitives": [
+        "NetworkPolicy (Kubernetes native)",
+        "EgressFirewall (OpenShift)",
+        "GlobalNetworkPolicy (Calico)"
+      ],
+      "implementation_steps": [
+        "Analyze NSX firewall rules to extract source/destination patterns",
+        "Define Kubernetes label taxonomy for pod selectors",
+        "Create NetworkPolicy manifests with allow-list ingress/egress rules",
+        "Document unsupported features (L7, stateful inspection) for NetOps review",
+        "Test policies in dev environment with realistic traffic patterns",
+        "Implement monitoring for policy violations and denied connections"
+      ],
+      "required_inputs": {
+        "firewall_rules": "List of NSX firewall rules with source/dest/port/protocol",
+        "namespace": "Target namespace for NetworkPolicy",
+        "pod_labels": "Label selectors for affected pods"
+      },
+      "testing_guidance": "Test with pod-to-pod traffic in dev cluster. Verify both allowed and denied traffic. Use `kubectl exec` to test connectivity between pods. Monitor CNI logs for policy enforcement. Compare behavior against NSX firewall logs to identify gaps.",
+      "owner": "NetOps",
+      "references": [
+        "https://docs.openshift.com/container-platform/latest/networking/network_policy/about-network-policy.html",
+        "https://kubernetes.io/docs/concepts/services-networking/network-policies/",
+        "https://docs.tigera.io/calico/latest/network-policy/"
+      ],
+      "ansible_role_stub": "custom_nsx_firewall_migration",
+      "ansible_todo_task": "# TODO: Implement NSX firewall migration to NetworkPolicy\n# Source: nsx-multinetwork-test\n# Evidence: See gap analysis report\n# Review intent/recommendations.md for implementation guidance"
+    }
+  ]
+}

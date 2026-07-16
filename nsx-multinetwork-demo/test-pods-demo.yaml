@@ -1,0 +1,97 @@
+---
+# Web tier pod - source for traffic to app tier
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-server
+  namespace: virt-lab
+  labels:
+    app: websecuritygroup
+    tier: web
+  annotations:
+    k8s.v1.cni.cncf.io/networks: web-tier-vlan100
+spec:
+  containers:
+  - name: nginx
+    image: nginxinc/nginx-unprivileged:alpine
+    ports:
+    - containerPort: 8080
+    command: ["/bin/sh", "-c"]
+    args:
+    - |
+      # Start nginx in background
+      nginx -g 'daemon off;' &
+
+      # Keep container running with shell access
+      while true; do sleep 3600; done
+---
+# App tier pod - destination for web traffic, source for DB traffic
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-server
+  namespace: virt-lab
+  labels:
+    app: securitygroup
+    tier: app
+  annotations:
+    k8s.v1.cni.cncf.io/networks: app-tier-vlan150
+spec:
+  containers:
+  - name: nginx
+    image: nginxinc/nginx-unprivileged:alpine
+    ports:
+    - containerPort: 8080
+    - containerPort: 80
+    - containerPort: 443
+    command: ["/bin/sh", "-c"]
+    args:
+    - |
+      # Create custom nginx config to listen on multiple ports
+      cat > /tmp/nginx.conf <<'EOF'
+      events {
+          worker_connections 1024;
+      }
+      http {
+          server {
+              listen 8080;
+              listen 80;
+              listen 443;
+              location / {
+                  return 200 "App Tier - Request received\n";
+                  add_header Content-Type text/plain;
+              }
+          }
+      }
+      EOF
+
+      # Start nginx with custom config
+      nginx -c /tmp/nginx.conf -g 'daemon off;' &
+
+      # Keep container running
+      while true; do sleep 3600; done
+---
+# Database tier pod - destination for app traffic
+apiVersion: v1
+kind: Pod
+metadata:
+  name: db-server
+  namespace: virt-lab
+  labels:
+    app: dbsecuritygroup
+    tier: db
+  annotations:
+    k8s.v1.cni.cncf.io/networks: db-tier-vlan200
+spec:
+  containers:
+  - name: postgres
+    image: postgres:alpine
+    env:
+    - name: POSTGRES_PASSWORD
+      value: demopassword123
+    - name: POSTGRES_USER
+      value: demo
+    - name: POSTGRES_DB
+      value: demodb
+    ports:
+    - containerPort: 5432

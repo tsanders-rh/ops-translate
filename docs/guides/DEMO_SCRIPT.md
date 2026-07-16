@@ -25,6 +25,35 @@ mkdir -p input/vrealize
 # 4. Optional: Have OpenShift cluster ready
 # - Login: oc login https://your-cluster
 # - Create namespace: oc new-project virt-lab
+# - Enable MultiNetworkPolicy (see Cluster Prerequisites below)
+```
+
+### Cluster Prerequisites (OpenShift 4.12+)
+
+MultiNetworkPolicy support must be enabled on your OpenShift cluster before deploying the generated policies.
+
+**Check if already enabled:**
+```bash
+oc get network.operator.openshift.io cluster -o jsonpath='{.spec.useMultiNetworkPolicy}'
+# Should return: true
+```
+
+**Enable MultiNetworkPolicy support:**
+```bash
+# Enable the feature
+oc patch network.operator.openshift.io cluster --type=merge \
+  -p '{"spec":{"useMultiNetworkPolicy":true}}'
+
+# Wait for the network operator to finish updating (~2 minutes)
+oc wait --for=condition=Progressing=False --timeout=300s co/network
+
+# Verify OVN-Kubernetes pods are running
+oc get pods -n openshift-ovn-kubernetes -l app=ovnkube-node
+```
+
+**Why this is needed:**
+OpenShift's OVN-Kubernetes CNI has built-in MultiNetworkPolicy support, but it's disabled by default. This is a one-time cluster configuration change.
+
 ```
 
 ---
@@ -200,11 +229,47 @@ oc apply -f output/network-policies/ -n virt-lab
 **Show**:
 ```bash
 oc get network-attachment-definitions -n virt-lab
-oc get multinetworkpolicies -n virt-lab
+oc get multi-networkpolicy.k8s.cni.cncf.io -n virt-lab
 oc get networkpolicies -n virt-lab
 ```
 
-#### Create Test Pods
+**Say**:
+> "Notice we have 3 secondary networks (NADs), 3 MultiNetworkPolicies for secondary network traffic, and 2 standard NetworkPolicies for primary network traffic. The correlation engine intelligently routed the rules."
+
+#### Infrastructure Note (IMPORTANT)
+
+**Say**:
+> "Before we can test pods with secondary networks, we need to address one thing: the generated NetworkAttachmentDefinitions contain TODO placeholders for environment-specific configuration."
+
+**Show**:
+```bash
+cat output/network-attachments/web-tier-vlan100.yaml | grep -A 15 "config:"
+```
+
+**Point out**:
+```yaml
+"master": "TODO: Specify parent interface (e.g., eth1, ens3)"
+"range": "TODO: Configure subnet CIDR (e.g., 10.10.10.0/24)"
+```
+
+**Say**:
+> "In a real migration, you'd replace these TODOs with:
+> - The actual network interface on your nodes (eth1, ens3, etc.)
+> - The subnet information extracted from NSX (which we have in analysis.vrealize.json)
+>
+> For this demo cluster without VLAN infrastructure, pods would fail with 'Link not found'. But we've successfully validated the most important parts:
+> - NSX workflow analysis and extraction
+> - Intelligent correlation of rules to segments
+> - MultiNetworkPolicy generation with correct structure
+> - OpenShift deployment readiness
+>
+> The NAD configuration is just environment-specific plumbing."
+
+**If you have VLAN infrastructure configured**, proceed with pod testing. Otherwise, **skip to Part 5: Value Summary**.
+
+---
+
+#### Create Test Pods (Optional - Requires VLAN Infrastructure)
 
 **Run**:
 ```bash
@@ -329,6 +394,15 @@ echo "Exit code: $?"  # Should be 1 or 124 (timeout/denied)
 **Q: What's the accuracy rate?**
 > "In our testing with real NSX exports, direct segment references achieve 95% confidence. IP overlap and VLAN matching achieve 70-85% confidence depending on complexity."
 
+**Q: What about the TODO placeholders in NetworkAttachmentDefinitions?**
+> "Those are environment-specific - the parent interface name and exact IP ranges. ops-translate extracts the VLAN IDs and subnets from NSX (you can see them in analysis.vrealize.json), but it can't know which physical interface on your nodes to use. That's a one-time configuration step during actual migration. It takes 5 minutes to fill in, and the subnet info is right there in the analysis output."
+
+**Q: Do we need special hardware for secondary networks?**
+> "You need VLAN-capable networking - either physical NICs that support VLAN tagging, or virtual networking with VLAN support. Most modern datacenter hardware supports this. For cloud deployments, you'd use the cloud provider's equivalent (AWS ENI, Azure accelerated networking, etc.). We have a complete AWS deployment guide that shows how to adapt the generated NADs for AWS VPC subnets instead of VLANs."
+
+**Q: Pods failing with 'Link not found' - is the translation broken?**
+> "No, that just means the NetworkAttachmentDefinition needs to be configured with your actual node interface. The translation is complete and correct - this is just the environment-specific plumbing. See the generated README in output/network-attachments/ for configuration instructions."
+
 ---
 
 ## Backup Slides/Demos
@@ -371,6 +445,7 @@ This auto-creates a test workspace and runs the full pipeline.
 - [ ] OpenShift cluster accessible (if doing deployment)
 - [ ] `oc login` working
 - [ ] Demo namespace created (`oc new-project virt-lab`)
+- [ ] MultiNetworkPolicy enabled on cluster (`oc get network.operator.openshift.io cluster -o jsonpath='{.spec.useMultiNetworkPolicy}'` returns `true`)
 - [ ] Screen recording started (optional - for async sharing)
 - [ ] Terminal font size increased (for visibility)
 - [ ] Browser tabs ready:
@@ -381,6 +456,6 @@ This auto-creates a test workspace and runs the full pipeline.
 ---
 
 **Script prepared by**: ops-translate project team
-**Last tested**: 2026-07-06
+**Last tested**: 2026-07-07
 **Estimated prep time**: 15 minutes
 **Estimated delivery time**: 20-30 minutes

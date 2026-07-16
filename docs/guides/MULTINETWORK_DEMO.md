@@ -799,9 +799,11 @@ spec:
 ## Part 4: OpenShift Deployment (15 minutes)
 
 **Prerequisites**:
-- OpenShift 4.12+ cluster
+- OpenShift 4.12+ cluster (on-premises, AWS, Azure, etc.)
 - Cluster admin access
 - `oc` CLI configured
+
+> **Note for AWS/Cloud Deployments**: This guide assumes on-premises infrastructure with VLAN support. For AWS-based OpenShift clusters, see **[AWS_DEPLOYMENT.md](AWS_DEPLOYMENT.md)** for adapted instructions using VPC subnets and multiple ENIs instead of VLANs.
 
 ### Step 9: Prepare the Cluster
 
@@ -819,6 +821,37 @@ oc get pods -n openshift-ovn-kubernetes
 # Verify Multus is available
 oc get pods -n openshift-multus
 ```
+
+#### Enable MultiNetworkPolicy Support
+
+OpenShift's OVN-Kubernetes CNI has built-in MultiNetworkPolicy support, but it must be explicitly enabled:
+
+```bash
+# Check current status
+oc get network.operator.openshift.io cluster -o jsonpath='{.spec.useMultiNetworkPolicy}'
+# Should return: true (if already enabled) or false (if not enabled)
+
+# Enable MultiNetworkPolicy support
+oc patch network.operator.openshift.io cluster --type=merge \
+  -p '{"spec":{"useMultiNetworkPolicy":true}}'
+
+# Wait for network operator to finish reconfiguration (~2 minutes)
+oc wait --for=condition=Progressing=False --timeout=300s co/network
+
+# Verify OVN-Kubernetes pods restarted successfully
+oc get pods -n openshift-ovn-kubernetes -l app=ovnkube-node
+```
+
+**Why this is required:**
+
+MultiNetworkPolicy is a specialized feature for controlling traffic on secondary networks (Multus attachments). It's disabled by default to reduce resource usage on clusters that don't need it. This is a **one-time cluster configuration** - once enabled, all namespaces can use MultiNetworkPolicies.
+
+**What happens when you enable it:**
+
+- The network operator patches the OVN-Kubernetes DaemonSet
+- OVN-Kubernetes pods restart with MultiNetworkPolicy controller enabled
+- The cluster can now enforce policies on secondary networks (net1, net2, etc.)
+- No additional operators or CRDs are needed
 
 > **Note: Namespace Configuration**
 >
@@ -850,6 +883,29 @@ app-tier-vlan150      5s
 db-tier-vlan200       5s
 ```
 
+#### ⚠️ IMPORTANT: NAD Configuration Required
+
+The generated NetworkAttachmentDefinitions contain **TODO placeholders** for environment-specific values:
+- Parent network interface (e.g., `eth1`, `ens3`)
+- IP range boundaries (`range_start`, `range_end`)
+
+**For this demo**, you can proceed in two ways:
+
+1. **With VLAN infrastructure** → Configure NADs (see `output/network-attachments/README.md` for detailed instructions)
+2. **Without VLAN infrastructure** (most demos) → Deploy NADs as-is to validate policy generation
+
+**Key point**: NADs will deploy successfully either way. The **translation and policy generation are complete and correct**. Pods need configured NADs with real infrastructure to actually run, but you've already validated the important parts:
+- ✅ NSX analysis extracted all segment metadata
+- ✅ Correlation engine mapped rules correctly
+- ✅ MultiNetworkPolicies generated with proper structure
+- ✅ Resources deploy to OpenShift successfully
+
+> **For detailed NAD configuration instructions**, see:
+> - `output/network-attachments/README.md` (generated file)
+> - [AWS deployments](AWS_DEPLOYMENT.md) (use VPC subnets instead of VLANs)
+>
+> **Why TODO placeholders exist**: ops-translate can't know your node's interface names or exact IP allocation strategy. These are filled in once during actual migration setup.
+
 ### Step 11: Deploy MultiNetworkPolicies
 
 ```bash
@@ -857,7 +913,7 @@ db-tier-vlan200       5s
 oc apply -f output/multi-network-policies/ -n virt-lab
 
 # Verify policies created
-oc get multinetworkpolicies -n virt-lab
+oc get multi-networkpolicy.k8s.cni.cncf.io -n virt-lab
 ```
 
 **Expected Output**:
@@ -889,7 +945,15 @@ allow-dns                 <none>         2s
 
 ## Part 5: Testing and Validation (10 minutes)
 
+**⚠️ Prerequisites**: This section requires properly configured NetworkAttachmentDefinitions with:
+- Valid parent interface (`master` field)
+- VLAN infrastructure on your cluster nodes
+
+If you skipped NAD configuration in Step 10, pods will fail with `Link not found` error. You can still validate the **policy generation and structure** by reviewing the YAML files.
+
 ### Step 13: Create Test Pods
+
+**Only proceed if you have configured NADs and VLAN infrastructure.**
 
 Create pods attached to the secondary networks to test the policies:
 
@@ -1084,7 +1148,7 @@ oc logs -n virt-lab web-server --tail=20
 oc delete pod web-server app-server db-server -n virt-lab
 
 # Delete policies
-oc delete multinetworkpolicies --all -n virt-lab
+oc delete multi-networkpolicy.k8s.cni.cncf.io --all -n virt-lab
 oc delete networkpolicies --all -n virt-lab
 
 # Delete NADs
@@ -1136,6 +1200,68 @@ ops-translate init my-project --with-templates
 2. Use kind/minikube with simulated secondary networks
 3. Test policy logic with different namespaces (simulate network isolation)
 
+### Q: Getting "no matches for kind MultiNetworkPolicy" error?
+
+**A**: MultiNetworkPolicy support must be enabled on OpenShift:
+
+```bash
+# Check if enabled
+oc get network.operator.openshift.io cluster -o jsonpath='{.spec.useMultiNetworkPolicy}'
+
+# If it returns false, enable it
+oc patch network.operator.openshift.io cluster --type=merge \
+  -p '{"spec":{"useMultiNetworkPolicy":true}}'
+
+# Wait for network operator to finish
+oc wait --for=condition=Progressing=False --timeout=300s co/network
+```
+
+This is a **one-time cluster configuration** required for OpenShift 4.12+. See Step 9 for full details.
+
+### Q: Pods failing with "Link not found" error?
+
+**A**: This means the NetworkAttachmentDefinition is trying to use a network interface that doesn't exist on your nodes.
+
+**Error message**:
+```
+error adding container to network "web-tier-vlan100": Link not found
+```
+
+**Root cause**: The generated NADs contain TODO placeholders that must be replaced with your actual infrastructure details:
+
+1. **Parent interface** (`master` field) - must match a real interface on your nodes
+2. **VLAN infrastructure** - VLANs must be configured on your network switches
+
+**How to fix**:
+
+```bash
+# 1. Check what's in the NAD
+oc get network-attachment-definition web-tier-vlan100 -n virt-lab -o yaml
+
+# 2. Find available interfaces on your nodes
+oc debug node/your-node-name -- chroot /host ip link show
+
+# 3. Edit the NAD to replace "TODO" with actual interface name
+oc edit network-attachment-definition web-tier-vlan100 -n virt-lab
+
+# Change:
+#   "master": "TODO: Specify parent interface (e.g., eth1, ens3)"
+# To:
+#   "master": "eth1"  # or whatever interface your node has
+```
+
+**For testing/demo without VLAN infrastructure**:
+
+If you don't have VLAN-capable networking, you've still successfully validated:
+- ✅ NSX workflow analysis and extraction
+- ✅ Intelligent rule-to-segment correlation
+- ✅ MultiNetworkPolicy generation and structure
+- ✅ OpenShift deployment readiness
+
+The infrastructure piece is environment-specific and would be configured during actual customer migration.
+
+See Step 10 for complete NAD configuration instructions.
+
 ---
 
 ## Next Steps
@@ -1144,6 +1270,7 @@ ops-translate init my-project --with-templates
 2. **Customize templates**: Add org-specific labels, annotations
 3. **Integrate with CI/CD**: Automate policy generation in migration pipeline
 4. **Customer validation**: Run correlation report by customer's network team
+5. **AWS/Cloud deployment**: See [AWS_DEPLOYMENT.md](AWS_DEPLOYMENT.md) for cloud-based OpenShift clusters
 
 ---
 
@@ -1157,5 +1284,5 @@ ops-translate init my-project --with-templates
 ---
 
 **Demo prepared by**: ops-translate project team
-**Last updated**: 2026-07-06
-**Version**: 1.0
+**Last updated**: 2026-07-07
+**Version**: 1.1

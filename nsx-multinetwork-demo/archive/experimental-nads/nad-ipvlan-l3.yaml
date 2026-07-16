@@ -1,0 +1,96 @@
+---
+# Web Tier - VLAN 100 with ipvlan L3 mode
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: web-tier-vlan100
+  namespace: virt-lab
+  labels:
+    translated-from: nsx-segment
+    vlan-id: '100'
+spec:
+  config: |-
+    {
+      "cniVersion": "0.3.1",
+      "type": "ipvlan",
+      "master": "enp126s0.100",
+      "mode": "l3",
+      "ipam": {
+        "type": "host-local",
+        "subnet": "10.10.100.0/24",
+        "rangeStart": "10.10.100.10",
+        "rangeEnd": "10.10.100.250",
+        "routes": [
+          {
+            "dst": "10.10.150.0/24"
+          },
+          {
+            "dst": "10.10.200.0/24"
+          }
+        ]
+      }
+    }
+---
+# App Tier - VLAN 150 with ipvlan L3 mode
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: app-tier-vlan150
+  namespace: virt-lab
+  labels:
+    translated-from: nsx-segment
+    vlan-id: '150'
+spec:
+  config: |-
+    {
+      "cniVersion": "0.3.1",
+      "type": "ipvlan",
+      "master": "enp126s0.150",
+      "mode": "l3",
+      "ipam": {
+        "type": "host-local",
+        "subnet": "10.10.150.0/24",
+        "rangeStart": "10.10.150.10",
+        "rangeEnd": "10.10.150.250",
+        "routes": [
+          {
+            "dst": "10.10.100.0/24"
+          },
+          {
+            "dst": "10.10.200.0/24"
+          }
+        ]
+      }
+    }
+---
+# DB Tier - VLAN 200 with ipvlan L3 mode
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: db-tier-vlan200
+  namespace: virt-lab
+  labels:
+    translated-from: nsx-segment
+    vlan-id: '200'
+spec:
+  config: |-
+    {
+      "cniVersion": "0.3.1",
+      "type": "ipvlan",
+      "master": "enp126s0.200",
+      "mode": "l3",
+      "ipam": {
+        "type": "host-local",
+        "subnet": "10.10.200.0/24",
+        "rangeStart": "10.10.200.10",
+        "rangeEnd": "10.10.200.250",
+        "routes": [
+          {
+            "dst": "10.10.100.0/24"
+          },
+          {
+            "dst": "10.10.150.0/24"
+          }
+        ]
+      }
+    }

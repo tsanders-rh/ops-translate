@@ -1,0 +1,62 @@
+---
+# Generated from vRealize workflow NSX firewall rule
+# Source rule: Allow-Web-to-App
+# Location: nsx-multinetwork-test.workflow.xml:81
+#
+# NETWORK SCOPE: SECONDARY NETWORK
+# Segment: Web-Tier-VLAN100
+# NetworkAttachmentDefinition: default/web-tier-vlan100
+# VLAN IDs: 100
+# Subnets: 10.10.100.0/24
+#
+# This MultiNetworkPolicy applies ONLY to traffic on the secondary network
+# (NetworkAttachmentDefinition: web-tier-vlan100) and does NOT affect traffic on
+# the primary pod network or other secondary networks.
+#
+# IMPORTANT: Pods must be attached to the secondary network for this policy
+# to apply. Add this annotation to pod metadata:
+#   k8s.v1.cni.cncf.io/networks: web-tier-vlan100
+#
+# LIMITATIONS - READ BEFORE DEPLOYING:
+# - NSX supports L7 application-aware filtering; MultiNetworkPolicy is L3/L4 only
+# - NSX supports FQDN-based rules; MultiNetworkPolicy requires pod selectors or IP/CIDR
+# - NSX supports time-based rules; MultiNetworkPolicy is always active
+# - NSX supports user/group-based rules; MultiNetworkPolicy is pod-based only
+# - Review and test thoroughly in dev environment before production
+#
+# DETECTED LIMITATIONS FOR THIS RULE:
+# Service 'HTTP' may be L7 application-aware. OVN-Kubernetes
+# MultiNetworkPolicy is L3/L4 only. Consider Cilium for L7 policies.
+#
+# For advanced networking features on secondary networks, consider:
+# - Cilium for L7 policies, FQDN support, and enhanced observability
+# - Calico NetworkPolicy for global policies and deny rules
+- apiVersion: k8s.cni.cncf.io/v1beta1
+  kind: MultiNetworkPolicy
+  metadata:
+    name: web-tier-vlan100-allow-web-to-app
+    namespace: default
+    annotations:
+      k8s.v1.cni.cncf.io/policy-for: default/web-tier-vlan100
+      source-location: nsx-multinetwork-test.workflow.xml:81
+    labels:
+      translated-from: nsx-firewall
+      source-workflow: nsx-multinetwork-test.workflow
+      network-scope: secondary
+      network-attachment: web-tier-vlan100
+  spec:
+    podSelector:
+      matchLabels:
+        app: securitygroup
+    policyTypes:
+    - Ingress
+    ingress:
+    - from:
+      - podSelector:
+          matchLabels:
+            app: websecuritygroup
+      ports:
+      - protocol: TCP
+        port: 80
+      - protocol: TCP
+        port: 443

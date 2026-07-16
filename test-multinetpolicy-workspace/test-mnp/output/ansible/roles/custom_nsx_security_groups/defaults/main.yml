@@ -1,0 +1,17 @@
+---
+# Default variables for custom_nsx_security_groups
+
+# Component information
+component_name: "NSX Security Groups"
+component_type: "nsx_security_groups"
+
+# Required inputs (see README.md for descriptions)
+# List of NSX security groups with membership rules
+security_groups: "TODO: Define security_groups"
+
+# Proposed Kubernetes label schema
+label_taxonomy: "TODO: Define label_taxonomy"
+
+# List of workloads and their security requirements
+workload_inventory: "TODO: Define workload_inventory"
+

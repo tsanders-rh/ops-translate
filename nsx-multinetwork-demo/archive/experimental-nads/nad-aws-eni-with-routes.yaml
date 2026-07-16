@@ -1,0 +1,105 @@
+---
+# NetworkAttachmentDefinitions with routes to other subnets
+# This enables pod-to-pod communication across different secondary networks
+
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: web-tier-vlan100
+  namespace: virt-lab
+  labels:
+    translated-from: nsx-segment
+    vlan-id: "100"
+    aws-setup: multi-eni
+spec:
+  config: |-
+    {
+      "cniVersion": "0.3.1",
+      "type": "ipvlan",
+      "master": "enp127s0",
+      "mode": "l3",
+      "ipam": {
+        "type": "host-local",
+        "ranges": [
+          [
+            {
+              "subnet": "10.0.200.0/24",
+              "rangeStart": "10.0.200.10",
+              "rangeEnd": "10.0.200.250"
+            }
+          ]
+        ],
+        "routes": [
+          { "dst": "10.0.201.0/24" },
+          { "dst": "10.0.202.0/24" }
+        ]
+      }
+    }
+---
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: app-tier-vlan150
+  namespace: virt-lab
+  labels:
+    translated-from: nsx-segment
+    vlan-id: "150"
+    aws-setup: multi-eni
+spec:
+  config: |-
+    {
+      "cniVersion": "0.3.1",
+      "type": "ipvlan",
+      "master": "enp128s0",
+      "mode": "l3",
+      "ipam": {
+        "type": "host-local",
+        "ranges": [
+          [
+            {
+              "subnet": "10.0.201.0/24",
+              "rangeStart": "10.0.201.10",
+              "rangeEnd": "10.0.201.250"
+            }
+          ]
+        ],
+        "routes": [
+          { "dst": "10.0.200.0/24" },
+          { "dst": "10.0.202.0/24" }
+        ]
+      }
+    }
+---
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: db-tier-vlan200
+  namespace: virt-lab
+  labels:
+    translated-from: nsx-segment
+    vlan-id: "200"
+    aws-setup: multi-eni
+spec:
+  config: |-
+    {
+      "cniVersion": "0.3.1",
+      "type": "ipvlan",
+      "master": "enp129s0",
+      "mode": "l3",
+      "ipam": {
+        "type": "host-local",
+        "ranges": [
+          [
+            {
+              "subnet": "10.0.202.0/24",
+              "rangeStart": "10.0.202.10",
+              "rangeEnd": "10.0.202.250"
+            }
+          ]
+        ],
+        "routes": [
+          { "dst": "10.0.200.0/24" },
+          { "dst": "10.0.201.0/24" }
+        ]
+      }
+    }

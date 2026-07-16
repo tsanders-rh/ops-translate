@@ -1,0 +1,96 @@
+---
+# AWS Test Setup for NSX Multi-Network Demo using Bridge CNI
+# Uses bridge mode to create isolated L2 networks for testing
+# This doesn't require IP forwarding on the host
+#
+# Network Design:
+# - Web tier: 10.244.100.0/24 (bridge cni-web)
+# - App tier: 10.244.150.0/24 (bridge cni-app)
+# - DB tier: 10.244.200.0/24 (bridge cni-db)
+
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: web-tier-vlan100
+  namespace: virt-lab
+  labels:
+    translated-from: nsx-segment
+    vlan-id: "100"
+    network-type: bridge
+spec:
+  config: |-
+    {
+      "cniVersion": "0.3.1",
+      "type": "bridge",
+      "bridge": "cni-web",
+      "isGateway": true,
+      "ipMasq": false,
+      "ipam": {
+        "type": "host-local",
+        "subnet": "10.244.100.0/24",
+        "rangeStart": "10.244.100.10",
+        "rangeEnd": "10.244.100.250",
+        "gateway": "10.244.100.1",
+        "routes": [
+          { "dst": "10.244.0.0/16" }
+        ]
+      }
+    }
+---
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: app-tier-vlan150
+  namespace: virt-lab
+  labels:
+    translated-from: nsx-segment
+    vlan-id: "150"
+    network-type: bridge
+spec:
+  config: |-
+    {
+      "cniVersion": "0.3.1",
+      "type": "bridge",
+      "bridge": "cni-app",
+      "isGateway": true,
+      "ipMasq": false,
+      "ipam": {
+        "type": "host-local",
+        "subnet": "10.244.150.0/24",
+        "rangeStart": "10.244.150.10",
+        "rangeEnd": "10.244.150.250",
+        "gateway": "10.244.150.1",
+        "routes": [
+          { "dst": "10.244.0.0/16" }
+        ]
+      }
+    }
+---
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: db-tier-vlan200
+  namespace: virt-lab
+  labels:
+    translated-from: nsx-segment
+    vlan-id: "200"
+    network-type: bridge
+spec:
+  config: |-
+    {
+      "cniVersion": "0.3.1",
+      "type": "bridge",
+      "bridge": "cni-db",
+      "isGateway": true,
+      "ipMasq": false,
+      "ipam": {
+        "type": "host-local",
+        "subnet": "10.244.200.0/24",
+        "rangeStart": "10.244.200.10",
+        "rangeEnd": "10.244.200.250",
+        "gateway": "10.244.200.1",
+        "routes": [
+          { "dst": "10.244.0.0/16" }
+        ]
+      }
+    }

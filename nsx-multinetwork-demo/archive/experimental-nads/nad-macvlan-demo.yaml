@@ -1,0 +1,74 @@
+---
+# Macvlan NADs without VLAN tagging - for demo purposes
+# These allow inter-subnet communication while policies still enforce
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: web-tier-vlan100
+  namespace: virt-lab
+  labels:
+    translated-from: nsx-segment
+    source-workflow: nsx-3tier-app.workflow
+spec:
+  config: |-
+    {
+      "cniVersion": "0.3.1",
+      "type": "macvlan",
+      "master": "eth0",
+      "mode": "bridge",
+      "ipam": {
+        "type": "host-local",
+        "subnet": "172.20.100.0/24",
+        "rangeStart": "172.20.100.10",
+        "rangeEnd": "172.20.100.250",
+        "gateway": "172.20.100.1"
+      }
+    }
+---
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: app-tier-vlan150
+  namespace: virt-lab
+  labels:
+    translated-from: nsx-segment
+    source-workflow: nsx-3tier-app.workflow
+spec:
+  config: |-
+    {
+      "cniVersion": "0.3.1",
+      "type": "macvlan",
+      "master": "eth0",
+      "mode": "bridge",
+      "ipam": {
+        "type": "host-local",
+        "subnet": "172.20.150.0/24",
+        "rangeStart": "172.20.150.10",
+        "rangeEnd": "172.20.150.250",
+        "gateway": "172.20.150.1"
+      }
+    }
+---
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: db-tier-vlan200
+  namespace: virt-lab
+  labels:
+    translated-from: nsx-segment
+    source-workflow: nsx-3tier-app.workflow
+spec:
+  config: |-
+    {
+      "cniVersion": "0.3.1",
+      "type": "macvlan",
+      "master": "eth0",
+      "mode": "bridge",
+      "ipam": {
+        "type": "host-local",
+        "subnet": "172.20.200.0/24",
+        "rangeStart": "172.20.200.10",
+        "rangeEnd": "172.20.200.250",
+        "gateway": "172.20.200.1"
+      }
+    }

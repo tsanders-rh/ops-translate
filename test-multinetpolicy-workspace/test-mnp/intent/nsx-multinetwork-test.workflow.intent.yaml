@@ -1,0 +1,135 @@
+schema_version: 1
+sources:
+- type: vrealize
+  file: NSX Multi-Network Test Workflow.xml
+intent:
+  workflow_name: nsx_multi_network_test_workflow
+  description: 'Creates a three-tier network architecture in NSX-T with web, application,
+    and database segments.
+
+    Establishes distributed firewall rules for tier-to-tier communication, backup
+    access, and general
+
+    internet egress and DNS resolution across all tiers.
+
+    '
+  workload_type: network_infrastructure
+  inputs:
+    environment:
+      type: string
+      required: true
+      description: Environment name
+  outputs:
+    success:
+      type: boolean
+      description: Workflow success
+  network:
+    segments:
+    - name: Web-Tier-VLAN100
+      vlan_id: 100
+      subnet: 10.10.100.0/24
+      gateway: 10.10.100.1
+      description: Web tier network segment
+    - name: App-Tier-VLAN150
+      vlan_id: 150
+      subnet: 10.10.150.0/24
+      gateway: 10.10.150.1
+      description: Application tier network segment
+    - name: DB-Tier-VLAN200
+      vlan_id: 200
+      subnet: 10.10.200.0/24
+      gateway: 10.10.200.1
+      description: Database tier network segment
+  security:
+    network_segmentation:
+      enabled: true
+      tier_isolation: true
+      tiers:
+      - web
+      - app
+      - db
+    firewall_rules:
+      web_tier:
+        segment: Web-Tier-VLAN100
+        vlan: 100
+        rules:
+        - name: Allow-Web-to-App
+          direction: OUT
+          action: ALLOW
+          sources:
+          - web-security-group
+          destinations:
+          - app-security-group
+          services:
+          - HTTP
+          - HTTPS
+          description: Allow web tier to communicate with app tier on HTTP/HTTPS
+      app_tier:
+        segment: App-Tier-VLAN150
+        vlan: 150
+        rules:
+        - name: Allow-App-to-DB
+          direction: OUT
+          action: ALLOW
+          sources:
+          - app-security-group
+          destinations:
+          - db-security-group
+          destination_ip: 10.10.200.50
+          services:
+          - MySQL
+          description: Allow app tier to access database on MySQL port
+      db_tier:
+        segment: DB-Tier-VLAN200
+        vlan: 200
+        rules:
+        - name: Allow-DB-Backup
+          direction: IN
+          action: ALLOW
+          sources:
+          - backup-server
+          destinations:
+          - db-security-group
+          destination_ip: 10.10.200.50
+          services:
+          - SSH
+          description: Allow backup server to access database for backups
+      global:
+        rules:
+        - name: Allow-Internet-Egress
+          direction: OUT
+          action: ALLOW
+          sources:
+          - any
+          destinations:
+          - internet
+          services:
+          - HTTP
+          - HTTPS
+          description: Allow all tiers to access internet for updates
+        - name: Allow-DNS
+          direction: OUT
+          action: ALLOW
+          sources:
+          - any
+          destinations:
+          - dns-servers
+          services:
+          - DNS
+          description: Allow DNS queries from all networks
+  integrations:
+  - type: nsx-t
+    module: com.acme.nsx
+    operations:
+    - segment_creation
+    - firewall_rule_creation
+    - security_group_management
+    features:
+    - multi_tier_segmentation
+    - distributed_firewall
+    - vlan_backed_segments
+  day2_operations:
+    supported:
+    - update_firewall_rules
+    - add_segments
+    - modify_security_groups

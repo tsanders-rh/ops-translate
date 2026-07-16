@@ -1,0 +1,94 @@
+---
+# TODO: BLOCKED - nsx_security_groups 'NSX Security Groups'
+# OpenShift Equivalent: None (requires custom solution)
+# Migration Path: PATH_C
+# Recommendations:
+#   - Security groups have no direct OpenShift equivalent
+#   - Option 1: Model as pod selectors in NetworkPolicy
+#   - Option 2: Use labels to group pods logically
+#   - Option 3: Keep NSX for security groups (hybrid)
+#   - Requires specialist review of security requirements
+# See: intent/gaps.md for details
+- name: "TODO: \U0001F6AB Manual work required - NSX Security Groups"
+  ansible.builtin.debug:
+    msg: BLOCKED component detected - see gap analysis for migration guidance
+  tags:
+  - manual_implementation_required
+  - gap_analysis
+# TODO: PARTIAL - nsx_firewall_rules 'NSX Distributed Firewall'
+# OpenShift Equivalent: NetworkPolicy
+# Migration Path: PATH_A
+# Recommendations:
+#   - Convert firewall rules to NetworkPolicy manifests
+#   - Note: NetworkPolicy is L3/L4 only (no L7 filtering)
+#   - Consider using Calico for advanced features
+#   - Test egress/ingress rules in dev environment
+#   - Document any unsupported rule types
+# See: intent/gaps.md for details
+- name: "TODO: \u26A0\uFE0F Manual work required - NSX Distributed Firewall"
+  ansible.builtin.debug:
+    msg: PARTIAL component detected - see gap analysis for migration guidance
+  tags:
+  - manual_review_required
+  - gap_analysis
+# TODO: PARTIAL - nsx_segments 'NSX Overlay Segments'
+# OpenShift Equivalent: NetworkAttachmentDefinition (Multus CNI)
+# Migration Path: PATH_A
+# Recommendations:
+#   - Create NetworkAttachmentDefinition for each segment
+#   - Configure Multus CNI plugin
+#   - Update pod specs to reference NAD
+#   - Map VLAN/overlay IDs to bridge/macvlan config
+#   - Test pod-to-pod networking
+# See: intent/gaps.md for details
+- name: "TODO: \u26A0\uFE0F Manual work required - NSX Overlay Segments"
+  ansible.builtin.debug:
+    msg: PARTIAL component detected - see gap analysis for migration guidance
+  tags:
+  - manual_review_required
+  - gap_analysis
+# Translated from vRealize workflow
+- {}
+# From: nsx-multinetwork-test.workflow.xml
+- {}
+- name: 'Log: Create Web Tier Segment'
+  ansible.builtin.debug:
+    msg: '{{ "Created web tier segment: " + webSegment.id }}'
+- name: 'Log: Create App Tier Segment'
+  ansible.builtin.debug:
+    msg: '{{ "Created app tier segment: " + appSegment.id }}'
+- name: 'Log: Create DB Tier Segment'
+  ansible.builtin.debug:
+    msg: '{{ "Created database tier segment: " + dbSegment.id }}'
+- name: 'Log: Create Web to App Firewall Rule'
+  ansible.builtin.debug:
+    msg: '{{ "Created firewall rule: " + webToAppRule.id }}'
+- name: 'Log: Create App to DB Firewall Rule'
+  ansible.builtin.debug:
+    msg: '{{ "Created firewall rule: " + appToDbRule.id }}'
+- name: 'Log: Create DB Backup Rule'
+  ansible.builtin.debug:
+    msg: '{{ "Created firewall rule: " + dbBackupRule.id }}'
+- name: 'Log: Create Internet Egress Rule'
+  ansible.builtin.debug:
+    msg: '{{ "Created firewall rule: " + internetEgressRule.id }}'
+- name: 'Log: Create DNS Rule'
+  ansible.builtin.debug:
+    msg: '{{ "Created firewall rule: " + dnsRule.id }}'
+
+# VM Provisioning
+- {}
+- name: Create KubeVirt VirtualMachine
+  kubernetes.core.k8s:
+    state: present
+    definition: '{{ lookup(''file'', ''kubevirt/vm.yaml'') | from_yaml }}'
+- name: Wait for VM to be ready
+  kubernetes.core.k8s_info:
+    api_version: kubevirt.io/v1
+    kind: VirtualMachine
+    name: '{{ vm_name }}'
+    namespace: virt-lab
+  register: vm_info
+  until: vm_info.resources | length > 0 and vm_info.resources[0].status.ready is defined
+  retries: 30
+  delay: 10

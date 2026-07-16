@@ -1,0 +1,16 @@
+---
+# Tasks for custom_nsx_security_groups
+# This is a STUB - manual implementation required
+
+# TODO: Implement NSX security group to label migration
+# Source: nsx-multinetwork-test
+# Evidence: See gap analysis report
+# Requires NetOps/SecOps review of label taxonomy
+# Review intent/recommendations.md for implementation guidance
+
+- name: "TODO: Implement NSX Security Groups migration"
+  ansible.builtin.debug:
+    msg: "Manual implementation required - see role README.md"
+  tags:
+    - manual_implementation_required
+    - stub

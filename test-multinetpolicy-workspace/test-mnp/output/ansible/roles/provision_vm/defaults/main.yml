@@ -1,0 +1,5 @@
+vm_name: example-vm
+namespace: virt-lab
+cpu_cores: 2
+memory: 4Gi
+storage_class: nfs

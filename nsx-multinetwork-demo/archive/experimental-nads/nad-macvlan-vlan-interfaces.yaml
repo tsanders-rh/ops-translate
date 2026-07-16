@@ -1,0 +1,81 @@
+---
+# Using macvlan with existing VLAN subinterfaces
+# This leverages the VLAN infrastructure already configured on the nodes
+#
+# Key points:
+# - Uses existing enp126s0.100, enp126s0.150, enp126s0.200 interfaces
+# - macvlan mode "bridge" allows pod-to-pod communication
+# - Keeps original NSX subnets (10.10.100.0/24, 10.10.150.0/24, 10.10.200.0/24)
+# - No gateway needed - direct L2 connectivity via macvlan
+
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: web-tier-vlan100
+  namespace: virt-lab
+  labels:
+    translated-from: nsx-segment
+    network-type: macvlan
+    vlan-id: "100"
+spec:
+  config: |-
+    {
+      "cniVersion": "0.3.1",
+      "type": "macvlan",
+      "master": "enp126s0.100",
+      "mode": "bridge",
+      "ipam": {
+        "type": "host-local",
+        "subnet": "10.10.100.0/24",
+        "rangeStart": "10.10.100.10",
+        "rangeEnd": "10.10.100.250"
+      }
+    }
+---
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: app-tier-vlan150
+  namespace: virt-lab
+  labels:
+    translated-from: nsx-segment
+    network-type: macvlan
+    vlan-id: "150"
+spec:
+  config: |-
+    {
+      "cniVersion": "0.3.1",
+      "type": "macvlan",
+      "master": "enp126s0.150",
+      "mode": "bridge",
+      "ipam": {
+        "type": "host-local",
+        "subnet": "10.10.150.0/24",
+        "rangeStart": "10.10.150.10",
+        "rangeEnd": "10.10.150.250"
+      }
+    }
+---
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: db-tier-vlan200
+  namespace: virt-lab
+  labels:
+    translated-from: nsx-segment
+    network-type: macvlan
+    vlan-id: "200"
+spec:
+  config: |-
+    {
+      "cniVersion": "0.3.1",
+      "type": "macvlan",
+      "master": "enp126s0.200",
+      "mode": "bridge",
+      "ipam": {
+        "type": "host-local",
+        "subnet": "10.10.200.0/24",
+        "rangeStart": "10.10.200.10",
+        "rangeEnd": "10.10.200.250"
+      }
+    }

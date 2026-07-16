@@ -1,0 +1,40 @@
+---
+# Generated from vRealize workflow NSX firewall rule
+# Source rule: Allow-DNS
+# Location: nsx-multinetwork-test.workflow.xml:167
+#
+# LIMITATIONS - READ BEFORE DEPLOYING:
+# - NSX supports L7 application-aware filtering; NetworkPolicy is L3/L4 only
+# - NSX supports FQDN-based rules; NetworkPolicy requires pod selectors or IP/CIDR
+# - NSX supports time-based rules; NetworkPolicy is always active
+# - NSX supports user/group-based rules; NetworkPolicy is pod-based only
+# - Review and test thoroughly in dev environment before production
+#
+# For advanced networking features, consider:
+# - Calico NetworkPolicy for FQDN, global policies, deny rules
+# - Cilium for L7 policies and enhanced observability
+# - Istio for application-layer (L7) service mesh policies
+- apiVersion: networking.k8s.io/v1
+  kind: NetworkPolicy
+  metadata:
+    name: allow-dns
+    namespace: default
+    labels:
+      translated-from: nsx-firewall
+      source-workflow: nsx-multinetwork-test.workflow
+    annotations:
+      source-location: nsx-multinetwork-test.workflow.xml:167
+  spec:
+    podSelector:
+      matchLabels:
+        app: dnsservers
+    policyTypes:
+    - Ingress
+    ingress:
+    - from:
+      - podSelector:
+          matchLabels:
+            app: any
+      ports:
+      - protocol: UDP
+        port: 53

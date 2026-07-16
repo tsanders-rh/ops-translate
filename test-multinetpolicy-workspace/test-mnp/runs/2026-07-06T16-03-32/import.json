@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-07-06T16:03:32.512103",
+  "source_type": "vrealize",
+  "original_file": "/Users/tsanders/Workspace/ops-translate/test-multinetpolicy-workspace/test-mnp/input/nsx-multinetwork-test.workflow.xml",
+  "imported_file": "input/vrealize/nsx-multinetwork-test.workflow.xml",
+  "sha256": "59f5f9a8283889c89d609664f5f22ed8be135723d2a4f569d9b35fffc56764fe"
+}

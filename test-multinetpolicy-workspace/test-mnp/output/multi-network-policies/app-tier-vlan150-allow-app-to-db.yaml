@@ -1,0 +1,56 @@
+---
+# Generated from vRealize workflow NSX firewall rule
+# Source rule: Allow-App-to-DB
+# Location: nsx-multinetwork-test.workflow.xml:102
+#
+# NETWORK SCOPE: SECONDARY NETWORK
+# Segment: App-Tier-VLAN150
+# NetworkAttachmentDefinition: default/app-tier-vlan150
+# VLAN IDs: 150
+# Subnets: 10.10.150.0/24
+#
+# This MultiNetworkPolicy applies ONLY to traffic on the secondary network
+# (NetworkAttachmentDefinition: app-tier-vlan150) and does NOT affect traffic on
+# the primary pod network or other secondary networks.
+#
+# IMPORTANT: Pods must be attached to the secondary network for this policy
+# to apply. Add this annotation to pod metadata:
+#   k8s.v1.cni.cncf.io/networks: app-tier-vlan150
+#
+# LIMITATIONS - READ BEFORE DEPLOYING:
+# - NSX supports L7 application-aware filtering; MultiNetworkPolicy is L3/L4 only
+# - NSX supports FQDN-based rules; MultiNetworkPolicy requires pod selectors or IP/CIDR
+# - NSX supports time-based rules; MultiNetworkPolicy is always active
+# - NSX supports user/group-based rules; MultiNetworkPolicy is pod-based only
+# - Review and test thoroughly in dev environment before production
+#
+# For advanced networking features on secondary networks, consider:
+# - Cilium for L7 policies, FQDN support, and enhanced observability
+# - Calico NetworkPolicy for global policies and deny rules
+- apiVersion: k8s.cni.cncf.io/v1beta1
+  kind: MultiNetworkPolicy
+  metadata:
+    name: app-tier-vlan150-allow-app-to-db
+    namespace: default
+    annotations:
+      k8s.v1.cni.cncf.io/policy-for: default/app-tier-vlan150
+      source-location: nsx-multinetwork-test.workflow.xml:102
+    labels:
+      translated-from: nsx-firewall
+      source-workflow: nsx-multinetwork-test.workflow
+      network-scope: secondary
+      network-attachment: app-tier-vlan150
+  spec:
+    podSelector:
+      matchLabels:
+        app: dbsecuritygroup
+    policyTypes:
+    - Ingress
+    ingress:
+    - from:
+      - podSelector:
+          matchLabels:
+            app: securitygroup
+      ports:
+      - protocol: TCP
+        port: 3306

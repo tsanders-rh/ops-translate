@@ -1,0 +1,8 @@
+{
+  "/Users/tsanders/Workspace/ops-translate/test-multinetpolicy-workspace/test-mnp/input/vrealize/nsx-multinetwork-test.workflow.xml": {
+    "hash": "59f5f9a8283889c89d609664f5f22ed8be135723d2a4f569d9b35fffc56764fe",
+    "path": "/Users/tsanders/Workspace/ops-translate/test-multinetpolicy-workspace/test-mnp/input/vrealize/nsx-multinetwork-test.workflow.xml",
+    "components": 8,
+    "has_external_dependencies": true
+  }
+}

@@ -1,0 +1,17 @@
+schema_version: 1
+intent:
+  workflow_name: nsx_multi_network_test_workflow
+  workload_type: network_infrastructure
+  inputs:
+    environment:
+      type: string
+      required: true
+      description: Environment name
+  day2_operations:
+    supported:
+    - add_segments
+    - modify_security_groups
+    - update_firewall_rules
+sources:
+- type: vrealize
+  file: NSX Multi-Network Test Workflow.xml

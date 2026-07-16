@@ -1,0 +1,69 @@
+---
+# Generated from vRealize workflow NSX segment
+# Source segment: Web-Tier-VLAN100
+# Location: nsx-multinetwork-test.workflow.xml:24
+# VLAN: 100
+# CNI Plugin: macvlan
+#
+# PREREQUISITES - REQUIRED BEFORE DEPLOYMENT:
+# 1. Install Multus CNI on your cluster
+#    kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/master/deployments/multus-daemonset.yml
+#
+# 2. Install Whereabouts IPAM plugin (for dynamic IP allocation)
+#    kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/whereabouts/master/doc/daemonset-install.yaml
+#
+# 3. Configure host network interface on all nodes
+#    - Ensure parent interface exists (check TODO in config)
+#    - For VLAN 100: Interface must support 802.1Q tagging
+#    - Configure switch ports for VLAN trunking
+#
+# CONFIGURATION REQUIRED:
+# - Review all TODO comments in the config section below
+# - Configure parent network interface name (master field)
+# - Verify settings match your NSX segment configuration
+#
+# DETECTED LIMITATIONS FOR THIS SEGMENT:
+# NSX L2 features (MAC learning, ARP suppression) are not available in
+# standard CNI plugins.
+# NSX QoS policies must be configured separately using Kubernetes network
+# QoS.
+#
+# GENERAL LIMITATIONS:
+# - NSX DHCP is NOT equivalent to Whereabouts IPAM (different lease tracking)
+# - NSX provides L2 switching features not available in basic CNI plugins
+# - Migration requires network downtime (cannot live-migrate segments)
+# - NSX segment security policies not included (use NetworkPolicy)
+# - Test thoroughly in dev/staging before production deployment
+#
+# POD USAGE:
+# Attach this network to a pod via annotation:
+#   k8s.v1.cni.cncf.io/networks: Web-Tier-VLAN100
+#
+# For multiple networks:
+#   k8s.v1.cni.cncf.io/networks: '[
+#     {"name": "Web-Tier-VLAN100", "interface": "net1"},
+#     {"name": "another-network", "interface": "net2"}
+#   ]'
+#
+# For advanced networking features, consider:
+# - Calico for network policies and advanced routing
+# - Cilium for eBPF-based networking and L7 policies
+# - OpenShift SDN for integrated networking solution
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: web-tier-vlan100
+  namespace: default
+  labels:
+    translated-from: nsx-segment
+    source-workflow: nsx-multinetwork-test.workflow
+    vlan-id: '100'
+  annotations:
+    source-location: nsx-multinetwork-test.workflow.xml:24
+spec:
+  config: "{\n  \"cniVersion\": \"0.3.1\",\n  \"type\": \"macvlan\",\n  \"ipam\":\
+    \ {\n    \"type\": \"whereabouts\",\n    \"range\": \"10.10.100.0/24\",\n    \"\
+    range_start\": \"10.10.100.10\",\n    \"range_end\": \"10.10.100.249\",\n    \"\
+    gateway\": \"10.10.100.1\",\n    \"routes\": [\n      {\n        \"dst\": \"0.0.0.0/0\"\
+    \n      }\n    ]\n  },\n  \"vlan\": 100,\n  \"master\": \"TODO: Specify parent\
+    \ interface (e.g., eth1, ens3)\",\n  \"mode\": \"bridge\"\n}"

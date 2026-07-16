@@ -1,0 +1,115 @@
+---
+# AWS Multi-ENI Setup with macvlan
+# This configuration uses macvlan to allow pods to receive traffic from AWS
+#
+# Key points:
+# - Each tier uses a separate ENI (enp127s0, enp128s0, enp129s0)
+# - macvlan gives each pod its own MAC address
+# - Pods can communicate via AWS VPC routing
+#
+# Network Design:
+# - Web tier: 10.0.200.0/25 (enp127s0)
+# - App tier: 10.0.201.0/25 (enp128s0)
+# - DB tier: 10.0.202.0/25 (enp129s0)
+
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: web-tier-vlan100
+  namespace: virt-lab
+  labels:
+    aws-setup: multi-eni
+    translated-from: nsx-segment
+    vlan-id: "100"
+spec:
+  config: |-
+    {
+      "cniVersion": "0.3.1",
+      "type": "macvlan",
+      "master": "enp127s0",
+      "mode": "bridge",
+      "ipam": {
+        "type": "host-local",
+        "ranges": [
+          [
+            {
+              "subnet": "10.0.200.0/25",
+              "rangeStart": "10.0.200.10",
+              "rangeEnd": "10.0.200.80",
+              "gateway": "10.0.200.1"
+            }
+          ]
+        ],
+        "routes": [
+          { "dst": "0.0.0.0/0" }
+        ]
+      }
+    }
+---
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: app-tier-vlan150
+  namespace: virt-lab
+  labels:
+    aws-setup: multi-eni
+    translated-from: nsx-segment
+    vlan-id: "150"
+spec:
+  config: |-
+    {
+      "cniVersion": "0.3.1",
+      "type": "macvlan",
+      "master": "enp128s0",
+      "mode": "bridge",
+      "ipam": {
+        "type": "host-local",
+        "ranges": [
+          [
+            {
+              "subnet": "10.0.201.0/25",
+              "rangeStart": "10.0.201.10",
+              "rangeEnd": "10.0.201.54",
+              "gateway": "10.0.201.1"
+            }
+          ]
+        ],
+        "routes": [
+          { "dst": "0.0.0.0/0" }
+        ]
+      }
+    }
+---
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: db-tier-vlan200
+  namespace: virt-lab
+  labels:
+    aws-setup: multi-eni
+    translated-from: nsx-segment
+    vlan-id: "200"
+spec:
+  config: |-
+    {
+      "cniVersion": "0.3.1",
+      "type": "macvlan",
+      "master": "enp129s0",
+      "mode": "bridge",
+      "ipam": {
+        "type": "host-local",
+        "ranges": [
+          [
+            {
+              "subnet": "10.0.202.0/25",
+              "rangeStart": "10.0.202.10",
+              "rangeEnd": "10.0.202.108",
+              "gateway": "10.0.202.1"
+            }
+          ]
+        ],
+        "routes": [
+          { "dst": "0.0.0.0/0" }
+        ]
+      }
+    }

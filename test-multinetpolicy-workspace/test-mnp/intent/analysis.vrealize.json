@@ -1,0 +1,57 @@
+{
+  "source_file": "nsx-multinetwork-test.workflow.xml",
+  "nsx_operations": {
+    "segments": [
+      {
+        "name": "Web-Tier-VLAN100",
+        "location": "nsx-multinetwork-test.workflow.xml:24",
+        "confidence": 0.95,
+        "evidence": "nsxClient.createSegment({displayName: 'Web-Tier-VLAN100', vlanIds: [100], subnets: ['10.10.100.0/24'], gateway: '10.10.100.1'})"
+      },
+      {
+        "name": "App-Tier-VLAN150",
+        "location": "nsx-multinetwork-test.workflow.xml:43",
+        "confidence": 0.95,
+        "evidence": "nsxClient.createSegment({displayName: 'App-Tier-VLAN150', vlanIds: [150], subnets: ['10.10.150.0/24'], gateway: '10.10.150.1'})"
+      },
+      {
+        "name": "DB-Tier-VLAN200",
+        "location": "nsx-multinetwork-test.workflow.xml:62",
+        "confidence": 0.95,
+        "evidence": "nsxClient.createSegment({displayName: 'DB-Tier-VLAN200', vlanIds: [200], subnets: ['10.10.200.0/24'], gateway: '10.10.200.1'})"
+      }
+    ],
+    "firewall_rules": [
+      {
+        "name": "Allow-Web-to-App",
+        "location": "nsx-multinetwork-test.workflow.xml:81",
+        "confidence": 0.95,
+        "evidence": "nsxClient.createFirewallRule({name: 'Allow-Web-to-App', segment: 'Web-Tier-VLAN100', sources: ['web-security-group'], destinations: ['app-security-group'], services: ['HTTP', 'HTTPS'], action: 'ALLOW'})"
+      },
+      {
+        "name": "Allow-App-to-DB",
+        "location": "nsx-multinetwork-test.workflow.xml:102",
+        "confidence": 0.95,
+        "evidence": "nsxClient.createFirewallRule({name: 'Allow-App-to-DB', segment: 'App-Tier-VLAN150', sources: ['app-security-group'], destinations: ['db-security-group'], services: ['MySQL'], action: 'ALLOW', destination: '10.10.200.50'})"
+      },
+      {
+        "name": "Allow-DB-Backup",
+        "location": "nsx-multinetwork-test.workflow.xml:124",
+        "confidence": 0.95,
+        "evidence": "nsxClient.createFirewallRule({name: 'Allow-DB-Backup', segment: 'DB-Tier-VLAN200', vlan: 200, sources: ['backup-server'], destinations: ['db-security-group'], destination: '10.10.200.50', services: ['SSH'], action: 'ALLOW'})"
+      },
+      {
+        "name": "Allow-Internet-Egress",
+        "location": "nsx-multinetwork-test.workflow.xml:147",
+        "confidence": 0.95,
+        "evidence": "nsxClient.createFirewallRule({name: 'Allow-Internet-Egress', sources: ['any'], destinations: ['internet'], services: ['HTTP', 'HTTPS'], action: 'ALLOW'})"
+      },
+      {
+        "name": "Allow-DNS",
+        "location": "nsx-multinetwork-test.workflow.xml:167",
+        "confidence": 0.95,
+        "evidence": "nsxClient.createFirewallRule({name: 'Allow-DNS', sources: ['any'], destinations: ['dns-servers'], services: ['DNS'], action: 'ALLOW'})"
+      }
+    ]
+  }
+}
